@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DollarSign, Search } from "lucide-react";
 
-export const Route = createFileRoute("/_authenticated/_app/precos")({
+export const Route = createFileRoute("/_authenticated/precos")({
   component: Page,
 });
 

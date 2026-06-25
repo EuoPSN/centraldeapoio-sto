@@ -10,7 +10,7 @@ import { CopyButton } from "@/components/CopyButton";
 import { Markdown } from "@/components/Markdown";
 import { Search, MessageSquareQuote } from "lucide-react";
 
-export const Route = createFileRoute("/_authenticated/_app/scripts")({
+export const Route = createFileRoute("/_authenticated/scripts")({
   component: Page,
 });
 

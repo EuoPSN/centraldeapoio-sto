@@ -5,7 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { getMe, listScripts, listContent, listPricing } from "@/lib/content.functions";
 import { BookOpen, Bot, DollarSign, GraduationCap, MessageSquareQuote, Wrench } from "lucide-react";
 
-export const Route = createFileRoute("/_authenticated/_app/")({
+export const Route = createFileRoute("/_authenticated/")({
   component: Home,
 });
 

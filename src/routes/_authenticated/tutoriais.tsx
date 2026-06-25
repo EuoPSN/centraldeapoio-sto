@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { listContent } from "@/lib/content.functions";
 import { ContentList } from "@/components/ContentList";
 
-export const Route = createFileRoute("/_authenticated/_app/tutoriais")({
+export const Route = createFileRoute("/_authenticated/tutoriais")({
   component: Page,
 });
 
