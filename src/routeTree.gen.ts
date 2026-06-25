@@ -17,6 +17,7 @@ import { Route as AuthenticatedScriptsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedProblemasRouteImport } from './routes/_authenticated/problemas'
 import { Route as AuthenticatedPrecosRouteImport } from './routes/_authenticated/precos'
 import { Route as AuthenticatedConhecimentoRouteImport } from './routes/_authenticated/conhecimento'
+import { Route as AuthenticatedAssistenteRouteImport } from './routes/_authenticated/assistente'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -58,10 +59,16 @@ const AuthenticatedConhecimentoRoute =
     path: '/conhecimento',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAssistenteRoute = AuthenticatedAssistenteRouteImport.update({
+  id: '/assistente',
+  path: '/assistente',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
+  '/assistente': typeof AuthenticatedAssistenteRoute
   '/conhecimento': typeof AuthenticatedConhecimentoRoute
   '/precos': typeof AuthenticatedPrecosRoute
   '/problemas': typeof AuthenticatedProblemasRoute
@@ -70,6 +77,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
+  '/assistente': typeof AuthenticatedAssistenteRoute
   '/conhecimento': typeof AuthenticatedConhecimentoRoute
   '/precos': typeof AuthenticatedPrecosRoute
   '/problemas': typeof AuthenticatedProblemasRoute
@@ -81,6 +89,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/assistente': typeof AuthenticatedAssistenteRoute
   '/_authenticated/conhecimento': typeof AuthenticatedConhecimentoRoute
   '/_authenticated/precos': typeof AuthenticatedPrecosRoute
   '/_authenticated/problemas': typeof AuthenticatedProblemasRoute
@@ -93,6 +102,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/assistente'
     | '/conhecimento'
     | '/precos'
     | '/problemas'
@@ -101,6 +111,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
+    | '/assistente'
     | '/conhecimento'
     | '/precos'
     | '/problemas'
@@ -111,6 +122,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/assistente'
     | '/_authenticated/conhecimento'
     | '/_authenticated/precos'
     | '/_authenticated/problemas'
@@ -182,10 +194,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConhecimentoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/assistente': {
+      id: '/_authenticated/assistente'
+      path: '/assistente'
+      fullPath: '/assistente'
+      preLoaderRoute: typeof AuthenticatedAssistenteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAssistenteRoute: typeof AuthenticatedAssistenteRoute
   AuthenticatedConhecimentoRoute: typeof AuthenticatedConhecimentoRoute
   AuthenticatedPrecosRoute: typeof AuthenticatedPrecosRoute
   AuthenticatedProblemasRoute: typeof AuthenticatedProblemasRoute
@@ -195,6 +215,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAssistenteRoute: AuthenticatedAssistenteRoute,
   AuthenticatedConhecimentoRoute: AuthenticatedConhecimentoRoute,
   AuthenticatedPrecosRoute: AuthenticatedPrecosRoute,
   AuthenticatedProblemasRoute: AuthenticatedProblemasRoute,
