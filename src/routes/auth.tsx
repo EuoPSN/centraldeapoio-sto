@@ -70,7 +70,7 @@ function AuthPage() {
         redirect_uri: window.location.origin,
       });
       if (result.error) {
-        toast.error(result.error);
+        toast.error(result.error.message);
         setLoading(false);
         return;
       }
