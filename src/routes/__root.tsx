@@ -85,6 +85,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "Central de conhecimento, scripts de atendimento e Assistente IA do Cartão de Todos.",
       },
+      { property: "og:title", content: "Central CDT — Cartão de Todos" },
+      { name: "twitter:title", content: "Central CDT — Cartão de Todos" },
+      { name: "description", content: "Cartão de Todos Connect is an internal employee portal for knowledge, support, and real-time AI assistance." },
+      { property: "og:description", content: "Cartão de Todos Connect is an internal employee portal for knowledge, support, and real-time AI assistance." },
+      { name: "twitter:description", content: "Cartão de Todos Connect is an internal employee portal for knowledge, support, and real-time AI assistance." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/46f60b4a-ed72-4672-98df-d3b31dca7bd8/id-preview-d33fb85a--4b742393-3645-4ee4-ac37-09246ab18a0f.lovable.app-1782407255174.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/46f60b4a-ed72-4672-98df-d3b31dca7bd8/id-preview-d33fb85a--4b742393-3645-4ee4-ac37-09246ab18a0f.lovable.app-1782407255174.png" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:type", content: "website" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
