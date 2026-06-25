@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { listConversations, getConversation, createConversation, sendMessage, deleteConversation } from "@/lib/chat.functions";
+import { listConversations, getMessages, createConversation, sendMessage, deleteConversation } from "@/lib/chat.functions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/_authenticated/assistente")({
 function Page() {
   const qc = useQueryClient();
   const list = useServerFn(listConversations);
-  const get = useServerFn(getConversation);
+  const get = useServerFn(getMessages);
   const create = useServerFn(createConversation);
   const send = useServerFn(sendMessage);
   const del = useServerFn(deleteConversation);
@@ -45,7 +45,7 @@ function Page() {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [active.data?.messages.length]);
+  }, [active.data?.length]);
 
   const createMut = useMutation({
     mutationFn: () => create({}),
@@ -127,7 +127,7 @@ function Page() {
 
       <div className="flex-1 flex flex-col min-w-0">
         <div ref={scrollRef} className="flex-1 overflow-y-auto">
-          {!activeId || (active.data?.messages.length ?? 0) === 0 ? (
+          {!activeId || (active.data?.length ?? 0) === 0 ? (
             <div className="h-full flex items-center justify-center p-8">
               <div className="text-center max-w-md">
                 <div className="h-14 w-14 mx-auto rounded-2xl bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center mb-4">
@@ -157,8 +157,8 @@ function Page() {
             </div>
           ) : (
             <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
-              {active.data?.messages.map((m) => (
-                <MessageBubble key={m.id} role={m.role} content={m.content} />
+              {active.data?.map((m) => (
+                <MessageBubble key={m.id} role={m.role as "user" | "assistant" | "system"} content={m.content} />
               ))}
               {sendMut.isPending && (
                 <MessageBubble role="assistant" content="_Pensando..._" />
