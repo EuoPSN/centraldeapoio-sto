@@ -71,31 +71,36 @@ export const seedInitialData = createServerFn({ method: "POST" })
       supabaseAdmin.from("content_items").select("id", { count: "exact", head: true }),
     ]);
 
-    const inserts: Array<Promise<unknown>> = [];
-
     if ((sc.count ?? 0) === 0) {
-      inserts.push(
-        supabaseAdmin.from("scripts").insert(
-          SEED_SCRIPTS.map((s, i) => ({ ...s, position: i, created_by: context.userId })),
-        ),
-      );
+      const rows = SEED_SCRIPTS.map((s, i) => ({ ...s, position: i, created_by: context.userId }));
+      const { error } = await supabaseAdmin.from("scripts").insert(rows);
+      if (error) throw new Error(error.message);
     }
     if ((cnt.count ?? 0) === 0) {
-      inserts.push(
-        supabaseAdmin.from("content_items").insert(
-          SEED_CONTENT.map((c, i) => ({ ...c, tags: [], position: i, created_by: context.userId })),
-        ),
-      );
+      const rows = SEED_CONTENT.map((c, i) => ({
+        section: c.section as "conhecimento" | "problemas" | "tutoriais",
+        category: c.category,
+        title: c.title,
+        content: c.content,
+        tags: [] as string[],
+        position: i,
+        created_by: context.userId,
+      }));
+      const { error } = await supabaseAdmin.from("content_items").insert(rows);
+      if (error) throw new Error(error.message);
     }
     if ((sp.count ?? 0) === 0) {
-      inserts.push(
-        supabaseAdmin.from("pricing_items").insert(
-          SEED_PRICING.map((p, i) => ({ ...p, position: i, created_by: context.userId })),
-        ),
-      );
+      const rows = SEED_PRICING.map((p, i) => ({
+        category: p.category,
+        specialty: p.specialty,
+        cartao_price: p.cartao_price,
+        particular_price: p.particular_price,
+        notes: p.notes,
+        position: i,
+      }));
+      const { error } = await supabaseAdmin.from("pricing_items").insert(rows);
+      if (error) throw new Error(error.message);
     }
-
-    await Promise.all(inserts);
 
     return {
       ok: true,
