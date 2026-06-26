@@ -26,6 +26,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Database, Pencil, Plus, RefreshCw, Settings, Sparkles, Trash2, UserPlus, Users } from "lucide-react";
+import { MessagesTab } from "@/components/admin/MessagesTab";
+import { FlowsTab } from "@/components/admin/FlowsTab";
+import { TaxonomyTab } from "@/components/admin/TaxonomyTab";
+import { SuggestionsTab } from "@/components/admin/SuggestionsTab";
+import { MenuTab } from "@/components/admin/MenuTab";
+import { AppearanceTab } from "@/components/admin/AppearanceTab";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   beforeLoad: async () => {
@@ -56,17 +62,29 @@ function AdminPage() {
         <TabsList className="flex-wrap h-auto justify-start">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="users">Usuários</TabsTrigger>
-          <TabsTrigger value="scripts">Scripts</TabsTrigger>
+          <TabsTrigger value="messages">Mensagens</TabsTrigger>
+          <TabsTrigger value="flows">Fluxos</TabsTrigger>
+          <TabsTrigger value="taxonomy">Categorias</TabsTrigger>
+          <TabsTrigger value="scripts">Scripts (legado)</TabsTrigger>
           <TabsTrigger value="content">Conteúdo</TabsTrigger>
           <TabsTrigger value="pricing">Preços</TabsTrigger>
+          <TabsTrigger value="suggestions">Sugestões</TabsTrigger>
+          <TabsTrigger value="menu">Menu</TabsTrigger>
+          <TabsTrigger value="appearance">Aparência</TabsTrigger>
           <TabsTrigger value="ai">IA & Indexação</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-6"><OverviewTab /></TabsContent>
         <TabsContent value="users" className="mt-6"><UsersTab /></TabsContent>
+        <TabsContent value="messages" className="mt-6"><MessagesTab /></TabsContent>
+        <TabsContent value="flows" className="mt-6"><FlowsTab /></TabsContent>
+        <TabsContent value="taxonomy" className="mt-6"><TaxonomyTab /></TabsContent>
         <TabsContent value="scripts" className="mt-6"><ScriptsTab /></TabsContent>
         <TabsContent value="content" className="mt-6"><ContentTab /></TabsContent>
         <TabsContent value="pricing" className="mt-6"><PricingTab /></TabsContent>
+        <TabsContent value="suggestions" className="mt-6"><SuggestionsTab /></TabsContent>
+        <TabsContent value="menu" className="mt-6"><MenuTab /></TabsContent>
+        <TabsContent value="appearance" className="mt-6"><AppearanceTab /></TabsContent>
         <TabsContent value="ai" className="mt-6"><AiTab /></TabsContent>
       </Tabs>
     </div>
