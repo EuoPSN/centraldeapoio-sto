@@ -6,11 +6,15 @@ export const listSuggestions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ all: z.boolean().default(false) }).parse(d ?? {}))
   .handler(async ({ data, context }) => {
-    let q = context.supabase.from("suggestions").select("*, profile:profiles(display_name,email)").order("created_at", { ascending: false });
+    let q = context.supabase.from("suggestions").select("*").order("created_at", { ascending: false });
     if (!data.all) q = q.eq("user_id", context.userId);
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
-    return rows ?? [];
+    if (!rows || rows.length === 0) return [] as Array<typeof rows[number] & { profile: { display_name: string | null; email: string } | null }>;
+    const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
+    const { data: profiles } = await context.supabase.from("profiles").select("id,display_name,email").in("id", userIds);
+    const map = new Map((profiles ?? []).map((p) => [p.id, { display_name: p.display_name as string | null, email: p.email as string }]));
+    return rows.map((r) => ({ ...r, profile: map.get(r.user_id) ?? null }));
   });
 
 const Input = z.object({
