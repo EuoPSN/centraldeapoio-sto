@@ -65,6 +65,98 @@ export type Database = {
         }
         Relationships: []
       }
+      app_settings: {
+        Row: {
+          accent_color: string | null
+          active_theme: string
+          background_color: string | null
+          cover_url: string | null
+          favicon_url: string | null
+          id: number
+          logo_url: string | null
+          platform_name: string
+          primary_color: string | null
+          secondary_color: string | null
+          tagline: string | null
+          updated_at: string
+        }
+        Insert: {
+          accent_color?: string | null
+          active_theme?: string
+          background_color?: string | null
+          cover_url?: string | null
+          favicon_url?: string | null
+          id?: number
+          logo_url?: string | null
+          platform_name?: string
+          primary_color?: string | null
+          secondary_color?: string | null
+          tagline?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accent_color?: string | null
+          active_theme?: string
+          background_color?: string | null
+          cover_url?: string | null
+          favicon_url?: string | null
+          id?: number
+          logo_url?: string | null
+          platform_name?: string
+          primary_color?: string | null
+          secondary_color?: string | null
+          tagline?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      categories: {
+        Row: {
+          color: string | null
+          created_at: string
+          icon: string | null
+          id: string
+          name: string
+          parent_id: string | null
+          position: number
+          scope: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name: string
+          parent_id?: string | null
+          position?: number
+          scope: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name?: string
+          parent_id?: string | null
+          position?: number
+          scope?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_conversations: {
         Row: {
           created_at: string
@@ -160,6 +252,104 @@ export type Database = {
         }
         Relationships: []
       }
+      flow_nodes: {
+        Row: {
+          created_at: string
+          flow_id: string
+          id: string
+          message: string | null
+          node_type: string
+          note: string | null
+          parent_id: string | null
+          position: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          flow_id: string
+          id?: string
+          message?: string | null
+          node_type?: string
+          note?: string | null
+          parent_id?: string | null
+          position?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          flow_id?: string
+          id?: string
+          message?: string | null
+          node_type?: string
+          note?: string | null
+          parent_id?: string | null
+          position?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flow_nodes_flow_id_fkey"
+            columns: ["flow_id"]
+            isOneToOne: false
+            referencedRelation: "flows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flow_nodes_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "flow_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flows: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_training: boolean
+          position: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_training?: boolean
+          position?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_training?: boolean
+          position?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flows_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       knowledge_chunks: {
         Row: {
           content: string
@@ -190,6 +380,102 @@ export type Database = {
           source_id?: string
           source_type?: string
           title?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          category_id: string | null
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          internal_note: string | null
+          position: number
+          subcategory_id: string | null
+          tags: string[]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          internal_note?: string | null
+          position?: number
+          subcategory_id?: string | null
+          tags?: string[]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          internal_note?: string | null
+          position?: number
+          subcategory_id?: string | null
+          tags?: string[]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_subcategory_id_fkey"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nav_items: {
+        Row: {
+          admin_only: boolean
+          created_at: string
+          icon: string
+          id: string
+          label: string
+          position: number
+          route: string
+          section: string
+          updated_at: string
+          visible: boolean
+        }
+        Insert: {
+          admin_only?: boolean
+          created_at?: string
+          icon?: string
+          id?: string
+          label: string
+          position?: number
+          route: string
+          section?: string
+          updated_at?: string
+          visible?: boolean
+        }
+        Update: {
+          admin_only?: boolean
+          created_at?: string
+          icon?: string
+          id?: string
+          label?: string
+          position?: number
+          route?: string
+          section?: string
+          updated_at?: string
+          visible?: boolean
         }
         Relationships: []
       }
@@ -292,6 +578,69 @@ export type Database = {
           title?: string
           updated_at?: string
           usage_note?: string | null
+        }
+        Relationships: []
+      }
+      suggestions: {
+        Row: {
+          admin_response: string | null
+          category: string
+          created_at: string
+          description: string
+          id: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_response?: string | null
+          category?: string
+          created_at?: string
+          description: string
+          id?: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_response?: string | null
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      themes: {
+        Row: {
+          created_at: string
+          id: string
+          is_preset: boolean
+          name: string
+          tokens: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_preset?: boolean
+          name: string
+          tokens?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_preset?: boolean
+          name?: string
+          tokens?: Json
+          updated_at?: string
         }
         Relationships: []
       }
