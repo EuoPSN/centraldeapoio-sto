@@ -1,15 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import {
-  BookOpen,
-  Bot,
-  DollarSign,
-  GraduationCap,
-  Home,
-  LogOut,
-  MessageSquareQuote,
-  Settings,
-  Wrench,
-} from "lucide-react";
+import { LogOut, Settings } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -25,35 +15,36 @@ import {
 import { AppLogo } from "./AppLogo";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { listNavItems } from "@/lib/settings.functions";
+import { getIcon } from "@/lib/icon-map";
 
-interface NavItem {
-  title: string;
-  url: string;
-  icon: typeof Home;
+const SECTION_LABEL: Record<string, string> = {
+  main: "Central",
+  ai: "Inteligência",
+  admin: "Administração",
+};
+
+interface NavRow {
+  id: string; label: string; icon: string; route: string;
+  section: string; position: number; visible: boolean; admin_only: boolean;
 }
-
-const mainItems: NavItem[] = [
-  { title: "Início", url: "/", icon: Home },
-  { title: "Conhecimento Geral", url: "/conhecimento", icon: BookOpen },
-  { title: "Scripts de Atendimento", url: "/scripts", icon: MessageSquareQuote },
-  { title: "Tabela de Preços", url: "/precos", icon: DollarSign },
-  { title: "Problemas Técnicos", url: "/problemas", icon: Wrench },
-  { title: "Tutoriais", url: "/tutoriais", icon: GraduationCap },
-];
-
-const iaItem: NavItem = { title: "Assistente IA", url: "/assistente", icon: Bot };
-const adminItem: NavItem = { title: "Painel Admin", url: "/admin", icon: Settings };
 
 export function AppSidebar({ isAdmin, email }: { isAdmin: boolean; email: string }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const fn = useServerFn(listNavItems);
+  const q = useQuery({ queryKey: ["nav-items"], queryFn: () => fn({}), staleTime: 60_000 });
 
-  const isActive = (url: string) => {
-    if (url === "/") return pathname === "/";
-    return pathname.startsWith(url);
-  };
+  const items = ((q.data ?? []) as NavRow[]).filter((i) => i.visible && (!i.admin_only || isAdmin));
+  const grouped = items.reduce<Record<string, NavRow[]>>((acc, it) => {
+    (acc[it.section] ??= []).push(it);
+    return acc;
+  }, {});
+
+  const isActive = (url: string) => url === "/" ? pathname === "/" : pathname.startsWith(url);
 
   const handleSignOut = async () => {
     await queryClient.cancelQueries();
@@ -61,6 +52,8 @@ export function AppSidebar({ isAdmin, email }: { isAdmin: boolean; email: string
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
   };
+
+  const orderedSections = ["main", "ai", "admin", ...Object.keys(grouped).filter((s) => !["main", "ai", "admin"].includes(s))];
 
   return (
     <Sidebar collapsible="icon">
@@ -71,51 +64,50 @@ export function AppSidebar({ isAdmin, email }: { isAdmin: boolean; email: string
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Central</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {mainItems.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
-                    <Link to={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {orderedSections.map((section) => {
+          const list = grouped[section];
+          if (!list?.length) return null;
+          return (
+            <SidebarGroup key={section}>
+              <SidebarGroupLabel>{SECTION_LABEL[section] ?? section}</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {list.map((it) => {
+                    const Icon = getIcon(it.icon);
+                    return (
+                      <SidebarMenuItem key={it.id}>
+                        <SidebarMenuButton asChild isActive={isActive(it.route)} tooltip={it.label}>
+                          <Link to={it.route}>
+                            <Icon className="h-4 w-4" />
+                            <span>{it.label}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          );
+        })}
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Inteligência</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive(iaItem.url)} tooltip={iaItem.title}>
-                  <Link to={iaItem.url}>
-                    <iaItem.icon className="h-4 w-4" />
-                    <span>{iaItem.title}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {/* fallback while nav_items hasn't loaded */}
+        {q.isLoading && (
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <div className="px-3 py-2 text-xs text-muted-foreground">Carregando menu...</div>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
-        {isAdmin && (
+        {isAdmin && !items.some((i) => i.route === "/admin") && (
           <SidebarGroup>
             <SidebarGroupLabel>Administração</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isActive(adminItem.url)} tooltip={adminItem.title}>
-                    <Link to={adminItem.url}>
-                      <adminItem.icon className="h-4 w-4" />
-                      <span>{adminItem.title}</span>
-                    </Link>
+                  <SidebarMenuButton asChild isActive={isActive("/admin")} tooltip="Painel Admin">
+                    <Link to="/admin"><Settings className="h-4 w-4" /><span>Painel Admin</span></Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>

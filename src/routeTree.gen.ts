@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedTutoriaisRouteImport } from './routes/_authenticated/tutoriais'
+import { Route as AuthenticatedSugestoesRouteImport } from './routes/_authenticated/sugestoes'
 import { Route as AuthenticatedScriptsRouteImport } from './routes/_authenticated/scripts'
 import { Route as AuthenticatedProblemasRouteImport } from './routes/_authenticated/problemas'
 import { Route as AuthenticatedPrecosRouteImport } from './routes/_authenticated/precos'
@@ -37,6 +38,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
 const AuthenticatedTutoriaisRoute = AuthenticatedTutoriaisRouteImport.update({
   id: '/tutoriais',
   path: '/tutoriais',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSugestoesRoute = AuthenticatedSugestoesRouteImport.update({
+  id: '/sugestoes',
+  path: '/sugestoes',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedScriptsRoute = AuthenticatedScriptsRouteImport.update({
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/precos': typeof AuthenticatedPrecosRoute
   '/problemas': typeof AuthenticatedProblemasRoute
   '/scripts': typeof AuthenticatedScriptsRoute
+  '/sugestoes': typeof AuthenticatedSugestoesRoute
   '/tutoriais': typeof AuthenticatedTutoriaisRoute
 }
 export interface FileRoutesByTo {
@@ -90,6 +97,7 @@ export interface FileRoutesByTo {
   '/precos': typeof AuthenticatedPrecosRoute
   '/problemas': typeof AuthenticatedProblemasRoute
   '/scripts': typeof AuthenticatedScriptsRoute
+  '/sugestoes': typeof AuthenticatedSugestoesRoute
   '/tutoriais': typeof AuthenticatedTutoriaisRoute
   '/': typeof AuthenticatedIndexRoute
 }
@@ -103,6 +111,7 @@ export interface FileRoutesById {
   '/_authenticated/precos': typeof AuthenticatedPrecosRoute
   '/_authenticated/problemas': typeof AuthenticatedProblemasRoute
   '/_authenticated/scripts': typeof AuthenticatedScriptsRoute
+  '/_authenticated/sugestoes': typeof AuthenticatedSugestoesRoute
   '/_authenticated/tutoriais': typeof AuthenticatedTutoriaisRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
@@ -117,6 +126,7 @@ export interface FileRouteTypes {
     | '/precos'
     | '/problemas'
     | '/scripts'
+    | '/sugestoes'
     | '/tutoriais'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/precos'
     | '/problemas'
     | '/scripts'
+    | '/sugestoes'
     | '/tutoriais'
     | '/'
   id:
@@ -139,6 +150,7 @@ export interface FileRouteTypes {
     | '/_authenticated/precos'
     | '/_authenticated/problemas'
     | '/_authenticated/scripts'
+    | '/_authenticated/sugestoes'
     | '/_authenticated/tutoriais'
     | '/_authenticated/'
   fileRoutesById: FileRoutesById
@@ -176,6 +188,13 @@ declare module '@tanstack/react-router' {
       path: '/tutoriais'
       fullPath: '/tutoriais'
       preLoaderRoute: typeof AuthenticatedTutoriaisRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/sugestoes': {
+      id: '/_authenticated/sugestoes'
+      path: '/sugestoes'
+      fullPath: '/sugestoes'
+      preLoaderRoute: typeof AuthenticatedSugestoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/scripts': {
@@ -230,6 +249,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPrecosRoute: typeof AuthenticatedPrecosRoute
   AuthenticatedProblemasRoute: typeof AuthenticatedProblemasRoute
   AuthenticatedScriptsRoute: typeof AuthenticatedScriptsRoute
+  AuthenticatedSugestoesRoute: typeof AuthenticatedSugestoesRoute
   AuthenticatedTutoriaisRoute: typeof AuthenticatedTutoriaisRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
@@ -241,6 +261,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPrecosRoute: AuthenticatedPrecosRoute,
   AuthenticatedProblemasRoute: AuthenticatedProblemasRoute,
   AuthenticatedScriptsRoute: AuthenticatedScriptsRoute,
+  AuthenticatedSugestoesRoute: AuthenticatedSugestoesRoute,
   AuthenticatedTutoriaisRoute: AuthenticatedTutoriaisRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
