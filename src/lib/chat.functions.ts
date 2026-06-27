@@ -106,6 +106,8 @@ export const sendMessage = createServerFn({ method: "POST" })
 
     // 5) RAG: embedding da pergunta + match_knowledge
     let ragContext = "";
+    let sources: Array<{ title: string; source_type: string }> = [];
+    let foundAny = false;
     try {
       const queryEmb = await generateEmbedding(data.message);
       const { data: matches } = await context.supabase.rpc("match_knowledge", {
@@ -113,25 +115,55 @@ export const sendMessage = createServerFn({ method: "POST" })
         match_count: 8,
       });
       if (matches && matches.length > 0) {
-        ragContext = matches
-          .map((m, i) => `### Fonte ${i + 1} — [${m.source_type}] ${m.title}\n${m.content}`)
-          .join("\n\n---\n\n");
+        // Limiar de similaridade: 0.5
+        const relevant = matches.filter((m) => (m.similarity ?? 0) >= 0.5);
+        foundAny = relevant.length > 0;
+        if (foundAny) {
+          ragContext = relevant
+            .map((m, i) => `### Fonte ${i + 1} — [${m.source_type}] ${m.title}\n${m.content}`)
+            .join("\n\n---\n\n");
+          // Dedupe fontes pelo título
+          const seen = new Set<string>();
+          sources = relevant
+            .filter((m) => { if (seen.has(m.title)) return false; seen.add(m.title); return true; })
+            .slice(0, 5)
+            .map((m) => ({ title: m.title, source_type: m.source_type }));
+        }
       }
     } catch (e) {
       console.error("RAG falhou, seguindo sem contexto:", e);
     }
 
-    const augmentedSystem = `${systemPrompt}\n\n=== CONTEXTO DO SITE (use SOMENTE essas informações para responder) ===\n${ragContext || "(Nenhum conteúdo cadastrado ainda no site.)"}\n=== FIM DO CONTEXTO ===`;
+    let reply: string;
+    if (!foundAny) {
+      reply = "Não encontrei essa informação na base de conhecimento. Peça para um administrador cadastrar esse conteúdo em **Conhecimento → Base de Conhecimento IA** e tente novamente.";
+    } else {
+      const augmentedSystem = `${systemPrompt}
 
-    // 6) Chama IA
-    const reply = await chatCompletion({
-      model,
-      temperature: 0.2,
-      messages: [
-        { role: "system", content: augmentedSystem },
-        ...ordered.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
-      ],
-    });
+REGRAS RÍGIDAS:
+- Responda APENAS com base nas fontes abaixo (Base de Conhecimento da empresa).
+- Se a pergunta não puder ser respondida pelas fontes, diga exatamente: "Não encontrei essa informação na base de conhecimento."
+- Não invente informações.
+- Cite naturalmente o tipo de fonte (regra, procedimento, script…) quando útil.
+
+=== FONTES DA BASE DE CONHECIMENTO ===
+${ragContext}
+=== FIM DAS FONTES ===`;
+
+      reply = await chatCompletion({
+        model,
+        temperature: 0.2,
+        messages: [
+          { role: "system", content: augmentedSystem },
+          ...ordered.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
+        ],
+      });
+    }
+
+    // Anexa fontes ao corpo da resposta (renderizadas pelo markdown)
+    const finalContent = foundAny && sources.length > 0
+      ? `${reply}\n\n---\n**Fontes consultadas:**\n${sources.map((s) => `- *${s.source_type}* — ${s.title}`).join("\n")}`
+      : reply;
 
     // 7) Salva resposta
     const { data: assistantMsg, error: aErr } = await context.supabase
@@ -139,7 +171,7 @@ export const sendMessage = createServerFn({ method: "POST" })
       .insert({
         conversation_id: data.conversationId,
         role: "assistant",
-        content: reply,
+        content: finalContent,
       })
       .select()
       .single();
