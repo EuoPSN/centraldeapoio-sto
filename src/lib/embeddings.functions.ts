@@ -2,15 +2,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { generateEmbedding } from "./ai-gateway.server";
 
-interface SourceRow {
-  source_type: string;
-  source_id: string;
-  title: string;
-  body: string;
-  category?: string | null;
-  metadata?: Record<string, unknown>;
-}
-
 interface Chunk {
   source_type: string;
   source_id: string;
@@ -19,32 +10,14 @@ interface Chunk {
   metadata: Record<string, unknown>;
 }
 
-function chunkContent(row: SourceRow): Chunk[] {
-  const header = row.category ? `[${row.category}] ${row.title}` : row.title;
-  const text = `${header}\n\n${row.body}`.trim();
-  const max = 1500;
-  const baseMeta = row.metadata ?? {};
-  if (text.length <= max) {
-    return [{
-      source_type: row.source_type,
-      source_id: row.source_id,
-      title: row.title,
-      content: text,
-      metadata: baseMeta,
-    }];
-  }
+function chunkText(base: Chunk, max = 1200): Chunk[] {
+  if (base.content.length <= max) return [base];
   const out: Chunk[] = [];
-  let i = 0;
-  let part = 0;
-  while (i < text.length) {
-    out.push({
-      source_type: row.source_type,
-      source_id: row.source_id,
-      title: row.title,
-      content: text.slice(i, i + max),
-      metadata: { ...baseMeta, part },
-    });
-    i += max;
+  let i = 0, part = 0;
+  while (i < base.content.length) {
+    const slice = base.content.slice(i, i + max);
+    out.push({ ...base, content: slice, metadata: { ...base.metadata, part } });
+    i += max - 150; // overlap
     part += 1;
   }
   return out;
@@ -61,35 +34,67 @@ export const reindexAll = createServerFn({ method: "POST" })
     await ensureAdmin(context.supabase as never, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const [contentRes, scriptsRes, pricingRes] = await Promise.all([
+    const [keRes, msgRes, nodesRes, contentRes, scriptsRes, pricingRes] = await Promise.all([
+      supabaseAdmin.from("knowledge_entries").select("*"),
+      supabaseAdmin.from("messages").select("*"),
+      supabaseAdmin.from("flow_nodes").select("*, flow:flows(title)"),
       supabaseAdmin.from("content_items").select("*"),
       supabaseAdmin.from("scripts").select("*"),
       supabaseAdmin.from("pricing_items").select("*"),
     ]);
-    if (contentRes.error) throw new Error(contentRes.error.message);
-    if (scriptsRes.error) throw new Error(scriptsRes.error.message);
-    if (pricingRes.error) throw new Error(pricingRes.error.message);
 
     const all: Chunk[] = [];
+
+    for (const k of keRes.data ?? []) {
+      const header = `[${k.kind.toUpperCase()}] ${k.title}`;
+      const body = [k.summary, k.content, k.external_url ? `Link: ${k.external_url}` : null]
+        .filter(Boolean).join("\n\n");
+      all.push(...chunkText({
+        source_type: `knowledge:${k.kind}`,
+        source_id: k.id,
+        title: k.title,
+        content: `${header}\n\n${body}`,
+        metadata: { kind: k.kind, tags: k.tags },
+      }));
+    }
+    for (const m of msgRes.data ?? []) {
+      all.push(...chunkText({
+        source_type: "message",
+        source_id: m.id,
+        title: m.title,
+        content: `[MENSAGEM] ${m.title}\n\n${m.content}${m.internal_note ? `\n\nObs: ${m.internal_note}` : ""}`,
+        metadata: {},
+      }));
+    }
+    for (const n of nodesRes.data ?? []) {
+      const flowTitle = (n as { flow?: { title?: string } | null }).flow?.title ?? "";
+      const body = [n.title, n.message, n.note].filter(Boolean).join("\n\n");
+      if (!body.trim()) continue;
+      all.push(...chunkText({
+        source_type: `flow:${n.node_type}`,
+        source_id: n.id,
+        title: `${flowTitle} → ${n.title}`,
+        content: `[FLUXO ${flowTitle}] ${n.title}\n\n${body}`,
+        metadata: { flow_id: n.flow_id, node_type: n.node_type },
+      }));
+    }
     for (const item of contentRes.data ?? []) {
-      all.push(...chunkContent({
+      all.push(...chunkText({
         source_type: `content:${item.section}`,
         source_id: item.id,
         title: item.title,
-        category: item.category,
-        body: item.content,
-        metadata: { section: item.section, category: item.category, tags: item.tags },
+        content: `[${item.section.toUpperCase()}] ${item.title}\n\n${item.content}`,
+        metadata: { section: item.section, category: item.category },
       }));
     }
     for (const s of scriptsRes.data ?? []) {
       const body = s.usage_note ? `${s.body}\n\nOnde usar: ${s.usage_note}` : s.body;
-      all.push(...chunkContent({
+      all.push(...chunkText({
         source_type: "script",
         source_id: s.id,
         title: s.title,
-        category: s.category,
-        body,
-        metadata: { category: s.category, subcategory: s.subcategory },
+        content: `[SCRIPT - ${s.category}] ${s.title}\n\n${body}`,
+        metadata: { category: s.category },
       }));
     }
     for (const p of pricingRes.data ?? []) {
@@ -100,41 +105,33 @@ export const reindexAll = createServerFn({ method: "POST" })
         p.notes ? `Obs: ${p.notes}` : null,
       ].filter(Boolean).join("\n");
       all.push({
-        source_type: "pricing",
-        source_id: p.id,
-        title: p.specialty,
-        content: `[Tabela de Preços — ${p.category}] ${p.specialty}\n\n${lines}`,
+        source_type: "pricing", source_id: p.id, title: p.specialty,
+        content: `[PREÇOS — ${p.category}] ${p.specialty}\n\n${lines}`,
         metadata: { category: p.category },
       });
     }
 
-    // gera embeddings
     const withEmb: Array<Chunk & { embedding: number[] }> = [];
     for (const c of all) {
       const emb = await generateEmbedding(c.content);
       withEmb.push({ ...c, embedding: emb });
     }
 
-    // limpa e insere
     const { error: delErr } = await supabaseAdmin
-      .from("knowledge_chunks")
-      .delete()
-      .neq("id", "00000000-0000-0000-0000-000000000000");
+      .from("knowledge_chunks").delete().neq("id", "00000000-0000-0000-0000-000000000000");
     if (delErr) throw new Error(delErr.message);
 
-    if (withEmb.length > 0) {
-      for (let i = 0; i < withEmb.length; i += 50) {
-        const batch = withEmb.slice(i, i + 50).map((c) => ({
-          source_type: c.source_type,
-          source_id: c.source_id,
-          title: c.title,
-          content: c.content,
-          embedding: JSON.stringify(c.embedding),
-          metadata: c.metadata as never,
-        }));
-        const { error } = await supabaseAdmin.from("knowledge_chunks").insert(batch);
-        if (error) throw new Error(error.message);
-      }
+    for (let i = 0; i < withEmb.length; i += 50) {
+      const batch = withEmb.slice(i, i + 50).map((c) => ({
+        source_type: c.source_type,
+        source_id: c.source_id,
+        title: c.title,
+        content: c.content,
+        embedding: JSON.stringify(c.embedding),
+        metadata: c.metadata as never,
+      }));
+      const { error } = await supabaseAdmin.from("knowledge_chunks").insert(batch);
+      if (error) throw new Error(error.message);
     }
     return { ok: true, indexed: withEmb.length };
   });
