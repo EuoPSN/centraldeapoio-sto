@@ -557,8 +557,10 @@ function AiTab() {
       const article = name === "Assistente IA do Cartão de Todos" ? "o" : "a";
       const finalPrompt = name ? `Você é ${article} ${name}, ${prompt}` : prompt;
       return updateSettings({
-        system_prompt: finalPrompt,
-        model,
+        data: {
+          system_prompt: finalPrompt,
+          model,
+        },
       });
     },
     onSuccess: () => {
