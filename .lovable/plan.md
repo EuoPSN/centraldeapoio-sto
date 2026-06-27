@@ -1,81 +1,79 @@
-# Plano: Evolução da Central CDT
 
-Transformar a Central CDT em uma plataforma interna de treinamento, consulta e suporte, com forte autonomia administrativa (sem precisar mexer em código para mudanças do dia a dia).
+# Fase A — Atendimento + Base de Conhecimento IA
 
-A entrega será dividida em **5 fases** sequenciais. Posso executar tudo de uma vez ou parar entre fases — me avise sua preferência.
+Escopo desta rodada (Fases B e C ficam para depois).
 
----
+## 1. Banco de dados
 
-## Fase 1 — Reorganização e Base Escalável
+Novas tabelas / colunas:
 
-Antes de qualquer feature nova, refatorar a fundação:
+- `knowledge_entries` — substitui o uso atual de `content_items` para a IA. Tipos: `regra`, `procedimento`, `artigo`, `conversa_modelo`, `documento`, `treinamento`. Campos: título, conteúdo (markdown), `kind`, `category_id`, `tags[]`, `file_url`, `file_mime`, `external_url`, `metadata jsonb`, `position`, `created_by`.
+- `flow_nodes` ganha colunas para o editor visual: `position_x`, `position_y`, `color`, `icon`, `data jsonb` (campos extras).
+- `flow_edges` (nova) — arestas livres do React Flow: `flow_id`, `source_node_id`, `target_node_id`, `label`, `condition`.
+- `simulator_sessions` (nova) — histórico de simulações: `user_id`, `flow_id`, `path jsonb`, `started_at`, `finished_at`.
+- Bucket Storage `knowledge-files` (privado, leitura autenticada) para PDFs/DOCX/XLSX/vídeos/imagens.
+- RLS + GRANTs padrão em todas as novas tabelas (admin escreve, autenticado lê; sessions só do próprio user).
+- Reindexação RAG passa a varrer `knowledge_entries` (todos os tipos) + `messages` + `flow_nodes`.
 
-- **Tabelas dinâmicas de taxonomia** (`categories`, `subcategories`) — usadas por mensagens, fluxos, sugestões, etc. Admin cria/edita pela interface.
-- **Tabela `app_settings`** (singleton) — guarda nome da plataforma, logo, favicon, imagem de capa, cor primária/secundária/fundo, tema ativo.
-- **Tabela `nav_items`** — define as abas do menu (label, ícone, rota, ordem, visível, roles permitidas). A sidebar passa a ler dela em vez de hardcoded.
-- **Tabela `themes`** — presets (Claro, Escuro, Corporativo, Personalizado) com tokens de cor; o tema ativo aplica variáveis CSS em runtime.
-- Migrar `scripts` atual para o novo modelo de `messages` (mantendo dados existentes via seed/migration).
-
-## Fase 2 — Módulo Scripts (3 sub-abas)
-
-Renomeia/reestrutura `/scripts` com `Tabs`:
+## 2. Módulo Atendimento (`/scripts` reorganizado)
 
 ### 2.1 Biblioteca de Mensagens
-- CRUD completo com categoria/subcategoria dinâmicas, título, conteúdo (markdown), observação interna, botão copiar.
-- Busca por categoria, palavra-chave e título; reordenação via campo `position` (drag-and-drop simples com setas ↑↓ para começar).
+Já existe — pequenos ajustes: filtro por subcategoria, ordenação manual com setas ↑↓, busca por tag.
 
-### 2.2 Central de Fluxos (URA visual)
-- Tabelas `flows`, `flow_nodes` (id, flow_id, parent_id, tipo: pergunta/resposta/objeção/ação, título, mensagem, observações, ordem).
-- Visualização em árvore expansível/recolhível (componente customizado, sem dep pesada de fluxograma — usa cards aninhados com conectores CSS).
-- Cada nó: nome, descrição, mensagem sugerida, botão copiar, lista de "próximos caminhos".
-- Editor admin: criar fluxo, adicionar nós filhos, mover, excluir.
+### 2.2 Central de Fluxos (editor visual)
+Substitui a árvore atual por **React Flow** (`@xyflow/react`):
+- Canvas com zoom, pan, minimap, controles, fit-view.
+- 5 tipos de bloco (`step`, `question`, `objection`, `script`, `end`) com cor e ícone próprios, todos editáveis pelo admin.
+- Drag-and-drop de novos blocos a partir de uma palette lateral.
+- Conexões livres entre blocos com label opcional ("SIM", "NÃO", "Vou pensar"…).
+- Drawer lateral para editar bloco selecionado: nome, descrição, mensagem sugerida, observações internas, cor, ícone, botão copiar.
+- Persistência em `flow_nodes` + `flow_edges` (debounce no auto-save).
+- Modo "leitura" para funcionário (sem edição, mas com copiar mensagem e navegar).
 
 ### 2.3 Simulador de Atendimento
-- Tabela `scenarios` reaproveita a estrutura de `flows` (um cenário = um flow marcado como `is_training=true`).
-- UI estilo "chat guiado": apresenta a situação, mostra mensagem sugerida, oferece botões com as possíveis respostas do cliente, navega para o próximo nó.
-- Ao final, resumo do caminho percorrido.
+- Lista flows com `is_training = true` (cenários).
+- Roda como chat guiado: parte do nó `start`, mostra mensagem sugerida, oferece botões com as labels das arestas de saída, navega para o próximo nó.
+- Encerra em nó `end`; mostra resumo do caminho percorrido e grava em `simulator_sessions`.
+- Suporta nós `objection` aparecendo no meio do fluxo conforme a aresta escolhida.
 
-## Fase 3 — Painel Administrativo Expandido
+## 3. Base de Conhecimento IA (`/conhecimento` reformulada)
 
-Reorganiza `/admin` em abas:
-- **Conteúdo**: Mensagens, Fluxos, Cenários, Conhecimento, Preços, Problemas, Tutoriais.
-- **Taxonomia**: Categorias e Subcategorias.
-- **Menu**: gerenciar `nav_items` (criar, ocultar, reordenar, renomear, trocar ícone via picker do Lucide).
-- **Aparência**: editar `app_settings` (cores via color picker, upload de logo/favicon/capa para Supabase Storage, nome da plataforma, seleção de tema).
-- **Usuários**, **IA**, **Sugestões** (ver Fase 5).
+Nova UI com 6 abas (uma por tipo): **Regras / Procedimentos / Artigos / Conversas Modelo / Documentos / Treinamentos**.
 
-## Fase 4 — Personalização Visual em Runtime
+- Listagem com busca, filtro por categoria/tag e ordenação.
+- Editor (admin): título, categoria, tags, conteúdo markdown, upload de arquivo (quando aplicável), link externo, observações.
+- Para "Documentos" e "Treinamentos": upload via Lovable Storage (PDF/DOCX/XLSX, imagens, vídeos); player de vídeo embutido e visualizador de PDF (iframe).
+- "Conversas Modelo" tem editor estruturado: turnos Atendente/Cliente + resultado final.
+- Botão "Reindexar IA" no admin reprocessa todos os tipos e gera embeddings.
 
-- Componente `<ThemeProvider>` no `__root.tsx` lê `app_settings` e injeta CSS variables (`--primary`, `--secondary`, `--background`) sobrescrevendo os defaults de `styles.css`.
-- `AppLogo` e `<head>` (favicon, title) passam a ler de `app_settings`.
-- Bucket `branding` no Storage para logo/favicon/capa, com policies (admin escreve, todos leem).
+## 4. Chat IA (RAG aprimorado)
 
-## Fase 5 — Central de Sugestões
+- Mantém a interface atual; mensagem de sistema reforça que deve responder **apenas** com base no que está na Base de Conhecimento.
+- Quando nenhum chunk relevante (similaridade < limiar): responde `"Não encontrei essa informação na base de conhecimento."`.
+- Mostra fontes consultadas (título + tipo) abaixo da resposta.
 
-- Tabela `suggestions` (user_id, categoria, descrição, status: pendente/em_análise/implementado/rejeitado, created_at).
-- Rota `/sugestoes` — funcionário envia e vê o histórico das próprias.
-- Aba "Sugestões" no admin — lista todas, altera status, filtra por categoria/status.
+## 5. Painel Admin
 
----
+Novas abas em `/admin`:
+- **Base de Conhecimento** (com sub-abas por tipo).
+- **Fluxos** (lista; editor abre em modal/rota dedicada).
+- **Cenários do Simulador** (toggle `is_training` nos fluxos).
+- Aba **Reindexação** já existe — expande para mostrar contagem por tipo.
 
-## Detalhes técnicos
+## 6. Detalhes técnicos
 
-- **Banco**: ~10 novas tabelas, todas com RLS + GRANTs apropriados. `has_role('admin')` controla escrita em conteúdo e configurações; funcionários têm leitura.
-- **Roteamento**: `/scripts` vira layout com `Outlet` + 3 rotas filhas (`mensagens`, `fluxos`, `simulador`).
-- **Sidebar**: passa a renderizar dinamicamente a partir de `nav_items` (com fallback para os itens atuais até o seed rodar).
-- **Drag-and-drop**: começo com botões ↑↓ por simplicidade; posso adicionar `@dnd-kit` depois se quiser.
-- **Tema runtime**: variáveis CSS aplicadas via `<style>` injetado, sem rebuild.
-- **RAG existente**: continua funcionando — adiciono `messages` e `flow_nodes` como novas `source_type` na indexação.
-- **Migração de dados**: script que copia `scripts` → `messages` preservando categorias.
+- Lib nova: `@xyflow/react` (React Flow v12). Tema customizado para casar com o design system.
+- Upload: `supabase--storage_create_bucket` para `knowledge-files`; server fn assinada para gerar signed URLs.
+- Migrações via `supabase--migration` com GRANTs e RLS.
+- RAG reindex passa a quebrar conteúdo de `knowledge_entries.content` em chunks de ~800 chars com overlap, e indexar também `messages.content` e `flow_nodes.message`.
+- Para DOCX/XLSX/PDF: o conteúdo bruto continua sendo o que o admin colar no campo `content` (não vamos extrair texto do binário nesta fase — fica para Fase B se você quiser).
 
----
+## Fora do escopo desta rodada
 
-## Escopo do que NÃO faço nesta entrega (a confirmar depois)
+- Histórico/versionamento de edições.
+- Extração automática de texto de PDF/DOCX/XLSX para a IA (admin cola o texto por enquanto).
+- Mapa Mental gigante separado (o editor de fluxos já cobre o caso de uso).
+- Avatar/voz da MarcIAna e gamificação completa (Fase B).
+- Conexão Google Sheets / CRM Gerencial (Fase C).
 
-- Editor visual estilo node-graph arrastável (react-flow) para os fluxos — começo com árvore aninhada, que é mais leve e suficiente para a operação.
-- Versionamento/histórico de edições de conteúdo.
-- Aprovação em duas etapas para sugestões.
-
----
-
-Posso começar pela **Fase 1 + Fase 2** (base + módulo Scripts completo) em uma rodada e depois seguir para Admin/Aparência/Sugestões na próxima? Ou prefere que eu execute tudo de ponta a ponta agora?
+Confirma que posso seguir nessa direção?

@@ -252,40 +252,113 @@ export type Database = {
         }
         Relationships: []
       }
-      flow_nodes: {
+      flow_edges: {
         Row: {
+          condition: string | null
           created_at: string
           flow_id: string
+          id: string
+          label: string | null
+          source_handle: string | null
+          source_node_id: string
+          target_handle: string | null
+          target_node_id: string
+        }
+        Insert: {
+          condition?: string | null
+          created_at?: string
+          flow_id: string
+          id?: string
+          label?: string | null
+          source_handle?: string | null
+          source_node_id: string
+          target_handle?: string | null
+          target_node_id: string
+        }
+        Update: {
+          condition?: string | null
+          created_at?: string
+          flow_id?: string
+          id?: string
+          label?: string | null
+          source_handle?: string | null
+          source_node_id?: string
+          target_handle?: string | null
+          target_node_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flow_edges_flow_id_fkey"
+            columns: ["flow_id"]
+            isOneToOne: false
+            referencedRelation: "flows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flow_edges_source_node_id_fkey"
+            columns: ["source_node_id"]
+            isOneToOne: false
+            referencedRelation: "flow_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flow_edges_target_node_id_fkey"
+            columns: ["target_node_id"]
+            isOneToOne: false
+            referencedRelation: "flow_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flow_nodes: {
+        Row: {
+          color: string | null
+          created_at: string
+          data: Json
+          flow_id: string
+          icon: string | null
           id: string
           message: string | null
           node_type: string
           note: string | null
           parent_id: string | null
           position: number
+          position_x: number
+          position_y: number
           title: string
           updated_at: string
         }
         Insert: {
+          color?: string | null
           created_at?: string
+          data?: Json
           flow_id: string
+          icon?: string | null
           id?: string
           message?: string | null
           node_type?: string
           note?: string | null
           parent_id?: string | null
           position?: number
+          position_x?: number
+          position_y?: number
           title: string
           updated_at?: string
         }
         Update: {
+          color?: string | null
           created_at?: string
+          data?: Json
           flow_id?: string
+          icon?: string | null
           id?: string
           message?: string | null
           node_type?: string
           note?: string | null
           parent_id?: string | null
           position?: number
+          position_x?: number
+          position_y?: number
           title?: string
           updated_at?: string
         }
@@ -382,6 +455,71 @@ export type Database = {
           title?: string
         }
         Relationships: []
+      }
+      knowledge_entries: {
+        Row: {
+          category_id: string | null
+          content: string
+          created_at: string
+          created_by: string | null
+          external_url: string | null
+          file_mime: string | null
+          file_name: string | null
+          file_url: string | null
+          id: string
+          kind: string
+          metadata: Json
+          position: number
+          summary: string | null
+          tags: string[]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          external_url?: string | null
+          file_mime?: string | null
+          file_name?: string | null
+          file_url?: string | null
+          id?: string
+          kind: string
+          metadata?: Json
+          position?: number
+          summary?: string | null
+          tags?: string[]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          external_url?: string | null
+          file_mime?: string | null
+          file_name?: string | null
+          file_url?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          position?: number
+          summary?: string | null
+          tags?: string[]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_entries_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       messages: {
         Row: {
@@ -580,6 +718,41 @@ export type Database = {
           usage_note?: string | null
         }
         Relationships: []
+      }
+      simulator_sessions: {
+        Row: {
+          finished_at: string | null
+          flow_id: string
+          id: string
+          path: Json
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          finished_at?: string | null
+          flow_id: string
+          id?: string
+          path?: Json
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          finished_at?: string | null
+          flow_id?: string
+          id?: string
+          path?: Json
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulator_sessions_flow_id_fkey"
+            columns: ["flow_id"]
+            isOneToOne: false
+            referencedRelation: "flows"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       suggestions: {
         Row: {
