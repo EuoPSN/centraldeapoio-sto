@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   listContent, upsertContent, deleteContent,
@@ -14,6 +14,7 @@ import {
 } from "@/lib/users.functions";
 import { reindexAll, getIndexStats } from "@/lib/embeddings.functions";
 import { seedInitialData } from "@/lib/seed.functions";
+import { getAiSettings, updateAiSettings } from "@/lib/chat.functions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -501,16 +502,72 @@ function PricingTab() {
 }
 
 // ============ AI / Indexing ============
+const parseSystemPrompt = (fullPrompt: string | undefined) => {
+  if (!fullPrompt) return { article: "a", name: "", body: "" };
+  const match = fullPrompt.match(/^Você é ([ao])\s+([^,]+),\s*(.*)$/s);
+  if (match) {
+    return {
+      article: match[1],
+      name: match[2].trim(),
+      body: match[3].trim(),
+    };
+  }
+  return { article: "a", name: "", body: fullPrompt };
+};
+
 function AiTab() {
   const reindex = useServerFn(reindexAll);
   const stats = useServerFn(getIndexStats);
+  const getSettings = useServerFn(getAiSettings);
+  const updateSettings = useServerFn(updateAiSettings);
+
   const qc = useQueryClient();
   const sQ = useQuery({ queryKey: ["index-stats"], queryFn: () => stats({}) });
+
+  const sSettings = useQuery({
+    queryKey: ["ai-settings"],
+    queryFn: () => getSettings({}),
+  });
+
+  const [name, setName] = useState("");
+  const [prompt, setPrompt] = useState("");
+  const [model, setModel] = useState("google/gemini-3-flash-preview");
+  const [genderArticle, setGenderArticle] = useState("a");
+
+  useEffect(() => {
+    if (sSettings.data) {
+      const parsed = parseSystemPrompt(sSettings.data.system_prompt);
+      setGenderArticle(parsed.article);
+      setName(parsed.name);
+      setPrompt(parsed.body);
+      if (sSettings.data.model) {
+        setModel(sSettings.data.model);
+      }
+    }
+  }, [sSettings.data]);
 
   const mut = useMutation({
     mutationFn: () => reindex({}),
     onSuccess: (r) => { toast.success(`Reindexação concluída: ${r.indexed} chunks.`); qc.invalidateQueries({ queryKey: ["index-stats"] }); },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
+  });
+
+  const saveSettingsMut = useMutation({
+    mutationFn: () => {
+      const article = name === "Assistente IA do Cartão de Todos" ? "o" : "a";
+      const finalPrompt = name ? `Você é ${article} ${name}, ${prompt}` : prompt;
+      return updateSettings({
+        data: {
+          system_prompt: finalPrompt,
+          model,
+        },
+      });
+    },
+    onSuccess: () => {
+      toast.success("Configurações salvas.");
+      qc.invalidateQueries({ queryKey: ["ai-settings"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao salvar configurações"),
   });
 
   return (
@@ -536,6 +593,69 @@ function AiTab() {
         <p className="text-sm text-muted-foreground mt-1">
           O assistente usa <code className="text-xs bg-muted px-1 py-0.5 rounded">google/gemini-2.5-flash</code> via Lovable AI Gateway, com busca semântica (RAG) na base interna. Embeddings em 1536 dimensões compatíveis com <code className="text-xs bg-muted px-1 py-0.5 rounded">text-embedding-3-small</code>.
         </p>
+      </Card>
+
+      <Card className="p-5 space-y-4">
+        <div>
+          <h3 className="font-semibold flex items-center gap-2">
+            <Settings className="h-4 w-4 text-primary" /> Configurações de Prompt & IA
+          </h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            Personalize o nome da assistente, o modelo de linguagem e as diretrizes principais do system prompt.
+          </p>
+        </div>
+
+        {sSettings.isLoading ? (
+          <p className="text-sm text-muted-foreground">Carregando configurações...</p>
+        ) : (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="assistant-name">Nome da assistente</Label>
+                <Input
+                  id="assistant-name"
+                  placeholder="Ex: Sofia"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ai-model">Modelo</Label>
+                <Select value={model} onValueChange={setModel}>
+                  <SelectTrigger id="ai-model">
+                    <SelectValue placeholder="Selecione o modelo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="google/gemini-2.5-flash">google/gemini-2.5-flash</SelectItem>
+                    <SelectItem value="google/gemini-3-flash-preview">google/gemini-3-flash-preview</SelectItem>
+                    <SelectItem value="openai/gpt-4o-mini">openai/gpt-4o-mini</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="system-prompt">System Prompt</Label>
+              <Textarea
+                id="system-prompt"
+                rows={10}
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Escreva as instruções de comportamento do sistema da IA..."
+              />
+            </div>
+
+            <div className="flex justify-end">
+              <Button
+                onClick={() => saveSettingsMut.mutate()}
+                disabled={saveSettingsMut.isPending}
+              >
+                {saveSettingsMut.isPending ? "Salvando..." : "Salvar configurações"}
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
     </div>
   );
