@@ -56,7 +56,7 @@ export const upsertKnowledge = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => KEInput.parse(d))
   .handler(async ({ data, context }) => {
     await admin(context);
-    const row = { ...data, created_by: context.userId };
+    const row = { ...data, created_by: context.userId } as never;
     const { data: r, error } = data.id
       ? await context.supabase.from("knowledge_entries").update(row).eq("id", data.id).select().single()
       : await context.supabase.from("knowledge_entries").insert(row).select().single();

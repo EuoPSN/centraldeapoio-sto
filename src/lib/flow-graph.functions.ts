@@ -77,7 +77,7 @@ export const saveFlowGraph = createServerFn({ method: "POST" })
         icon: n.icon ?? null,
         data: n.data ?? {},
       }));
-      const { error } = await context.supabase.from("flow_nodes").insert(nodeRows);
+      const { error } = await context.supabase.from("flow_nodes").insert(nodeRows as never);
       if (error) throw new Error(error.message);
     }
     if (data.edges.length > 0) {
