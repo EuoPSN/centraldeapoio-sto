@@ -32,6 +32,7 @@ import { TaxonomyTab } from "@/components/admin/TaxonomyTab";
 import { SuggestionsTab } from "@/components/admin/SuggestionsTab";
 import { MenuTab } from "@/components/admin/MenuTab";
 import { AppearanceTab } from "@/components/admin/AppearanceTab";
+import { KnowledgeTab } from "@/components/admin/KnowledgeTab";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   beforeLoad: async () => {
@@ -62,11 +63,12 @@ function AdminPage() {
         <TabsList className="flex-wrap h-auto justify-start">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="users">Usuários</TabsTrigger>
+          <TabsTrigger value="knowledge">Base IA</TabsTrigger>
           <TabsTrigger value="messages">Mensagens</TabsTrigger>
           <TabsTrigger value="flows">Fluxos</TabsTrigger>
           <TabsTrigger value="taxonomy">Categorias</TabsTrigger>
           <TabsTrigger value="scripts">Scripts (legado)</TabsTrigger>
-          <TabsTrigger value="content">Conteúdo</TabsTrigger>
+          <TabsTrigger value="content">Conteúdo (legado)</TabsTrigger>
           <TabsTrigger value="pricing">Preços</TabsTrigger>
           <TabsTrigger value="suggestions">Sugestões</TabsTrigger>
           <TabsTrigger value="menu">Menu</TabsTrigger>
@@ -76,6 +78,7 @@ function AdminPage() {
 
         <TabsContent value="overview" className="mt-6"><OverviewTab /></TabsContent>
         <TabsContent value="users" className="mt-6"><UsersTab /></TabsContent>
+        <TabsContent value="knowledge" className="mt-6"><KnowledgeTab /></TabsContent>
         <TabsContent value="messages" className="mt-6"><MessagesTab /></TabsContent>
         <TabsContent value="flows" className="mt-6"><FlowsTab /></TabsContent>
         <TabsContent value="taxonomy" className="mt-6"><TaxonomyTab /></TabsContent>
