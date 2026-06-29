@@ -547,8 +547,15 @@ function AiTab() {
   }, [sSettings.data]);
 
   const mut = useMutation({
-    mutationFn: () => reindex({}),
-    onSuccess: (r) => { toast.success(`Reindexação concluída: ${r.indexed} chunks.`); qc.invalidateQueries({ queryKey: ["index-stats"] }); },
+    mutationFn: () => reindex({ data: { reset: true } }),
+    onSuccess: (r) => {
+      if (r.ok) {
+        toast.success(`Reindexação concluída: ${r.indexed} novos chunks. ${r.skipped} já estavam atualizados.`);
+      } else {
+        toast.warning(`${r.indexed} chunks indexados. Limite temporário da IA atingido; tente novamente em alguns minutos para continuar.`);
+      }
+      qc.invalidateQueries({ queryKey: ["index-stats"] });
+    },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
   });
 
