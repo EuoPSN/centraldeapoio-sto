@@ -196,6 +196,11 @@ ${ragContext}
 export const getAiSettings = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (!isAdmin) throw new Error("Apenas administradores podem ver as configurações da IA.");
     const { data, error } = await context.supabase
       .from("ai_settings")
       .select("*")
