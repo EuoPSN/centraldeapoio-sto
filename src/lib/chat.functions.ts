@@ -95,8 +95,9 @@ export const sendMessage = createServerFn({ method: "POST" })
       .limit(12);
     const ordered = (history ?? []).slice().reverse();
 
-    // 4) Carrega prompt-base
-    const { data: settings } = await context.supabase
+    // 4) Carrega prompt-base (admin-only table; uso de service role no servidor)
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: settings } = await supabaseAdmin
       .from("ai_settings")
       .select("system_prompt,model")
       .eq("id", 1)
@@ -104,13 +105,13 @@ export const sendMessage = createServerFn({ method: "POST" })
     const systemPrompt = settings?.system_prompt ?? "Você é um assistente do Cartão de Todos.";
     const model = settings?.model ?? "google/gemini-3-flash-preview";
 
-    // 5) RAG: embedding da pergunta + match_knowledge
+    // 5) RAG: embedding da pergunta + match_knowledge (função SECURITY DEFINER restrita a service role)
     let ragContext = "";
     let sources: Array<{ title: string; source_type: string }> = [];
     let foundAny = false;
     try {
       const queryEmb = await generateEmbedding(data.message);
-      const { data: matches } = await context.supabase.rpc("match_knowledge", {
+      const { data: matches } = await supabaseAdmin.rpc("match_knowledge", {
         query_embedding: queryEmb as unknown as string,
         match_count: 8,
       });
