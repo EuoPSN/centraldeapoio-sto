@@ -48,25 +48,38 @@ export async function chatCompletion(opts: {
 
 export async function generateEmbedding(text: string): Promise<number[]> {
   const key = requireKey();
-  const res = await fetch(`${GATEWAY_BASE}/embeddings`, {
-    method: "POST",
-    headers: {
-      "Lovable-API-Key": key,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "openai/text-embedding-3-small",
-      input: text,
-      dimensions: 1536,
-    }),
-  });
+  const maxAttempts = 5;
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const res = await fetch(`${GATEWAY_BASE}/embeddings`, {
+      method: "POST",
+      headers: {
+        "Lovable-API-Key": key,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "openai/text-embedding-3-small",
+        input: text,
+        dimensions: 1536,
+      }),
+    });
 
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Falha ao gerar embedding (${res.status}): ${body.slice(0, 200)}`);
+    if (res.status === 429 || res.status >= 500) {
+      const wait = Math.min(30000, 2000 * Math.pow(2, attempt - 1)) + Math.random() * 500;
+      lastErr = new Error(`Embedding ${res.status}`);
+      await new Promise((r) => setTimeout(r, wait));
+      continue;
+    }
+
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Falha ao gerar embedding (${res.status}): ${body.slice(0, 200)}`);
+    }
+    const json = (await res.json()) as { data?: Array<{ embedding: number[] }> };
+    const emb = json.data?.[0]?.embedding;
+    if (!emb) throw new Error("Resposta de embedding sem vetor");
+    return emb;
   }
-  const json = (await res.json()) as { data?: Array<{ embedding: number[] }> };
-  const emb = json.data?.[0]?.embedding;
-  if (!emb) throw new Error("Resposta de embedding sem vetor");
-  return emb;
+  throw new Error(`Falha ao gerar embedding após ${maxAttempts} tentativas (rate limit). ${lastErr instanceof Error ? lastErr.message : ""}`);
 }
+
