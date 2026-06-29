@@ -133,9 +133,12 @@ function Page() {
                 <div className="h-14 w-14 mx-auto rounded-2xl bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center mb-4">
                   <Bot className="h-7 w-7 text-primary-foreground" />
                 </div>
-                <h2 className="text-2xl font-bold">Assistente CDT</h2>
+                <h2 className="text-2xl font-bold">MarcIAna</h2>
                 <p className="text-muted-foreground mt-2">
-                  Pergunte sobre scripts, preços, procedimentos ou qualquer dúvida do atendimento. Eu consulto a base de conhecimento interna.
+                  Sua assistente especializada em atendimento Cartão de Todos. Pergunte à vontade.
+                </p>
+                <p className="text-muted-foreground mt-4 text-sm font-medium">
+                  Olá! Sou a MarcIAna, sua assistente de atendimento. Como posso te ajudar hoje?
                 </p>
                 <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2 text-left">
                   {[
@@ -175,7 +178,7 @@ function Page() {
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onSend(); }
               }}
-              placeholder="Pergunte ao assistente..."
+              placeholder="Pergunte para a MarcIAna..."
               className="min-h-[52px] max-h-40 resize-none"
               disabled={sendMut.isPending}
             />
@@ -197,6 +200,7 @@ function MessageBubble({ role, content }: { role: "user" | "assistant" | "system
   const isUser = role === "user";
   return (
     <div className={cn("flex gap-3", isUser && "flex-row-reverse")}>
+      {!isUser && <span className="text-[11px] text-muted-foreground self-center">MarcIAna</span>}
       <div className={cn("h-8 w-8 rounded-full flex items-center justify-center shrink-0", isUser ? "bg-secondary" : "bg-gradient-to-br from-primary to-primary-glow")}>
         {isUser ? <User className="h-4 w-4 text-secondary-foreground" /> : <Bot className="h-4 w-4 text-primary-foreground" />}
       </div>
