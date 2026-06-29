@@ -65,6 +65,118 @@ const SendInput = z.object({
   message: z.string().min(1).max(4000),
 });
 
+type RagMatch = {
+  id: string;
+  source_type: string;
+  source_id: string;
+  title: string;
+  content: string;
+  metadata: Record<string, unknown> | null;
+  similarity?: number | null;
+  lexicalScore?: number;
+};
+
+const STOP_WORDS = new Set([
+  "a", "ao", "aos", "as", "com", "como", "da", "das", "de", "do", "dos", "e", "em", "eu", "me", "na", "nas", "no", "nos",
+  "o", "os", "ou", "para", "por", "que", "quais", "qual", "quando", "quanto", "sao", "são", "se", "um", "uma", "uns", "umas",
+  "preciso", "necessario", "necessarios", "necessária", "necessárias", "necessário", "necessários", "precisa", "precisam",
+]);
+
+function normalizeSearchText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function getSearchTerms(question: string) {
+  const normalized = normalizeSearchText(question);
+  const terms = normalized
+    .split(/[^a-z0-9]+/i)
+    .map((term) => term.trim())
+    .filter((term) => term.length >= 3 && !STOP_WORDS.has(term));
+
+  const expanded = new Set(terms);
+  const add = (...items: string[]) => items.forEach((item) => expanded.add(item));
+
+  if (terms.some((term) => ["documento", "documentos", "doc"].includes(term))) {
+    add("documento", "documentos", "cadastro", "cpf", "nascimento", "endereco", "email");
+  }
+  if (terms.some((term) => ["cadastro", "cadastrar", "adesao", "filiacao", "filiação"].includes(term))) {
+    add("cadastro", "cadastrar", "adesao", "filiacao", "documentos", "cpf", "email", "cep");
+  }
+
+  return Array.from(expanded).slice(0, 10);
+}
+
+function scoreLexicalMatch(match: RagMatch, terms: string[]) {
+  const title = normalizeSearchText(match.title ?? "");
+  const content = normalizeSearchText(match.content ?? "");
+  return terms.reduce((score, term) => {
+    const singular = term.endsWith("s") ? term.slice(0, -1) : term;
+    const variants = Array.from(new Set([term, singular].filter((v) => v.length >= 3)));
+    const termScore = variants.reduce((subtotal, variant) => {
+      let next = subtotal;
+      if (title.includes(variant)) next += 4;
+      if (content.includes(variant)) next += 1;
+      return next;
+    }, 0);
+    return score + Math.min(termScore, 5);
+  }, 0);
+}
+
+async function fetchLexicalMatches(supabaseAdmin: { from: (table: string) => any }, question: string): Promise<RagMatch[]> {
+  const terms = getSearchTerms(question);
+  if (terms.length === 0) return [];
+
+  const escapedTerms = terms
+    .map((term) => term.replace(/[,%]/g, ""))
+    .filter((term) => term.length >= 3);
+  if (escapedTerms.length === 0) return [];
+
+  const orFilter = escapedTerms
+    .flatMap((term) => [`title.ilike.%${term}%`, `content.ilike.%${term}%`])
+    .join(",");
+
+  const { data, error } = await supabaseAdmin
+    .from("knowledge_chunks")
+    .select("id,source_type,source_id,title,content,metadata")
+    .or(orFilter)
+    .limit(20);
+
+  if (error) {
+    console.error("Busca lexical na base falhou:", error);
+    return [];
+  }
+
+  return ((data ?? []) as RagMatch[])
+    .map((match) => ({ ...match, lexicalScore: scoreLexicalMatch(match, terms) }))
+    .filter((match) => (match.lexicalScore ?? 0) >= 2)
+    .sort((a, b) => (b.lexicalScore ?? 0) - (a.lexicalScore ?? 0))
+    .slice(0, 8);
+}
+
+function combineRagMatches(vectorMatches: RagMatch[], lexicalMatches: RagMatch[]) {
+  const byId = new Map<string, RagMatch>();
+  for (const match of [...lexicalMatches, ...vectorMatches]) {
+    const current = byId.get(match.id);
+    if (!current) {
+      byId.set(match.id, match);
+      continue;
+    }
+    byId.set(match.id, {
+      ...current,
+      ...match,
+      similarity: Math.max(current.similarity ?? 0, match.similarity ?? 0),
+      lexicalScore: Math.max(current.lexicalScore ?? 0, match.lexicalScore ?? 0),
+    });
+  }
+
+  return Array.from(byId.values())
+    .sort((a, b) => ((b.lexicalScore ?? 0) + (b.similarity ?? 0) * 10) - ((a.lexicalScore ?? 0) + (a.similarity ?? 0) * 10))
+    .slice(0, 8);
+}
+
 export const sendMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => SendInput.parse(d))
@@ -105,11 +217,15 @@ export const sendMessage = createServerFn({ method: "POST" })
     const systemPrompt = settings?.system_prompt ?? "Você é um assistente do Cartão de Todos.";
     const model = settings?.model ?? "google/gemini-3-flash-preview";
 
-    // 5) RAG: embedding da pergunta + match_knowledge (função SECURITY DEFINER restrita a service role)
+    // 5) RAG híbrido: busca textual primeiro (não consome IA) + embedding semântico como complemento.
     let ragContext = "";
     let sources: Array<{ title: string; source_type: string }> = [];
     let foundAny = false;
     let topSimilarity = 0;
+    let retrievalMode = "sem resultados";
+    const lexicalMatches = await fetchLexicalMatches(supabaseAdmin, data.message);
+    let vectorMatches: RagMatch[] = [];
+
     try {
       const queryEmb = await generateEmbedding(data.message);
       const { data: matches } = await supabaseAdmin.rpc("match_knowledge", {
@@ -117,25 +233,35 @@ export const sendMessage = createServerFn({ method: "POST" })
         match_count: 8,
       });
       if (matches && matches.length > 0) {
-        // Limiar baixo (0.25): text-embedding-3-small costuma devolver cosseno
-        // 0.3–0.45 para paráfrases em PT-BR. Deixamos o LLM decidir relevância
-        // a partir do contexto e só caímos no fallback se NADA passar do piso.
         topSimilarity = matches[0]?.similarity ?? 0;
-        const relevant = matches.filter((m) => (m.similarity ?? 0) >= 0.25);
-        foundAny = relevant.length > 0;
-        if (foundAny) {
-          ragContext = relevant
-            .map((m, i) => `### Fonte ${i + 1} (similaridade ${(m.similarity ?? 0).toFixed(2)}) — [${m.source_type}] ${m.title}\n${m.content}`)
-            .join("\n\n---\n\n");
-          const seen = new Set<string>();
-          sources = relevant
-            .filter((m) => { if (seen.has(m.title)) return false; seen.add(m.title); return true; })
-            .slice(0, 5)
-            .map((m) => ({ title: m.title, source_type: m.source_type }));
-        }
+        vectorMatches = (matches as RagMatch[]).filter((m) => (m.similarity ?? 0) >= 0.2);
       }
     } catch (e) {
-      console.error("RAG falhou, seguindo sem contexto:", e);
+      console.error("Busca semântica por embedding falhou; usando fallback textual:", e);
+    }
+
+    const relevant = combineRagMatches(vectorMatches, lexicalMatches);
+    foundAny = relevant.length > 0;
+    if (foundAny) {
+      retrievalMode = lexicalMatches.length > 0 && vectorMatches.length > 0
+        ? "busca textual + semântica"
+        : lexicalMatches.length > 0
+          ? "busca textual"
+          : "busca semântica";
+      ragContext = relevant
+        .map((m, i) => {
+          const signals = [
+            m.similarity != null ? `similaridade ${(m.similarity ?? 0).toFixed(2)}` : null,
+            m.lexicalScore != null ? `texto ${m.lexicalScore}` : null,
+          ].filter(Boolean).join("; ");
+          return `### Fonte ${i + 1}${signals ? ` (${signals})` : ""} — [${m.source_type}] ${m.title}\n${m.content}`;
+        })
+        .join("\n\n---\n\n");
+      const seen = new Set<string>();
+      sources = relevant
+        .filter((m) => { if (seen.has(m.title)) return false; seen.add(m.title); return true; })
+        .slice(0, 5)
+        .map((m) => ({ title: m.title, source_type: m.source_type }));
     }
 
     let reply: string;
@@ -151,7 +277,7 @@ REGRAS:
 - Não invente fatos, valores ou políticas que não estejam nas fontes.
 - Cite naturalmente o tipo de fonte (mensagem, script, procedimento…) quando útil.
 
-=== FONTES DA BASE DE CONHECIMENTO (top ${sources.length}, melhor similaridade ${topSimilarity.toFixed(2)}) ===
+=== FONTES DA BASE DE CONHECIMENTO (top ${sources.length}, modo: ${retrievalMode}, melhor similaridade ${topSimilarity.toFixed(2)}) ===
 ${ragContext}
 === FIM DAS FONTES ===`;
 
