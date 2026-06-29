@@ -606,7 +606,7 @@ function AiTab() {
       <Card className="p-5">
         <h3 className="font-semibold flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> Modelo da IA</h3>
         <p className="text-sm text-muted-foreground mt-1">
-          O assistente usa <code className="text-xs bg-muted px-1 py-0.5 rounded">google/gemini-2.5-flash</code> via Lovable AI Gateway, com busca semântica (RAG) na base interna. Embeddings em 1536 dimensões compatíveis com <code className="text-xs bg-muted px-1 py-0.5 rounded">text-embedding-3-small</code>.
+          O assistente usa <code className="text-xs bg-muted px-1 py-0.5 rounded">google/gemini-3-flash-preview</code> via Lovable AI Gateway, com busca híbrida na base interna. Embeddings em 1536 dimensões compatíveis com <code className="text-xs bg-muted px-1 py-0.5 rounded">text-embedding-3-small</code>.
         </p>
       </Card>
 
@@ -642,9 +642,7 @@ function AiTab() {
                     <SelectValue placeholder="Selecione o modelo" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="google/gemini-2.5-flash">google/gemini-2.5-flash</SelectItem>
                     <SelectItem value="google/gemini-3-flash-preview">google/gemini-3-flash-preview</SelectItem>
-                    <SelectItem value="openai/gpt-4o-mini">openai/gpt-4o-mini</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
