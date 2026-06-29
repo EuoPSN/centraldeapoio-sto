@@ -589,11 +589,16 @@ function AiTab() {
             <p className="text-sm text-muted-foreground mt-1">
               Reindexa scripts, conhecimento, problemas, tutoriais e preços gerando embeddings semânticos. Execute após adicionar ou alterar conteúdo.
             </p>
+            {resumeReindex ? (
+              <p className="text-sm text-amber-600 mt-2">
+                Reindexação pausada por limite temporário da IA. Aguarde alguns minutos e clique novamente para continuar sem apagar o progresso.
+              </p>
+            ) : null}
             <p className="text-sm mt-2">Total atual: <strong className="text-primary">{sQ.data?.totalChunks ?? 0}</strong> chunks indexados.</p>
           </div>
           <Button onClick={() => mut.mutate()} disabled={mut.isPending} className="gap-2">
             <RefreshCw className={`h-4 w-4 ${mut.isPending ? "animate-spin" : ""}`} />
-            {mut.isPending ? "Reindexando..." : "Reindexar tudo"}
+            {mut.isPending ? "Reindexando..." : resumeReindex ? "Continuar reindexação" : "Reindexar tudo"}
           </Button>
         </div>
       </Card>
