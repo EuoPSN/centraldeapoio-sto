@@ -109,6 +109,7 @@ export const sendMessage = createServerFn({ method: "POST" })
     let ragContext = "";
     let sources: Array<{ title: string; source_type: string }> = [];
     let foundAny = false;
+    let topSimilarity = 0;
     try {
       const queryEmb = await generateEmbedding(data.message);
       const { data: matches } = await supabaseAdmin.rpc("match_knowledge", {
@@ -116,14 +117,16 @@ export const sendMessage = createServerFn({ method: "POST" })
         match_count: 8,
       });
       if (matches && matches.length > 0) {
-        // Limiar de similaridade: 0.5
-        const relevant = matches.filter((m) => (m.similarity ?? 0) >= 0.5);
+        // Limiar baixo (0.25): text-embedding-3-small costuma devolver cosseno
+        // 0.3–0.45 para paráfrases em PT-BR. Deixamos o LLM decidir relevância
+        // a partir do contexto e só caímos no fallback se NADA passar do piso.
+        topSimilarity = matches[0]?.similarity ?? 0;
+        const relevant = matches.filter((m) => (m.similarity ?? 0) >= 0.25);
         foundAny = relevant.length > 0;
         if (foundAny) {
           ragContext = relevant
-            .map((m, i) => `### Fonte ${i + 1} — [${m.source_type}] ${m.title}\n${m.content}`)
+            .map((m, i) => `### Fonte ${i + 1} (similaridade ${(m.similarity ?? 0).toFixed(2)}) — [${m.source_type}] ${m.title}\n${m.content}`)
             .join("\n\n---\n\n");
-          // Dedupe fontes pelo título
           const seen = new Set<string>();
           sources = relevant
             .filter((m) => { if (seen.has(m.title)) return false; seen.add(m.title); return true; })
@@ -141,13 +144,14 @@ export const sendMessage = createServerFn({ method: "POST" })
     } else {
       const augmentedSystem = `${systemPrompt}
 
-REGRAS RÍGIDAS:
-- Responda APENAS com base nas fontes abaixo (Base de Conhecimento da empresa).
-- Se a pergunta não puder ser respondida pelas fontes, diga exatamente: "Não encontrei essa informação na base de conhecimento."
-- Não invente informações.
-- Cite naturalmente o tipo de fonte (regra, procedimento, script…) quando útil.
+REGRAS:
+- Use as fontes abaixo (Base de Conhecimento da empresa) como sua fonte primária.
+- Se as fontes responderem parcialmente, responda com o que houver e indique de forma breve o que faltou.
+- Se NENHUMA fonte tiver relação com a pergunta, diga exatamente: "Não encontrei essa informação na base de conhecimento."
+- Não invente fatos, valores ou políticas que não estejam nas fontes.
+- Cite naturalmente o tipo de fonte (mensagem, script, procedimento…) quando útil.
 
-=== FONTES DA BASE DE CONHECIMENTO ===
+=== FONTES DA BASE DE CONHECIMENTO (top ${sources.length}, melhor similaridade ${topSimilarity.toFixed(2)}) ===
 ${ragContext}
 === FIM DAS FONTES ===`;
 
