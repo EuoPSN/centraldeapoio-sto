@@ -115,6 +115,7 @@ export const reindexAll = createServerFn({ method: "POST" })
     for (const c of all) {
       const emb = await generateEmbedding(c.content);
       withEmb.push({ ...c, embedding: emb });
+      await new Promise((resolve) => setTimeout(resolve, 500));
     }
 
     const { error: delErr } = await supabaseAdmin
