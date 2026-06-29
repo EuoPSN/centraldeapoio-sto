@@ -144,13 +144,14 @@ export const sendMessage = createServerFn({ method: "POST" })
     } else {
       const augmentedSystem = `${systemPrompt}
 
-REGRAS RÍGIDAS:
-- Responda APENAS com base nas fontes abaixo (Base de Conhecimento da empresa).
-- Se a pergunta não puder ser respondida pelas fontes, diga exatamente: "Não encontrei essa informação na base de conhecimento."
-- Não invente informações.
-- Cite naturalmente o tipo de fonte (regra, procedimento, script…) quando útil.
+REGRAS:
+- Use as fontes abaixo (Base de Conhecimento da empresa) como sua fonte primária.
+- Se as fontes responderem parcialmente, responda com o que houver e indique de forma breve o que faltou.
+- Se NENHUMA fonte tiver relação com a pergunta, diga exatamente: "Não encontrei essa informação na base de conhecimento."
+- Não invente fatos, valores ou políticas que não estejam nas fontes.
+- Cite naturalmente o tipo de fonte (mensagem, script, procedimento…) quando útil.
 
-=== FONTES DA BASE DE CONHECIMENTO ===
+=== FONTES DA BASE DE CONHECIMENTO (top ${sources.length}, melhor similaridade ${topSimilarity.toFixed(2)}) ===
 ${ragContext}
 === FIM DAS FONTES ===`;
 
