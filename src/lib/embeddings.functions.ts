@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { generateEmbedding } from "./ai-gateway.server";
+import { generateEmbeddings, isEmbeddingRateLimitError } from "./ai-gateway.server";
 
 interface Chunk {
   source_type: string;
@@ -8,6 +8,10 @@ interface Chunk {
   title: string;
   content: string;
   metadata: Record<string, unknown>;
+}
+
+interface ReindexInput {
+  reset?: boolean;
 }
 
 function chunkText(base: Chunk, max = 1200): Chunk[] {
@@ -28,9 +32,17 @@ async function ensureAdmin(supabase: { rpc: (n: string, p: unknown) => Promise<{
   if (!isAdmin) throw new Error("Apenas administradores podem reindexar a base.");
 }
 
+function chunkKey(chunk: Pick<Chunk, "source_type" | "source_id" | "title" | "content">) {
+  return `${chunk.source_type}::${chunk.source_id}::${chunk.title}::${chunk.content}`;
+}
+
 export const reindexAll = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((input: unknown): ReindexInput => {
+    const data = (input ?? {}) as ReindexInput;
+    return { reset: data.reset !== false };
+  })
+  .handler(async ({ data, context }) => {
     await ensureAdmin(context.supabase as never, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -111,30 +123,54 @@ export const reindexAll = createServerFn({ method: "POST" })
       });
     }
 
-    const withEmb: Array<Chunk & { embedding: number[] }> = [];
-    for (const c of all) {
-      const emb = await generateEmbedding(c.content);
-      withEmb.push({ ...c, embedding: emb });
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+    if (data.reset) {
+      const { error: delErr } = await supabaseAdmin
+        .from("knowledge_chunks").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      if (delErr) throw new Error(delErr.message);
     }
 
-    const { error: delErr } = await supabaseAdmin
-      .from("knowledge_chunks").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-    if (delErr) throw new Error(delErr.message);
+    const { data: existingRows, error: existingErr } = await supabaseAdmin
+      .from("knowledge_chunks")
+      .select("source_type,source_id,title,content");
+    if (existingErr) throw new Error(existingErr.message);
 
-    for (let i = 0; i < withEmb.length; i += 50) {
-      const batch = withEmb.slice(i, i + 50).map((c) => ({
-        source_type: c.source_type,
-        source_id: c.source_id,
-        title: c.title,
-        content: c.content,
-        embedding: JSON.stringify(c.embedding),
-        metadata: c.metadata as never,
-      }));
-      const { error } = await supabaseAdmin.from("knowledge_chunks").insert(batch);
-      if (error) throw new Error(error.message);
+    const existing = new Set((existingRows ?? []).map((row) => chunkKey(row)));
+    const pending = all.filter((chunk) => !existing.has(chunkKey(chunk)));
+    const batchSize = 8;
+    let indexed = 0;
+
+    for (let i = 0; i < pending.length; i += batchSize) {
+      const batch = pending.slice(i, i + batchSize);
+      try {
+        const embeddings = await generateEmbeddings(batch.map((chunk) => chunk.content));
+        const rows = batch.map((chunk, index) => ({
+          source_type: chunk.source_type,
+          source_id: chunk.source_id,
+          title: chunk.title,
+          content: chunk.content,
+          embedding: JSON.stringify(embeddings[index]),
+          metadata: chunk.metadata as never,
+        }));
+        const { error } = await supabaseAdmin.from("knowledge_chunks").insert(rows);
+        if (error) throw new Error(error.message);
+        indexed += rows.length;
+        await new Promise((resolve) => setTimeout(resolve, 2500));
+      } catch (error) {
+        if (isEmbeddingRateLimitError(error)) {
+          return {
+            ok: false,
+            indexed,
+            skipped: pending.length - indexed,
+            total: all.length,
+            reason: "rate_limited" as const,
+            message: error.message,
+          };
+        }
+        throw error;
+      }
     }
-    return { ok: true, indexed: withEmb.length };
+
+    return { ok: true, indexed, skipped: all.length - pending.length, total: all.length };
   });
 
 export const getIndexStats = createServerFn({ method: "GET" })

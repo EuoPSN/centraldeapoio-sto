@@ -533,6 +533,7 @@ function AiTab() {
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState("google/gemini-3-flash-preview");
   const [genderArticle, setGenderArticle] = useState("a");
+  const [resumeReindex, setResumeReindex] = useState(false);
 
   useEffect(() => {
     if (sSettings.data) {
@@ -547,8 +548,17 @@ function AiTab() {
   }, [sSettings.data]);
 
   const mut = useMutation({
-    mutationFn: () => reindex({}),
-    onSuccess: (r) => { toast.success(`Reindexação concluída: ${r.indexed} chunks.`); qc.invalidateQueries({ queryKey: ["index-stats"] }); },
+    mutationFn: () => reindex({ data: { reset: !resumeReindex } }),
+    onSuccess: (r) => {
+      if (r.ok) {
+        toast.success(`Reindexação concluída: ${r.indexed} novos chunks. ${r.skipped} já estavam atualizados.`);
+        setResumeReindex(false);
+      } else {
+        toast.warning(`${r.indexed} chunks indexados. Limite temporário da IA atingido; tente novamente em alguns minutos para continuar.`);
+        setResumeReindex(true);
+      }
+      qc.invalidateQueries({ queryKey: ["index-stats"] });
+    },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
   });
 
@@ -579,11 +589,16 @@ function AiTab() {
             <p className="text-sm text-muted-foreground mt-1">
               Reindexa scripts, conhecimento, problemas, tutoriais e preços gerando embeddings semânticos. Execute após adicionar ou alterar conteúdo.
             </p>
+            {resumeReindex ? (
+              <p className="text-sm text-amber-600 mt-2">
+                Reindexação pausada por limite temporário da IA. Aguarde alguns minutos e clique novamente para continuar sem apagar o progresso.
+              </p>
+            ) : null}
             <p className="text-sm mt-2">Total atual: <strong className="text-primary">{sQ.data?.totalChunks ?? 0}</strong> chunks indexados.</p>
           </div>
           <Button onClick={() => mut.mutate()} disabled={mut.isPending} className="gap-2">
             <RefreshCw className={`h-4 w-4 ${mut.isPending ? "animate-spin" : ""}`} />
-            {mut.isPending ? "Reindexando..." : "Reindexar tudo"}
+            {mut.isPending ? "Reindexando..." : resumeReindex ? "Continuar reindexação" : "Reindexar tudo"}
           </Button>
         </div>
       </Card>
