@@ -90,9 +90,9 @@ export async function generateEmbeddings(
 ): Promise<number[][]> {
   if (texts.length === 0) return [];
   const key = requireKey();
-  const maxAttempts = opts.maxAttempts ?? 6;
-  const initialDelayMs = opts.initialDelayMs ?? 5000;
-  const maxDelayMs = opts.maxDelayMs ?? 90000;
+  const maxAttempts = opts.maxAttempts ?? 4;
+  const initialDelayMs = opts.initialDelayMs ?? 3000;
+  const maxDelayMs = opts.maxDelayMs ?? 30000;
   let lastStatus = 0;
   let lastMessage = "";
   let lastRetryAfterMs: number | undefined;
