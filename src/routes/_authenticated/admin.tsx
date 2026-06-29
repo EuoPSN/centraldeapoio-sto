@@ -533,6 +533,7 @@ function AiTab() {
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState("google/gemini-3-flash-preview");
   const [genderArticle, setGenderArticle] = useState("a");
+  const [resumeReindex, setResumeReindex] = useState(false);
 
   useEffect(() => {
     if (sSettings.data) {
@@ -547,12 +548,14 @@ function AiTab() {
   }, [sSettings.data]);
 
   const mut = useMutation({
-    mutationFn: () => reindex({ data: { reset: true } }),
+    mutationFn: () => reindex({ data: { reset: !resumeReindex } }),
     onSuccess: (r) => {
       if (r.ok) {
         toast.success(`Reindexação concluída: ${r.indexed} novos chunks. ${r.skipped} já estavam atualizados.`);
+        setResumeReindex(false);
       } else {
         toast.warning(`${r.indexed} chunks indexados. Limite temporário da IA atingido; tente novamente em alguns minutos para continuar.`);
+        setResumeReindex(true);
       }
       qc.invalidateQueries({ queryKey: ["index-stats"] });
     },
