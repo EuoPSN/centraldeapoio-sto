@@ -15,6 +15,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedTutoriaisRouteImport } from './routes/_authenticated/tutoriais'
 import { Route as AuthenticatedSugestoesRouteImport } from './routes/_authenticated/sugestoes'
 import { Route as AuthenticatedScriptsRouteImport } from './routes/_authenticated/scripts'
+import { Route as AuthenticatedRankingRouteImport } from './routes/_authenticated/ranking'
 import { Route as AuthenticatedProblemasRouteImport } from './routes/_authenticated/problemas'
 import { Route as AuthenticatedPrecosRouteImport } from './routes/_authenticated/precos'
 import { Route as AuthenticatedConhecimentoRouteImport } from './routes/_authenticated/conhecimento'
@@ -48,6 +49,11 @@ const AuthenticatedSugestoesRoute = AuthenticatedSugestoesRouteImport.update({
 const AuthenticatedScriptsRoute = AuthenticatedScriptsRouteImport.update({
   id: '/scripts',
   path: '/scripts',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedRankingRoute = AuthenticatedRankingRouteImport.update({
+  id: '/ranking',
+  path: '/ranking',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedProblemasRoute = AuthenticatedProblemasRouteImport.update({
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/conhecimento': typeof AuthenticatedConhecimentoRoute
   '/precos': typeof AuthenticatedPrecosRoute
   '/problemas': typeof AuthenticatedProblemasRoute
+  '/ranking': typeof AuthenticatedRankingRoute
   '/scripts': typeof AuthenticatedScriptsRoute
   '/sugestoes': typeof AuthenticatedSugestoesRoute
   '/tutoriais': typeof AuthenticatedTutoriaisRoute
@@ -96,6 +103,7 @@ export interface FileRoutesByTo {
   '/conhecimento': typeof AuthenticatedConhecimentoRoute
   '/precos': typeof AuthenticatedPrecosRoute
   '/problemas': typeof AuthenticatedProblemasRoute
+  '/ranking': typeof AuthenticatedRankingRoute
   '/scripts': typeof AuthenticatedScriptsRoute
   '/sugestoes': typeof AuthenticatedSugestoesRoute
   '/tutoriais': typeof AuthenticatedTutoriaisRoute
@@ -110,6 +118,7 @@ export interface FileRoutesById {
   '/_authenticated/conhecimento': typeof AuthenticatedConhecimentoRoute
   '/_authenticated/precos': typeof AuthenticatedPrecosRoute
   '/_authenticated/problemas': typeof AuthenticatedProblemasRoute
+  '/_authenticated/ranking': typeof AuthenticatedRankingRoute
   '/_authenticated/scripts': typeof AuthenticatedScriptsRoute
   '/_authenticated/sugestoes': typeof AuthenticatedSugestoesRoute
   '/_authenticated/tutoriais': typeof AuthenticatedTutoriaisRoute
@@ -125,6 +134,7 @@ export interface FileRouteTypes {
     | '/conhecimento'
     | '/precos'
     | '/problemas'
+    | '/ranking'
     | '/scripts'
     | '/sugestoes'
     | '/tutoriais'
@@ -136,6 +146,7 @@ export interface FileRouteTypes {
     | '/conhecimento'
     | '/precos'
     | '/problemas'
+    | '/ranking'
     | '/scripts'
     | '/sugestoes'
     | '/tutoriais'
@@ -149,6 +160,7 @@ export interface FileRouteTypes {
     | '/_authenticated/conhecimento'
     | '/_authenticated/precos'
     | '/_authenticated/problemas'
+    | '/_authenticated/ranking'
     | '/_authenticated/scripts'
     | '/_authenticated/sugestoes'
     | '/_authenticated/tutoriais'
@@ -204,6 +216,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedScriptsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/ranking': {
+      id: '/_authenticated/ranking'
+      path: '/ranking'
+      fullPath: '/ranking'
+      preLoaderRoute: typeof AuthenticatedRankingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/problemas': {
       id: '/_authenticated/problemas'
       path: '/problemas'
@@ -248,6 +267,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedConhecimentoRoute: typeof AuthenticatedConhecimentoRoute
   AuthenticatedPrecosRoute: typeof AuthenticatedPrecosRoute
   AuthenticatedProblemasRoute: typeof AuthenticatedProblemasRoute
+  AuthenticatedRankingRoute: typeof AuthenticatedRankingRoute
   AuthenticatedScriptsRoute: typeof AuthenticatedScriptsRoute
   AuthenticatedSugestoesRoute: typeof AuthenticatedSugestoesRoute
   AuthenticatedTutoriaisRoute: typeof AuthenticatedTutoriaisRoute
@@ -260,6 +280,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConhecimentoRoute: AuthenticatedConhecimentoRoute,
   AuthenticatedPrecosRoute: AuthenticatedPrecosRoute,
   AuthenticatedProblemasRoute: AuthenticatedProblemasRoute,
+  AuthenticatedRankingRoute: AuthenticatedRankingRoute,
   AuthenticatedScriptsRoute: AuthenticatedScriptsRoute,
   AuthenticatedSugestoesRoute: AuthenticatedSugestoesRoute,
   AuthenticatedTutoriaisRoute: AuthenticatedTutoriaisRoute,
