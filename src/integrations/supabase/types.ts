@@ -213,6 +213,42 @@ export type Database = {
           },
         ]
       }
+      client_profiles: {
+        Row: {
+          behaviors: string | null
+          created_at: string
+          difficulty: string | null
+          id: string
+          name: string
+          objections: string | null
+          objectives: string | null
+          personality: string | null
+          updated_at: string
+        }
+        Insert: {
+          behaviors?: string | null
+          created_at?: string
+          difficulty?: string | null
+          id?: string
+          name: string
+          objections?: string | null
+          objectives?: string | null
+          personality?: string | null
+          updated_at?: string
+        }
+        Update: {
+          behaviors?: string | null
+          created_at?: string
+          difficulty?: string | null
+          id?: string
+          name?: string
+          objections?: string | null
+          objectives?: string | null
+          personality?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       content_items: {
         Row: {
           category: string | null
