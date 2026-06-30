@@ -19,7 +19,8 @@ export const listClientProfiles = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await requireAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data, error } = await supabaseAdmin
+    const db = supabaseAdmin as any;
+    const { data, error } = await db
       .from("client_profiles")
       .select("*")
       .order("created_at", { ascending: false });
@@ -43,6 +44,7 @@ export const upsertClientProfile = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await requireAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const db = supabaseAdmin as any;
     const row = {
       name: data.name,
       personality: data.personality,
@@ -52,8 +54,8 @@ export const upsertClientProfile = createServerFn({ method: "POST" })
       behaviors: data.behaviors,
     };
     const { data: result, error } = data.id
-      ? await supabaseAdmin.from("client_profiles").update(row).eq("id", data.id).select().single()
-      : await supabaseAdmin.from("client_profiles").insert(row).select().single();
+      ? await db.from("client_profiles").update(row).eq("id", data.id).select().single()
+      : await db.from("client_profiles").insert(row).select().single();
     if (error) throw new Error(error.message);
     return result;
   });
@@ -64,7 +66,8 @@ export const deleteClientProfile = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await requireAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.from("client_profiles").delete().eq("id", data.id);
+    const db = supabaseAdmin as any;
+    const { error } = await db.from("client_profiles").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
