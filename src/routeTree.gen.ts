@@ -21,6 +21,7 @@ import { Route as AuthenticatedPrecosRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedConhecimentoRouteImport } from './routes/_authenticated/conhecimento'
 import { Route as AuthenticatedAssistenteRouteImport } from './routes/_authenticated/assistente'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as ApiPublicKnowledgeFileRouteImport } from './routes/api/public/knowledge-file'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -82,6 +83,11 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicKnowledgeFileRoute = ApiPublicKnowledgeFileRouteImport.update({
+  id: '/api/public/knowledge-file',
+  path: '/api/public/knowledge-file',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -95,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/scripts': typeof AuthenticatedScriptsRoute
   '/sugestoes': typeof AuthenticatedSugestoesRoute
   '/tutoriais': typeof AuthenticatedTutoriaisRoute
+  '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -108,6 +115,7 @@ export interface FileRoutesByTo {
   '/sugestoes': typeof AuthenticatedSugestoesRoute
   '/tutoriais': typeof AuthenticatedTutoriaisRoute
   '/': typeof AuthenticatedIndexRoute
+  '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -123,6 +131,7 @@ export interface FileRoutesById {
   '/_authenticated/sugestoes': typeof AuthenticatedSugestoesRoute
   '/_authenticated/tutoriais': typeof AuthenticatedTutoriaisRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -138,6 +147,7 @@ export interface FileRouteTypes {
     | '/scripts'
     | '/sugestoes'
     | '/tutoriais'
+    | '/api/public/knowledge-file'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -151,6 +161,7 @@ export interface FileRouteTypes {
     | '/sugestoes'
     | '/tutoriais'
     | '/'
+    | '/api/public/knowledge-file'
   id:
     | '__root__'
     | '/_authenticated'
@@ -165,11 +176,13 @@ export interface FileRouteTypes {
     | '/_authenticated/sugestoes'
     | '/_authenticated/tutoriais'
     | '/_authenticated/'
+    | '/api/public/knowledge-file'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicKnowledgeFileRoute: typeof ApiPublicKnowledgeFileRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -258,6 +271,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/knowledge-file': {
+      id: '/api/public/knowledge-file'
+      path: '/api/public/knowledge-file'
+      fullPath: '/api/public/knowledge-file'
+      preLoaderRoute: typeof ApiPublicKnowledgeFileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -293,6 +313,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicKnowledgeFileRoute: ApiPublicKnowledgeFileRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
