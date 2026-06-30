@@ -10,6 +10,7 @@ import { Send, StopCircle, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { simulatorChat } from "@/lib/simulator.chat.functions";
+import { saveSimulatorResult } from "@/lib/gamification.functions";
 
 
 interface Profile {
@@ -31,6 +32,8 @@ export function SimuladorIA({ profile, onReset }: { profile: Profile; onReset: (
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [encerrado, setEncerrado] = useState(false);
+  const [xpGanho, setXpGanho] = useState<number | null>(null);
+  const saveResultFn = useServerFn(saveSimulatorResult);
   const [avaliacao, setAvaliacao] = useState<any>(null);
 
   const systemPrompt = `Você é um cliente virtual chamado ${profile.name} sendo atendido por um vendedor do Cartão de Todos.
@@ -77,14 +80,31 @@ const avaliarMut = useMutation({
     const { content } = await avaliarAI({ data: { messages: payload, model: "google/gemini-2.5-flash" } });
     return content;
   },
-  onSuccess: (result) => {
-    try {
-      const clean = result.replace(/```json|```/g, "").trim();
-      setAvaliacao(JSON.parse(clean));
-    } catch {
-      toast.error("Não foi possível gerar a avaliação. Tente novamente.");
-    }
-  },
+  onSuccess: async (result) => {
+      try {
+        const clean = result.replace(/```json|```/g, "").trim();
+        const parsed = JSON.parse(clean);
+        setAvaliacao(parsed);
+        // Save result and get XP earned
+        try {
+          const saved = await saveResultFn({ data: {
+            profile_id: profile.id,
+            profile_name: profile.name,
+            difficulty: profile.difficulty,
+            nota: parsed.nota,
+            resumo: parsed.resumo,
+            pontos_fortes: parsed.pontos_fortes ?? [],
+            pontos_melhoria: parsed.pontos_melhoria ?? [],
+            erros: parsed.erros ?? []
+          } });
+          setXpGanho(saved.ganho);
+        } catch (e) {
+          // Silently ignore errors in saving result
+        }
+      } catch {
+        toast.error("Não foi possível gerar a avaliação. Tente novamente.");
+      }
+    },
   onError: () => toast.error("Erro ao gerar avaliação.")
 });
 
@@ -110,6 +130,9 @@ const avaliarMut = useMutation({
           <p className="text-sm text-muted-foreground mb-1">Avaliação da simulação</p>
           <p className={`text-5xl font-bold ${cor}`}>{nota}<span className="text-2xl">/100</span></p>
           <p className="text-sm text-muted-foreground mt-2">{avaliacao.resumo}</p>
+          {xpGanho !== null && (
+            <Badge className="mt-2 bg-amber-200 text-amber-800">+{xpGanho} XP conquistados!</Badge>
+          )}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {avaliacao.pontos_fortes?.length > 0 && (
