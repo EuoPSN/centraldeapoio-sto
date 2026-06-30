@@ -697,6 +697,7 @@ export type Database = {
           id: string
           is_active: boolean
           updated_at: string
+          xp: number
         }
         Insert: {
           created_at?: string
@@ -705,6 +706,7 @@ export type Database = {
           id: string
           is_active?: boolean
           updated_at?: string
+          xp?: number
         }
         Update: {
           created_at?: string
@@ -713,6 +715,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           updated_at?: string
+          xp?: number
         }
         Relationships: []
       }
@@ -754,6 +757,56 @@ export type Database = {
           usage_note?: string | null
         }
         Relationships: []
+      }
+      simulator_results: {
+        Row: {
+          created_at: string
+          difficulty: string
+          erros: string[]
+          id: string
+          nota: number
+          pontos_fortes: string[]
+          pontos_melhoria: string[]
+          profile_id: string | null
+          profile_name: string
+          resumo: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          difficulty: string
+          erros?: string[]
+          id?: string
+          nota: number
+          pontos_fortes?: string[]
+          pontos_melhoria?: string[]
+          profile_id?: string | null
+          profile_name: string
+          resumo?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          difficulty?: string
+          erros?: string[]
+          id?: string
+          nota?: number
+          pontos_fortes?: string[]
+          pontos_melhoria?: string[]
+          profile_id?: string | null
+          profile_name?: string
+          resumo?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulator_results_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       simulator_sessions: {
         Row: {
