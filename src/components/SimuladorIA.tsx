@@ -74,7 +74,7 @@ const avaliarMut = useMutation({
       { role: "system", content: evalPrompt },
       { role: "user", content: conversa }
     ];
-    const { content } = await avaliarAI({ messages: payload, model: "gpt-4o-mini" });
+    const { content } = await avaliarAI({ data: { messages: payload, model: "gpt-4o-mini" } });
     return content;
   },
   onSuccess: (result) => {
