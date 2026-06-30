@@ -13,6 +13,8 @@ import { Markdown } from "@/components/Markdown";
 import { FlowViewer } from "@/components/FlowEditor";
 import { SimulatorRunner } from "@/components/SimulatorRunner";
 import { Search, MessageSquareQuote, Network, Play, GraduationCap } from "lucide-react";
+import { SimuladorIA } from "@/components/SimuladorIA";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/scripts")({
   component: Page,
@@ -212,33 +214,92 @@ function Simulador() {
   const fnList = useServerFn(listFlows);
   const flowsQ = useQuery({ queryKey: ["flows", "training"], queryFn: () => fnList({ data: { training: true } }) });
   const flows = (flowsQ.data ?? []) as FlowRow[];
-  const [selected, setSelected] = useState<string | null>(null);
+  const [modo, setModo] = useState<"fluxo" | "ia">("fluxo");
+  const [selectedFlow, setSelectedFlow] = useState<string | null>(null);
+  const [selectedProfile, setSelectedProfile] = useState<any>(null);
+
+  const profilesQ = useQuery({
+    queryKey: ["client_profiles"],
+    queryFn: async () => {
+      const { data } = await supabase.from("client_profiles").select("*").order("created_at", { ascending: false });
+      return data ?? [];
+    }
+  });
+  const profiles = (profilesQ.data ?? []) as any[];
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4">
-      <Card className="p-3 h-fit">
-        <h3 className="font-semibold mb-2 px-2 text-sm flex items-center gap-2">
-          <GraduationCap className="h-4 w-4 text-primary" /> Cenários
-        </h3>
-        {flows.length === 0 && (
-          <p className="text-xs text-muted-foreground p-2">
-            Nenhum cenário cadastrado. No Admin → Fluxos, marque um fluxo como <strong>"Treinamento"</strong>.
-          </p>
-        )}
-        <div className="space-y-1">
-          {flows.map((f) => (
-            <button key={f.id} onClick={() => setSelected(f.id)}
-              className={`w-full text-left text-sm px-3 py-2 rounded-md transition ${selected === f.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"}`}>
-              {f.title}
-            </button>
-          ))}
-        </div>
-      </Card>
-
-      <div>
-        {!selected && <Card className="p-10 text-center text-muted-foreground">Selecione um cenário para começar o treinamento.</Card>}
-        {selected && <SimulatorRunner flowId={selected} />}
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        <button onClick={() => { setModo("fluxo"); setSelectedFlow(null); setSelectedProfile(null); }}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition ${modo === "fluxo" ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/80"}`}>
+          Modo Fluxo
+        </button>
+        <button onClick={() => { setModo("ia"); setSelectedFlow(null); setSelectedProfile(null); }}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition ${modo === "ia" ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/80"}`}>
+          Modo IA
+        </button>
       </div>
+
+      {modo === "fluxo" && (
+        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4">
+          <Card className="p-3 h-fit">
+            <h3 className="font-semibold mb-2 px-2 text-sm flex items-center gap-2">
+              <GraduationCap className="h-4 w-4 text-primary" /> Cenários
+            </h3>
+            {flows.length === 0 && (
+              <p className="text-xs text-muted-foreground p-2">
+                Nenhum cenário cadastrado. No Admin → Fluxos, marque um fluxo como <strong>"Treinamento"</strong>.
+              </p>
+            )}
+            <div className="space-y-1">
+              {flows.map((f) => (
+                <button key={f.id} onClick={() => setSelectedFlow(f.id)}
+                  className={`w-full text-left text-sm px-3 py-2 rounded-md transition ${selectedFlow === f.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"}`}>
+                  {f.title}
+                </button>
+              ))}
+            </div>
+          </Card>
+          <div>
+            {!selectedFlow && <Card className="p-10 text-center text-muted-foreground">Selecione um cenário para começar o treinamento.</Card>}
+            {selectedFlow && <SimulatorRunner flowId={selectedFlow} />}
+          </div>
+        </div>
+      )}
+
+      {modo === "ia" && (
+        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4">
+          {!selectedProfile ? (
+            <>
+              <Card className="p-3 h-fit">
+                <h3 className="font-semibold mb-2 px-2 text-sm flex items-center gap-2">
+                  <GraduationCap className="h-4 w-4 text-primary" /> Perfis de Cliente
+                </h3>
+                {profiles.length === 0 && (
+                  <p className="text-xs text-muted-foreground p-2">
+                    Nenhum perfil cadastrado. Vá em Admin → Perfis de Cliente.
+                  </p>
+                )}
+                <div className="space-y-1">
+                  {profiles.map((p: any) => (
+                    <button key={p.id} onClick={() => setSelectedProfile(p)}
+                      className="w-full text-left text-sm px-3 py-2 rounded-md hover:bg-muted transition">
+                      {p.name}
+                    </button>
+                  ))}
+                </div>
+              </Card>
+              <Card className="p-10 text-center text-muted-foreground">
+                Selecione um perfil de cliente para iniciar a simulação com IA.
+              </Card>
+            </>
+          ) : (
+            <div className="lg:col-span-2">
+              <SimuladorIA profile={selectedProfile} onReset={() => setSelectedProfile(null)} />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
