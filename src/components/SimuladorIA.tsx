@@ -56,7 +56,7 @@ const sendMut = useMutation({
       ...history,
       { role: "user", content: text }
     ];
-    const { content } = await sendAI({ data: { messages: payload, model: "gpt-4o-mini" } });
+    const { content } = await sendAI({ data: { messages: payload, model: "google/gemini-2.5-flash" } });
     return content;
   },
   onSuccess: (result) => {
@@ -74,7 +74,7 @@ const avaliarMut = useMutation({
       { role: "system", content: evalPrompt },
       { role: "user", content: conversa }
     ];
-    const { content } = await avaliarAI({ data: { messages: payload, model: "gpt-4o-mini" } });
+    const { content } = await avaliarAI({ data: { messages: payload, model: "google/gemini-2.5-flash" } });
     return content;
   },
   onSuccess: (result) => {
