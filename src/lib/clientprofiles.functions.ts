@@ -3,12 +3,8 @@ import { isAdminUser } from "@/lib/authz.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
-async function requireAdmin(ctx: { supabase: unknown; userId: string }) {
-  const supabase = ctx.supabase as {
-    rpc: (fn: string, args: unknown) => Promise<{ data: boolean | null; error: { message: string } | null }>;
-  };
-  const isAdmin = await isAdminUser(supabase, ctx.userId);
-  if (error) throw new Error(error.message);
+async function requireAdmin(ctx: { supabase: any; userId: string }) {
+  const isAdmin = await isAdminUser(ctx.supabase, ctx.userId);
   if (!isAdmin) throw new Error("Acesso restrito a administradores.");
 }
 
