@@ -352,17 +352,17 @@ function ScriptsTab() {
 
 // ============ Content (conhecimento/problemas/tutoriais) ============
 function ContentTab() {
-  const [section, setSection] = useState<"conhecimento" | "problemas" | "tutoriais">("conhecimento");
+  const [section, setSection] = useState<"conhecimento" | "problemas" | "tutoriais" | "treinamentos">("conhecimento");
   const list = useServerFn(listContent);
   const upsert = useServerFn(upsertContent);
   const del = useServerFn(deleteContent);
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["content", section], queryFn: () => list({ data: { section } }) });
 
-  const [edit, setEdit] = useState<null | { id?: string; category: string; title: string; content: string }>(null);
+  const [edit, setEdit] = useState<null | { id?: string; category: string; title: string; content: string; link_externo?: string; link_label?: string }>(null);
 
   const upsertMut = useMutation({
-    mutationFn: () => upsert({ data: { ...edit!, section, tags: [], position: 0 } }),
+    mutationFn: () => upsert({ data: { ...edit!, section, tags: [], position: 0, link_externo: edit!.link_externo ?? null, link_label: edit!.link_label ?? null } }),
     onSuccess: () => { toast.success("Salvo."); setEdit(null); qc.invalidateQueries({ queryKey: ["content", section] }); },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
   });
@@ -380,9 +380,10 @@ function ContentTab() {
             <SelectItem value="conhecimento">Conhecimento Geral</SelectItem>
             <SelectItem value="problemas">Problemas Técnicos</SelectItem>
             <SelectItem value="tutoriais">Tutoriais</SelectItem>
+            <SelectItem value="treinamentos">Treinamentos</SelectItem>
           </SelectContent>
         </Select>
-        <Button size="sm" className="gap-2" onClick={() => setEdit({ category: "", title: "", content: "" })}>
+        <Button size="sm" className="gap-2" onClick={() => setEdit({ category: "", title: "", content: "", link_externo: "", link_label: "" })}>
           <Plus className="h-4 w-4" /> Novo item
         </Button>
       </div>
@@ -396,7 +397,7 @@ function ContentTab() {
                 <TableCell><Badge variant="secondary">{c.category || "—"}</Badge></TableCell>
                 <TableCell className="font-medium">{c.title}</TableCell>
                 <TableCell className="text-right space-x-1">
-                  <Button size="icon" variant="ghost" onClick={() => setEdit({ id: c.id, category: c.category ?? "", title: c.title, content: c.content })}><Pencil className="h-4 w-4" /></Button>
+                  <Button size="icon" variant="ghost" onClick={() => setEdit({ id: c.id, category: c.category ?? "", title: c.title, content: c.content, link_externo: c.link_externo ?? "", link_label: c.link_label ?? "" })}><Pencil className="h-4 w-4" /></Button>
                   <Button size="icon" variant="ghost" onClick={() => confirm("Excluir?") && delMut.mutate(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                 </TableCell>
               </TableRow>
@@ -413,6 +414,14 @@ function ContentTab() {
               <div><Label>Categoria</Label><Input value={edit.category} onChange={(e) => setEdit({ ...edit, category: e.target.value })} /></div>
               <div><Label>Título</Label><Input value={edit.title} onChange={(e) => setEdit({ ...edit, title: e.target.value })} /></div>
               <div><Label>Conteúdo (Markdown)</Label><Textarea rows={10} value={edit.content} onChange={(e) => setEdit({ ...edit, content: e.target.value })} /></div>
+              <div>
+                 <Label>Link externo (vídeo, PDF, página...)</Label>
+                 <Input placeholder="https://..." value={edit.link_externo ?? ""} onChange={(e) => setEdit({ ...edit, link_externo: e.target.value })} />
+               </div>
+               <div>
+                 <Label>Texto do link</Label>
+                 <Input placeholder="Ex: Assistir vídeo, Abrir PDF..." value={edit.link_label ?? ""} onChange={(e) => setEdit({ ...edit, link_label: e.target.value })} />
+               </div>
             </div>
           )}
           <DialogFooter><Button onClick={() => upsertMut.mutate()} disabled={upsertMut.isPending}>Salvar</Button></DialogFooter>
