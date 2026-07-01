@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Send, StopCircle, RotateCcw } from "lucide-react";
+import { Send, StopCircle, RotateCcw, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { simulatorChat } from "@/lib/simulator.chat.functions";
@@ -33,6 +33,8 @@ export function SimuladorIA({ profile, onReset }: { profile: Profile; onReset: (
   const [input, setInput] = useState("");
   const [encerrado, setEncerrado] = useState(false);
   const [xpGanho, setXpGanho] = useState<number | null>(null);
+  const [aguardandoResposta, setAguardandoResposta] = useState(false);
+  const [pendingAttendantMessages, setPendingAttendantMessages] = useState<string[]>([]);
   const saveResultFn = useServerFn(saveSimulatorResult);
   const [avaliacao, setAvaliacao] = useState<any>(null);
 
@@ -45,7 +47,8 @@ Nível de dificuldade: ${DIFFICULTY_LABELS[profile.difficulty]}.
 Responda APENAS como o cliente — nunca quebre o personagem.
 Respostas curtas e naturais, como numa conversa real de WhatsApp.
 Se o atendente der uma boa resposta às suas objeções, vá cedendo gradualmente.
-Se o atendente errar muito, fique mais resistente.`;
+Se o atendente errar muito, fique mais resistente.
+Você pode responder com 1, 2 ou até 3 mensagens curtas separadas, exatamente como faria no WhatsApp — quebre em mensagens naturais usando o separador ||BREAK|| entre elas. Exemplo: 'Oi tudo bem?' ||BREAK|| 'Me fala mais sobre esse cartão' ||BREAK|| 'Quanto custa?'. Use múltiplas mensagens apenas quando for natural — não force.`;
 
   const sendAI = useServerFn(simulatorChat);
 const sendMut = useMutation({
@@ -63,7 +66,12 @@ const sendMut = useMutation({
     return content;
   },
   onSuccess: (result) => {
-    setMessages(prev => [...prev, { role: "cliente", content: result }]);
+    const partes = result.split("||BREAK||").map((p: string) => p.trim()).filter(Boolean);
+    setMessages(prev => [
+      ...prev,
+      ...partes.map((p: string) => ({ role: "cliente" as const, content: p }))
+    ]);
+    setAguardandoResposta(false);
   },
   onError: () => toast.error("Erro ao obter resposta do cliente virtual.")
 });
@@ -109,11 +117,19 @@ const avaliarMut = useMutation({
 });
 
   const handleSend = () => {
-    if (!input.trim() || sendMut.isPending) return;
+    if (!input.trim()) return;
     const text = input.trim();
     setMessages(prev => [...prev, { role: "atendente", content: text }]);
+    setPendingAttendantMessages(prev => [...prev, text]);
     setInput("");
-    sendMut.mutate(text);
+  };
+
+  const handleAwaitResponse = () => {
+    if (pendingAttendantMessages.length === 0) return;
+    const combined = pendingAttendantMessages.join("\n");
+    setPendingAttendantMessages([]);
+    setAguardandoResposta(true);
+    sendMut.mutate(combined);
   };
 
   const handleEncerrar = () => {
@@ -171,7 +187,7 @@ const avaliarMut = useMutation({
           <Badge className={DIFFICULTY_COLORS[profile.difficulty]}>{DIFFICULTY_LABELS[profile.difficulty]}</Badge>
         </div>
         <Button size="sm" variant="destructive" onClick={handleEncerrar}
-          disabled={messages.length === 0 || avaliarMut.isPending} className="gap-2">
+          disabled={messages.length === 0} className="gap-2">
           <StopCircle className="h-4 w-4" />
           {avaliarMut.isPending ? "Avaliando..." : "Encerrar e Avaliar"}
         </Button>
@@ -202,9 +218,11 @@ const avaliarMut = useMutation({
         <Textarea value={input} onChange={e => setInput(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }}}
           placeholder="Digite sua mensagem para o cliente..." rows={2} className="resize-none" />
-        <Button onClick={handleSend} disabled={!input.trim() || sendMut.isPending || encerrado}
-          className="self-end gap-2">
+        <Button onClick={handleSend} disabled={!input.trim() || encerrado} className="self-end gap-2">
           <Send className="h-4 w-4" /> Enviar
+        </Button>
+        <Button variant="secondary" onClick={handleAwaitResponse} disabled={pendingAttendantMessages.length===0 || encerrado} className="self-end gap-2">
+          <MessageSquare className="h-4 w-4" /> Aguardar resposta
         </Button>
       </div>
     </Card>
