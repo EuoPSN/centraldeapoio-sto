@@ -143,8 +143,8 @@ function Page() {
           {!activeId || (active.data?.length ?? 0) === 0 ? (
             <div className="h-full flex items-center justify-center p-8">
               <div className="text-center max-w-md">
-                <div className="h-14 w-14 mx-auto rounded-2xl bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center mb-4">
-                  <MarcIAnaAvatar className="h-16 w-16 text-primary-foreground" />
+                <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center">
+                  <MarcIAnaAvatar className="h-20 w-20" />
                 </div>
                 <h2 className="text-2xl font-bold">MarcIAna</h2>
                 <p className="text-muted-foreground mt-2">
