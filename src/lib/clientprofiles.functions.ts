@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { isAdminUser } from "@/lib/authz.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
@@ -6,10 +7,7 @@ async function requireAdmin(ctx: { supabase: unknown; userId: string }) {
   const supabase = ctx.supabase as {
     rpc: (fn: string, args: unknown) => Promise<{ data: boolean | null; error: { message: string } | null }>;
   };
-  const { data: isAdmin, error } = await supabase.rpc("has_role", {
-    _user_id: ctx.userId,
-    _role: "admin",
-  });
+  const { data: isAdmin, error } = await isAdminUser(supabase, ctx.userId);
   if (error) throw new Error(error.message);
   if (!isAdmin) throw new Error("Acesso restrito a administradores.");
 }

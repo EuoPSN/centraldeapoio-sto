@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { isAdminUser } from "@/lib/authz.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
@@ -27,7 +28,7 @@ const Input = z.object({
 
 async function admin(ctx: { supabase: unknown; userId: string }) {
   const s = ctx.supabase as { rpc: (n: string, p: unknown) => Promise<{ data: boolean | null }> };
-  const { data: ok } = await s.rpc("has_role", { _user_id: ctx.userId, _role: "admin" });
+  const { data: ok } = await isAdminUser(s, ctx.userId);
   if (!ok) throw new Error("Apenas administradores.");
 }
 

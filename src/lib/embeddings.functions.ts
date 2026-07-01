@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { isAdminUser } from "@/lib/authz.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { generateEmbeddings, isEmbeddingRateLimitError } from "./ai-gateway.server";
 
@@ -28,7 +29,7 @@ function chunkText(base: Chunk, max = 1200): Chunk[] {
 }
 
 async function ensureAdmin(supabase: { rpc: (n: string, p: unknown) => Promise<{ data: unknown }> }, userId: string) {
-  const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
+  const { data: isAdmin } = await isAdminUser(supabase, userId);
   if (!isAdmin) throw new Error("Apenas administradores podem reindexar a base.");
 }
 
