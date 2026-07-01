@@ -75,3 +75,58 @@ export const getRanking = createServerFn()
       .limit(20);
     return data ?? [];
   });
+
+// New function: getMyHistory
+export const getMyHistory = createServerFn()
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: prof } = await context.supabase
+      .from("profiles").select("xp, display_name").eq("id", context.userId).single();
+    const { data: results } = await context.supabase
+      .from("simulator_results").select("*")
+      .eq("user_id", context.userId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    const all = results ?? [];
+    const total = all.length;
+    const media = total > 0 ? Math.round(all.reduce((s: number, r: any) => s + r.nota, 0) / total) : 0;
+    const melhor = total > 0 ? Math.max(...all.map((r: any) => r.nota)) : 0;
+    const maisUsado = total > 0
+      ? Object.entries(all.reduce((acc: Record<string, number>, r: any) => {
+          acc[r.profile_name] = (acc[r.profile_name] ?? 0) + 1; return acc;
+        }, {})).sort((a, b) => b[1] - a[1])[0]?.[0] ?? ""
+      : "";
+    return {
+      xp: prof?.xp ?? 0,
+      display_name: prof?.display_name,
+      total, media, melhor, maisUsado,
+      results: all
+    };
+  });
+
+// New function: getRankingDetalhado
+export const getRankingDetalhado = createServerFn()
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: profs } = await context.supabase
+      .from("profiles").select("id, display_name, xp")
+      .order("xp", { ascending: false }).limit(20);
+    const ids = (profs ?? []).map((p: any) => p.id);
+    if (ids.length === 0) return [];
+    const { data: results } = await context.supabase
+      .from("simulator_results").select("user_id, nota")
+      .in("user_id", ids);
+    const statsMap: Record<string, { total: number; soma: number }> = {};
+    for (const r of results ?? []) {
+      if (!statsMap[r.user_id]) statsMap[r.user_id] = { total: 0, soma: 0 };
+      statsMap[r.user_id].total++;
+      statsMap[r.user_id].soma += r.nota;
+    }
+    return (profs ?? []).map((p: any) => ({
+      ...p,
+      total: statsMap[p.id]?.total ?? 0,
+      media: statsMap[p.id]?.total
+        ? Math.round(statsMap[p.id].soma / statsMap[p.id].total)
+        : 0,
+    }));
+  });
