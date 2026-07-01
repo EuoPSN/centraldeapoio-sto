@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { isAdminUser } from "@/lib/authz.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
@@ -37,10 +38,7 @@ export const upsertContent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => ContentInput.parse(data))
   .handler(async ({ data, context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
+    const isAdmin = await isAdminUser(context.supabase, context.userId);
     if (!isAdmin) throw new Error("Apenas administradores podem editar conteúdo.");
 
     const row = {
@@ -58,10 +56,7 @@ export const deleteContent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
+    const isAdmin = await isAdminUser(context.supabase, context.userId);
     if (!isAdmin) throw new Error("Apenas administradores podem remover conteúdo.");
     const { error } = await context.supabase.from("content_items").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
@@ -97,10 +92,7 @@ export const upsertScript = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => ScriptInput.parse(data))
   .handler(async ({ data, context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
+    const isAdmin = await isAdminUser(context.supabase, context.userId);
     if (!isAdmin) throw new Error("Apenas administradores podem editar scripts.");
 
     const row = { ...data, created_by: context.userId };
@@ -115,10 +107,7 @@ export const deleteScript = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
+    const isAdmin = await isAdminUser(context.supabase, context.userId);
     if (!isAdmin) throw new Error("Apenas administradores podem remover scripts.");
     const { error } = await context.supabase.from("scripts").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
@@ -155,10 +144,7 @@ export const upsertPricing = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => PricingInput.parse(data))
   .handler(async ({ data, context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
+    const isAdmin = await isAdminUser(context.supabase, context.userId);
     if (!isAdmin) throw new Error("Apenas administradores podem editar a tabela de preços.");
     const { data: result, error } = data.id
       ? await context.supabase.from("pricing_items").update(data).eq("id", data.id).select().single()
@@ -171,10 +157,7 @@ export const deletePricing = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
+    const isAdmin = await isAdminUser(context.supabase, context.userId);
     if (!isAdmin) throw new Error("Apenas administradores podem remover preços.");
     const { error } = await context.supabase.from("pricing_items").delete().eq("id", data.id);
     if (error) throw new Error(error.message);

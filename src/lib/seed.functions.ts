@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { isAdminUser } from "@/lib/authz.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 // Dados extraídos da Base_Conhecimento_Estruturada_IA.docx
@@ -57,10 +58,7 @@ const SEED_PRICING = [
 export const seedInitialData = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
+    const isAdmin = await isAdminUser(context.supabase, context.userId);
     if (!isAdmin) throw new Error("Apenas administradores.");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
