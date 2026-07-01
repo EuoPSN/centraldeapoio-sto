@@ -43,7 +43,7 @@ export const updateSuggestionStatus = createServerFn({ method: "POST" })
   }).parse(d))
   .handler(async ({ data, context }) => {
     const s = context.supabase as unknown as { rpc: (n: string, p: unknown) => Promise<{ data: boolean | null }> };
-    const { data: ok } = await isAdminUser(s, context.userId);
+    const ok = await isAdminUser(s, context.userId);
     if (!ok) throw new Error("Apenas administradores.");
     const { error } = await context.supabase.from("suggestions")
       .update({ status: data.status, admin_response: data.admin_response ?? null }).eq("id", data.id);

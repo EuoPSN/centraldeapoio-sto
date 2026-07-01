@@ -58,7 +58,7 @@ const SEED_PRICING = [
 export const seedInitialData = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: isAdmin } = await isAdminUser(context.supabase, context.userId);
+    const isAdmin = await isAdminUser(context.supabase, context.userId);
     if (!isAdmin) throw new Error("Apenas administradores.");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

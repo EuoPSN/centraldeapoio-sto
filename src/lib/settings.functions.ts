@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 async function admin(ctx: { supabase: unknown; userId: string }) {
   const s = ctx.supabase as { rpc: (n: string, p: unknown) => Promise<{ data: boolean | null }> };
-  const { data: ok } = await isAdminUser(s, ctx.userId);
+  const ok = await isAdminUser(s, ctx.userId);
   if (!ok) throw new Error("Apenas administradores.");
 }
 

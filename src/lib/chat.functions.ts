@@ -327,7 +327,7 @@ ${ragContext}
 export const getAiSettings = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: isAdmin } = await isAdminUser(context.supabase, context.userId);
+    const isAdmin = await isAdminUser(context.supabase, context.userId);
     if (!isAdmin) throw new Error("Apenas administradores podem ver as configurações da IA.");
     const { data, error } = await context.supabase
       .from("ai_settings")
@@ -347,7 +347,7 @@ export const updateAiSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => SettingsInput.parse(d))
   .handler(async ({ data, context }) => {
-    const { data: isAdmin } = await isAdminUser(context.supabase, context.userId);
+    const isAdmin = await isAdminUser(context.supabase, context.userId);
     if (!isAdmin) throw new Error("Apenas administradores podem editar as configurações da IA.");
     const { error } = await context.supabase
       .from("ai_settings")

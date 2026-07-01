@@ -29,7 +29,7 @@ function chunkText(base: Chunk, max = 1200): Chunk[] {
 }
 
 async function ensureAdmin(supabase: { rpc: (n: string, p: unknown) => Promise<{ data: unknown }> }, userId: string) {
-  const { data: isAdmin } = await isAdminUser(supabase, userId);
+  const isAdmin = await isAdminUser(supabase, userId);
   if (!isAdmin) throw new Error("Apenas administradores podem reindexar a base.");
 }
 

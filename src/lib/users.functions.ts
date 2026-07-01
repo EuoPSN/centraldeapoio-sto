@@ -5,7 +5,7 @@ import { z } from "zod";
 
 async function requireAdmin(ctx: { supabase: unknown; userId: string }) {
   // @ts-expect-error supabase typing
-  const { data: isAdmin } = await isAdminUser(ctx.supabase, ctx.userId);
+  const isAdmin = await isAdminUser(ctx.supabase, ctx.userId);
   if (!isAdmin) throw new Error("Acesso restrito a administradores.");
 }
 
