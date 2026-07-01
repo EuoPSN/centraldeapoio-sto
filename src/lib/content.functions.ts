@@ -30,6 +30,8 @@ const ContentInput = z.object({
   title: z.string().min(1, "Título obrigatório").max(200),
   content: z.string().default(""),
   tags: z.array(z.string()).default([]),
+  link_externo: z.string().nullable().optional(),
+  link_label: z.string().nullable().optional(),
   position: z.number().int().default(0),
 });
 

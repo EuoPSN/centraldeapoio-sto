@@ -12,6 +12,8 @@ interface ContentItem {
   content: string;
   category: string | null;
   tags: string[];
+  link_externo?: string;
+  link_label?: string;
 }
 
 export function ContentList({ title, subtitle, items, loading }: {
@@ -94,6 +96,13 @@ export function ContentList({ title, subtitle, items, loading }: {
                           {item.tags.map((t) => (
                             <span key={t} className="text-[10px] uppercase tracking-wide rounded bg-secondary px-2 py-0.5 text-secondary-foreground">{t}</span>
                           ))}
+                        </div>
+                      )}
+                      {item.link_externo && (
+                        <div className="mt-3">
+                          <a href={item.link_externo} target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                            {item.link_label || "Acessar link"}
+                          </a>
                         </div>
                       )}
                     </AccordionContent>
