@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedTutoriaisRouteImport } from './routes/_authenticated/tutoriais'
+import { Route as AuthenticatedTreinamentosRouteImport } from './routes/_authenticated/treinamentos'
 import { Route as AuthenticatedSugestoesRouteImport } from './routes/_authenticated/sugestoes'
 import { Route as AuthenticatedScriptsRouteImport } from './routes/_authenticated/scripts'
 import { Route as AuthenticatedRankingRouteImport } from './routes/_authenticated/ranking'
@@ -41,6 +42,12 @@ const AuthenticatedTutoriaisRoute = AuthenticatedTutoriaisRouteImport.update({
   path: '/tutoriais',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTreinamentosRoute =
+  AuthenticatedTreinamentosRouteImport.update({
+    id: '/treinamentos',
+    path: '/treinamentos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSugestoesRoute = AuthenticatedSugestoesRouteImport.update({
   id: '/sugestoes',
   path: '/sugestoes',
@@ -94,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/ranking': typeof AuthenticatedRankingRoute
   '/scripts': typeof AuthenticatedScriptsRoute
   '/sugestoes': typeof AuthenticatedSugestoesRoute
+  '/treinamentos': typeof AuthenticatedTreinamentosRoute
   '/tutoriais': typeof AuthenticatedTutoriaisRoute
 }
 export interface FileRoutesByTo {
@@ -106,6 +114,7 @@ export interface FileRoutesByTo {
   '/ranking': typeof AuthenticatedRankingRoute
   '/scripts': typeof AuthenticatedScriptsRoute
   '/sugestoes': typeof AuthenticatedSugestoesRoute
+  '/treinamentos': typeof AuthenticatedTreinamentosRoute
   '/tutoriais': typeof AuthenticatedTutoriaisRoute
   '/': typeof AuthenticatedIndexRoute
 }
@@ -121,6 +130,7 @@ export interface FileRoutesById {
   '/_authenticated/ranking': typeof AuthenticatedRankingRoute
   '/_authenticated/scripts': typeof AuthenticatedScriptsRoute
   '/_authenticated/sugestoes': typeof AuthenticatedSugestoesRoute
+  '/_authenticated/treinamentos': typeof AuthenticatedTreinamentosRoute
   '/_authenticated/tutoriais': typeof AuthenticatedTutoriaisRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/ranking'
     | '/scripts'
     | '/sugestoes'
+    | '/treinamentos'
     | '/tutoriais'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -149,6 +160,7 @@ export interface FileRouteTypes {
     | '/ranking'
     | '/scripts'
     | '/sugestoes'
+    | '/treinamentos'
     | '/tutoriais'
     | '/'
   id:
@@ -163,6 +175,7 @@ export interface FileRouteTypes {
     | '/_authenticated/ranking'
     | '/_authenticated/scripts'
     | '/_authenticated/sugestoes'
+    | '/_authenticated/treinamentos'
     | '/_authenticated/tutoriais'
     | '/_authenticated/'
   fileRoutesById: FileRoutesById
@@ -200,6 +213,13 @@ declare module '@tanstack/react-router' {
       path: '/tutoriais'
       fullPath: '/tutoriais'
       preLoaderRoute: typeof AuthenticatedTutoriaisRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/treinamentos': {
+      id: '/_authenticated/treinamentos'
+      path: '/treinamentos'
+      fullPath: '/treinamentos'
+      preLoaderRoute: typeof AuthenticatedTreinamentosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/sugestoes': {
@@ -270,6 +290,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRankingRoute: typeof AuthenticatedRankingRoute
   AuthenticatedScriptsRoute: typeof AuthenticatedScriptsRoute
   AuthenticatedSugestoesRoute: typeof AuthenticatedSugestoesRoute
+  AuthenticatedTreinamentosRoute: typeof AuthenticatedTreinamentosRoute
   AuthenticatedTutoriaisRoute: typeof AuthenticatedTutoriaisRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
@@ -283,6 +304,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRankingRoute: AuthenticatedRankingRoute,
   AuthenticatedScriptsRoute: AuthenticatedScriptsRoute,
   AuthenticatedSugestoesRoute: AuthenticatedSugestoesRoute,
+  AuthenticatedTreinamentosRoute: AuthenticatedTreinamentosRoute,
   AuthenticatedTutoriaisRoute: AuthenticatedTutoriaisRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
