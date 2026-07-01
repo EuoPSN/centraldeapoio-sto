@@ -70,7 +70,7 @@ function AdminPage() {
           <TabsTrigger value="messages">Mensagens</TabsTrigger>
           <TabsTrigger value="flows">Fluxos</TabsTrigger>
           <TabsTrigger value="taxonomy">Categorias</TabsTrigger>
-          <TabsTrigger value="scripts">Scripts (legado)</TabsTrigger>
+          
           <TabsTrigger value="content">Conteúdo (legado)</TabsTrigger>
           <TabsTrigger value="pricing">Preços</TabsTrigger>
           <TabsTrigger value="suggestions">Sugestões</TabsTrigger>
@@ -87,7 +87,7 @@ function AdminPage() {
         <TabsContent value="messages" className="mt-6"><MessagesTab /></TabsContent>
         <TabsContent value="flows" className="mt-6"><FlowsTab /></TabsContent>
         <TabsContent value="taxonomy" className="mt-6"><TaxonomyTab /></TabsContent>
-        <TabsContent value="scripts" className="mt-6"><ScriptsTab /></TabsContent>
+        
         <TabsContent value="content" className="mt-6"><ContentTab /></TabsContent>
         <TabsContent value="pricing" className="mt-6"><PricingTab /></TabsContent>
         <TabsContent value="suggestions" className="mt-6"><SuggestionsTab /></TabsContent>
