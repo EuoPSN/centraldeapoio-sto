@@ -214,11 +214,11 @@ function MessageBubble({ role, content }: { role: "user" | "assistant" | "system
   return (
     <div className={cn("flex gap-3", isUser && "flex-row-reverse")}>
       {!isUser && <span className="text-[11px] text-muted-foreground self-center">MarcIAna</span>}
-      <div className={cn("h-8 w-8 rounded-full flex items-center justify-center shrink-0", isUser ? "bg-secondary" : "bg-gradient-to-br from-primary to-primary-glow")}>
+      <div className={cn("h-8 w-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden", isUser && "bg-secondary")}>
         {isUser ? (
           <User className="h-4 w-4 text-secondary-foreground" />
         ) : (
-          <MarcIAnaAvatar className="h-4 w-4 text-primary-foreground" />
+          <MarcIAnaAvatar className="h-8 w-8" />
         )}
       </div>
       <Card className={cn("p-4 max-w-[85%]", isUser ? "bg-primary text-primary-foreground border-primary" : "bg-card")}>
