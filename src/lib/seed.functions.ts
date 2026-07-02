@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { isAdminUser } from "@/lib/authz.server";
+import { isAdminUser } from "@/lib/authz";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 // Dados extraídos da Base_Conhecimento_Estruturada_IA.docx

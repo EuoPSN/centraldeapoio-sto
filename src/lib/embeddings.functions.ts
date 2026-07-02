@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { isAdminUser } from "@/lib/authz.server";
+import { isAdminUser } from "@/lib/authz";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { generateEmbeddings, isEmbeddingRateLimitError } from "./ai-gateway.server";
 
@@ -28,7 +28,7 @@ function chunkText(base: Chunk, max = 1200): Chunk[] {
   return out;
 }
 
-async function ensureAdmin(supabase: { rpc: (n: string, p: unknown) => Promise<{ data: unknown }> }, userId: string) {
+async function ensureAdmin(supabase: any, userId: string) {
   const isAdmin = await isAdminUser(supabase, userId);
   if (!isAdmin) throw new Error("Apenas administradores podem reindexar a base.");
 }
@@ -44,7 +44,7 @@ export const reindexAll = createServerFn({ method: "POST" })
     return { reset: data.reset !== false };
   })
   .handler(async ({ data, context }) => {
-    await ensureAdmin(context.supabase as never, context.userId);
+    await ensureAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const [keRes, msgRes, nodesRes, contentRes, scriptsRes, pricingRes] = await Promise.all([
