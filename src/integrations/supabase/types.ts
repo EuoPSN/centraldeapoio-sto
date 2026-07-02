@@ -256,6 +256,8 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          link_externo: string | null
+          link_label: string | null
           position: number
           section: Database["public"]["Enums"]["content_section"]
           tags: string[]
@@ -268,6 +270,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          link_externo?: string | null
+          link_label?: string | null
           position?: number
           section: Database["public"]["Enums"]["content_section"]
           tags?: string[]
@@ -280,6 +284,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          link_externo?: string | null
+          link_label?: string | null
           position?: number
           section?: Database["public"]["Enums"]["content_section"]
           tags?: string[]
@@ -459,6 +465,39 @@ export type Database = {
           },
         ]
       }
+      funcionarios_metas: {
+        Row: {
+          created_at: string | null
+          dias_uteis: number
+          id: string
+          mes_referencia: string
+          meta_diaria: number | null
+          meta_mensal: number
+          meta_semanal: number | null
+          nome: string
+        }
+        Insert: {
+          created_at?: string | null
+          dias_uteis?: number
+          id?: string
+          mes_referencia: string
+          meta_diaria?: number | null
+          meta_mensal?: number
+          meta_semanal?: number | null
+          nome: string
+        }
+        Update: {
+          created_at?: string | null
+          dias_uteis?: number
+          id?: string
+          mes_referencia?: string
+          meta_diaria?: number | null
+          meta_mensal?: number
+          meta_semanal?: number | null
+          nome?: string
+        }
+        Relationships: []
+      }
       knowledge_chunks: {
         Row: {
           content: string
@@ -556,6 +595,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      leads_funil: {
+        Row: {
+          apresentacao: number
+          created_at: string | null
+          created_by: string | null
+          data: string
+          desqualificados: number
+          id: string
+          leads_entrados: number
+          nao_responde: number
+          negociacao: number
+          origem: string
+          qualificados: number
+          sem_interesse: number
+          vendas_fechadas: number
+        }
+        Insert: {
+          apresentacao?: number
+          created_at?: string | null
+          created_by?: string | null
+          data: string
+          desqualificados?: number
+          id?: string
+          leads_entrados?: number
+          nao_responde?: number
+          negociacao?: number
+          origem: string
+          qualificados?: number
+          sem_interesse?: number
+          vendas_fechadas?: number
+        }
+        Update: {
+          apresentacao?: number
+          created_at?: string | null
+          created_by?: string | null
+          data?: string
+          desqualificados?: number
+          id?: string
+          leads_entrados?: number
+          nao_responde?: number
+          negociacao?: number
+          origem?: string
+          qualificados?: number
+          sem_interesse?: number
+          vendas_fechadas?: number
+        }
+        Relationships: []
       }
       messages: {
         Row: {
@@ -716,6 +803,42 @@ export type Database = {
           is_active?: boolean
           updated_at?: string
           xp?: number
+        }
+        Relationships: []
+      }
+      prospeccao_diaria: {
+        Row: {
+          canal: string
+          created_at: string | null
+          created_by: string | null
+          data: string
+          id: string
+          oportunidades: number
+          tentativas: number
+          vendas: number
+          vendedor: string
+        }
+        Insert: {
+          canal: string
+          created_at?: string | null
+          created_by?: string | null
+          data: string
+          id?: string
+          oportunidades?: number
+          tentativas?: number
+          vendas?: number
+          vendedor: string
+        }
+        Update: {
+          canal?: string
+          created_at?: string | null
+          created_by?: string | null
+          data?: string
+          id?: string
+          oportunidades?: number
+          tentativas?: number
+          vendas?: number
+          vendedor?: string
         }
         Relationships: []
       }
