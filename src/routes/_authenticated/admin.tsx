@@ -392,7 +392,7 @@ function ContentTab() {
         <Table>
           <TableHeader><TableRow><TableHead>Categoria</TableHead><TableHead>Título</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
           <TableBody>
-            {(q.data ?? []).map((c) => (
+            {(q.data ?? []).map((c: { id: string; category: string | null; title: string; content: string; link_externo: string | null; link_label: string | null }) => (
               <TableRow key={c.id}>
                 <TableCell><Badge variant="secondary">{c.category || "—"}</Badge></TableCell>
                 <TableCell className="font-medium">{c.title}</TableCell>
