@@ -130,3 +130,50 @@ export const getRankingDetalhado = createServerFn()
         : 0,
     }));
   });
+
+// New function: getRankingPorPeriodo
+export const getRankingPorPeriodo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => d as { dataInicio?: string; dataFim?: string })
+  .handler(async ({ data, context }) => {
+    let query = context.supabase
+      .from("simulator_results")
+      .select("user_id, nota, profiles!simulator_results_user_id_fkey(id, display_name)");
+
+    if (data.dataInicio) query = query.gte("created_at", data.dataInicio);
+    if (data.dataFim) query = query.lte("created_at", data.dataFim + "T23:59:59");
+
+    const { data: results, error } = await query;
+    if (error) throw error;
+
+    const map: Record<string, { display_name: string; total: number; soma: number; melhor: number }> = {};
+    for (const r of results ?? []) {
+      const prof = (r as any).profiles as any;
+      const uid = r.user_id;
+      if (!map[uid]) map[uid] = { display_name: prof?.display_name ?? "Atendente", total: 0, soma: 0, melhor: 0 };
+      map[uid].total++;
+      map[uid].soma += r.nota;
+      if (r.nota > map[uid].melhor) map[uid].melhor = r.nota;
+    }
+
+    return Object.entries(map)
+      .map(([id, s]) => ({
+        id,
+        display_name: s.display_name,
+        total: s.total,
+        media: s.total > 0 ? Math.round(s.soma / s.total) : 0,
+        melhor: s.melhor,
+      }))
+      .sort((a, b) => b.media - a.media || b.total - a.total);
+  });
+
+export const resetarXpTodos = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { error } = await context.supabase
+      .from("profiles")
+      .update({ xp: 0 })
+      .neq("id", "00000000-0000-0000-0000-000000000000");
+    if (error) throw error;
+    return { ok: true };
+  });
