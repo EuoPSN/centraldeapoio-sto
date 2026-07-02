@@ -19,6 +19,7 @@ import { Route as AuthenticatedScriptsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedRankingRouteImport } from './routes/_authenticated/ranking'
 import { Route as AuthenticatedProblemasRouteImport } from './routes/_authenticated/problemas'
 import { Route as AuthenticatedPrecosRouteImport } from './routes/_authenticated/precos'
+import { Route as AuthenticatedCrmProspeccaoRouteImport } from './routes/_authenticated/crm-prospeccao'
 import { Route as AuthenticatedConhecimentoRouteImport } from './routes/_authenticated/conhecimento'
 import { Route as AuthenticatedAssistenteRouteImport } from './routes/_authenticated/assistente'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
@@ -74,6 +75,12 @@ const AuthenticatedPrecosRoute = AuthenticatedPrecosRouteImport.update({
   path: '/precos',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCrmProspeccaoRoute =
+  AuthenticatedCrmProspeccaoRouteImport.update({
+    id: '/crm-prospeccao',
+    path: '/crm-prospeccao',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedConhecimentoRoute =
   AuthenticatedConhecimentoRouteImport.update({
     id: '/conhecimento',
@@ -102,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/assistente': typeof AuthenticatedAssistenteRoute
   '/conhecimento': typeof AuthenticatedConhecimentoRoute
+  '/crm-prospeccao': typeof AuthenticatedCrmProspeccaoRoute
   '/precos': typeof AuthenticatedPrecosRoute
   '/problemas': typeof AuthenticatedProblemasRoute
   '/ranking': typeof AuthenticatedRankingRoute
@@ -116,6 +124,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/assistente': typeof AuthenticatedAssistenteRoute
   '/conhecimento': typeof AuthenticatedConhecimentoRoute
+  '/crm-prospeccao': typeof AuthenticatedCrmProspeccaoRoute
   '/precos': typeof AuthenticatedPrecosRoute
   '/problemas': typeof AuthenticatedProblemasRoute
   '/ranking': typeof AuthenticatedRankingRoute
@@ -133,6 +142,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/assistente': typeof AuthenticatedAssistenteRoute
   '/_authenticated/conhecimento': typeof AuthenticatedConhecimentoRoute
+  '/_authenticated/crm-prospeccao': typeof AuthenticatedCrmProspeccaoRoute
   '/_authenticated/precos': typeof AuthenticatedPrecosRoute
   '/_authenticated/problemas': typeof AuthenticatedProblemasRoute
   '/_authenticated/ranking': typeof AuthenticatedRankingRoute
@@ -151,6 +161,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/assistente'
     | '/conhecimento'
+    | '/crm-prospeccao'
     | '/precos'
     | '/problemas'
     | '/ranking'
@@ -165,6 +176,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/assistente'
     | '/conhecimento'
+    | '/crm-prospeccao'
     | '/precos'
     | '/problemas'
     | '/ranking'
@@ -181,6 +193,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/assistente'
     | '/_authenticated/conhecimento'
+    | '/_authenticated/crm-prospeccao'
     | '/_authenticated/precos'
     | '/_authenticated/problemas'
     | '/_authenticated/ranking'
@@ -270,6 +283,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPrecosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/crm-prospeccao': {
+      id: '/_authenticated/crm-prospeccao'
+      path: '/crm-prospeccao'
+      fullPath: '/crm-prospeccao'
+      preLoaderRoute: typeof AuthenticatedCrmProspeccaoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/conhecimento': {
       id: '/_authenticated/conhecimento'
       path: '/conhecimento'
@@ -305,6 +325,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAssistenteRoute: typeof AuthenticatedAssistenteRoute
   AuthenticatedConhecimentoRoute: typeof AuthenticatedConhecimentoRoute
+  AuthenticatedCrmProspeccaoRoute: typeof AuthenticatedCrmProspeccaoRoute
   AuthenticatedPrecosRoute: typeof AuthenticatedPrecosRoute
   AuthenticatedProblemasRoute: typeof AuthenticatedProblemasRoute
   AuthenticatedRankingRoute: typeof AuthenticatedRankingRoute
@@ -319,6 +340,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAssistenteRoute: AuthenticatedAssistenteRoute,
   AuthenticatedConhecimentoRoute: AuthenticatedConhecimentoRoute,
+  AuthenticatedCrmProspeccaoRoute: AuthenticatedCrmProspeccaoRoute,
   AuthenticatedPrecosRoute: AuthenticatedPrecosRoute,
   AuthenticatedProblemasRoute: AuthenticatedProblemasRoute,
   AuthenticatedRankingRoute: AuthenticatedRankingRoute,
