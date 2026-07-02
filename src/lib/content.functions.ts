@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { isAdminUser } from "@/lib/authz.server";
+import { isAdminUser } from "@/lib/authz";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
@@ -14,7 +14,8 @@ export const listContent = createServerFn({ method: "POST" })
     z.object({ section: SectionEnum }).parse(data),
   )
   .handler(async ({ data, context }) => {
-    const { data: rows, error } = await context.supabase
+    const db = context.supabase as any;
+    const { data: rows, error } = await db
       .from("content_items")
       .select("*")
       .eq("section", data.section)
@@ -47,9 +48,10 @@ export const upsertContent = createServerFn({ method: "POST" })
       ...data,
       created_by: context.userId,
     };
+    const db = context.supabase as any;
     const { data: result, error } = data.id
-      ? await context.supabase.from("content_items").update(row).eq("id", data.id).select().single()
-      : await context.supabase.from("content_items").insert(row).select().single();
+      ? await db.from("content_items").update(row).eq("id", data.id).select().single()
+      : await db.from("content_items").insert(row).select().single();
     if (error) throw new Error(error.message);
     return result;
   });

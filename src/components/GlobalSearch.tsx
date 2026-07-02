@@ -41,12 +41,15 @@ export function GlobalSearch() {
   const pricing = useQuery({ queryKey: ["sg-pricing"], queryFn: () => lpPricing({}), enabled: open });
 
   type Item = { id: string; title: string; preview: string; icon: typeof BookOpen; route: string };
+  type ContentSearchRow = { id: string; title: string; content: string };
+  type ScriptSearchRow = { id: string; title: string; body: string };
+  type PricingSearchRow = { id: string; specialty: string; category: string; cartao_price: number | null };
   const items = useMemo<{ knowledge: Item[]; scripts: Item[]; pricing: Item[]; problems: Item[]; tutorials: Item[] }>(() => ({
-    knowledge: (conh.data ?? []).map((r) => ({ id: r.id, title: r.title, preview: r.content.slice(0, 80), icon: BookOpen, route: "/conhecimento" })),
-    scripts: (scripts.data ?? []).map((r) => ({ id: r.id, title: r.title, preview: r.body.slice(0, 80), icon: MessageSquareQuote, route: "/scripts" })),
-    pricing: (pricing.data ?? []).map((r) => ({ id: r.id, title: r.specialty, preview: `${r.category}${r.cartao_price ? ` · R$ ${Number(r.cartao_price).toFixed(2)}` : ""}`, icon: DollarSign, route: "/precos" })),
-    problems: (prob.data ?? []).map((r) => ({ id: r.id, title: r.title, preview: r.content.slice(0, 80), icon: Wrench, route: "/problemas" })),
-    tutorials: (tut.data ?? []).map((r) => ({ id: r.id, title: r.title, preview: r.content.slice(0, 80), icon: GraduationCap, route: "/tutoriais" })),
+    knowledge: (conh.data ?? []).map((r: ContentSearchRow) => ({ id: r.id, title: r.title, preview: r.content.slice(0, 80), icon: BookOpen, route: "/conhecimento" })),
+    scripts: (scripts.data ?? []).map((r: ScriptSearchRow) => ({ id: r.id, title: r.title, preview: r.body.slice(0, 80), icon: MessageSquareQuote, route: "/scripts" })),
+    pricing: (pricing.data ?? []).map((r: PricingSearchRow) => ({ id: r.id, title: r.specialty, preview: `${r.category}${r.cartao_price ? ` · R$ ${Number(r.cartao_price).toFixed(2)}` : ""}`, icon: DollarSign, route: "/precos" })),
+    problems: (prob.data ?? []).map((r: ContentSearchRow) => ({ id: r.id, title: r.title, preview: r.content.slice(0, 80), icon: Wrench, route: "/problemas" })),
+    tutorials: (tut.data ?? []).map((r: ContentSearchRow) => ({ id: r.id, title: r.title, preview: r.content.slice(0, 80), icon: GraduationCap, route: "/tutoriais" })),
   }), [conh.data, scripts.data, pricing.data, prob.data, tut.data]);
 
   const go = (path: string) => {
