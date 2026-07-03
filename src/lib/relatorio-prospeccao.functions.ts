@@ -44,11 +44,14 @@ export const upsertMyReport = createServerFn({ method: "POST" })
 
 export const getAllReports = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => d as { dataInicio?: string; dataFim?: string; userId?: string })
+  .inputValidator((d: unknown) => d as { 
+    dataInicio?: string; dataFim?: string; 
+    userId?: string; cargo?: string; 
+  })
   .handler(async ({ data, context }) => {
     let query = context.supabase
       .from("relatorio_prospeccao")
-      .select("*, profiles!relatorio_prospeccao_user_id_fkey(display_name, email)")
+      .select("*, profiles!relatorio_prospeccao_user_id_fkey(id, display_name, email, cargo)")
       .order("data", { ascending: false })
       .order("area", { ascending: true });
     if (data.dataInicio) query = query.gte("data", data.dataInicio);
@@ -56,7 +59,11 @@ export const getAllReports = createServerFn({ method: "POST" })
     if (data.userId) query = query.eq("user_id", data.userId);
     const { data: rows, error } = await query;
     if (error) throw error;
-    return rows ?? [];
+    let result = rows ?? [];
+    if (data.cargo) {
+      result = result.filter((r: any) => r.profiles?.cargo === data.cargo);
+    }
+    return result;
   });
 
 export const getAllUsers = createServerFn()
@@ -64,7 +71,7 @@ export const getAllUsers = createServerFn()
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("profiles")
-      .select("id, display_name, email")
+      .select("id, display_name, email, cargo")
       .order("display_name", { ascending: true });
     if (error) throw error;
     return data ?? [];
