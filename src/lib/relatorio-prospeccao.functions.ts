@@ -46,9 +46,10 @@ export const getAllReports = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => d as { dataInicio?: string; dataFim?: string; userId?: string })
   .handler(async ({ data, context }) => {
-    let query = context.supabase
+    const db = context.supabase as any;
+    let query = db
       .from("relatorio_prospeccao")
-      .select("*, profiles!relatorio_prospeccao_user_id_fkey(display_name, email)")
+      .select("*")
       .order("data", { ascending: false })
       .order("area", { ascending: true });
     if (data.dataInicio) query = query.gte("data", data.dataInicio);
@@ -56,7 +57,18 @@ export const getAllReports = createServerFn({ method: "POST" })
     if (data.userId) query = query.eq("user_id", data.userId);
     const { data: rows, error } = await query;
     if (error) throw error;
-    return rows ?? [];
+    const list = rows ?? [];
+    const ids = Array.from(new Set(list.map((r: any) => r.user_id)));
+    let profilesById: Record<string, { display_name: string | null; email: string | null; cargo: string | null }> = {};
+    if (ids.length) {
+      const { data: profs, error: pErr } = await db
+        .from("profiles")
+        .select("id, display_name, email, cargo")
+        .in("id", ids);
+      if (pErr) throw pErr;
+      for (const p of profs ?? []) profilesById[p.id] = p;
+    }
+    return list.map((r: any) => ({ ...r, profiles: profilesById[r.user_id] ?? null }));
   });
 
 export const getAllUsers = createServerFn()
