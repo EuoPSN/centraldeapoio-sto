@@ -49,7 +49,7 @@ export const getAllReports = createServerFn({ method: "POST" })
     const db = context.supabase as any;
     let query = db
       .from("relatorio_prospeccao")
-      .select("*, profiles(id, display_name, email, cargo)")
+      .select("*")
       .order("data", { ascending: false })
       .order("area", { ascending: true });
     if (data.dataInicio) query = query.gte("data", data.dataInicio);
@@ -57,11 +57,29 @@ export const getAllReports = createServerFn({ method: "POST" })
     if (data.userId) query = query.eq("user_id", data.userId);
     const { data: rows, error } = await query;
     if (error) throw error;
-    let list = rows ?? [];
-    if (data.cargo) {
-      list = list.filter((r: any) => r.profiles?.cargo === data.cargo);
+    const list = rows ?? [];
+    const userIds = [...new Set(list.map((r: any) => r.user_id).filter(Boolean))];
+    const profilesById: Record<string, any> = {};
+
+    if (userIds.length > 0) {
+      const { data: profiles, error: profilesError } = await db
+        .from("profiles")
+        .select("id, display_name, email, cargo")
+        .in("id", userIds);
+      if (profilesError) throw profilesError;
+      for (const profile of profiles ?? []) profilesById[profile.id] = profile;
     }
-    return list;
+
+    let reports = list.map((report: any) => ({
+      ...report,
+      profiles: profilesById[report.user_id] ?? null,
+    }));
+
+    if (data.cargo) {
+      reports = reports.filter((r: any) => r.profiles?.cargo === data.cargo);
+    }
+
+    return reports;
   });
 
 export const getAllUsers = createServerFn()
