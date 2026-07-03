@@ -62,10 +62,22 @@ export const getAllReports = createServerFn({ method: "POST" })
 export const getAllUsers = createServerFn()
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
+    const { data, error } = await (context.supabase as any)
       .from("profiles")
-      .select("id, display_name, email")
+      .select("id, display_name, email, cargo")
       .order("display_name", { ascending: true });
     if (error) throw error;
     return data ?? [];
+  });
+
+export const updateUserCargo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => d as { userId: string; cargo: string | null })
+  .handler(async ({ data, context }) => {
+    const { error } = await (context.supabase as any)
+      .from("profiles")
+      .update({ cargo: data.cargo })
+      .eq("id", data.userId);
+    if (error) throw error;
+    return { ok: true };
   });
