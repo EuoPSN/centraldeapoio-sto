@@ -784,6 +784,7 @@ export type Database = {
           email: string
           id: string
           is_active: boolean
+          last_seen_at: string | null
           updated_at: string
           xp: number
         }
@@ -794,6 +795,7 @@ export type Database = {
           email: string
           id: string
           is_active?: boolean
+          last_seen_at?: string | null
           updated_at?: string
           xp?: number
         }
@@ -804,6 +806,7 @@ export type Database = {
           email?: string
           id?: string
           is_active?: boolean
+          last_seen_at?: string | null
           updated_at?: string
           xp?: number
         }
@@ -1076,6 +1079,41 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      training_completions: {
+        Row: {
+          completed_at: string
+          content_id: string
+          created_at: string
+          id: string
+          progress_pct: number
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          content_id: string
+          created_at?: string
+          id?: string
+          progress_pct?: number
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          content_id?: string
+          created_at?: string
+          id?: string
+          progress_pct?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_completions_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
