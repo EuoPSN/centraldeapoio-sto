@@ -71,6 +71,7 @@ function Page() {
     queryKey: ["all-users"],
     queryFn: () => getUsersFn(),
     enabled: tab === "admin" || tab === "equipe",
+    retry: 1,
   });
 
   const allQ = useQuery({
@@ -80,6 +81,7 @@ function Page() {
       userId: adminUser || undefined, cargo: adminCargo || undefined
     }}),
     enabled: tab === "admin",
+    retry: 1,
   });
 
   const saveMut = useMutation({
