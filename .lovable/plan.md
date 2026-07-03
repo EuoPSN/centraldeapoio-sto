@@ -1,79 +1,97 @@
+# Plano — Fase 1: Dashboard Geral Administrativo
 
-# Fase A — Atendimento + Base de Conhecimento IA
+Entrega dividida em 3 fases, começando pelo Dashboard Geral. Visão Geral e Equipe virão em fases seguintes, reaproveitando as mesmas funções server.
 
-Escopo desta rodada (Fases B e C ficam para depois).
+## Escopo desta fase (apenas Dashboard Geral)
 
-## 1. Banco de dados
+Nova rota `_authenticated/dashboard.tsx` protegida por `has_role('admin')`, com item no sidebar visível somente para admin.
 
-Novas tabelas / colunas:
+### O que será exibido (com fontes reais de dados)
 
-- `knowledge_entries` — substitui o uso atual de `content_items` para a IA. Tipos: `regra`, `procedimento`, `artigo`, `conversa_modelo`, `documento`, `treinamento`. Campos: título, conteúdo (markdown), `kind`, `category_id`, `tags[]`, `file_url`, `file_mime`, `external_url`, `metadata jsonb`, `position`, `created_by`.
-- `flow_nodes` ganha colunas para o editor visual: `position_x`, `position_y`, `color`, `icon`, `data jsonb` (campos extras).
-- `flow_edges` (nova) — arestas livres do React Flow: `flow_id`, `source_node_id`, `target_node_id`, `label`, `condition`.
-- `simulator_sessions` (nova) — histórico de simulações: `user_id`, `flow_id`, `path jsonb`, `started_at`, `finished_at`.
-- Bucket Storage `knowledge-files` (privado, leitura autenticada) para PDFs/DOCX/XLSX/vídeos/imagens.
-- RLS + GRANTs padrão em todas as novas tabelas (admin escreve, autenticado lê; sessions só do próprio user).
-- Reindexação RAG passa a varrer `knowledge_entries` (todos os tipos) + `messages` + `flow_nodes`.
+Cards principais:
+- Total de usuários → `profiles`
+- Usuários ativos (últimos 30d) → `access_logs`
+- Simulações realizadas → `simulator_sessions`
+- Simulações concluídas → `simulator_results`
+- Média geral de desempenho → média de `simulator_results.score`
+- Utilização da IA (mensagens 30d) → `chat_messages`
+- Conteúdos mais acessados → `access_logs` filtrado por `resource_type='content'` (top 5)
+- Taxa de conclusão de treinamentos → `training_completions / content_items(kind='treinamento')`
 
-## 2. Módulo Atendimento (`/scripts` reorganizado)
+Gráficos (Recharts, já disponível):
+- Evolução de simulados no tempo (linha, por dia)
+- Evolução da nota média (linha)
+- Utilização da plataforma por período (barra, acessos/dia)
+- Ranking uso da IA (barra horizontal, top 10 usuários)
+- Ranking de colaboradores (score médio, top 10)
+- Ranking por cargo/"equipe" (score médio agrupado)
 
-### 2.1 Biblioteca de Mensagens
-Já existe — pequenos ajustes: filtro por subcategoria, ordenação manual com setas ↑↓, busca por tag.
+Indicadores operacionais:
+- Colaboradores com maior evolução (delta score últimos 30d vs 30d anteriores)
+- Colaboradores com queda de desempenho (delta negativo)
+- Cargos com melhor resultado (média mais alta)
+- Cargos com menor engajamento (menos acessos por membro)
 
-### 2.2 Central de Fluxos (editor visual)
-Substitui a árvore atual por **React Flow** (`@xyflow/react`):
-- Canvas com zoom, pan, minimap, controles, fit-view.
-- 5 tipos de bloco (`step`, `question`, `objection`, `script`, `end`) com cor e ícone próprios, todos editáveis pelo admin.
-- Drag-and-drop de novos blocos a partir de uma palette lateral.
-- Conexões livres entre blocos com label opcional ("SIM", "NÃO", "Vou pensar"…).
-- Drawer lateral para editar bloco selecionado: nome, descrição, mensagem sugerida, observações internas, cor, ícone, botão copiar.
-- Persistência em `flow_nodes` + `flow_edges` (debounce no auto-save).
-- Modo "leitura" para funcionário (sem edição, mas com copiar mensagem e navegar).
+Filtros globais no topo:
+- Período (7d / 30d / 90d / customizado)
+- Cargo (CLT, Estágio Manhã, Estágio Tarde, Todos)
+- Usuário (dropdown)
 
-### 2.3 Simulador de Atendimento
-- Lista flows com `is_training = true` (cenários).
-- Roda como chat guiado: parte do nó `start`, mostra mensagem sugerida, oferece botões com as labels das arestas de saída, navega para o próximo nó.
-- Encerra em nó `end`; mostra resumo do caminho percorrido e grava em `simulator_sessions`.
-- Suporta nós `objection` aparecendo no meio do fluxo conforme a aresta escolhida.
+Atualização automática: `useQuery` com `refetchInterval: 60_000` e `invalidate` em mutações.
 
-## 3. Base de Conhecimento IA (`/conhecimento` reformulada)
+## Estruturas de dados novas (migration)
 
-Nova UI com 6 abas (uma por tipo): **Regras / Procedimentos / Artigos / Conversas Modelo / Documentos / Treinamentos**.
+Criar apenas o que hoje não tem fonte:
 
-- Listagem com busca, filtro por categoria/tag e ordenação.
-- Editor (admin): título, categoria, tags, conteúdo markdown, upload de arquivo (quando aplicável), link externo, observações.
-- Para "Documentos" e "Treinamentos": upload via Lovable Storage (PDF/DOCX/XLSX, imagens, vídeos); player de vídeo embutido e visualizador de PDF (iframe).
-- "Conversas Modelo" tem editor estruturado: turnos Atendente/Cliente + resultado final.
-- Botão "Reindexar IA" no admin reprocessa todos os tipos e gera embeddings.
+1. `training_completions` — registra conclusão de treinamento
+   - user_id (uuid, ref profiles), content_id (uuid, ref content_items), completed_at, progress_pct
+   - RLS: usuário lê/cria os próprios; admin lê tudo
+2. Coluna `last_seen_at timestamptz` em `profiles`
+   - Atualizada por um server fn `touchLastSeen` chamado no `_authenticated/route.tsx`
+3. Índices para performance:
+   - `access_logs(user_id, created_at)`
+   - `simulator_results(user_id, created_at)`
+   - `chat_messages(user_id, created_at)` (se colunas existirem)
 
-## 4. Chat IA (RAG aprimorado)
+Não altero nada em tabelas existentes além de adicionar `last_seen_at` e índices.
 
-- Mantém a interface atual; mensagem de sistema reforça que deve responder **apenas** com base no que está na Base de Conhecimento.
-- Quando nenhum chunk relevante (similaridade < limiar): responde `"Não encontrei essa informação na base de conhecimento."`.
-- Mostra fontes consultadas (título + tipo) abaixo da resposta.
+## Arquivos que serão criados/alterados
 
-## 5. Painel Admin
+Novos:
+- `supabase/migrations/<ts>_dashboard_infra.sql`
+- `src/lib/dashboard.functions.ts` — server functions agregadas, todas protegidas por `requireSupabaseAuth` + checagem `has_role('admin')`
+- `src/routes/_authenticated/dashboard.tsx` — página com cards + charts + filtros
+- `src/components/dashboard/StatCard.tsx`
+- `src/components/dashboard/RankingList.tsx`
+- `src/components/dashboard/TrendChart.tsx`
 
-Novas abas em `/admin`:
-- **Base de Conhecimento** (com sub-abas por tipo).
-- **Fluxos** (lista; editor abre em modal/rota dedicada).
-- **Cenários do Simulador** (toggle `is_training` nos fluxos).
-- Aba **Reindexação** já existe — expande para mostrar contagem por tipo.
+Alterados (mínimo):
+- `src/components/app-sidebar.tsx` — adicionar item "Dashboard" visível só para admin
+- `src/routes/_authenticated/route.tsx` — chamar `touchLastSeen` uma vez ao montar
 
-## 6. Detalhes técnicos
+Não vou alterar: nenhum arquivo do fluxo de relatórios, prospecção, chat, admin, meus-relatórios, integrations/supabase/*.
 
-- Lib nova: `@xyflow/react` (React Flow v12). Tema customizado para casar com o design system.
-- Upload: `supabase--storage_create_bucket` para `knowledge-files`; server fn assinada para gerar signed URLs.
-- Migrações via `supabase--migration` com GRANTs e RLS.
-- RAG reindex passa a quebrar conteúdo de `knowledge_entries.content` em chunks de ~800 chars com overlap, e indexar também `messages.content` e `flow_nodes.message`.
-- Para DOCX/XLSX/PDF: o conteúdo bruto continua sendo o que o admin colar no campo `content` (não vamos extrair texto do binário nesta fase — fica para Fase B se você quiser).
+## Segurança e performance
 
-## Fora do escopo desta rodada
+- Todas as funções server: `requireSupabaseAuth` + verificam `has_role(userId, 'admin')`; retornam 403 caso contrário.
+- Agregações feitas no Postgres (SQL RPC ou queries com `.select` + `count`/`avg` do PostgREST), não no cliente.
+- Uma única função `getDashboardOverview({ periodo, cargo, userId })` retorna todos os cards + séries num só round-trip, para reduzir latência.
+- Ranking e séries paginados a top-N (10) para manter payload leve.
 
-- Histórico/versionamento de edições.
-- Extração automática de texto de PDF/DOCX/XLSX para a IA (admin cola o texto por enquanto).
-- Mapa Mental gigante separado (o editor de fluxos já cobre o caso de uso).
-- Avatar/voz da MarcIAna e gamificação completa (Fase B).
-- Conexão Google Sheets / CRM Gerencial (Fase C).
+## Detalhes técnicos
 
-Confirma que posso seguir nessa direção?
+- Charts: Recharts (`LineChart`, `BarChart`) — já usado no projeto via `src/components/ui/chart.tsx`.
+- Filtros na URL via `validateSearch` no route file para deep-linking e refresh preservando estado.
+- Loader usa `ensureQueryData`; componente usa `useSuspenseQuery`.
+- `errorComponent` e `notFoundComponent` obrigatórios no route.
+
+## Fora do escopo (fases 2 e 3)
+
+- Fase 2 — Visão Geral executiva: reformula a aba `Visão Geral` de `meus-relatorios.tsx` reutilizando `getDashboardOverview`, adiciona destaques automáticos e seção de alertas.
+- Fase 3 — Equipe: nova visão agrupada por cargo com drill-down, ranking interno, comparação entre cargos.
+
+## Confirmação necessária antes de codar
+
+1. Ok criar a migration com `training_completions` + `last_seen_at` + índices?
+2. Sidebar: item novo "Dashboard" (ícone `LayoutDashboard`) só para admin — ok?
+3. Auto-refresh a cada 60s tá bom, ou prefere manual?
