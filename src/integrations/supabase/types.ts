@@ -778,6 +778,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          cargo: string | null
           created_at: string
           display_name: string | null
           email: string
@@ -787,6 +788,7 @@ export type Database = {
           xp: number
         }
         Insert: {
+          cargo?: string | null
           created_at?: string
           display_name?: string | null
           email: string
@@ -796,6 +798,7 @@ export type Database = {
           xp?: number
         }
         Update: {
+          cargo?: string | null
           created_at?: string
           display_name?: string | null
           email?: string
@@ -839,6 +842,51 @@ export type Database = {
           tentativas?: number
           vendas?: number
           vendedor?: string
+        }
+        Relationships: []
+      }
+      relatorio_prospeccao: {
+        Row: {
+          area: string
+          created_at: string | null
+          data: string
+          id: string
+          ligacoes: number
+          mensagens: number
+          oportunidades: number
+          tentativas: number
+          updated_at: string | null
+          user_id: string
+          vendas: number
+          ztalk: number
+        }
+        Insert: {
+          area: string
+          created_at?: string | null
+          data: string
+          id?: string
+          ligacoes?: number
+          mensagens?: number
+          oportunidades?: number
+          tentativas?: number
+          updated_at?: string | null
+          user_id: string
+          vendas?: number
+          ztalk?: number
+        }
+        Update: {
+          area?: string
+          created_at?: string | null
+          data?: string
+          id?: string
+          ligacoes?: number
+          mensagens?: number
+          oportunidades?: number
+          tentativas?: number
+          updated_at?: string | null
+          user_id?: string
+          vendas?: number
+          ztalk?: number
         }
         Relationships: []
       }
