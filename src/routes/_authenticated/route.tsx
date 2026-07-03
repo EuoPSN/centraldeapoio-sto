@@ -6,8 +6,10 @@ import { GlobalSearch } from "@/components/GlobalSearch";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getMe } from "@/lib/content.functions";
+import { touchLastSeen } from "@/lib/dashboard.functions";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -21,8 +23,13 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AppLayout() {
   const me = useServerFn(getMe);
+  const touch = useServerFn(touchLastSeen);
   const { data } = useQuery({ queryKey: ["me"], queryFn: () => me({}) });
   useNavigate();
+
+  useEffect(() => {
+    touch({}).catch(() => {});
+  }, [touch]);
 
   return (
     <SidebarProvider>
