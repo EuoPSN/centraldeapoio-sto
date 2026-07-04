@@ -78,7 +78,8 @@ function Page() {
     queryKey: ["all-reports", adminInicio, adminFim, adminUser, adminCargo],
     queryFn: () => getAllFn({ data: {
       dataInicio: adminInicio, dataFim: adminFim,
-      userId: adminUser || undefined, cargo: adminCargo || undefined
+      userId: adminUser === "todos" ? undefined : adminUser,
+      cargo: adminCargo === "todos" ? undefined : adminCargo,
     }}),
     enabled: tab === "admin",
     retry: 1,
