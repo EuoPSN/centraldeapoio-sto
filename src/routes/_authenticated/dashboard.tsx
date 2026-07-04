@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TrendingUp, Users, Target, PhoneCall, MessageSquare, Zap, BarChart2, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { TrendingUp, Users, Target, PhoneCall, BarChart2, ArrowUpRight } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -73,6 +73,7 @@ function DashboardPage() {
   const prospQ = useQuery({
     queryKey: ["prosp-stats", datas],
     queryFn: () => prospFn({ data: datas }),
+    retry: 1,
   });
 
   const leadsQ = useQuery({
@@ -81,6 +82,7 @@ function DashboardPage() {
       ...datas,
       origem: origem === "todos" ? undefined : origem,
     }}),
+    retry: 1,
   });
 
   const prosp = prospQ.data as any;
