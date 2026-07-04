@@ -43,8 +43,8 @@ function Page() {
     new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10)
   );
   const [adminFim, setAdminFim] = useState(hoje());
-  const [adminUser, setAdminUser] = useState("");
-  const [adminCargo, setAdminCargo] = useState("");
+  const [adminUser, setAdminUser] = useState("todos");
+  const [adminCargo, setAdminCargo] = useState("todos");
 
   const bloqueado = !isHoje(data);
 
