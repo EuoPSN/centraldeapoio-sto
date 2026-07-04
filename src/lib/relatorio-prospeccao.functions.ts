@@ -17,24 +17,23 @@ export const getMyReport = createServerFn({ method: "POST" })
 export const upsertMyReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => d as {
-    data: string; area: string;
-    ligacoes: number; mensagens: number; ztalk: number;
+    data: string; canal: string;
     tentativas: number; oportunidades: number; vendas: number;
   })
   .handler(async ({ data, context }) => {
     const row = {
       user_id: context.userId,
       data: data.data,
-      area: data.area,
-      ligacoes: data.ligacoes,
-      mensagens: data.mensagens,
-      ztalk: data.ztalk,
+      area: data.canal,
+      ligacoes: data.canal === "Ligações" ? data.tentativas : 0,
+      mensagens: data.canal === "Mensagens" ? data.tentativas : 0,
+      ztalk: data.canal === "Ztalk" ? data.tentativas : 0,
       tentativas: data.tentativas,
       oportunidades: data.oportunidades,
       vendas: data.vendas,
       updated_at: new Date().toISOString(),
     };
-    const { data: result, error } = await context.supabase
+    const { data: result, error } = await (context.supabase as any)
       .from("relatorio_prospeccao")
       .upsert(row, { onConflict: "user_id,data,area" })
       .select().single();
@@ -44,7 +43,10 @@ export const upsertMyReport = createServerFn({ method: "POST" })
 
 export const getAllReports = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => d as { dataInicio?: string; dataFim?: string; userId?: string; cargo?: string })
+  .inputValidator((d: unknown) => d as {
+    dataInicio?: string; dataFim?: string;
+    userId?: string; cargo?: string;
+  })
   .handler(async ({ data, context }) => {
     const db = context.supabase as any;
     let query = db
@@ -60,7 +62,6 @@ export const getAllReports = createServerFn({ method: "POST" })
     const list = rows ?? [];
     const userIds = [...new Set(list.map((r: any) => r.user_id).filter(Boolean))];
     const profilesById: Record<string, any> = {};
-
     if (userIds.length > 0) {
       const { data: profiles, error: profilesError } = await db
         .from("profiles")
@@ -69,16 +70,13 @@ export const getAllReports = createServerFn({ method: "POST" })
       if (profilesError) throw profilesError;
       for (const profile of profiles ?? []) profilesById[profile.id] = profile;
     }
-
     let reports = list.map((report: any) => ({
       ...report,
       profiles: profilesById[report.user_id] ?? null,
     }));
-
     if (data.cargo) {
       reports = reports.filter((r: any) => r.profiles?.cargo === data.cargo);
     }
-
     return reports;
   });
 
