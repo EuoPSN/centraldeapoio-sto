@@ -392,7 +392,7 @@ function ContentTab() {
         <Table>
           <TableHeader><TableRow><TableHead>Categoria</TableHead><TableHead>Título</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
           <TableBody>
-            {(q.data ?? []).map((c) => (
+            {(q.data ?? []).map((c: { id: string; category: string | null; title: string; content: string; link_externo: string | null; link_label: string | null }) => (
               <TableRow key={c.id}>
                 <TableCell><Badge variant="secondary">{c.category || "—"}</Badge></TableCell>
                 <TableCell className="font-medium">{c.title}</TableCell>
@@ -548,6 +548,7 @@ function AiTab() {
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState("google/gemini-3-flash-preview");
   const [genderArticle, setGenderArticle] = useState("a");
+  const [resumeReindex, setResumeReindex] = useState(false);
 
   useEffect(() => {
     if (sSettings.data) {
@@ -562,8 +563,17 @@ function AiTab() {
   }, [sSettings.data]);
 
   const mut = useMutation({
-    mutationFn: () => reindex({}),
-    onSuccess: (r) => { toast.success(`Reindexação concluída: ${r.indexed} chunks.`); qc.invalidateQueries({ queryKey: ["index-stats"] }); },
+    mutationFn: () => reindex({ data: { reset: !resumeReindex } }),
+    onSuccess: (r) => {
+      if (r.ok) {
+        toast.success(`Reindexação concluída: ${r.indexed} novos chunks. ${r.skipped} já estavam atualizados.`);
+        setResumeReindex(false);
+      } else {
+        toast.warning(`${r.indexed} chunks indexados. Limite temporário da IA atingido; tente novamente em alguns minutos para continuar.`);
+        setResumeReindex(true);
+      }
+      qc.invalidateQueries({ queryKey: ["index-stats"] });
+    },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
   });
 
@@ -594,11 +604,16 @@ function AiTab() {
             <p className="text-sm text-muted-foreground mt-1">
               Reindexa scripts, conhecimento, problemas, tutoriais e preços gerando embeddings semânticos. Execute após adicionar ou alterar conteúdo.
             </p>
+            {resumeReindex ? (
+              <p className="text-sm text-amber-600 mt-2">
+                Reindexação pausada por limite temporário da IA. Aguarde alguns minutos e clique novamente para continuar sem apagar o progresso.
+              </p>
+            ) : null}
             <p className="text-sm mt-2">Total atual: <strong className="text-primary">{sQ.data?.totalChunks ?? 0}</strong> chunks indexados.</p>
           </div>
           <Button onClick={() => mut.mutate()} disabled={mut.isPending} className="gap-2">
             <RefreshCw className={`h-4 w-4 ${mut.isPending ? "animate-spin" : ""}`} />
-            {mut.isPending ? "Reindexando..." : "Reindexar tudo"}
+            {mut.isPending ? "Reindexando..." : resumeReindex ? "Continuar reindexação" : "Reindexar tudo"}
           </Button>
         </div>
       </Card>
@@ -606,7 +621,7 @@ function AiTab() {
       <Card className="p-5">
         <h3 className="font-semibold flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> Modelo da IA</h3>
         <p className="text-sm text-muted-foreground mt-1">
-          O assistente usa <code className="text-xs bg-muted px-1 py-0.5 rounded">google/gemini-2.5-flash</code> via Lovable AI Gateway, com busca semântica (RAG) na base interna. Embeddings em 1536 dimensões compatíveis com <code className="text-xs bg-muted px-1 py-0.5 rounded">text-embedding-3-small</code>.
+          O assistente usa <code className="text-xs bg-muted px-1 py-0.5 rounded">google/gemini-3-flash-preview</code> via Lovable AI Gateway, com busca híbrida na base interna. Embeddings em 1536 dimensões compatíveis com <code className="text-xs bg-muted px-1 py-0.5 rounded">text-embedding-3-small</code>.
         </p>
       </Card>
 
@@ -642,9 +657,7 @@ function AiTab() {
                     <SelectValue placeholder="Selecione o modelo" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="google/gemini-2.5-flash">google/gemini-2.5-flash</SelectItem>
                     <SelectItem value="google/gemini-3-flash-preview">google/gemini-3-flash-preview</SelectItem>
-                    <SelectItem value="openai/gpt-4o-mini">openai/gpt-4o-mini</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

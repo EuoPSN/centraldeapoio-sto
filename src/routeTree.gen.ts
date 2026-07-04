@@ -20,11 +20,13 @@ import { Route as AuthenticatedRankingRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedProblemasRouteImport } from './routes/_authenticated/problemas'
 import { Route as AuthenticatedPrecosRouteImport } from './routes/_authenticated/precos'
 import { Route as AuthenticatedMeusRelatoriosRouteImport } from './routes/_authenticated/meus-relatorios'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCrmProspeccaoRouteImport } from './routes/_authenticated/crm-prospeccao'
 import { Route as AuthenticatedCrmLeadsRouteImport } from './routes/_authenticated/crm-leads'
 import { Route as AuthenticatedConhecimentoRouteImport } from './routes/_authenticated/conhecimento'
 import { Route as AuthenticatedAssistenteRouteImport } from './routes/_authenticated/assistente'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as ApiPublicKnowledgeFileRouteImport } from './routes/api/public/knowledge-file'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -82,6 +84,11 @@ const AuthenticatedMeusRelatoriosRoute =
     path: '/meus-relatorios',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedCrmProspeccaoRoute =
   AuthenticatedCrmProspeccaoRouteImport.update({
     id: '/crm-prospeccao',
@@ -109,6 +116,11 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicKnowledgeFileRoute = ApiPublicKnowledgeFileRouteImport.update({
+  id: '/api/public/knowledge-file',
+  path: '/api/public/knowledge-file',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -118,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/conhecimento': typeof AuthenticatedConhecimentoRoute
   '/crm-leads': typeof AuthenticatedCrmLeadsRoute
   '/crm-prospeccao': typeof AuthenticatedCrmProspeccaoRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
   '/meus-relatorios': typeof AuthenticatedMeusRelatoriosRoute
   '/precos': typeof AuthenticatedPrecosRoute
   '/problemas': typeof AuthenticatedProblemasRoute
@@ -126,6 +139,7 @@ export interface FileRoutesByFullPath {
   '/sugestoes': typeof AuthenticatedSugestoesRoute
   '/treinamentos': typeof AuthenticatedTreinamentosRoute
   '/tutoriais': typeof AuthenticatedTutoriaisRoute
+  '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -134,6 +148,7 @@ export interface FileRoutesByTo {
   '/conhecimento': typeof AuthenticatedConhecimentoRoute
   '/crm-leads': typeof AuthenticatedCrmLeadsRoute
   '/crm-prospeccao': typeof AuthenticatedCrmProspeccaoRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
   '/meus-relatorios': typeof AuthenticatedMeusRelatoriosRoute
   '/precos': typeof AuthenticatedPrecosRoute
   '/problemas': typeof AuthenticatedProblemasRoute
@@ -143,6 +158,7 @@ export interface FileRoutesByTo {
   '/treinamentos': typeof AuthenticatedTreinamentosRoute
   '/tutoriais': typeof AuthenticatedTutoriaisRoute
   '/': typeof AuthenticatedIndexRoute
+  '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -153,6 +169,7 @@ export interface FileRoutesById {
   '/_authenticated/conhecimento': typeof AuthenticatedConhecimentoRoute
   '/_authenticated/crm-leads': typeof AuthenticatedCrmLeadsRoute
   '/_authenticated/crm-prospeccao': typeof AuthenticatedCrmProspeccaoRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/meus-relatorios': typeof AuthenticatedMeusRelatoriosRoute
   '/_authenticated/precos': typeof AuthenticatedPrecosRoute
   '/_authenticated/problemas': typeof AuthenticatedProblemasRoute
@@ -162,6 +179,7 @@ export interface FileRoutesById {
   '/_authenticated/treinamentos': typeof AuthenticatedTreinamentosRoute
   '/_authenticated/tutoriais': typeof AuthenticatedTutoriaisRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -173,6 +191,7 @@ export interface FileRouteTypes {
     | '/conhecimento'
     | '/crm-leads'
     | '/crm-prospeccao'
+    | '/dashboard'
     | '/meus-relatorios'
     | '/precos'
     | '/problemas'
@@ -181,6 +200,7 @@ export interface FileRouteTypes {
     | '/sugestoes'
     | '/treinamentos'
     | '/tutoriais'
+    | '/api/public/knowledge-file'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -189,6 +209,7 @@ export interface FileRouteTypes {
     | '/conhecimento'
     | '/crm-leads'
     | '/crm-prospeccao'
+    | '/dashboard'
     | '/meus-relatorios'
     | '/precos'
     | '/problemas'
@@ -198,6 +219,7 @@ export interface FileRouteTypes {
     | '/treinamentos'
     | '/tutoriais'
     | '/'
+    | '/api/public/knowledge-file'
   id:
     | '__root__'
     | '/_authenticated'
@@ -207,6 +229,7 @@ export interface FileRouteTypes {
     | '/_authenticated/conhecimento'
     | '/_authenticated/crm-leads'
     | '/_authenticated/crm-prospeccao'
+    | '/_authenticated/dashboard'
     | '/_authenticated/meus-relatorios'
     | '/_authenticated/precos'
     | '/_authenticated/problemas'
@@ -216,11 +239,13 @@ export interface FileRouteTypes {
     | '/_authenticated/treinamentos'
     | '/_authenticated/tutoriais'
     | '/_authenticated/'
+    | '/api/public/knowledge-file'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicKnowledgeFileRoute: typeof ApiPublicKnowledgeFileRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -302,6 +327,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMeusRelatoriosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/crm-prospeccao': {
       id: '/_authenticated/crm-prospeccao'
       path: '/crm-prospeccao'
@@ -337,6 +369,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/knowledge-file': {
+      id: '/api/public/knowledge-file'
+      path: '/api/public/knowledge-file'
+      fullPath: '/api/public/knowledge-file'
+      preLoaderRoute: typeof ApiPublicKnowledgeFileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -346,6 +385,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedConhecimentoRoute: typeof AuthenticatedConhecimentoRoute
   AuthenticatedCrmLeadsRoute: typeof AuthenticatedCrmLeadsRoute
   AuthenticatedCrmProspeccaoRoute: typeof AuthenticatedCrmProspeccaoRoute
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedMeusRelatoriosRoute: typeof AuthenticatedMeusRelatoriosRoute
   AuthenticatedPrecosRoute: typeof AuthenticatedPrecosRoute
   AuthenticatedProblemasRoute: typeof AuthenticatedProblemasRoute
@@ -363,6 +403,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConhecimentoRoute: AuthenticatedConhecimentoRoute,
   AuthenticatedCrmLeadsRoute: AuthenticatedCrmLeadsRoute,
   AuthenticatedCrmProspeccaoRoute: AuthenticatedCrmProspeccaoRoute,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedMeusRelatoriosRoute: AuthenticatedMeusRelatoriosRoute,
   AuthenticatedPrecosRoute: AuthenticatedPrecosRoute,
   AuthenticatedProblemasRoute: AuthenticatedProblemasRoute,
@@ -380,17 +421,8 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicKnowledgeFileRoute: ApiPublicKnowledgeFileRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
