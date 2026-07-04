@@ -17,24 +17,23 @@ export const getMyReport = createServerFn({ method: "POST" })
 export const upsertMyReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => d as {
-    data: string; area: string;
-    ligacoes: number; mensagens: number; ztalk: number;
+    data: string; canal: string;
     tentativas: number; oportunidades: number; vendas: number;
   })
   .handler(async ({ data, context }) => {
     const row = {
       user_id: context.userId,
       data: data.data,
-      area: data.area,
-      ligacoes: data.ligacoes,
-      mensagens: data.mensagens,
-      ztalk: data.ztalk,
+      area: data.canal,
+      ligacoes: data.canal === "Ligações" ? data.tentativas : 0,
+      mensagens: data.canal === "Mensagens" ? data.tentativas : 0,
+      ztalk: data.canal === "Ztalk" ? data.tentativas : 0,
       tentativas: data.tentativas,
       oportunidades: data.oportunidades,
       vendas: data.vendas,
       updated_at: new Date().toISOString(),
     };
-    const { data: result, error } = await context.supabase
+    const { data: result, error } = await (context.supabase as any)
       .from("relatorio_prospeccao")
       .upsert(row, { onConflict: "user_id,data,area" })
       .select().single();
