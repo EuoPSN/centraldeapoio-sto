@@ -43,14 +43,15 @@ export const upsertMyReport = createServerFn({ method: "POST" })
 
 export const getAllReports = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => d as { 
-    dataInicio?: string; dataFim?: string; 
-    userId?: string; cargo?: string; 
+  .inputValidator((d: unknown) => d as {
+    dataInicio?: string; dataFim?: string;
+    userId?: string; cargo?: string;
   })
   .handler(async ({ data, context }) => {
-    let query = context.supabase
+    const db = context.supabase as any;
+    let query = db
       .from("relatorio_prospeccao")
-      .select("*, profiles!relatorio_prospeccao_user_id_fkey(id, display_name, email, cargo)")
+      .select("*")
       .order("data", { ascending: false })
       .order("area", { ascending: true });
     if (data.dataInicio) query = query.gte("data", data.dataInicio);
@@ -58,20 +59,46 @@ export const getAllReports = createServerFn({ method: "POST" })
     if (data.userId) query = query.eq("user_id", data.userId);
     const { data: rows, error } = await query;
     if (error) throw error;
-    let result = rows ?? [];
-    if (data.cargo) {
-      result = result.filter((r: any) => r.profiles?.cargo === data.cargo);
+    const list = rows ?? [];
+    const userIds = [...new Set(list.map((r: any) => r.user_id).filter(Boolean))];
+    const profilesById: Record<string, any> = {};
+    if (userIds.length > 0) {
+      const { data: profiles, error: profilesError } = await db
+        .from("profiles")
+        .select("id, display_name, email, cargo")
+        .in("id", userIds);
+      if (profilesError) throw profilesError;
+      for (const profile of profiles ?? []) profilesById[profile.id] = profile;
     }
-    return result;
+    let reports = list.map((report: any) => ({
+      ...report,
+      profiles: profilesById[report.user_id] ?? null,
+    }));
+    if (data.cargo) {
+      reports = reports.filter((r: any) => r.profiles?.cargo === data.cargo);
+    }
+    return reports;
   });
 
 export const getAllUsers = createServerFn()
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
+    const { data, error } = await (context.supabase as any)
       .from("profiles")
       .select("id, display_name, email, cargo")
       .order("display_name", { ascending: true });
     if (error) throw error;
     return data ?? [];
+  });
+
+export const updateUserCargo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => d as { userId: string; cargo: string | null })
+  .handler(async ({ data, context }) => {
+    const { error } = await (context.supabase as any)
+      .from("profiles")
+      .update({ cargo: data.cargo })
+      .eq("id", data.userId);
+    if (error) throw error;
+    return { ok: true };
   });
