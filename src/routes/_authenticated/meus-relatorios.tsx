@@ -43,8 +43,8 @@ function Page() {
     new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10)
   );
   const [adminFim, setAdminFim] = useState(hoje());
-  const [adminUser, setAdminUser] = useState("");
-  const [adminCargo, setAdminCargo] = useState("");
+  const [adminUser, setAdminUser] = useState("todos");
+  const [adminCargo, setAdminCargo] = useState("todos");
 
   const bloqueado = !isHoje(data);
 
@@ -78,7 +78,8 @@ function Page() {
     queryKey: ["all-reports", adminInicio, adminFim, adminUser, adminCargo],
     queryFn: () => getAllFn({ data: {
       dataInicio: adminInicio, dataFim: adminFim,
-      userId: adminUser || undefined, cargo: adminCargo || undefined
+      userId: adminUser === "todos" ? undefined : adminUser,
+      cargo: adminCargo === "todos" ? undefined : adminCargo,
     }}),
     enabled: tab === "admin",
     retry: 1,
@@ -251,7 +252,7 @@ function Page() {
                 <Select value={adminCargo} onValueChange={setAdminCargo}>
                   <SelectTrigger className="w-40"><SelectValue placeholder="Todos" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos</SelectItem>
+                    <SelectItem value="todos">Todos</SelectItem>
                     {CARGOS.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -261,7 +262,7 @@ function Page() {
                 <Select value={adminUser} onValueChange={setAdminUser}>
                   <SelectTrigger className="w-44"><SelectValue placeholder="Todos" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos</SelectItem>
+                    <SelectItem value="todos">Todos</SelectItem>
                     {(usersQ.data as any[] ?? []).map((u: any) => (
                       <SelectItem key={u.id} value={u.id}>{u.display_name ?? u.email}</SelectItem>
                     ))}
@@ -336,7 +337,7 @@ function Page() {
                     <SelectValue placeholder="Sem cargo" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sem cargo</SelectItem>
+                    <SelectItem value="sem-cargo">Sem cargo</SelectItem>
                     {CARGOS.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                   </SelectContent>
                 </Select>
