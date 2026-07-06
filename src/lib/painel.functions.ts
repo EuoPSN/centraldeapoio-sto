@@ -151,7 +151,38 @@ Erros recorrentes: ${errosAgregados.join("; ")}
 Contexto: Essa análise é para um atendente de vendas do Cartão de Todos, empresa de cartão de descontos.
 `;
 
-    const prompt = `${contexto}\n\nCom base nesses dados de desempenho, responda APENAS com um JSON válido, sem texto extra, sem markdown:\n\n{\n  "analise": "parágrafo resumindo o perfil desse atendente em 3-4 frases",\n  "sugestao_perfis": ["lista dos perfis mais adequados dentre: Técnico, Comercial, Investigativo, Empático, Rápido, Detalhista"],\n  "sugestao_nivel": "P1, P2, P3 ou P4 conforme modelo Hersey-Blanchard (P1=baixa competência/alto entusiasmo, P2=competência em desenvolvimento/baixo entusiasmo, P3=alta competência/comprometimento variável, P4=alta competência/alto comprometimento)",\n  "recomendacoes": "3 a 5 recomendações práticas e específicas de desenvolvimento para esse atendente, separadas por ponto e vírgula"\n}`;
+    const prompt = `${contexto}
+
+Você é um especialista em gestão de pessoas e desenvolvimento de equipes comerciais.
+Analise os dados de desempenho desse atendente de vendas do Cartão de Todos 
+(empresa de cartão de descontos com foco em saúde e bem-estar).
+
+Responda APENAS com um JSON válido, sem texto extra, sem markdown, sem blocos de código.
+
+Os perfis de maturidade disponíveis e seus significados são:
+- Técnico: Domina os processos, regras e informações do produto. Responde com precisão.
+- Comercial: Foco em resultados, argumenta bem, contorna objeções com facilidade.
+- Investigativo: Faz perguntas para entender o cliente antes de oferecer solução.
+- Empático: Conexão emocional com o cliente, escuta ativa e linguagem acolhedora.
+- Rápido: Resolve com agilidade, direto ao ponto, não enrola.
+- Detalhista: Explica cada etapa com cuidado, não deixa dúvidas, muito preciso.
+
+Um atendente pode ter múltiplos perfis cumulativos — escolha os que mais se destacam.
+
+Os níveis de liderança situacional (Hersey-Blanchard):
+- P1: Baixa competência técnica, alto entusiasmo. Precisa de direcionamento claro.
+- P2: Competência em desenvolvimento, entusiasmo variável. Precisa de coaching.
+- P3: Alta competência técnica, mas inseguro ou desmotivado. Precisa de suporte.
+- P4: Alta competência e alto comprometimento. Pode trabalhar com autonomia.
+
+{
+  "analise": "Análise detalhada em 4-6 frases sobre o perfil comportamental desse atendente, seus pontos fortes, padrões observados nas simulações e como ele se relaciona com clientes virtuais",
+  "sugestao_perfis": ["array com os perfis mais adequados dentre: Técnico, Comercial, Investigativo, Empático, Rápido, Detalhista — mínimo 1, máximo 4"],
+  "justificativa_perfis": "Explique em 2-3 frases por que esses perfis foram escolhidos com base nos dados",
+  "sugestao_nivel": "P1, P2, P3 ou P4",
+  "justificativa_nivel": "Explique em 1-2 frases por que esse nível foi escolhido",
+  "recomendacoes": "4 a 6 recomendações práticas e específicas de desenvolvimento, separadas por ponto e vírgula. Seja concreto: indique exercícios, abordagens ou situações específicas de atendimento do Cartão de Todos"
+}`;
 
     const apiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",

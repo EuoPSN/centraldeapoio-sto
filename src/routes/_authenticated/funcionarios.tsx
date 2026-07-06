@@ -29,6 +29,15 @@ const NIVEL_DESC: Record<string, string> = {
   P3: "Alta competência / Comprometimento variável",
   P4: "Alta competência / Alto comprometimento",
 };
+
+const PERFIL_DESC: Record<string, string> = {
+  "Técnico": "Domina processos e regras do produto. Responde com precisão.",
+  "Comercial": "Foco em resultados, argumenta bem e contorna objeções.",
+  "Investigativo": "Faz perguntas para entender o cliente antes de oferecer solução.",
+  "Empático": "Conexão emocional, escuta ativa e linguagem acolhedora.",
+  "Rápido": "Resolve com agilidade, direto ao ponto, sem enrolação.",
+  "Detalhista": "Explica cada etapa com cuidado, muito preciso.",
+};
 const NIVEL_COR: Record<string, string> = {
   P1: "bg-red-100 text-red-700 border-red-200",
   P2: "bg-yellow-100 text-yellow-700 border-yellow-200",
@@ -215,6 +224,18 @@ function Page() {
             <div className="bg-background rounded-lg p-4 border">
               <p className="text-xs font-medium text-muted-foreground uppercase mb-2">Análise da IA</p>
               <p className="text-sm">{analise.analise}</p>
+              {analise?.justificativa_perfis && (
+                <div className="mt-3 pt-3 border-t">
+                  <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Por que esses perfis</p>
+                  <p className="text-sm text-muted-foreground">{analise.justificativa_perfis}</p>
+                </div>
+              )}
+              {analise?.justificativa_nivel && (
+                <div className="mt-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Por que esse nível ({analise.sugestao_nivel})</p>
+                  <p className="text-sm text-muted-foreground">{analise.justificativa_nivel}</p>
+                </div>
+              )}
             </div>
           )}
 
@@ -223,10 +244,15 @@ function Page() {
               <p className="text-xs font-medium text-muted-foreground uppercase mb-2">Perfis de maturidade</p>
               <div className="flex flex-wrap gap-2">
                 {PERFIS.map((p) => (
-                  <button key={p} onClick={() => togglePerfil(p)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${perfisEdit.includes(p) ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:border-primary/50"}`}>
-                    {p}
-                  </button>
+                  <div key={p} className="flex flex-col gap-1">
+                    <button onClick={() => togglePerfil(p)}
+                      className={`px-3 py-2 rounded-lg text-xs font-medium border transition text-left ${perfisEdit.includes(p) ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:border-primary/50"}`}>
+                      <span className="font-semibold block">{p}</span>
+                      <span className={`text-[10px] leading-tight ${perfisEdit.includes(p) ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                        {PERFIL_DESC[p]}
+                      </span>
+                    </button>
+                  </div>
                 ))}
               </div>
             </div>
