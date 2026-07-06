@@ -180,6 +180,7 @@ function UsersTab() {
   const active = useServerFn(setUserActive);
   const create = useServerFn(createUser);
   const reset = useServerFn(resetUserPassword);
+  const del = useServerFn(deleteUser);
   const qc = useQueryClient();
   const usersQ = useQuery({ queryKey: ["admin-users"], queryFn: () => list({}) });
 
