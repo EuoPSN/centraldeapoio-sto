@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getMyReport, upsertMyReport, getAllReports,
-  getAllUsers, updateUserCargo
+  getAllUsers, updateUserCargo, adminUpsertReport, adminDeleteReport
 } from "@/lib/relatorio-prospeccao.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Download, Save, BarChart2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Download, Save, BarChart2, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/meus-relatorios")({
@@ -32,6 +33,8 @@ function Page() {
   const getAllFn = useServerFn(getAllReports);
   const getUsersFn = useServerFn(getAllUsers);
   const updateCargoFn = useServerFn(updateUserCargo);
+  const adminUpsertFn = useServerFn(adminUpsertReport);
+  const adminDeleteFn = useServerFn(adminDeleteReport);
   const qc = useQueryClient();
 
   const [tab, setTab] = useState<"meu" | "admin" | "equipe">("meu");
@@ -45,6 +48,8 @@ function Page() {
   const [adminFim, setAdminFim] = useState(hoje());
   const [adminUser, setAdminUser] = useState("");
   const [adminCargo, setAdminCargo] = useState("");
+  const [editando, setEditando] = useState<any>(null);
+  const [formEdit, setFormEdit] = useState<any>(null);
 
   const bloqueado = !isHoje(data);
 
@@ -99,6 +104,26 @@ function Page() {
       qc.invalidateQueries({ queryKey: ["all-users"] });
     },
     onError: () => toast.error("Erro ao atualizar cargo."),
+  });
+
+  const adminUpsertMut = useMutation({
+    mutationFn: (d: any) => adminUpsertFn({ data: d }),
+    onSuccess: () => {
+      toast.success("Dados atualizados!");
+      qc.invalidateQueries({ queryKey: ["all-reports"] });
+      setEditando(null);
+      setFormEdit(null);
+    },
+    onError: () => toast.error("Erro ao atualizar."),
+  });
+
+  const adminDeleteMut = useMutation({
+    mutationFn: (id: string) => adminDeleteFn({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Registro removido.");
+      qc.invalidateQueries({ queryKey: ["all-reports"] });
+    },
+    onError: () => toast.error("Erro ao remover."),
   });
 
   const setField = (canal: string, field: string, value: number) => {
@@ -301,6 +326,28 @@ function Page() {
                       <td className="p-3 text-center">{r.tentativas}</td>
                       <td className="p-3 text-center">{r.oportunidades}</td>
                       <td className="p-3 text-center font-semibold text-emerald-600">{r.vendas}</td>
+                    <td className="p-3">
+                      <div className="flex gap-1">
+                        <Button size="icon" variant="ghost" className="h-7 w-7"
+                          onClick={() => {
+                            setEditando(r);
+                            setFormEdit({
+                              userId: r.user_id,
+                              data: r.data,
+                              canal: r.area,
+                              tentativas: r.tentativas,
+                              oportunidades: r.oportunidades,
+                              vendas: r.vendas,
+                            });
+                          }}>
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive"
+                          onClick={() => adminDeleteMut.mutate(r.id)}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </td>
                     </tr>
                   ))}
                 </tbody>
@@ -348,6 +395,7 @@ function Page() {
 }
 
 import { createFileRoute } from "@tanstack/react-router";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -371,9 +419,7 @@ import { Badge } from "@/components/ui/badge";
 import { Download, Save, BarChart2 } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_authenticated/meus-relatorios")({
-  component: Page,
-});
+// Duplicate Route removed
 
 const AREAS = ["Geral", "Clts", "Estágios Manhã", "Estágios Tarde"];
 const CAMPOS = [
@@ -775,6 +821,53 @@ function Page() {
               </table>
             </div>
           </Card>
+        {/* Edit Dialog */}
+        <Dialog open={!!editando} onOpenChange={() => { setEditando(null); setFormEdit(null); }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Editar lançamento — {editando?.profiles?.display_name ?? "—"}</DialogTitle>
+            </DialogHeader>
+            {formEdit && (
+              <div className="space-y-3">
+                <div>
+                  <Label>Data</Label>
+                  <Input type="date" value={formEdit.data} onChange={(e) => setFormEdit((f: any) => ({ ...f, data: e.target.value }))} />
+                </div>
+                <div>
+                  <Label>Canal</Label>
+                  <Select value={formEdit.canal} onValueChange={(v) => setFormEdit((f: any) => ({ ...f, canal: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Ligações">Ligações</SelectItem>
+                      <SelectItem value="Mensagens">Mensagens</SelectItem>
+                      <SelectItem value="Ztalk">Ztalk</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <Label>Tentativas</Label>
+                    <Input type="number" min={0} value={formEdit.tentativas} onChange={(e) => setFormEdit((f: any) => ({ ...f, tentativas: Number(e.target.value) }))} />
+                  </div>
+                  <div>
+                    <Label>Oport.</Label>
+                    <Input type="number" min={0} value={formEdit.oportunidades} onChange={(e) => setFormEdit((f: any) => ({ ...f, oportunidades: Number(e.target.value) }))} />
+                  </div>
+                  <div>
+                    <Label>Vendas</Label>
+                    <Input type="number" min={0} value={formEdit.vendas} onChange={(e) => setFormEdit((f: any) => ({ ...f, vendas: Number(e.target.value) }))} />
+                  </div>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setEditando(null); setFormEdit(null); }}>Cancelar</Button>
+              <Button onClick={() => adminUpsertMut.mutate(formEdit)} disabled={adminUpsertMut.isPending}>
+                {adminUpsertMut.isPending ? "Salvando..." : "Salvar"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
         </div>
       )}
     </div>
