@@ -207,6 +207,11 @@ function UsersTab() {
     onSuccess: () => toast.success("Senha redefinida."),
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
   });
+  const deleteMut = useMutation({
+    mutationFn: (userId: string) => del({ data: { userId } }),
+    onSuccess: () => { toast.success("Usuário excluído."); qc.invalidateQueries({ queryKey: ["admin-users"] }); },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
+  });
 
   return (
     <Card className="overflow-hidden">
