@@ -9,7 +9,7 @@ import {
   listPricing, upsertPricing, deletePricing,
 } from "@/lib/content.functions";
 import {
-  listUsers, promoteUser, setUserActive, createUser, resetUserPassword,
+  listUsers, promoteUser, setUserActive, createUser, resetUserPassword, deleteUser,
   getStats, adminListConversations,
 } from "@/lib/users.functions";
 import { reindexAll, getIndexStats } from "@/lib/embeddings.functions";
@@ -180,6 +180,7 @@ function UsersTab() {
   const active = useServerFn(setUserActive);
   const create = useServerFn(createUser);
   const reset = useServerFn(resetUserPassword);
+  const del = useServerFn(deleteUser);
   const qc = useQueryClient();
   const usersQ = useQuery({ queryKey: ["admin-users"], queryFn: () => list({}) });
 
@@ -204,6 +205,11 @@ function UsersTab() {
   const resetMut = useMutation({
     mutationFn: (v: { userId: string; newPassword: string }) => reset({ data: v }),
     onSuccess: () => toast.success("Senha redefinida."),
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
+  });
+  const deleteMut = useMutation({
+    mutationFn: (userId: string) => del({ data: { userId } }),
+    onSuccess: () => { toast.success("Usuário excluído."); qc.invalidateQueries({ queryKey: ["admin-users"] }); },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
   });
 
@@ -274,6 +280,19 @@ function UsersTab() {
                     if (pwd && pwd.length >= 8) resetMut.mutate({ userId: u.id, newPassword: pwd });
                   }}>
                     Resetar senha
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    title="Excluir usuário"
+                    disabled={deleteMut.isPending}
+                    onClick={() => {
+                      if (confirm(`Excluir permanentemente ${u.display_name || u.email}? Esta ação não pode ser desfeita.`)) {
+                        deleteMut.mutate(u.id);
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </TableCell>
               </TableRow>
