@@ -3,38 +3,43 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { listMetas, upsertMeta, deleteMeta } from "@/lib/metas.functions";
-import { getProspeccaoStats } from "@/lib/prospeccao.functions";
+import { getAllUsers } from "@/lib/relatorio-prospeccao.functions";
+import { gerarAnaliseIA, salvarClassificacao } from "@/lib/painel.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Target, TrendingUp, Calendar, Users, ChevronRight, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Users, Brain, Loader2, Save, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/funcionarios")({
   component: Page,
 });
 
-const MESES = [
-  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
-];
+const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+const PERFIS = ["Técnico","Comercial","Investigativo","Empático","Rápido","Detalhista"];
+const NIVEIS = ["P1","P2","P3","P4"];
+const NIVEL_DESC: Record<string, string> = {
+  P1: "Baixa competência / Alto entusiasmo",
+  P2: "Competência em desenvolvimento / Baixo entusiasmo",
+  P3: "Alta competência / Comprometimento variável",
+  P4: "Alta competência / Alto comprometimento",
+};
+const NIVEL_COR: Record<string, string> = {
+  P1: "bg-red-100 text-red-700 border-red-200",
+  P2: "bg-yellow-100 text-yellow-700 border-yellow-200",
+  P3: "bg-blue-100 text-blue-700 border-blue-200",
+  P4: "bg-emerald-100 text-emerald-700 border-emerald-200",
+};
 
-function mesAtual() {
-  const d = new Date();
-  return `${MESES[d.getMonth()]}/${d.getFullYear()}`;
-}
-
-function inicioMes() {
-  const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
-}
-
+function mesAtual() { const d = new Date(); return `${MESES[d.getMonth()]}/${d.getFullYear()}`; }
+function inicioMes() { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10); }
 function hoje() { return new Date().toISOString().slice(0, 10); }
-
-const EMPTY = { nome: "", mes_referencia: mesAtual(), meta_mensal: 0, dias_uteis: 22 };
+const EMPTY_META = { nome: "", mes_referencia: mesAtual(), meta_mensal: 0, dias_uteis: 22 };
 
 function ProgressBar({ valor, meta }: { valor: number; meta: number }) {
   const pct = meta > 0 ? Math.min(Math.round((valor / meta) * 100), 100) : 0;
@@ -56,291 +61,224 @@ function Page() {
   const listFn = useServerFn(listMetas);
   const upsertFn = useServerFn(upsertMeta);
   const deleteFn = useServerFn(deleteMeta);
-  const statsFn = useServerFn(getProspeccaoStats);
+  const getUsersFn = useServerFn(getAllUsers);
+  const gerarFn = useServerFn(gerarAnaliseIA);
+  const salvarFn = useServerFn(salvarClassificacao);
   const qc = useQueryClient();
 
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<any>({ ...EMPTY });
-  const [selected, setSelected] = useState<any>(null);
+  const [openMeta, setOpenMeta] = useState(false);
+  const [formMeta, setFormMeta] = useState<any>({ ...EMPTY_META });
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [analise, setAnalise] = useState<any>(null);
+  const [perfisEdit, setPerfisEdit] = useState<string[]>([]);
+  const [nivelEdit, setNivelEdit] = useState<string>("");
+  const [gerando, setGerando] = useState(false);
+  const [salvando, setSalvando] = useState(false);
 
-  const metasQ = useQuery({
-    queryKey: ["metas"],
-    queryFn: () => listFn(),
-  });
+  const metasQ = useQuery({ queryKey: ["metas"], queryFn: () => listFn() });
+  const usersQ = useQuery({ queryKey: ["all-users"], queryFn: () => getUsersFn() });
+
   const metas = (metasQ.data ?? []) as any[];
-
-  const statsQ = useQuery({
-    queryKey: ["prosp-stats-mes"],
-    queryFn: () => statsFn({ data: { dataInicio: inicioMes(), dataFim: hoje() } }),
-  });
-  const stats = statsQ.data as any;
+  const users = (usersQ.data ?? []) as any[];
 
   const upsertMut = useMutation({
     mutationFn: (d: any) => upsertFn({ data: d }),
-    onSuccess: () => {
-      toast.success("Funcionário salvo!");
-      qc.invalidateQueries({ queryKey: ["metas"] });
-      setOpen(false);
-      setForm({ ...EMPTY });
-    },
-    onError: () => toast.error("Erro ao salvar."),
+    onSuccess: () => { toast.success("Meta salva!"); qc.invalidateQueries({ queryKey: ["metas"] }); setOpenMeta(false); setFormMeta({ ...EMPTY_META }); },
+    onError: () => toast.error("Erro ao salvar meta."),
   });
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => deleteFn({ data: { id } }),
-    onSuccess: () => {
-      toast.success("Removido.");
-      qc.invalidateQueries({ queryKey: ["metas"] });
-      if (selected?.id === form?.id) setSelected(null);
-    },
+    onSuccess: () => { toast.success("Removido."); qc.invalidateQueries({ queryKey: ["metas"] }); },
     onError: () => toast.error("Erro ao remover."),
   });
 
-  const set = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
-  const openNew = () => { setForm({ ...EMPTY }); setOpen(true); };
-  const openEdit = (m: any) => { setForm({ ...m }); setOpen(true); };
+  const setM = (k: string, v: any) => setFormMeta((f: any) => ({ ...f, [k]: v }));
+
+  const abrirPerfil = (u: any) => {
+    setSelectedUser(u);
+    setAnalise(null);
+    setPerfisEdit(u.perfis_maturidade ?? []);
+    setNivelEdit(u.nivel_lideranca ?? "");
+  };
+
+  const gerarAnalise = async () => {
+    if (!selectedUser) return;
+    setGerando(true);
+    try {
+      const result = await gerarFn({ data: { userId: selectedUser.id, nomeUsuario: selectedUser.display_name ?? selectedUser.email } });
+      setAnalise(result);
+      if (result.sugestao_perfis?.length) setPerfisEdit(result.sugestao_perfis);
+      if (result.sugestao_nivel) setNivelEdit(result.sugestao_nivel);
+    } catch { toast.error("Erro ao gerar análise."); }
+    setGerando(false);
+  };
+
+  const salvarClassif = async () => {
+    if (!selectedUser) return;
+    setSalvando(true);
+    try {
+      await salvarFn({ data: { userId: selectedUser.id, perfis_maturidade: perfisEdit, nivel_lideranca: nivelEdit || null, recomendacoes: analise?.recomendacoes ?? "" } });
+      toast.success("Classificação salva!");
+      qc.invalidateQueries({ queryKey: ["all-users"] });
+      setSelectedUser((u: any) => ({ ...u, perfis_maturidade: perfisEdit, nivel_lideranca: nivelEdit }));
+    } catch { toast.error("Erro ao salvar classificação."); }
+    setSalvando(false);
+  };
+
+  const togglePerfil = (p: string) => setPerfisEdit((prev) => prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]);
 
   const metaDiaria = (m: any) => m.dias_uteis > 0 ? Number((m.meta_mensal / m.dias_uteis).toFixed(1)) : 0;
   const metaSemanal = (m: any) => m.dias_uteis > 0 ? Number((m.meta_mensal / m.dias_uteis * 5).toFixed(1)) : 0;
-
-  const vendasDoFuncionario = (nome: string) => {
-    const vendedor = stats?.vendedores?.find((v: any) =>
-      v.nome.toLowerCase().trim() === nome.toLowerCase().trim()
-    );
-    return vendedor?.vendas ?? 0;
-  };
-
-  const diasUteisPassados = () => {
-    const hoje = new Date();
-    const inicioM = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-    let dias = 0;
-    for (let d = new Date(inicioM); d <= hoje; d.setDate(d.getDate() + 1)) {
-      const dow = d.getDay();
-      if (dow !== 0 && dow !== 6) dias++;
-    }
-    return dias;
-  };
-
-  const projecao = (m: any, vendasAtuais: number) => {
-    const diasPassados = diasUteisPassados();
-    if (diasPassados === 0) return 0;
-    const ritmoAtual = vendasAtuais / diasPassados;
-    return Math.round(ritmoAtual * m.dias_uteis);
-  };
 
   return (
     <div className="p-6 lg:p-10 max-w-6xl mx-auto space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Users className="h-6 w-6 text-primary" /> Painel de Funcionários
+            <Users className="h-6 w-6 text-primary" /> Painel Inteligente de Funcionários
           </h1>
-          <p className="text-muted-foreground text-sm">Metas, desempenho e projeção do mês atual.</p>
+          <p className="text-muted-foreground text-sm">Metas, maturidade e desenvolvimento individual.</p>
         </div>
-        <Button onClick={openNew} className="gap-2">
-          <Plus className="h-4 w-4" /> Novo Funcionário
+        <Button onClick={() => { setFormMeta({ ...EMPTY_META }); setOpenMeta(true); }} className="gap-2">
+          <Plus className="h-4 w-4" /> Nova Meta
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="p-4 text-center">
-          <p className="text-2xl font-bold text-primary">{metas.length}</p>
-          <p className="text-xs text-muted-foreground mt-1">Funcionários</p>
-        </Card>
-        <Card className="p-4 text-center">
-          <p className="text-2xl font-bold text-emerald-600">{stats?.total?.vendas ?? 0}</p>
-          <p className="text-xs text-muted-foreground mt-1">Vendas no mês</p>
-        </Card>
-        <Card className="p-4 text-center">
-          <p className="text-2xl font-bold text-primary">
-            {metas.reduce((s, m) => s + m.meta_mensal, 0)}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">Meta total do mês</p>
-        </Card>
-        <Card className="p-4 text-center">
-          <p className="text-2xl font-bold text-yellow-600">
-            {metas.length > 0 && (stats?.total?.vendas ?? 0) > 0
-              ? `${Math.round((stats.total.vendas / metas.reduce((s: number, m: any) => s + m.meta_mensal, 0)) * 100)}%`
-              : "0%"}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">Atingimento geral</p>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {metas.length === 0 && (
-          <Card className="p-10 text-center text-muted-foreground col-span-full">
-            Nenhum funcionário cadastrado. Clique em \"Novo Funcionário\" para começar.
-          </Card>
-        )}
-        {metas.map((m) => {
-          const vendas = vendasDoFuncionario(m.nome);
-          const proj = projecao(m, vendas);
-          const proj_cor = proj >= m.meta_mensal ? "text-emerald-600" : proj >= m.meta_mensal * 0.8 ? "text-yellow-600" : "text-red-500";
-          return (
-            <Card key={m.id} className="p-4 space-y-3 cursor-pointer hover:border-primary/40 transition"
-              onClick={() => setSelected(selected?.id === m.id ? null : m)}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Metas do mês</h2>
+          {metas.length === 0 && <Card className="p-8 text-center text-muted-foreground text-sm">Nenhuma meta cadastrada.</Card>}
+          {metas.map((m) => (
+            <Card key={m.id} className="p-4 space-y-3">
               <div className="flex items-start justify-between gap-2">
-                <div>
-                  <h3 className="font-semibold">{m.nome}</h3>
-                  <p className="text-xs text-muted-foreground">{m.mes_referencia}</p>
-                </div>
-                <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(m)}>
-                    <Pencil className="h-3 w-3" />
-                  </Button>
-                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive"
-                    onClick={() => deleteMut.mutate(m.id)}>
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
+                <div><h3 className="font-semibold">{m.nome}</h3><p className="text-xs text-muted-foreground">{m.mes_referencia}</p></div>
+                <div className="flex gap-1">
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setFormMeta({ ...m }); setOpenMeta(true); }}><Pencil className="h-3 w-3" /></Button>
+                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => deleteMut.mutate(m.id)}><Trash2 className="h-3 w-3" /></Button>
                 </div>
               </div>
-
-              <ProgressBar valor={vendas} meta={m.meta_mensal} />
-
+              <ProgressBar valor={0} meta={m.meta_mensal} />
               <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                <div className="bg-muted/40 rounded p-2">
-                  <p className="font-semibold text-base">{vendas}</p>
-                  <p className="text-muted-foreground">Vendas</p>
-                </div>
-                <div className="bg-muted/40 rounded p-2">
-                  <p className="font-semibold text-base">{metaDiaria(m)}</p>
-                  <p className="text-muted-foreground">Meta/dia</p>
-                </div>
-                <div className="bg-muted/40 rounded p-2">
-                  <p className="font-semibold text-base">{metaSemanal(m)}</p>
-                  <p className="text-muted-foreground">Meta/sem</p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between text-xs pt-1 border-t">
-                <span className="text-muted-foreground">Projeção do mês:</span>
-                <span className={`font-semibold ${proj_cor}`}>{proj} vendas</span>
+                <div className="bg-muted/40 rounded p-2"><p className="font-semibold text-base">{m.meta_mensal}</p><p className="text-muted-foreground">Meta mês</p></div>
+                <div className="bg-muted/40 rounded p-2"><p className="font-semibold text-base">{metaDiaria(m)}</p><p className="text-muted-foreground">Meta/dia</p></div>
+                <div className="bg-muted/40 rounded p-2"><p className="font-semibold text-base">{metaSemanal(m)}</p><p className="text-muted-foreground">Meta/sem</p></div>
               </div>
             </Card>
-          );
-        })}
+          ))}
+        </div>
+
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Perfis da equipe</h2>
+          {users.length === 0 && <Card className="p-8 text-center text-muted-foreground text-sm">Nenhum funcionário cadastrado.</Card>}
+          {users.map((u: any) => (
+            <Card key={u.id} className="p-4 cursor-pointer hover:border-primary/40 transition"
+              onClick={() => abrirPerfil(u)}>
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{u.display_name ?? u.email}</p>
+                  <p className="text-xs text-muted-foreground">{u.cargo ?? "Sem cargo"}</p>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {u.nivel_lideranca && <Badge className={`text-xs ${NIVEL_COR[u.nivel_lideranca]}`}>{u.nivel_lideranca}</Badge>}
+                  {(u.perfis_maturidade ?? []).slice(0, 2).map((p: string) => (
+                    <Badge key={p} variant="outline" className="text-xs">{p}</Badge>
+                  ))}
+                  {(u.perfis_maturidade ?? []).length > 2 && <Badge variant="outline" className="text-xs">+{u.perfis_maturidade.length - 2}</Badge>}
+                  <Brain className="h-4 w-4 text-muted-foreground" />
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
       </div>
 
-      {selected && (
-        <Card className="p-5 border-primary/30 bg-primary/5">
-          <div className="flex items-center justify-between mb-4">
+      {selectedUser && (
+        <Card className="p-5 border-primary/30 bg-primary/5 space-y-4">
+          <div className="flex items-center justify-between">
             <h2 className="font-semibold flex items-center gap-2">
-              <Target className="h-4 w-4 text-primary" /> Detalhes — {selected.nome}
+              <Brain className="h-4 w-4 text-primary" /> Análise — {selectedUser.display_name ?? selectedUser.email}
             </h2>
-            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setSelected(null)}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-primary">{vendasDoFuncionario(selected.nome)}</p>
-              <p className="text-xs text-muted-foreground">Vendas realizadas</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold">{selected.meta_mensal}</p>
-              <p className="text-xs text-muted-foreground">Meta mensal</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold">{selected.meta_mensal - vendasDoFuncionario(selected.nome)}</p>
-              <p className="text-xs text-muted-foreground">Faltam para meta</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold">{selected.dias_uteis}</p>
-              <p className="text-xs text-muted-foreground">Dias úteis no mês</p>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={gerarAnalise} disabled={gerando} className="gap-2">
+                {gerando ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                {gerando ? "Analisando..." : "Gerar análise IA"}
+              </Button>
+              <Button size="sm" onClick={salvarClassif} disabled={salvando} className="gap-2">
+                {salvando ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                Salvar classificação
+              </Button>
             </div>
           </div>
-          <div className="mt-4">
-            <ProgressBar valor={vendasDoFuncionario(selected.nome)} meta={selected.meta_mensal} />
+
+          {analise?.analise && (
+            <div className="bg-background rounded-lg p-4 border">
+              <p className="text-xs font-medium text-muted-foreground uppercase mb-2">Análise da IA</p>
+              <p className="text-sm">{analise.analise}</p>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase mb-2">Perfis de maturidade</p>
+              <div className="flex flex-wrap gap-2">
+                {PERFIS.map((p) => (
+                  <button key={p} onClick={() => togglePerfil(p)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${perfisEdit.includes(p) ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:border-primary/50"}`}>
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase mb-2">Nível de liderança situacional</p>
+              <div className="space-y-2">
+                {NIVEIS.map((n) => (
+                  <button key={n} onClick={() => setNivelEdit(nivelEdit === n ? "" : n)}
+                    className={`w-full text-left px-3 py-2 rounded-lg border text-sm transition ${nivelEdit === n ? `${NIVEL_COR[n]} border-current` : "bg-background border-border hover:border-primary/50"}`}>
+                    <span className="font-semibold">{n}</span> — {NIVEL_DESC[n]}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-          <div className="grid grid-cols-3 gap-3 mt-4 text-center text-sm">
-            <Card className="p-3">
-              <p className="text-lg font-bold text-primary">{metaDiaria(selected)}</p>
-              <p className="text-xs text-muted-foreground">Meta por dia</p>
-            </Card>
-            <Card className="p-3">
-              <p className="text-lg font-bold text-primary">{metaSemanal(selected)}</p>
-              <p className="text-xs text-muted-foreground">Meta por semana</p>
-            </Card>
-            <Card className="p-3">
-              <p className={`text-lg font-bold ${projecao(selected, vendasDoFuncionario(selected.nome)) >= selected.meta_mensal ? "text-emerald-600" : "text-red-500"}`}>{projecao(selected, vendasDoFuncionario(selected.nome))}</p>
-              <p className="text-xs text-muted-foreground">Projeção do mês</p>
-            </Card>
-          </div>
-          {stats?.vendedores?.find((v: any) => v.nome.toLowerCase().trim() === selected.nome.toLowerCase().trim()) && (
-            <div className="mt-4 grid grid-cols-3 gap-3 text-center text-sm border-t pt-4">
-              {(() => {
-                const v = stats.vendedores.find((v: any) => v.nome.toLowerCase().trim() === selected.nome.toLowerCase().trim());
-                return (
-                  <>
-                    <Card className="p-3">
-                      <p className="text-lg font-bold">{v.tentativas}</p>
-                      <p className="text-xs text-muted-foreground">Tentativas</p>
-                    </Card>
-                    <Card className="p-3">
-                      <p className="text-lg font-bold text-yellow-600">{v.oportunidades}</p>
-                      <p className="text-xs text-muted-foreground">Oportunidades</p>
-                    </Card>
-                    <Card className="p-3">
-                      <p className="text-lg font-bold">{v.conversao}%</p>
-                      <p className="text-xs text-muted-foreground">Conversão</p>
-                    </Card>
-                  </>
-                );
-              })()}
+
+          {analise?.recomendacoes && (
+            <div className="bg-background rounded-lg p-4 border">
+              <p className="text-xs font-medium text-muted-foreground uppercase mb-2">Recomendações de desenvolvimento</p>
+              <ul className="space-y-1">
+                {analise.recomendacoes.split(";").filter((r: string) => r.trim()).map((r: string, i: number) => (
+                  <li key={i} className="text-sm flex gap-2">
+                    <span className="text-primary font-bold flex-shrink-0">•</span>
+                    {r.trim()}
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </Card>
       )}
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={openMeta} onOpenChange={setOpenMeta}>
         <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{form.id ? "Editar Funcionário" : "Novo Funcionário"}</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>{formMeta.id ? "Editar Meta" : "Nova Meta"}</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <div>
-              <Label>Nome</Label>
-              <Input value={form.nome} onChange={(e) => set("nome", e.target.value)}
-                placeholder="Nome exato como aparece nas prospecções" />
-              <p className="text-xs text-muted-foreground mt-1">
-                Use o mesmo nome que está no Controle de Prospecções para vincular os dados automaticamente.
-              </p>
-            </div>
-            <div>
-              <Label>Mês de referência</Label>
-              <Input value={form.mes_referencia} onChange={(e) => set("mes_referencia", e.target.value)}
-                placeholder="Ex: Julho/2026" />
-            </div>
+            <div><Label>Nome do funcionário</Label><Input value={formMeta.nome} onChange={(e) => setM("nome", e.target.value)} placeholder="Nome exato como aparece nos relatórios" /></div>
+            <div><Label>Mês de referência</Label><Input value={formMeta.mes_referencia} onChange={(e) => setM("mes_referencia", e.target.value)} placeholder="Ex: Julho/2026" /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Meta mensal (vendas)</Label>
-                <Input type="number" min={0} value={form.meta_mensal}
-                  onChange={(e) => set("meta_mensal", Number(e.target.value))} />
-              </div>
-              <div>
-                <Label>Dias úteis no mês</Label>
-                <Input type="number" min={1} max={31} value={form.dias_uteis}
-                  onChange={(e) => set("dias_uteis", Number(e.target.value))} />
-              </div>
+              <div><Label>Meta mensal (vendas)</Label><Input type="number" min={0} value={formMeta.meta_mensal} onChange={(e) => setM("meta_mensal", Number(e.target.value))} /></div>
+              <div><Label>Dias úteis no mês</Label><Input type="number" min={1} max={31} value={formMeta.dias_uteis} onChange={(e) => setM("dias_uteis", Number(e.target.value))} /></div>
             </div>
-            {form.meta_mensal > 0 && form.dias_uteis > 0 && (
+            {formMeta.meta_mensal > 0 && formMeta.dias_uteis > 0 && (
               <div className="bg-muted/40 rounded p-3 grid grid-cols-2 gap-2 text-center text-sm">
-                <div>
-                  <p className="font-semibold">{(form.meta_mensal / form.dias_uteis).toFixed(1)}</p>
-                  <p className="text-xs text-muted-foreground">Meta diária</p>
-                </div>
-                <div>
-                  <p className="font-semibold">{(form.meta_mensal / form.dias_uteis * 5).toFixed(1)}</p>
-                  <p className="text-xs text-muted-foreground">Meta semanal</p>
-                </div>
+                <div><p className="font-semibold">{(formMeta.meta_mensal / formMeta.dias_uteis).toFixed(1)}</p><p className="text-xs text-muted-foreground">Meta diária</p></div>
+                <div><p className="font-semibold">{(formMeta.meta_mensal / formMeta.dias_uteis * 5).toFixed(1)}</p><p className="text-xs text-muted-foreground">Meta semanal</p></div>
               </div>
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button onClick={() => upsertMut.mutate(form)}
-              disabled={!form.nome || upsertMut.isPending}>
+            <Button variant="outline" onClick={() => setOpenMeta(false)}>Cancelar</Button>
+            <Button onClick={() => upsertMut.mutate(formMeta)} disabled={!formMeta.nome || upsertMut.isPending}>
               {upsertMut.isPending ? "Salvando..." : "Salvar"}
             </Button>
           </DialogFooter>
