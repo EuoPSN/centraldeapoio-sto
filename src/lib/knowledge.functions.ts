@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { isAdminUser } from "@/lib/authz";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
@@ -14,7 +15,7 @@ export type KnowledgeKind = (typeof KNOWLEDGE_KINDS)[number];
 
 async function admin(ctx: { supabase: unknown; userId: string }) {
   const s = ctx.supabase as { rpc: (n: string, p: unknown) => Promise<{ data: boolean | null }> };
-  const { data: ok } = await s.rpc("has_role", { _user_id: ctx.userId, _role: "admin" });
+  const ok = await isAdminUser(s, ctx.userId);
   if (!ok) throw new Error("Apenas administradores.");
 }
 
@@ -74,14 +75,13 @@ export const deleteKnowledge = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-// Gera URL assinada (1h) para download de arquivo no bucket knowledge-files
+// Gera URL same-origin (proxy) para download de arquivo no bucket knowledge-files.
+// Evita chamadas diretas ao domínio do Supabase, que algumas redes corporativas bloqueiam.
 export const signKnowledgeFile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ path: z.string().min(1) }).parse(d))
-  .handler(async ({ data, context }) => {
-    const { data: signed, error } = await context.supabase.storage
-      .from("knowledge-files")
-      .createSignedUrl(data.path, 3600);
-    if (error) throw new Error(error.message);
-    return { url: signed.signedUrl };
+  .handler(async ({ data }) => {
+    const { signKnowledgeFileToken } = await import("./knowledge-file-token.server");
+    const token = signKnowledgeFileToken(data.path, 3600);
+    return { url: `/api/public/knowledge-file?t=${encodeURIComponent(token)}` };
   });
