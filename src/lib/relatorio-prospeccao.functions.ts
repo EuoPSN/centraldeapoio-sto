@@ -102,3 +102,55 @@ export const updateUserCargo = createServerFn({ method: "POST" })
     if (error) throw error;
     return { ok: true };
   });
+
+async function assertAdmin(context: any) {
+  const { data, error } = await context.supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", context.userId)
+    .eq("role", "admin")
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error("Forbidden");
+}
+
+export const adminUpsertReport = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => d as {
+    userId: string; data: string; canal: string;
+    tentativas: number; oportunidades: number; vendas: number;
+  })
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const row = {
+      user_id: data.userId,
+      data: data.data,
+      area: data.canal,
+      ligacoes: data.canal === "Ligações" ? data.tentativas : 0,
+      mensagens: data.canal === "Mensagens" ? data.tentativas : 0,
+      ztalk: data.canal === "Ztalk" ? data.tentativas : 0,
+      tentativas: data.tentativas,
+      oportunidades: data.oportunidades,
+      vendas: data.vendas,
+      updated_at: new Date().toISOString(),
+    };
+    const { data: result, error } = await (context.supabase as any)
+      .from("relatorio_prospeccao")
+      .upsert(row, { onConflict: "user_id,data,area" })
+      .select().single();
+    if (error) throw error;
+    return result;
+  });
+
+export const adminDeleteReport = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => d as { id: string })
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { error } = await (context.supabase as any)
+      .from("relatorio_prospeccao")
+      .delete()
+      .eq("id", data.id);
+    if (error) throw error;
+    return { ok: true };
+  });

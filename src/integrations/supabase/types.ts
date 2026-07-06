@@ -474,7 +474,11 @@ export type Database = {
           meta_diaria: number | null
           meta_mensal: number
           meta_semanal: number | null
+          nivel_lideranca: string | null
           nome: string
+          perfis_maturidade: string[] | null
+          recomendacoes: string | null
+          recomendacoes_atualizadas_em: string | null
         }
         Insert: {
           created_at?: string | null
@@ -484,7 +488,11 @@ export type Database = {
           meta_diaria?: number | null
           meta_mensal?: number
           meta_semanal?: number | null
+          nivel_lideranca?: string | null
           nome: string
+          perfis_maturidade?: string[] | null
+          recomendacoes?: string | null
+          recomendacoes_atualizadas_em?: string | null
         }
         Update: {
           created_at?: string | null
@@ -494,7 +502,11 @@ export type Database = {
           meta_diaria?: number | null
           meta_mensal?: number
           meta_semanal?: number | null
+          nivel_lideranca?: string | null
           nome?: string
+          perfis_maturidade?: string[] | null
+          recomendacoes?: string | null
+          recomendacoes_atualizadas_em?: string | null
         }
         Relationships: []
       }
@@ -785,6 +797,8 @@ export type Database = {
           id: string
           is_active: boolean
           last_seen_at: string | null
+          nivel_lideranca: string | null
+          perfis_maturidade: string[] | null
           updated_at: string
           xp: number
         }
@@ -796,6 +810,8 @@ export type Database = {
           id: string
           is_active?: boolean
           last_seen_at?: string | null
+          nivel_lideranca?: string | null
+          perfis_maturidade?: string[] | null
           updated_at?: string
           xp?: number
         }
@@ -807,6 +823,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           last_seen_at?: string | null
+          nivel_lideranca?: string | null
+          perfis_maturidade?: string[] | null
           updated_at?: string
           xp?: number
         }
