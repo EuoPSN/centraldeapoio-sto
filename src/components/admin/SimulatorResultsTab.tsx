@@ -36,12 +36,26 @@ function notaCor(n: number) {
 
 export function SimulatorResultsTab() {
   const fn = useServerFn(listAllSimulatorResults);
+  const delFn = useServerFn(deleteSimulatorResult);
+  const qc = useQueryClient();
   const q = useQuery({ queryKey: ["admin-simulator-results"], queryFn: () => fn() });
   const results = (q.data ?? []) as any[];
   const [search, setSearch] = useState("");
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
   const [selected, setSelected] = useState<any>(null);
+  const [toDelete, setToDelete] = useState<any>(null);
+
+  const delMut = useMutation({
+    mutationFn: (id: string) => delFn({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Atendimento apagado.");
+      setToDelete(null);
+      qc.invalidateQueries({ queryKey: ["admin-simulator-results"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao apagar"),
+  });
+
 
   const filtered = useMemo(() => {
     return results.filter((r) => {
