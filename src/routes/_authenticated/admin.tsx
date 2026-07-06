@@ -9,7 +9,7 @@ import {
   listPricing, upsertPricing, deletePricing,
 } from "@/lib/content.functions";
 import {
-  listUsers, promoteUser, setUserActive, createUser, resetUserPassword,
+  listUsers, promoteUser, setUserActive, createUser, resetUserPassword, deleteUser,
   getStats, adminListConversations,
 } from "@/lib/users.functions";
 import { reindexAll, getIndexStats } from "@/lib/embeddings.functions";
