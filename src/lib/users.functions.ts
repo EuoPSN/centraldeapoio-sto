@@ -122,6 +122,25 @@ export const resetUserPassword = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const DeleteInput = z.object({ userId: z.string().uuid() });
+
+export const deleteUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => DeleteInput.parse(d))
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context);
+    if (data.userId === context.userId) {
+      throw new Error("Você não pode excluir a própria conta.");
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Remove dados relacionados antes de excluir o usuário do auth
+    await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId);
+    await supabaseAdmin.from("profiles").delete().eq("id", data.userId);
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 // Estatísticas básicas
 export const getStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
