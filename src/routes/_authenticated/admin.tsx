@@ -281,6 +281,19 @@ function UsersTab() {
                   }}>
                     Resetar senha
                   </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    title="Excluir usuário"
+                    disabled={deleteMut.isPending}
+                    onClick={() => {
+                      if (confirm(`Excluir permanentemente ${u.display_name || u.email}? Esta ação não pode ser desfeita.`)) {
+                        deleteMut.mutate(u.id);
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
                 </TableCell>
               </TableRow>
             );
