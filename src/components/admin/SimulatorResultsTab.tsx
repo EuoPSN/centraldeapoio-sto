@@ -154,9 +154,9 @@ export function SimulatorResultsTab() {
           </p>
         )}
         {filtered.map((r) => (
-          <button key={r.id} onClick={() => setSelected(r)}
-            className="w-full text-left p-4 hover:bg-muted/40 transition flex items-center justify-between gap-3">
-            <div className="min-w-0">
+          <div key={r.id}
+            className="w-full p-4 hover:bg-muted/40 transition flex items-center justify-between gap-3">
+            <button onClick={() => setSelected(r)} className="flex-1 min-w-0 text-left">
               <p className="text-sm font-medium truncate">
                 {r.profiles?.display_name ?? r.profiles?.email ?? "Atendente"}
               </p>
@@ -168,13 +168,19 @@ export function SimulatorResultsTab() {
                   {new Date(r.created_at).toLocaleString("pt-BR")} · {r.profile_name}
                 </span>
               </div>
-            </div>
+            </button>
             <div className="flex items-center gap-2 flex-shrink-0">
               <span className={`text-lg font-bold ${notaCor(r.nota)}`}>{r.nota}</span>
-              <Eye className="h-4 w-4 text-muted-foreground" />
+              <Button variant="ghost" size="icon" onClick={() => setSelected(r)} aria-label="Ver detalhes">
+                <Eye className="h-4 w-4 text-muted-foreground" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => setToDelete(r)} aria-label="Apagar atendimento">
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
             </div>
-          </button>
+          </div>
         ))}
+
       </Card>
 
       <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
