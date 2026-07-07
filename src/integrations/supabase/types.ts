@@ -294,6 +294,135 @@ export type Database = {
         }
         Relationships: []
       }
+      decision_edges: {
+        Row: {
+          created_at: string | null
+          from_node_id: string
+          id: string
+          label: string
+          motor_id: string
+          to_node_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          from_node_id: string
+          id?: string
+          label: string
+          motor_id: string
+          to_node_id: string
+        }
+        Update: {
+          created_at?: string | null
+          from_node_id?: string
+          id?: string
+          label?: string
+          motor_id?: string
+          to_node_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decision_edges_from_node_id_fkey"
+            columns: ["from_node_id"]
+            isOneToOne: false
+            referencedRelation: "decision_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "decision_edges_motor_id_fkey"
+            columns: ["motor_id"]
+            isOneToOne: false
+            referencedRelation: "decision_motors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "decision_edges_to_node_id_fkey"
+            columns: ["to_node_id"]
+            isOneToOne: false
+            referencedRelation: "decision_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      decision_motors: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+        }
+        Relationships: []
+      }
+      decision_nodes: {
+        Row: {
+          created_at: string | null
+          documentos: string | null
+          id: string
+          is_start: boolean | null
+          mensagem: string | null
+          motor_id: string
+          observacoes: string | null
+          orientacoes: string | null
+          processo: string | null
+          question_type: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          documentos?: string | null
+          id?: string
+          is_start?: boolean | null
+          mensagem?: string | null
+          motor_id: string
+          observacoes?: string | null
+          orientacoes?: string | null
+          processo?: string | null
+          question_type?: string | null
+          title: string
+          type: string
+        }
+        Update: {
+          created_at?: string | null
+          documentos?: string | null
+          id?: string
+          is_start?: boolean | null
+          mensagem?: string | null
+          motor_id?: string
+          observacoes?: string | null
+          orientacoes?: string | null
+          processo?: string | null
+          question_type?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decision_nodes_motor_id_fkey"
+            columns: ["motor_id"]
+            isOneToOne: false
+            referencedRelation: "decision_motors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       flow_edges: {
         Row: {
           condition: string | null
