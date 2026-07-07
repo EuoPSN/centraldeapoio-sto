@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { chatCompletion } from "@/lib/ai-gateway.server";
 
 const PERFIS_MATURIDADE = ["Técnico", "Comercial", "Investigativo", "Empático", "Rápido", "Detalhista"];
 const NIVEIS_LIDERANCA = ["P1", "P2", "P3", "P4"];
