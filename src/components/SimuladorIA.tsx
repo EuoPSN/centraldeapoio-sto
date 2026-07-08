@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Send, StopCircle, RotateCcw, MessageSquare } from "lucide-react";
+import { ClienteAvatar } from "@/components/ClienteAvatar";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { simulatorChat } from "@/lib/simulator.chat.functions";
@@ -16,6 +17,10 @@ import { saveSimulatorResult } from "@/lib/gamification.functions";
 interface Profile {
   id: string; name: string; personality: string; difficulty: string;
   objectives: string; objections: string; behaviors: string;
+  cliente_nome?: string;
+  cliente_cpf?: string;
+  cliente_regiao?: string;
+  cliente_genero?: string;
 }
 interface Message { role: "atendente" | "cliente"; content: string; }
 
@@ -180,6 +185,44 @@ const avaliarMut = useMutation({
   }
 
   return (
+  <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4 items-start">
+    {/* Card do cliente */}
+    <Card className="p-4 space-y-4 sticky top-4">
+      <div className="flex flex-col items-center text-center gap-2">
+        <ClienteAvatar genero={profile.cliente_genero} size={80} />
+        <div>
+          <p className="font-semibold text-sm">{profile.cliente_nome || profile.name}</p>
+          <Badge className={`text-xs mt-1 ${DIFFICULTY_COLORS[profile.difficulty]}`}>{DIFFICULTY_LABELS[profile.difficulty]}</Badge>
+        </div>
+      </div>
+      <div className="space-y-2 text-xs border-t pt-3">
+        {profile.cliente_cpf && (
+          <div className="flex justify-between gap-2">
+            <span className="text-muted-foreground">CPF</span>
+            <span className="font-mono font-medium">{profile.cliente_cpf}</span>
+          </div>
+        )}
+        {profile.cliente_regiao && (
+          <div className="flex justify-between gap-2">
+            <span className="text-muted-foreground">Região</span>
+            <span className="font-medium text-right">{profile.cliente_regiao}</span>
+          </div>
+        )}
+        <div className="flex justify-between gap-2">
+          <span className="text-muted-foreground">Perfil</span>
+          <span className="font-medium text-right">{profile.name}</span>
+        </div>
+      </div>
+      <div className="border-t pt-3 space-y-1">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Personalidade</p>
+        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-4">{profile.personality}</p>
+      </div>
+      <Button size="sm" variant="outline" onClick={onReset} className="w-full gap-2 mt-2">
+        <RotateCcw className="h-3 w-3" /> Trocar cliente
+      </Button>
+    </Card>
+
+    {/* Chat principal */}
     <Card className="p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -195,12 +238,16 @@ const avaliarMut = useMutation({
 
       <div className="flex flex-col gap-2 min-h-[300px] max-h-[400px] overflow-y-auto p-2 bg-muted/20 rounded-md">
         {messages.length === 0 && (
-          <p className="text-xs text-muted-foreground text-center mt-10">Inicie o atendimento. Você é o vendedor — o cliente virtual vai responder.</p>
+          <p className="text-xs text-muted-foreground text-center mt-10">
+            Inicie o atendimento. Você é o vendedor — o cliente virtual vai responder.
+          </p>
         )}
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === "atendente" ? "justify-end" : "justify-start"}`}>
-            <div className={`max-w-[75%] rounded-xl px-3 py-2 text-sm ${m.role === "atendente" ? "bg-primary text-primary-foreground" : "bg-background border text-foreground"}`}> 
-              <p className="text-[10px] font-medium mb-1 opacity-70">{m.role === "atendente" ? "Você" : profile.name}</p>
+            <div className={`max-w-[75%] rounded-xl px-3 py-2 text-sm ${m.role === "atendente" ? "bg-primary text-primary-foreground" : "bg-background border text-foreground"}`}>
+              <p className="text-[10px] font-medium mb-1 opacity-70">
+                {m.role === "atendente" ? "Você" : profile.name}
+              </p>
               {m.content}
             </div>
           </div>
@@ -216,15 +263,21 @@ const avaliarMut = useMutation({
 
       <div className="flex gap-2">
         <Textarea value={input} onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }}}
-          placeholder="Digite sua mensagem para o cliente..." rows={2} className="resize-none" />
-        <Button onClick={handleSend} disabled={!input.trim() || encerrado} className="self-end gap-2">
-          <Send className="h-4 w-4" /> Enviar
-        </Button>
-        <Button variant="secondary" onClick={handleAwaitResponse} disabled={pendingAttendantMessages.length===0 || encerrado} className="self-end gap-2">
-          <MessageSquare className="h-4 w-4" /> Aguardar resposta
-        </Button>
+          onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+          placeholder="Digite sua mensagem..." rows={2} className="resize-none" />
+        <div className="flex flex-col gap-2">
+          <Button onClick={handleSend} disabled={!input.trim() || encerrado} className="gap-1 text-xs">
+            <Send className="h-4 w-4" />
+          </Button>
+          {pendingAttendantMessages.length > 0 && (
+            <Button onClick={handleAwaitResponse} disabled={sendMut.isPending || encerrado}
+              variant="outline" className="gap-1 text-xs">
+              <MessageSquare className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
       </div>
     </Card>
-  );
+  </div>
+);
 }

@@ -26,7 +26,7 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   especialista: "bg-red-100 text-red-800",
 };
 
-const EMPTY = { name: "", personality: "", difficulty: "medio", objectives: "", objections: "", behaviors: "" };
+const EMPTY = { name: "", personality: "", difficulty: "medio", objectives: "", objections: "", behaviors: "", cliente_nome: "", cliente_cpf: "", cliente_regiao: "", cliente_genero: "masculino" };
 
 export function ClientProfilesTab() {
   const listFn = useServerFn(listClientProfiles);
@@ -126,6 +126,45 @@ export function ClientProfilesTab() {
             <div>
               <Label>Comportamentos</Label>
               <Textarea value={form.behaviors} onChange={e => set("behaviors", e.target.value)} placeholder="Como ele age durante o atendimento?" rows={2} />
+              </div>
+
+              {/* Dados fictícios do cliente */}
+              <div className="border-t pt-3 mt-1">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                  Dados fictícios do cliente
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label>Nome completo</Label>
+                    <Input value={form.cliente_nome ?? ""} 
+                      onChange={e => set("cliente_nome", e.target.value)} 
+                      placeholder="Ex: João Silva Santos" />
+                  </div>
+                  <div>
+                    <Label>CPF</Label>
+                    <Input value={form.cliente_cpf ?? ""} 
+                      onChange={e => set("cliente_cpf", e.target.value)} 
+                      placeholder="Ex: 123.456.789-00" />
+                  </div>
+                  <div>
+                    <Label>Região</Label>
+                    <Input value={form.cliente_regiao ?? ""} 
+                      onChange={e => set("cliente_regiao", e.target.value)} 
+                      placeholder="Ex: Belo Horizonte - MG" />
+                  </div>
+                  <div>
+                    <Label>Gênero do avatar</Label>
+                    <Select value={form.cliente_genero ?? "masculino"} 
+                      onValueChange={v => set("cliente_genero", v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="masculino">Masculino</SelectItem>
+                        <SelectItem value="feminino">Feminino</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           <DialogFooter>
