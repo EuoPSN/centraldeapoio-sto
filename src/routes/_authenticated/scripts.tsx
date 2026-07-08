@@ -14,7 +14,7 @@ import { FlowViewer } from "@/components/FlowEditor";
 import { SimulatorRunner } from "@/components/SimulatorRunner";
 import { Search, MessageSquareQuote, Network, Play, GraduationCap } from "lucide-react";
 import { SimuladorIA } from "@/components/SimuladorIA";
-import { supabase } from "@/integrations/supabase/client";
+import { listClientProfilesForTraining } from "@/lib/clientprofiles.functions";
 
 export const Route = createFileRoute("/_authenticated/scripts")({
   component: Page,
@@ -218,12 +218,10 @@ function Simulador() {
   const [selectedFlow, setSelectedFlow] = useState<string | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
 
+  const listProfilesFn = useServerFn(listClientProfilesForTraining);
   const profilesQ = useQuery({
-    queryKey: ["client_profiles"],
-    queryFn: async () => {
-      const { data } = await supabase.from("client_profiles").select("*").order("created_at", { ascending: false });
-      return data ?? [];
-    }
+    queryKey: ["client_profiles", "training"],
+    queryFn: () => listProfilesFn(),
   });
   const profiles = (profilesQ.data ?? []) as any[];
 
