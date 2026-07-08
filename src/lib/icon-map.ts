@@ -2,14 +2,16 @@ import {
   Home, BookOpen, MessageSquareQuote, DollarSign, Wrench, GraduationCap,
   Bot, Settings, Lightbulb, Users, Database, Sparkles, FileText, Layers,
   HelpCircle, ListChecks, Network, Play, Palette, Menu, Star, Heart,
-  Folder, Shield, Tag, Briefcase, Phone, Mail, Globe, type LucideIcon,
+  Folder, Shield, Tag, Briefcase, Phone, Mail, Globe, LayoutDashboard,
+  BarChart2, type LucideIcon,
 } from "lucide-react";
 
 export const ICONS: Record<string, LucideIcon> = {
   Home, BookOpen, MessageSquareQuote, DollarSign, Wrench, GraduationCap,
   Bot, Settings, Lightbulb, Users, Database, Sparkles, FileText, Layers,
   HelpCircle, ListChecks, Network, Play, Palette, Menu, Star, Heart,
-  Folder, Shield, Tag, Briefcase, Phone, Mail, Globe,
+  Folder, Shield, Tag, Briefcase, Phone, Mail, Globe, LayoutDashboard,
+  BarChart2,
 };
 
 export function getIcon(name: string | null | undefined): LucideIcon {
