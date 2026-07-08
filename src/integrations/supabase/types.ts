@@ -216,6 +216,10 @@ export type Database = {
       client_profiles: {
         Row: {
           behaviors: string | null
+          cliente_cpf: string | null
+          cliente_genero: string | null
+          cliente_nome: string | null
+          cliente_regiao: string | null
           created_at: string
           difficulty: string | null
           id: string
@@ -227,6 +231,10 @@ export type Database = {
         }
         Insert: {
           behaviors?: string | null
+          cliente_cpf?: string | null
+          cliente_genero?: string | null
+          cliente_nome?: string | null
+          cliente_regiao?: string | null
           created_at?: string
           difficulty?: string | null
           id?: string
@@ -238,6 +246,10 @@ export type Database = {
         }
         Update: {
           behaviors?: string | null
+          cliente_cpf?: string | null
+          cliente_genero?: string | null
+          cliente_nome?: string | null
+          cliente_regiao?: string | null
           created_at?: string
           difficulty?: string | null
           id?: string
