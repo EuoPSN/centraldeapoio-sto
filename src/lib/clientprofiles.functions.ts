@@ -30,6 +30,10 @@ const ClientProfileInput = z.object({
   objectives: z.string().default(""),
   objections: z.string().default(""),
   behaviors: z.string().default(""),
+  cliente_nome: z.string().optional().nullable(),
+  cliente_cpf: z.string().optional().nullable(),
+  cliente_regiao: z.string().optional().nullable(),
+  cliente_genero: z.string().optional().nullable(),
 });
 
 export const upsertClientProfile = createServerFn({ method: "POST" })
@@ -46,6 +50,10 @@ export const upsertClientProfile = createServerFn({ method: "POST" })
       objectives: data.objectives,
       objections: data.objections,
       behaviors: data.behaviors,
+      cliente_nome: data.cliente_nome ?? null,
+      cliente_cpf: data.cliente_cpf ?? null,
+      cliente_regiao: data.cliente_regiao ?? null,
+      cliente_genero: data.cliente_genero ?? "masculino",
     };
     const { data: result, error } = data.id
       ? await db.from("client_profiles").update(row).eq("id", data.id).select().single()
