@@ -22,6 +22,20 @@ export const listClientProfiles = createServerFn({ method: "GET" })
     return data ?? [];
   });
 
+// Training-scoped read: available to any authenticated user, but excludes
+// sensitive PII (CPF) so simulation scenarios don't leak tax IDs.
+export const listClientProfilesForTraining = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await (supabaseAdmin as any)
+      .from("client_profiles")
+      .select("id, name, personality, difficulty, objectives, objections, behaviors, cliente_nome, cliente_regiao, cliente_genero, created_at")
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
 const ClientProfileInput = z.object({
   id: z.string().uuid().optional(),
   name: z.string().min(1).max(200),
