@@ -14,7 +14,7 @@ import { FlowViewer } from "@/components/FlowEditor";
 import { SimulatorRunner } from "@/components/SimulatorRunner";
 import { Search, MessageSquareQuote, Network, Play, GraduationCap } from "lucide-react";
 import { SimuladorIA } from "@/components/SimuladorIA";
-import { supabase } from "@/integrations/supabase/client";
+import { listClientProfilesForTraining } from "@/lib/clientprofiles.functions";
 
 export const Route = createFileRoute("/_authenticated/scripts")({
   component: Page,
