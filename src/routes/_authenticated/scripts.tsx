@@ -218,12 +218,10 @@ function Simulador() {
   const [selectedFlow, setSelectedFlow] = useState<string | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
 
+  const listProfilesFn = useServerFn(listClientProfilesForTraining);
   const profilesQ = useQuery({
-    queryKey: ["client_profiles"],
-    queryFn: async () => {
-      const { data } = await supabase.from("client_profiles").select("*").order("created_at", { ascending: false });
-      return data ?? [];
-    }
+    queryKey: ["client_profiles", "training"],
+    queryFn: () => listProfilesFn(),
   });
   const profiles = (profilesQ.data ?? []) as any[];
 
