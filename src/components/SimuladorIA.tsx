@@ -74,8 +74,9 @@ const handleFilesSelected = async (files: FileList | null) => {
         upsert: false,
       });
       if (error) throw error;
-      const { data: pub } = supabase.storage.from("chat-images").getPublicUrl(path);
-      setAttachedImages((prev) => [...prev, pub.publicUrl]);
+      const { data: signed, error: signErr } = await supabase.storage.from("chat-images").createSignedUrl(path, 60 * 60 * 24 * 365);
+      if (signErr || !signed) throw signErr ?? new Error("Não foi possível gerar URL da imagem");
+      setAttachedImages((prev) => [...prev, signed.signedUrl]);
     }
   } catch (e) {
     toast.error(e instanceof Error ? e.message : "Erro ao enviar imagem");
