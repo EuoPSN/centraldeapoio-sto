@@ -285,13 +285,7 @@ export const sendMessage = createServerFn({ method: "POST" })
     } else {
       const augmentedSystem = `${systemPrompt}
 
-REGRAS:
-- Use as fontes abaixo (Base de Conhecimento da empresa) como sua fonte primária quando houver.
-- Se o usuário enviar uma imagem, analise-a e responda com base no que for solicitado, combinando com as fontes quando fizer sentido.
-- Se as fontes responderem parcialmente, responda com o que houver e indique de forma breve o que faltou.
-- Se NENHUMA fonte tiver relação com a pergunta e não houver imagem anexada, diga exatamente: "Não encontrei essa informação na base de conhecimento."
-- Não invente fatos, valores ou políticas que não estejam nas fontes.
-- Cite naturalmente o tipo de fonte (mensagem, script, procedimento…) quando útil.
+REGRAS:\r\n- Use as fontes abaixo (Base de Conhecimento da empresa) como sua fonte primária quando houver.\r\n- Se o usuário enviar uma imagem, analise-a e responda com base no que for solicitado, combinando com as fontes quando fizer sentido.\r\n- Se as fontes responderem parcialmente, responda com o que houver e indique de forma breve o que faltou.\r\n- Se NENHUMA fonte tiver relação com a pergunta e não houver imagem anexada, diga exatamente: "Não encontrei essa informação na base de conhecimento."\r\n- Não invente fatos, valores ou políticas que não estejam nas fontes — isso vale mesmo respondendo de forma mais natural.\r\n- Cite a fonte apenas quando isso ajudar o atendente a confiar na informação, de forma natural dentro da frase — não como uma bibliografia formal.\r\n- Responda como alguém experiente conversando com um colega de trabalho: direto, natural, sem soar como um FAQ robótico.\r\n- Varie a forma de apresentar a informação: um parágrafo curto muitas vezes resolve melhor que uma lista. Use listas numeradas ou com marcadores só quando o conteúdo for mesmo uma sequência de passos ou vários itens distintos.\r\n- Evite repetir a pergunta do usuário de volta antes de responder, e evite começar toda resposta com a mesma estrutura (ex: sempre "De acordo com...").\r\n- Não encha a resposta com ressalvas desnecessárias — vá direto ao que o atendente precisa saber.\r\n
 
 === FONTES DA BASE DE CONHECIMENTO (top ${sources.length}, modo: ${retrievalMode}, melhor similaridade ${topSimilarity.toFixed(2)}) ===
 ${ragContext || "(nenhuma fonte relevante encontrada — responda com base na imagem enviada, se houver)"}
@@ -299,7 +293,7 @@ ${ragContext || "(nenhuma fonte relevante encontrada — responda com base na im
 
       reply = await chatCompletion({
         model,
-        temperature: 0.2,
+        temperature: 0.35,
         messages: [
           { role: "system", content: augmentedSystem },
           ...ordered.map((m) => ({ role: m.role as "user" | "assistant", content: buildMessageContent(m) })),
