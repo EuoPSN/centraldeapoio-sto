@@ -1,3 +1,5 @@
+Substitua TODO o conteúdo do arquivo src/lib/embeddings.functions.ts pelo código abaixo (isso resolve os marcadores de conflito <<<<<<< / ======= / >>>>>>> e corrige dois bugs: a função itemKey estava sendo usada sem nunca ter sido definida, e a geração de embeddings estava tentando usar uma função "generateEmbedding" no singular que não existe/não está importada — o correto é "generateEmbeddings" no plural, em lote). Não altere nenhum outro arquivo existente.
+
 import { createServerFn } from "@tanstack/react-start";
 import { isAdminUser } from "@/lib/authz";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -35,6 +37,10 @@ async function ensureAdmin(supabase: any, userId: string) {
 
 function chunkKey(chunk: Pick<Chunk, "source_type" | "source_id" | "title" | "content">) {
   return `${chunk.source_type}::${chunk.source_id}::${chunk.title}::${chunk.content}`;
+}
+
+function itemKey(chunk: Pick<Chunk, "source_type" | "source_id">) {
+  return `${chunk.source_type}::${chunk.source_id}`;
 }
 
 export const reindexAll = createServerFn({ method: "POST" })
@@ -132,11 +138,58 @@ export const reindexAll = createServerFn({ method: "POST" })
 
     const { data: existingRows, error: existingErr } = await supabaseAdmin
       .from("knowledge_chunks")
-      .select("source_type,source_id,title,content");
+      .select("id,source_type,source_id,title,content");
     if (existingErr) throw new Error(existingErr.message);
 
-    const existing = new Set((existingRows ?? []).map((row) => chunkKey(row)));
-    const pending = all.filter((chunk) => !existing.has(chunkKey(chunk)));
+    const existingList = existingRows ?? [];
+    const existingByExactChunk = new Set(existingList.map((row) => chunkKey(row)));
+
+    const currentItemKeys = new Set(all.map((chunk) => itemKey(chunk)));
+    const changedOrOrphanIds: string[] = [];
+    let removedOrphans = 0;
+    let updatedItems = 0;
+
+    if (!data.reset) {
+      const byItem = new Map<string, typeof existingList>();
+      for (const row of existingList) {
+        const key = itemKey(row);
+        const list = byItem.get(key) ?? [];
+        list.push(row);
+        byItem.set(key, list);
+      }
+
+      for (const [key, rows] of byItem) {
+        const stillExists = currentItemKeys.has(key);
+        if (!stillExists) {
+          changedOrOrphanIds.push(...rows.map((r) => r.id));
+          removedOrphans += rows.length;
+          continue;
+        }
+        const currentChunksOfItem = all.filter((c) => itemKey(c) === key);
+        const anyMatches = currentChunksOfItem.some((c) => existingByExactChunk.has(chunkKey(c)));
+        if (!anyMatches) {
+          changedOrOrphanIds.push(...rows.map((r) => r.id));
+          updatedItems += 1;
+        }
+      }
+
+      if (changedOrOrphanIds.length > 0) {
+        const { error: cleanupErr } = await supabaseAdmin
+          .from("knowledge_chunks")
+          .delete()
+          .in("id", changedOrOrphanIds);
+        if (cleanupErr) throw new Error(cleanupErr.message);
+      }
+    }
+
+    const stillExisting = data.reset
+      ? new Set<string>()
+      : new Set(
+          existingList
+            .filter((row) => !changedOrOrphanIds.includes(row.id))
+            .map((row) => chunkKey(row))
+        );
+    const pending = all.filter((chunk) => !stillExisting.has(chunkKey(chunk)));
     const batchSize = 8;
     let indexed = 0;
 
@@ -165,13 +218,22 @@ export const reindexAll = createServerFn({ method: "POST" })
             total: all.length,
             reason: "rate_limited" as const,
             message: error.message,
+            updatedItems,
+            removedOrphans,
           };
         }
         throw error;
       }
     }
 
-    return { ok: true, indexed, skipped: all.length - pending.length, total: all.length };
+    return {
+      ok: true,
+      indexed,
+      skipped: all.length - pending.length,
+      total: all.length,
+      updatedItems,
+      removedOrphans,
+    };
   });
 
 export const getIndexStats = createServerFn({ method: "GET" })
