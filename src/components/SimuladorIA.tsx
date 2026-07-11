@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { simulatorChat } from "@/lib/simulator.chat.functions";
 import { saveSimulatorResult } from "@/lib/gamification.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 
 interface Profile {
