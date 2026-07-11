@@ -1,5 +1,3 @@
-Substitua TODO o conteúdo do arquivo src/lib/embeddings.functions.ts pelo código abaixo (isso resolve os marcadores de conflito <<<<<<< / ======= / >>>>>>> e corrige dois bugs: a função itemKey estava sendo usada sem nunca ter sido definida, e a geração de embeddings estava tentando usar uma função "generateEmbedding" no singular que não existe/não está importada — o correto é "generateEmbeddings" no plural, em lote). Não altere nenhum outro arquivo existente.
-
 import { createServerFn } from "@tanstack/react-start";
 import { isAdminUser } from "@/lib/authz";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
