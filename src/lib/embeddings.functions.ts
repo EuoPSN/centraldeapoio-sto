@@ -1,6 +1,9 @@
+Substitua TODO o conteúdo do arquivo src/lib/embeddings.functions.ts pelo código abaixo (isso resolve os marcadores de conflito <<<<<<< / ======= / >>>>>>> e corrige dois bugs: a função itemKey estava sendo usada sem nunca ter sido definida, e a geração de embeddings estava tentando usar uma função "generateEmbedding" no singular que não existe/não está importada — o correto é "generateEmbeddings" no plural, em lote). Não altere nenhum outro arquivo existente.
+
 import { createServerFn } from "@tanstack/react-start";
+import { isAdminUser } from "@/lib/authz";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { generateEmbedding } from "./ai-gateway.server";
+import { generateEmbeddings, isEmbeddingRateLimitError } from "./ai-gateway.server";
 
 interface Chunk {
   source_type: string;
@@ -8,6 +11,10 @@ interface Chunk {
   title: string;
   content: string;
   metadata: Record<string, unknown>;
+}
+
+interface ReindexInput {
+  reset?: boolean;
 }
 
 function chunkText(base: Chunk, max = 1200): Chunk[] {
@@ -23,15 +30,27 @@ function chunkText(base: Chunk, max = 1200): Chunk[] {
   return out;
 }
 
-async function ensureAdmin(supabase: { rpc: (n: string, p: unknown) => Promise<{ data: unknown }> }, userId: string) {
-  const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
+async function ensureAdmin(supabase: any, userId: string) {
+  const isAdmin = await isAdminUser(supabase, userId);
   if (!isAdmin) throw new Error("Apenas administradores podem reindexar a base.");
+}
+
+function chunkKey(chunk: Pick<Chunk, "source_type" | "source_id" | "title" | "content">) {
+  return `${chunk.source_type}::${chunk.source_id}::${chunk.title}::${chunk.content}`;
+}
+
+function itemKey(chunk: Pick<Chunk, "source_type" | "source_id">) {
+  return `${chunk.source_type}::${chunk.source_id}`;
 }
 
 export const reindexAll = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    await ensureAdmin(context.supabase as never, context.userId);
+  .inputValidator((input: unknown): ReindexInput => {
+    const data = (input ?? {}) as ReindexInput;
+    return { reset: data.reset !== false };
+  })
+  .handler(async ({ data, context }) => {
+    await ensureAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const [keRes, msgRes, nodesRes, contentRes, scriptsRes, pricingRes] = await Promise.all([
@@ -171,34 +190,50 @@ export const reindexAll = createServerFn({ method: "POST" })
             .map((row) => chunkKey(row))
         );
     const pending = all.filter((chunk) => !stillExisting.has(chunkKey(chunk)));
-    
-    const withEmb: Array<Chunk & { embedding: number[] }> = [];
-    for (const c of pending) {
-      const emb = await generateEmbedding(c.content);
-      withEmb.push({ ...c, embedding: emb });
-      await new Promise((resolve) => setTimeout(resolve, 500));
+    const batchSize = 8;
+    let indexed = 0;
+
+    for (let i = 0; i < pending.length; i += batchSize) {
+      const batch = pending.slice(i, i + batchSize);
+      try {
+        const embeddings = await generateEmbeddings(batch.map((chunk) => chunk.content));
+        const rows = batch.map((chunk, index) => ({
+          source_type: chunk.source_type,
+          source_id: chunk.source_id,
+          title: chunk.title,
+          content: chunk.content,
+          embedding: JSON.stringify(embeddings[index]),
+          metadata: chunk.metadata as never,
+        }));
+        const { error } = await supabaseAdmin.from("knowledge_chunks").insert(rows);
+        if (error) throw new Error(error.message);
+        indexed += rows.length;
+        await new Promise((resolve) => setTimeout(resolve, 2500));
+      } catch (error) {
+        if (isEmbeddingRateLimitError(error)) {
+          return {
+            ok: false,
+            indexed,
+            skipped: pending.length - indexed,
+            total: all.length,
+            reason: "rate_limited" as const,
+            message: error.message,
+            updatedItems,
+            removedOrphans,
+          };
+        }
+        throw error;
+      }
     }
 
-    for (let i = 0; i < withEmb.length; i += 50) {
-      const batch = withEmb.slice(i, i + 50).map((c) => ({
-        source_type: c.source_type,
-        source_id: c.source_id,
-        title: c.title,
-        content: c.content,
-        embedding: JSON.stringify(c.embedding),
-        metadata: c.metadata as never,
-      }));
-      const { error } = await supabaseAdmin.from("knowledge_chunks").insert(batch);
-      if (error) throw new Error(error.message);
-    }
     return {
-  ok: true,
-  indexed: withEmb.length,
-  skipped: all.length - pending.length,
-  total: all.length,
-  updatedItems,
-  removedOrphans,
-};
+      ok: true,
+      indexed,
+      skipped: all.length - pending.length,
+      total: all.length,
+      updatedItems,
+      removedOrphans,
+    };
   });
 
 export const getIndexStats = createServerFn({ method: "GET" })

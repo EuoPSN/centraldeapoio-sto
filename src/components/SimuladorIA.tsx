@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { simulatorChat } from "@/lib/simulator.chat.functions";
 import { saveSimulatorResult } from "@/lib/gamification.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 
 interface Profile {
@@ -73,8 +74,9 @@ const handleFilesSelected = async (files: FileList | null) => {
         upsert: false,
       });
       if (error) throw error;
-      const { data: pub } = supabase.storage.from("chat-images").getPublicUrl(path);
-      setAttachedImages((prev) => [...prev, pub.publicUrl]);
+      const { data: signed, error: signErr } = await supabase.storage.from("chat-images").createSignedUrl(path, 60 * 60 * 24 * 365);
+      if (signErr || !signed) throw signErr ?? new Error("Não foi possível gerar URL da imagem");
+      setAttachedImages((prev) => [...prev, signed.signedUrl]);
     }
   } catch (e) {
     toast.error(e instanceof Error ? e.message : "Erro ao enviar imagem");
@@ -118,7 +120,7 @@ const sendMut = useMutation({
       ...history,
       { role: "user", content: text }
     ];
-    const { content } = await sendAI({ messages: payload, model: "gpt-4o-mini" });
+    const { content } = await sendAI({ data: { messages: payload, model: "google/gemini-2.5-flash" } });
     return content;
   },
   onSuccess: (result) => {
@@ -141,7 +143,7 @@ const avaliarMut = useMutation({
       { role: "system", content: evalPrompt },
       { role: "user", content: conversa }
     ];
-    const { content } = await avaliarAI({ messages: payload, model: "gpt-4o-mini" });
+    const { content } = await avaliarAI({ data: { messages: payload, model: "google/gemini-2.5-flash" } });
     return content;
   },
   onSuccess: async (result) => {

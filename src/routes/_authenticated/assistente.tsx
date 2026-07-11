@@ -13,29 +13,15 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
-// Inline avatar component for MarcIAna
-function MarcIAnaAvatar(props: React.SVGProps<SVGSVGElement>) {
+import marcianaAvatar from "@/assets/marciana-avatar.png";
+
+function MarcIAnaAvatar({ className }: { className?: string }) {
   return (
-    <svg
-      viewBox="0 0 32 32"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      {...props}
-    >
-      <circle cx="16" cy="16" r="16" fill="#4ADE80" />
-      {/* left eye */}
-      <ellipse cx="10" cy="12" rx="3" ry="4" fill="#4C1D95" />
-      {/* right eye */}
-      <ellipse cx="22" cy="12" rx="3" ry="4" fill="#4C1D95" />
-      {/* left eye highlight */}
-      <ellipse cx="11" cy="11" rx="1" ry="1.5" fill="white" />
-      {/* antennas */}
-      <line x1="16" y1="0" x2="16" y2="6" stroke="#4C1D95" strokeWidth="1" />
-      <line x1="16" y1="0" x2="12" y2="4" stroke="#4C1D95" strokeWidth="1" />
-      <line x1="16" y1="0" x2="20" y2="4" stroke="#4C1D95" strokeWidth="1" />
-      {/* smile */}
-      <path d="M10 20 Q16 26 22 20" stroke="#4C1D95" strokeWidth="2" fill="none" strokeLinecap="round" />
-    </svg>
+    <img
+      src={marcianaAvatar}
+      alt="MarcIAna"
+      className={cn("object-contain", className)}
+    />
   );
 }
 
@@ -88,8 +74,9 @@ const handleFilesSelected = async (files: FileList | null) => {
         upsert: false,
       });
       if (error) throw error;
-      const { data: pub } = supabase.storage.from("chat-images").getPublicUrl(path);
-      setPendingImages((prev) => [...prev, { url: pub.publicUrl, name: file.name }]);
+      const { data: signed, error: signErr } = await supabase.storage.from("chat-images").createSignedUrl(path, 60 * 60 * 24 * 365);
+      if (signErr || !signed) throw signErr ?? new Error("Não foi possível gerar URL da imagem");
+      setPendingImages((prev) => [...prev, { url: signed.signedUrl, name: file.name }]);
     }
   } catch (e) {
     toast.error(e instanceof Error ? e.message : "Erro ao enviar imagem");
@@ -207,8 +194,8 @@ const removePendingImage = (index: number) => {
           {!activeId || (active.data?.length ?? 0) === 0 ? (
             <div className="h-full flex items-center justify-center p-8">
               <div className="text-center max-w-md">
-                <div className="h-14 w-14 mx-auto rounded-2xl bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center mb-4">
-                  <MarcIAnaAvatar className="h-16 w-16 text-primary-foreground" />
+                <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center">
+                  <MarcIAnaAvatar className="h-20 w-20" />
                 </div>
                 <h2 className="text-2xl font-bold">MarcIAna</h2>
                 <p className="text-muted-foreground mt-2">
@@ -296,11 +283,11 @@ function MessageBubble({ role, content, attachments }: { role: "user" | "assista
   return (
     <div className={cn("flex gap-3", isUser && "flex-row-reverse")}>
       {!isUser && <span className="text-[11px] text-muted-foreground self-center">MarcIAna</span>}
-      <div className={cn("h-8 w-8 rounded-full flex items-center justify-center shrink-0", isUser ? "bg-secondary" : "bg-gradient-to-br from-primary to-primary-glow")}>
+      <div className={cn("h-8 w-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden", isUser && "bg-secondary")}>
         {isUser ? (
           <User className="h-4 w-4 text-secondary-foreground" />
         ) : (
-          <MarcIAnaAvatar className="h-4 w-4 text-primary-foreground" />
+          <MarcIAnaAvatar className="h-8 w-8" />
         )}
       </div>
       <Card className={cn("p-4 max-w-[85%]", isUser ? "bg-primary text-primary-foreground border-primary" : "bg-card")}>
