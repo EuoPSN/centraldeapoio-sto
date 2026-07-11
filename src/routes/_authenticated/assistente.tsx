@@ -8,8 +8,9 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Markdown } from "@/components/Markdown";
-import { Bot, Plus, Send, Trash2, User } from "lucide-react";
+import { Bot, Plus, Send, Trash2, User, Paperclip, X, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 // Inline avatar component for MarcIAna
@@ -53,7 +54,54 @@ function Page() {
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [input, setInput] = useState("");
+const [pendingImages, setPendingImages] = useState<{ url: string; name: string }[]>([]);
+const [uploadingImg, setUploadingImg] = useState(false);
+const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+const handleFilesSelected = async (files: FileList | null) => {
+  if (!files || files.length === 0) return;
+  const remaining = 4 - pendingImages.length;
+  if (remaining <= 0) {
+    toast.error("Máximo de 4 imagens por mensagem.");
+    return;
+  }
+  const list = Array.from(files).slice(0, remaining);
+  setUploadingImg(true);
+  try {
+    const { data: userData } = await supabase.auth.getUser();
+    const uid = userData?.user?.id;
+    if (!uid) throw new Error("Usuário não autenticado");
+    for (const file of list) {
+      if (!file.type.startsWith("image/")) {
+        toast.error(`${file.name} não é uma imagem.`);
+        continue;
+      }
+      if (file.size > 8 * 1024 * 1024) {
+        toast.error(`${file.name} excede 8MB.`);
+        continue;
+      }
+      const ext = file.name.split('.').pop() ?? "jpg";
+      const path = `${uid}/${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage.from("chat-images").upload(path, file, {
+        contentType: file.type,
+        upsert: false,
+      });
+      if (error) throw error;
+      const { data: pub } = supabase.storage.from("chat-images").getPublicUrl(path);
+      setPendingImages((prev) => [...prev, { url: pub.publicUrl, name: file.name }]);
+    }
+  } catch (e) {
+    toast.error(e instanceof Error ? e.message : "Erro ao enviar imagem");
+  } finally {
+    setUploadingImg(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+};
+
+const removePendingImage = (index: number) => {
+  setPendingImages((prev) => prev.filter((_, i) => i !== index));
+};
 
   const convs = useQuery({ queryKey: ["chat-list"], queryFn: () => list({}) });
   const active = useQuery({
@@ -83,21 +131,21 @@ function Page() {
   });
 
   const sendMut = useMutation({
-    mutationFn: async (text: string) => {
-      let id = activeId;
-      if (!id) {
-        const c = await create({});
-        id = c.id;
-        setActiveId(id);
-      }
-      return send({ data: { conversationId: id, message: text } });
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["chat", activeId] });
-      qc.invalidateQueries({ queryKey: ["chat-list"] });
-    },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao enviar"),
-  });
+  mutationFn: async (payload: { text: string; images: string[] }) => {
+    let id = activeId;
+    if (!id) {
+      const c = await create({});
+      id = c.id;
+      setActiveId(id);
+    }
+    return send({ data: { conversationId: id, message: payload.text, images: payload.images } });
+  },
+  onSuccess: () => {
+    qc.invalidateQueries({ queryKey: ["chat", activeId] });
+    qc.invalidateQueries({ queryKey: ["chat-list"] });
+  },
+  onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao enviar"),
+});
 
   const delMut = useMutation({
     mutationFn: (id: string) => del({ data: { conversationId: id } }),
@@ -108,11 +156,13 @@ function Page() {
   });
 
   const onSend = () => {
-    const text = input.trim();
-    if (!text || sendMut.isPending) return;
-    setInput("");
-    sendMut.mutate(text);
-  };
+  const text = input.trim();
+  if (( !text && pendingImages.length === 0) || sendMut.isPending) return;
+  setInput("");
+  const images = pendingImages.map((i) => i.url);
+  setPendingImages([]);
+  sendMut.mutate({ text, images });
+};
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] w-full">
@@ -188,7 +238,7 @@ function Page() {
           ) : (
             <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
               {active.data?.map((m) => (
-                <MessageBubble key={m.id} role={m.role as "user" | "assistant" | "system"} content={m.content} />
+                <MessageBubble key={m.id} role={m.role as "user" | "assistant" | "system"} content={m.content} attachments={(m as any).attachments ?? []} />
               ))}
               {sendMut.isPending && (
                 <MessageBubble role="assistant" content="_Pensando..._" />
@@ -199,20 +249,38 @@ function Page() {
 
         <div className="border-t border-border bg-card p-4">
           <div className="max-w-3xl mx-auto flex gap-2 items-end">
-            <Textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onSend(); }
-              }}
-              placeholder="Pergunte para a MarcIAna..."
-              className="min-h-[52px] max-h-40 resize-none"
-              disabled={sendMut.isPending}
-            />
-            <Button size="icon" className="h-[52px] w-[52px] shrink-0" onClick={onSend} disabled={sendMut.isPending || !input.trim()}>
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
+  <input
+    ref={fileInputRef}
+    type="file"
+    accept="image/*"
+    multiple
+    className="hidden"
+    onChange={(e) => handleFilesSelected(e.target.files)}
+  />
+  <Button
+    type="button"
+    size="icon"
+    variant="outline"
+    className="h-[52px] w-[52px] shrink-0"
+    onClick={() => fileInputRef.current?.click()}
+    disabled={uploadingImg || pendingImages.length >= 4}
+  >
+    <Paperclip className="h-4 w-4" />
+  </Button>
+  <Textarea
+    value={input}
+    onChange={(e) => setInput(e.target.value)}
+    onKeyDown={(e) => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onSend(); }
+    }}
+    placeholder="Pergunte para a MarcIAna..."
+    className="min-h-[52px] max-h-40 resize-none"
+    disabled={sendMut.isPending}
+  />
+  <Button size="icon" className="h-[52px] w-[52px] shrink-0" onClick={onSend} disabled={sendMut.isPending || (!input.trim() && pendingImages.length === 0)}>
+    <Send className="h-4 w-4" />
+  </Button>
+</div>
           <p className="max-w-3xl mx-auto text-[10px] text-muted-foreground text-center mt-2">
             As respostas são geradas por IA com base na documentação interna. Verifique informações críticas.
           </p>
@@ -222,7 +290,7 @@ function Page() {
   );
 }
 
-function MessageBubble({ role, content }: { role: "user" | "assistant" | "system"; content: string }) {
+function MessageBubble({ role, content, attachments }: { role: "user" | "assistant" | "system"; content: string; attachments?: string[] }) {
   if (role === "system") return null;
   const isUser = role === "user";
   return (
@@ -236,11 +304,20 @@ function MessageBubble({ role, content }: { role: "user" | "assistant" | "system
         )}
       </div>
       <Card className={cn("p-4 max-w-[85%]", isUser ? "bg-primary text-primary-foreground border-primary" : "bg-card")}>
-        {isUser ? (
+        {attachments && attachments.length > 0 && (
+          <div className="flex gap-2 flex-wrap mb-2">
+            {attachments.map((url, i) => (
+              <a key={i} href={url} target="_blank" rel="noreferrer">
+                <img src={url} alt="anexo" className="h-24 w-24 object-cover rounded-md border border-border/50" />
+              </a>
+            ))}
+          </div>
+        )}
+        {content && (isUser ? (
           <p className="whitespace-pre-wrap text-sm leading-relaxed">{content}</p>
         ) : (
           <Markdown>{content}</Markdown>
-        )}
+        ))}
       </Card>
     </div>
   );

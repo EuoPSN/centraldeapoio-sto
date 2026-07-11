@@ -50,7 +50,7 @@ export const getMessages = createServerFn({ method: "POST" })
     // RLS já restringe ao dono (ou admin)
     const { data: msgs, error } = await context.supabase
       .from("chat_messages")
-      .select("id,role,content,created_at")
+      .select("id,role,content,attachments,created_at")
       .eq("conversation_id", data.conversationId)
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
@@ -62,8 +62,23 @@ export const getMessages = createServerFn({ method: "POST" })
 // ============================================================
 const SendInput = z.object({
   conversationId: z.string().uuid(),
-  message: z.string().min(1).max(4000),
+  message: z.string().max(4000).default(""),
+  images: z.array(z.string().url()).max(4).default([]),
+}).refine((d) => d.message.trim().length > 0 || d.images.length > 0, {
+  message: "Envie um texto ou pelo menos uma imagem.",
 });
+
+
+
+
+function buildMessageContent(m: { content: string; attachments?: unknown }): string | Array<{ type: "text" | "image_url"; text?: string; image_url?: { url: string } }> {
+  const atts = Array.isArray(m.attachments) ? (m.attachments as string[]) : [];
+  if (atts.length === 0) return m.content;
+  const parts: Array<{ type: "text" | "image_url"; text?: string; image_url?: { url: string } }> = [];
+  if (m.content && m.content.trim().length > 0) parts.push({ type: "text", text: m.content });
+  for (const url of atts) parts.push({ type: "image_url", image_url: { url } });
+  return parts;
+}
 
 export const sendMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -83,13 +98,14 @@ export const sendMessage = createServerFn({ method: "POST" })
       conversation_id: data.conversationId,
       role: "user",
       content: data.message,
+      attachments: data.images,
     });
     if (insErr) throw new Error(insErr.message);
 
     // 3) Carrega histórico recente (últimas 12 msgs)
     const { data: history } = await context.supabase
       .from("chat_messages")
-      .select("role,content")
+      .select("role,content,attachments")
       .eq("conversation_id", data.conversationId)
       .order("created_at", { ascending: false })
       .limit(12);
@@ -108,6 +124,8 @@ export const sendMessage = createServerFn({ method: "POST" })
     let ragContext = "";
     let sources: Array<{ title: string; source_type: string }> = [];
     let foundAny = false;
+    let topSimilarity = 0;
+    let retrievalMode = "vector";
     try {
       const queryEmb = await generateEmbedding(data.message);
       const { data: matches } = await context.supabase.rpc("match_knowledge", {
@@ -115,6 +133,7 @@ export const sendMessage = createServerFn({ method: "POST" })
         match_count: 8,
       });
       if (matches && matches.length > 0) {
+        topSimilarity = matches[0].similarity ?? 0;
         // Limiar de similaridade: 0.5
         const relevant = matches.filter((m) => (m.similarity ?? 0) >= 0.5);
         foundAny = relevant.length > 0;
@@ -135,19 +154,21 @@ export const sendMessage = createServerFn({ method: "POST" })
     }
 
     let reply: string;
-    if (!foundAny) {
+    if (!foundAny && data.images.length === 0) {
       reply = "Não encontrei essa informação na base de conhecimento. Peça para um administrador cadastrar esse conteúdo em **Conhecimento → Base de Conhecimento IA** e tente novamente.";
     } else {
       const augmentedSystem = `${systemPrompt}
 
-REGRAS RÍGIDAS:
-- Responda APENAS com base nas fontes abaixo (Base de Conhecimento da empresa).
-- Se a pergunta não puder ser respondida pelas fontes, diga exatamente: "Não encontrei essa informação na base de conhecimento."
-- Não invente informações.
-- Cite naturalmente o tipo de fonte (regra, procedimento, script…) quando útil.
+REGRAS:
+- Use as fontes abaixo (Base de Conhecimento da empresa) como sua fonte primária quando houver.
+- Se o usuário enviar uma imagem, analise-a e responda com base no que for solicitado, combinando com as fontes quando fizer sentido.
+- Se as fontes responderem parcialmente, responda com o que houver e indique de forma breve o que faltou.
+- Se NENHUMA fonte tiver relação com a pergunta e não houver imagem anexada, diga exatamente: "Não encontrei essa informação na base de conhecimento."
+- Não invente fatos, valores ou políticas que não estejam nas fontes.
+- Cite naturalmente o tipo de fonte (mensagem, script, procedimento…) quando útil.
 
-=== FONTES DA BASE DE CONHECIMENTO ===
-${ragContext}
+=== FONTES DA BASE DE CONHECIMENTO (top ${sources.length}, modo: ${retrievalMode}, melhor similaridade ${topSimilarity.toFixed(2)}) ===
+${ragContext || "(nenhuma fonte relevante encontrada — responda com base na imagem enviada, se houver)"}
 === FIM DAS FONTES ===`;
 
       reply = await chatCompletion({
@@ -155,7 +176,7 @@ ${ragContext}
         temperature: 0.2,
         messages: [
           { role: "system", content: augmentedSystem },
-          ...ordered.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
+          ...ordered.map((m) => ({ role: m.role as "user" | "assistant", content: buildMessageContent(m) })),
         ],
       });
     }

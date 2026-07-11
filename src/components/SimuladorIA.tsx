@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 import { useMutation } from "@tanstack/react-query";
 
@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Send, StopCircle, RotateCcw, MessageSquare } from "lucide-react";
+import { Send, StopCircle, RotateCcw, MessageSquare, Paperclip, X } from "lucide-react";
 import { ClienteAvatar } from "@/components/ClienteAvatar";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
@@ -22,7 +22,7 @@ interface Profile {
   cliente_regiao?: string;
   cliente_genero?: string;
 }
-interface Message { role: "atendente" | "cliente"; content: string; }
+interface Message { role: "atendente" | "cliente"; content: string; images?: string[]; }
 
 const DIFFICULTY_COLORS: Record<string, string> = {
   facil: "bg-green-100 text-green-800", medio: "bg-yellow-100 text-yellow-800",
@@ -36,10 +36,53 @@ export function SimuladorIA({ profile, onReset }: { profile: Profile; onReset: (
   
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
+const [attachedImages, setAttachedImages] = useState<string[]>([]);
+const [uploadingImg, setUploadingImg] = useState(false);
+const fileInputRef = useRef<HTMLInputElement>(null);
   const [encerrado, setEncerrado] = useState(false);
   const [xpGanho, setXpGanho] = useState<number | null>(null);
   const [aguardandoResposta, setAguardandoResposta] = useState(false);
   const [pendingAttendantMessages, setPendingAttendantMessages] = useState<string[]>([]);
+
+const handleFilesSelected = async (files: FileList | null) => {
+  if (!files || files.length === 0) return;
+  const remaining = 2 - attachedImages.length;
+  if (remaining <= 0) {
+    toast.error("Máximo de 2 imagens por mensagem.");
+    return;
+  }
+  const list = Array.from(files).slice(0, remaining);
+  setUploadingImg(true);
+  try {
+    const { data: userData } = await supabase.auth.getUser();
+    const uid = userData?.user?.id;
+    if (!uid) throw new Error("Usuário não autenticado");
+    for (const file of list) {
+      if (!file.type.startsWith("image/")) {
+        toast.error(`${file.name} não é uma imagem.`);
+        continue;
+      }
+      if (file.size > 8 * 1024 * 1024) {
+        toast.error(`${file.name} excede 8MB.`);
+        continue;
+      }
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const path = `${uid}/simulador/${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage.from("chat-images").upload(path, file, {
+        contentType: file.type,
+        upsert: false,
+      });
+      if (error) throw error;
+      const { data: pub } = supabase.storage.from("chat-images").getPublicUrl(path);
+      setAttachedImages((prev) => [...prev, pub.publicUrl]);
+    }
+  } catch (e) {
+    toast.error(e instanceof Error ? e.message : "Erro ao enviar imagem");
+  } finally {
+    setUploadingImg(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+};
   const saveResultFn = useServerFn(saveSimulatorResult);
   const [avaliacao, setAvaliacao] = useState<any>(null);
 
@@ -58,10 +101,18 @@ Você pode responder com 1, 2 ou até 3 mensagens curtas separadas, exatamente c
   const sendAI = useServerFn(simulatorChat);
 const sendMut = useMutation({
   mutationFn: async (text: string) => {
-    const history = messages.map(m => ({
-      role: m.role === "atendente" ? "user" : "assistant",
-      content: m.content
-    }));
+    const history = messages.map(m => {
+      if (m.images && m.images.length > 0) {
+        return {
+          role: m.role === "atendente" ? "user" : "assistant",
+          content: [
+            ...(m.content ? [{ type: "text" as const, text: m.content }] : []),
+            ...m.images.map((url) => ({ type: "image_url" as const, image_url: { url } })),
+          ],
+        };
+      }
+      return { role: m.role === "atendente" ? "user" : "assistant", content: m.content };
+    });
     const payload = [
       { role: "system", content: systemPrompt },
       ...history,
@@ -122,11 +173,12 @@ const avaliarMut = useMutation({
 });
 
   const handleSend = () => {
-    if (!input.trim()) return;
+    if (!input.trim() && attachedImages.length === 0) return;
     const text = input.trim();
-    setMessages(prev => [...prev, { role: "atendente", content: text }]);
+    setMessages(prev => [...prev, { role: "atendente", content: text, images: attachedImages.length ? attachedImages : undefined }]);
     setPendingAttendantMessages(prev => [...prev, text]);
     setInput("");
+    setAttachedImages([]);
   };
 
   const handleAwaitResponse = () => {
@@ -248,6 +300,13 @@ const avaliarMut = useMutation({
               <p className="text-[10px] font-medium mb-1 opacity-70">
                 {m.role === "atendente" ? "Você" : profile.name}
               </p>
+              {m.images && m.images.length > 0 && (
+                <div className="flex gap-1 flex-wrap mb-1">
+                  {m.images.map((url, idx) => (
+                    <img key={idx} src={url} alt="anexo" className="h-16 w-16 object-cover rounded-md border border-border/50" />
+                  ))}
+                </div>
+              )}
               {m.content}
             </div>
           </div>
@@ -261,20 +320,42 @@ const avaliarMut = useMutation({
         )}
       </div>
 
-      <div className="flex gap-2">
-        <Textarea value={input} onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-          placeholder="Digite sua mensagem..." rows={2} className="resize-none" />
-        <div className="flex flex-col gap-2">
-          <Button onClick={handleSend} disabled={!input.trim() || encerrado} className="gap-1 text-xs">
-            <Send className="h-4 w-4" />
+      <div className="flex flex-col gap-2">
+        {attachedImages.length > 0 && (
+          <div className="flex gap-2 flex-wrap">
+            {attachedImages.map((url, i) => (
+              <div key={i} className="relative h-14 w-14 rounded-md overflow-hidden border border-border group">
+                <img src={url} alt="anexo" className="h-full w-full object-cover" />
+                <button type="button"
+                  className="absolute top-0.5 right-0.5 bg-black/60 text-white rounded-full p-0.5"
+                  onClick={() => setAttachedImages(prev => prev.filter((_, idx) => idx !== i))}>
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="flex gap-2">
+          <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden"
+            onChange={(e) => handleFilesSelected(e.target.files)} />
+          <Button type="button" variant="outline" size="icon" className="shrink-0"
+            onClick={() => fileInputRef.current?.click()} disabled={uploadingImg || attachedImages.length >= 2 || encerrado}>
+            <Paperclip className="h-4 w-4" />
           </Button>
-          {pendingAttendantMessages.length > 0 && (
-            <Button onClick={handleAwaitResponse} disabled={sendMut.isPending || encerrado}
-              variant="outline" className="gap-1 text-xs">
-              <MessageSquare className="h-3 w-3" />
+          <Textarea value={input} onChange={e => setInput(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+            placeholder="Digite sua mensagem..." rows={2} className="resize-none" />
+          <div className="flex flex-col gap-2">
+            <Button onClick={handleSend} disabled={(!input.trim() && attachedImages.length === 0) || encerrado} className="gap-1 text-xs">
+              <Send className="h-4 w-4" />
             </Button>
-          )}
+            {pendingAttendantMessages.length > 0 && (
+              <Button onClick={handleAwaitResponse} disabled={sendMut.isPending || encerrado}
+                variant="outline" className="gap-1 text-xs">
+                <MessageSquare className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </Card>

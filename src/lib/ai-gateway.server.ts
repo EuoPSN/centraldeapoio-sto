@@ -9,10 +9,17 @@ function requireKey() {
   return key;
 }
 
-interface ChatMessage {
-  role: "system" | "user" | "assistant";
-  content: string;
+export interface ChatContentPart {
+  type: "text" | "image_url";
+  text?: string;
+  image_url?: { url: string };
 }
+
+export interface ChatMessage {
+  role: "system" | "user" | "assistant";
+  content: string | ChatContentPart[];
+}
+
 
 export async function chatCompletion(opts: {
   model: string;
