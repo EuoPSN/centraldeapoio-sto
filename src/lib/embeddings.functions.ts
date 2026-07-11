@@ -111,16 +111,73 @@ export const reindexAll = createServerFn({ method: "POST" })
       });
     }
 
+    if (data.reset) {
+      const { error: delErr } = await supabaseAdmin
+        .from("knowledge_chunks").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      if (delErr) throw new Error(delErr.message);
+    }
+
+    const { data: existingRows, error: existingErr } = await supabaseAdmin
+      .from("knowledge_chunks")
+      .select("id,source_type,source_id,title,content");
+    if (existingErr) throw new Error(existingErr.message);
+
+    const existingList = existingRows ?? [];
+    const existingByExactChunk = new Set(existingList.map((row) => chunkKey(row)));
+
+    const currentItemKeys = new Set(all.map((chunk) => itemKey(chunk)));
+    const changedOrOrphanIds: string[] = [];
+    let removedOrphans = 0;
+    let updatedItems = 0;
+
+    if (!data.reset) {
+      const byItem = new Map<string, typeof existingList>();
+      for (const row of existingList) {
+        const key = itemKey(row);
+        const list = byItem.get(key) ?? [];
+        list.push(row);
+        byItem.set(key, list);
+      }
+
+      for (const [key, rows] of byItem) {
+        const stillExists = currentItemKeys.has(key);
+        if (!stillExists) {
+          changedOrOrphanIds.push(...rows.map((r) => r.id));
+          removedOrphans += rows.length;
+          continue;
+        }
+        const currentChunksOfItem = all.filter((c) => itemKey(c) === key);
+        const anyMatches = currentChunksOfItem.some((c) => existingByExactChunk.has(chunkKey(c)));
+        if (!anyMatches) {
+          changedOrOrphanIds.push(...rows.map((r) => r.id));
+          updatedItems += 1;
+        }
+      }
+
+      if (changedOrOrphanIds.length > 0) {
+        const { error: cleanupErr } = await supabaseAdmin
+          .from("knowledge_chunks")
+          .delete()
+          .in("id", changedOrOrphanIds);
+        if (cleanupErr) throw new Error(cleanupErr.message);
+      }
+    }
+
+    const stillExisting = data.reset
+      ? new Set<string>()
+      : new Set(
+          existingList
+            .filter((row) => !changedOrOrphanIds.includes(row.id))
+            .map((row) => chunkKey(row))
+        );
+    const pending = all.filter((chunk) => !stillExisting.has(chunkKey(chunk)));
+    
     const withEmb: Array<Chunk & { embedding: number[] }> = [];
-    for (const c of all) {
+    for (const c of pending) {
       const emb = await generateEmbedding(c.content);
       withEmb.push({ ...c, embedding: emb });
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
-
-    const { error: delErr } = await supabaseAdmin
-      .from("knowledge_chunks").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-    if (delErr) throw new Error(delErr.message);
 
     for (let i = 0; i < withEmb.length; i += 50) {
       const batch = withEmb.slice(i, i + 50).map((c) => ({
@@ -134,7 +191,14 @@ export const reindexAll = createServerFn({ method: "POST" })
       const { error } = await supabaseAdmin.from("knowledge_chunks").insert(batch);
       if (error) throw new Error(error.message);
     }
-    return { ok: true, indexed: withEmb.length };
+    return {
+  ok: true,
+  indexed: withEmb.length,
+  skipped: all.length - pending.length,
+  total: all.length,
+  updatedItems,
+  removedOrphans,
+};
   });
 
 export const getIndexStats = createServerFn({ method: "GET" })
