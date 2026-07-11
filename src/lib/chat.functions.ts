@@ -1,4 +1,3 @@
-Substitua TODO o conteúdo do arquivo src/lib/chat.functions.ts pelo código abaixo (isso resolve os marcadores de conflito <<<<<<< / ======= / >>>>>>> que estão travando o merge). Não altere nenhum outro arquivo existente.
 
 import { createServerFn } from "@tanstack/react-start";
 import { isAdminUser } from "@/lib/authz";
