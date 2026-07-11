@@ -1,14 +1,20 @@
 import { useState, useMemo } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
-import { listAllSimulatorResults } from "@/lib/admin-results.functions";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { listAllSimulatorResults, deleteSimulatorResult } from "@/lib/admin-results.functions";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Eye, Download } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Search, Eye, Download, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+
 
 
 const DIFFICULTY_LABELS: Record<string, string> = {
@@ -30,12 +36,26 @@ function notaCor(n: number) {
 
 export function SimulatorResultsTab() {
   const fn = useServerFn(listAllSimulatorResults);
+  const delFn = useServerFn(deleteSimulatorResult);
+  const qc = useQueryClient();
   const q = useQuery({ queryKey: ["admin-simulator-results"], queryFn: () => fn() });
   const results = (q.data ?? []) as any[];
   const [search, setSearch] = useState("");
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
   const [selected, setSelected] = useState<any>(null);
+  const [toDelete, setToDelete] = useState<any>(null);
+
+  const delMut = useMutation({
+    mutationFn: (id: string) => delFn({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Atendimento apagado.");
+      setToDelete(null);
+      qc.invalidateQueries({ queryKey: ["admin-simulator-results"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao apagar"),
+  });
+
 
   const filtered = useMemo(() => {
     return results.filter((r) => {
@@ -134,9 +154,9 @@ export function SimulatorResultsTab() {
           </p>
         )}
         {filtered.map((r) => (
-          <button key={r.id} onClick={() => setSelected(r)}
-            className="w-full text-left p-4 hover:bg-muted/40 transition flex items-center justify-between gap-3">
-            <div className="min-w-0">
+          <div key={r.id}
+            className="w-full p-4 hover:bg-muted/40 transition flex items-center justify-between gap-3">
+            <button onClick={() => setSelected(r)} className="flex-1 min-w-0 text-left">
               <p className="text-sm font-medium truncate">
                 {r.profiles?.display_name ?? r.profiles?.email ?? "Atendente"}
               </p>
@@ -148,13 +168,19 @@ export function SimulatorResultsTab() {
                   {new Date(r.created_at).toLocaleString("pt-BR")} · {r.profile_name}
                 </span>
               </div>
-            </div>
+            </button>
             <div className="flex items-center gap-2 flex-shrink-0">
               <span className={`text-lg font-bold ${notaCor(r.nota)}`}>{r.nota}</span>
-              <Eye className="h-4 w-4 text-muted-foreground" />
+              <Button variant="ghost" size="icon" onClick={() => setSelected(r)} aria-label="Ver detalhes">
+                <Eye className="h-4 w-4 text-muted-foreground" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => setToDelete(r)} aria-label="Apagar atendimento">
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
             </div>
-          </button>
+          </div>
         ))}
+
       </Card>
 
       <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
@@ -192,6 +218,26 @@ export function SimulatorResultsTab() {
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!toDelete} onOpenChange={(v) => !v && setToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Apagar atendimento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação é permanente e não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={delMut.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); if (toDelete) delMut.mutate(toDelete.id); }}
+              disabled={delMut.isPending}
+            >
+              {delMut.isPending ? "Apagando..." : "Apagar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
