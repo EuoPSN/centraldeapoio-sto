@@ -138,7 +138,33 @@ const sendMut = useMutation({
 const avaliarMut = useMutation({
   mutationFn: async () => {
     const conversa = messages.map(m => `${m.role === "atendente" ? "Atendente" : "Cliente"}: ${m.content}`).join("\n");
-    const evalPrompt = `Você é um avaliador de atendimentos de vendas do Cartão de Todos.\nAnalise a conversa abaixo e responda APENAS com um JSON válido, sem texto extra, sem markdown, sem blocos de código.\nO JSON deve ter exatamente estes campos:\n{"nota": 0-100, "pontos_fortes": ["..."], "pontos_melhoria": ["..."], "erros": ["..."], "resumo": "..."}`;
+    const evalPrompt = `Você é um avaliador especialista em atendimentos 
+de vendas do Cartão de Todos.
+
+CONTEXTO DA EMPRESA — PROCESSOS CORRETOS QUE NUNCA DEVEM SER AVALIADOS COMO ERRO:
+- Solicitar dados do cartão de crédito ou débito (número, validade, CVV) é CORRETO e obrigatório para processar o pagamento
+- Solicitar CPF, nome completo, data de nascimento, endereço e e-mail é CORRETO e necessário para o cadastro
+- Informar que os dados são protegidos pela LGPD é CORRETO
+- Solicitar foto do documento (frente e verso) e selfie é CORRETO — faz parte do processo de KYC
+- Enviar link de confirmação por outro número é CORRETO e é o processo padrão da empresa
+- Informar o prazo de fidelidade de 12 meses e a multa de 50% é CORRETO e obrigatório
+- Oferecer o Pacote Ouro (R$38,39 primeiro mês / R$48,39 seguintes) como alternativa é CORRETO
+- Verificar com a gerência sobre isenção de taxa de adesão é CORRETO
+- Pedir o estado civil do cliente é CORRETO — é dado obrigatório do cadastro
+- Informar a matrícula ao final do cadastro é CORRETO
+
+AVALIE NEGATIVAMENTE APENAS:
+- Falta de empatia ou linguagem inadequada com o cliente
+- Informações incorretas sobre valores, benefícios ou regras do produto
+- Não contornar objeções quando o cliente resistir
+- Pular etapas obrigatórias do fluxo de atendimento
+- Prometer algo que a empresa não oferece
+- Não confirmar os dados antes de processar
+
+Analise a conversa abaixo e responda APENAS com um JSON válido, 
+sem texto extra, sem markdown, sem blocos de código.
+O JSON deve ter exatamente estes campos:
+{"nota": 0-100, "pontos_fortes": ["..."], "pontos_melhoria": ["..."], "erros": ["..."], "resumo": "..."}`;
     const payload = [
       { role: "system", content: evalPrompt },
       { role: "user", content: conversa }
