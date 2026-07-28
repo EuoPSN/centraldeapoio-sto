@@ -570,6 +570,18 @@ function AiTab() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
   });
 
+  const reindexIncrementalMut = useMutation({
+    mutationFn: () => reindex({ data: { reset: false } }),
+    onSuccess: (result: any) => {
+      if (result.indexed === 0) {
+        toast.success("Nenhum conteúdo novo para indexar.");
+      } else {
+        toast.success(`${result.indexed} novos chunks indexados!`);
+      }
+    },
+    onError: () => toast.error("Erro ao indexar."),
+  });
+
   const saveSettingsMut = useMutation({
     mutationFn: () => {
       const article = name === "Assistente IA do Cartão de Todos" ? "o" : "a";
@@ -599,10 +611,22 @@ function AiTab() {
             </p>
             <p className="text-sm mt-2">Total atual: <strong className="text-primary">{sQ.data?.totalChunks ?? 0}</strong> chunks indexados.</p>
           </div>
-          <Button onClick={() => mut.mutate()} disabled={mut.isPending} className="gap-2">
-            <RefreshCw className={`h-4 w-4 ${mut.isPending ? "animate-spin" : ""}`} />
-            {mut.isPending ? "Reindexando..." : "Reindexar tudo"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={() => mut.mutate()} disabled={mut.isPending} className="gap-2">
+              <RefreshCw className={`h-4 w-4 ${mut.isPending ? "animate-spin" : ""}`} />
+              {mut.isPending ? "Reindexando..." : "Reindexar tudo"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => reindexIncrementalMut.mutate()}
+              disabled={reindexIncrementalMut.isPending}
+              className="gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              {reindexIncrementalMut.isPending ? "Indexando..." : "Indexar novos conteúdos"}
+            </Button>
+          </div>
         </div>
       </Card>
 
