@@ -16,7 +16,7 @@ export const listClientProfiles = createServerFn({ method: "GET" })
     const db = supabaseAdmin as any;
     const { data, error } = await db
       .from("client_profiles")
-      .select("*")
+      .select("*, category:categories(id,name,color)")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return data ?? [];
@@ -30,7 +30,7 @@ export const listClientProfilesForTraining = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await (supabaseAdmin as any)
       .from("client_profiles")
-      .select("id, name, personality, difficulty, objectives, objections, behaviors, cliente_nome, cliente_regiao, cliente_genero, created_at")
+      .select("id, name, personality, difficulty, objectives, objections, behaviors, cliente_nome, cliente_regiao, cliente_genero, category_id, category:categories(id,name), created_at")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return data ?? [];
@@ -38,6 +38,7 @@ export const listClientProfilesForTraining = createServerFn({ method: "GET" })
 
 const ClientProfileInput = z.object({
   id: z.string().uuid().optional(),
+  category_id: z.string().uuid().nullable().optional(),
   name: z.string().min(1).max(200),
   personality: z.string().default(""),
   difficulty: z.string().min(1).max(50),
@@ -58,6 +59,7 @@ export const upsertClientProfile = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const db = supabaseAdmin as any;
     const row = {
+      category_id: data.category_id ?? null,
       name: data.name,
       personality: data.personality,
       difficulty: data.difficulty,

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { listClientProfiles, upsertClientProfile, deleteClientProfile } from "@/lib/clientprofiles.functions";
+import { listCategories } from "@/lib/taxonomy.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,12 +27,15 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   especialista: "bg-red-100 text-red-800",
 };
 
-const EMPTY = { name: "", personality: "", difficulty: "medio", objectives: "", objections: "", behaviors: "", cliente_nome: "", cliente_cpf: "", cliente_regiao: "", cliente_genero: "masculino" };
+const EMPTY = { category_id: "", name: "", personality: "", difficulty: "medio", objectives: "", objections: "", behaviors: "", cliente_nome: "", cliente_cpf: "", cliente_regiao: "", cliente_genero: "masculino" };
 
 export function ClientProfilesTab() {
   const listFn = useServerFn(listClientProfiles);
   const upsertFn = useServerFn(upsertClientProfile);
   const deleteFn = useServerFn(deleteClientProfile);
+  const catFn = useServerFn(listCategories);
+  const catQ = useQuery({ queryKey: ["cats", "client_profile"], queryFn: () => catFn({ data: { scope: "client_profile" } }) });
+  const categories = (catQ.data ?? []) as { id: string; name: string }[];
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["client_profiles"], queryFn: () => listFn() });
   const profiles = (q.data ?? []) as any[];
@@ -39,7 +43,7 @@ export function ClientProfilesTab() {
   const [form, setForm] = useState<any>({ ...EMPTY });
 
   const upsertMut = useMutation({
-    mutationFn: (d: any) => upsertFn({ data: d }),
+    mutationFn: (d: any) => upsertFn({ data: { ...d, category_id: d.category_id || null } }),
     onSuccess: () => {
       toast.success("Perfil salvo!");
       qc.invalidateQueries({ queryKey: ["client_profiles"] });
@@ -58,7 +62,7 @@ export function ClientProfilesTab() {
   });
 
   const openNew = () => { setForm({ ...EMPTY }); setOpen(true); };
-  const openEdit = (p: any) => { setForm({ ...p }); setOpen(true); };
+  const openEdit = (p: any) => { setForm({ ...p, category_id: p.category_id ?? "" }); setOpen(true); };
   const set = (k: string, v: string) => setForm((f: any) => ({ ...f, [k]: v }));
 
   return (
@@ -85,7 +89,10 @@ export function ClientProfilesTab() {
                 <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => deleteMut.mutate(p.id)}><Trash2 className="h-3 w-3" /></Button>
               </div>
             </div>
-            <Badge className={DIFFICULTY_COLORS[p.difficulty] ?? ""}>{DIFFICULTY_LABELS[p.difficulty] ?? p.difficulty}</Badge>
+            <div className="flex flex-wrap gap-1">
+              <Badge className={DIFFICULTY_COLORS[p.difficulty] ?? ""}>{DIFFICULTY_LABELS[p.difficulty] ?? p.difficulty}</Badge>
+              {p.category?.name && <Badge variant="outline">{p.category.name}</Badge>}
+            </div>
             {p.personality && <p className="text-xs text-muted-foreground line-clamp-2">{p.personality}</p>}
           </Card>
         ))}
@@ -98,6 +105,19 @@ export function ClientProfilesTab() {
             <div>
               <Label>Nome do perfil</Label>
               <Input value={form.name} onChange={e => set("name", e.target.value)} placeholder="Ex: Cliente Desconfiado" />
+            </div>
+            <div>
+              <Label>Subcategoria</Label>
+              <Select value={form.category_id || "none"} onValueChange={v => set("category_id", v === "none" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="— Sem subcategoria —" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— Sem subcategoria —</SelectItem>
+                  {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Gerencie as subcategorias (Filiação, Refiliação, Migração, EDT...) em Admin → Categorias.
+              </p>
             </div>
             <div>
               <Label>Nível de dificuldade</Label>

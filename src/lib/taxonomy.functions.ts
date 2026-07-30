@@ -3,7 +3,7 @@ import { isAdminUser } from "@/lib/authz";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
-const ScopeEnum = z.enum(["message", "flow", "suggestion", "content"]);
+const ScopeEnum = z.enum(["message", "flow", "suggestion", "content", "client_profile"]);
 
 export const listCategories = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
