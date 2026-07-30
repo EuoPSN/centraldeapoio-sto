@@ -599,6 +599,21 @@ function AiTab() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
   });
 
+  const reindexIncrementalMut = useMutation({
+    mutationFn: () => reindex({ data: { reset: false } }),
+    onSuccess: (r) => {
+      if (r.indexed === 0) {
+        toast.success("Nenhum conteúdo novo para indexar.");
+      } else {
+        toast.success(`${r.indexed} novos chunks indexados!`);
+      }
+      qc.invalidateQueries({ queryKey: ["index-stats"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao indexar."),
+  });
+
+
+
   const saveSettingsMut = useMutation({
     mutationFn: () => {
       const article = name === "Assistente IA do Cartão de Todos" ? "o" : "a";
