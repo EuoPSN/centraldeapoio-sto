@@ -27,18 +27,18 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   especialista: "bg-red-100 text-red-800",
 };
 
-const EMPTY = { category_id: "", name: "", personality: "", difficulty: "medio", objectives: "", objections: "", behaviors: "", cliente_nome: "", cliente_cpf: "", cliente_regiao: "", cliente_genero: "masculino" };
+const EMPTY = { name: "", category_id: "", personality: "", difficulty: "medio", objectives: "", objections: "", behaviors: "", cliente_nome: "", cliente_cpf: "", cliente_regiao: "", cliente_genero: "masculino" };
 
 export function ClientProfilesTab() {
   const listFn = useServerFn(listClientProfiles);
   const upsertFn = useServerFn(upsertClientProfile);
   const deleteFn = useServerFn(deleteClientProfile);
   const catFn = useServerFn(listCategories);
-  const catQ = useQuery({ queryKey: ["cats", "client_profile"], queryFn: () => catFn({ data: { scope: "client_profile" } }) });
-  const categories = (catQ.data ?? []) as { id: string; name: string }[];
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["client_profiles"], queryFn: () => listFn() });
+  const catQ = useQuery({ queryKey: ["cats", "client_profile"], queryFn: () => catFn({ data: { scope: "client_profile" } }) });
   const profiles = (q.data ?? []) as any[];
+  const categories = (catQ.data ?? []) as { id: string; name: string }[];
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<any>({ ...EMPTY });
 
