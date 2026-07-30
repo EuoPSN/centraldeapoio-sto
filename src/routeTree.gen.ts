@@ -27,7 +27,6 @@ import { Route as AuthenticatedCrmProspeccaoRouteImport } from './routes/_authen
 import { Route as AuthenticatedCrmLeadsRouteImport } from './routes/_authenticated/crm-leads'
 import { Route as AuthenticatedConhecimentoRouteImport } from './routes/_authenticated/conhecimento'
 import { Route as AuthenticatedAssistenteRouteImport } from './routes/_authenticated/assistente'
-import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as ApiPublicKnowledgeFileRouteImport } from './routes/api/public/knowledge-file'
 
 const AuthRoute = AuthRouteImport.update({
@@ -125,11 +124,6 @@ const AuthenticatedAssistenteRoute = AuthenticatedAssistenteRouteImport.update({
   path: '/assistente',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const ApiPublicKnowledgeFileRoute = ApiPublicKnowledgeFileRouteImport.update({
   id: '/api/public/knowledge-file',
   path: '/api/public/knowledge-file',
@@ -139,7 +133,6 @@ const ApiPublicKnowledgeFileRoute = ApiPublicKnowledgeFileRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
-  '/admin': typeof AuthenticatedAdminRoute
   '/assistente': typeof AuthenticatedAssistenteRoute
   '/conhecimento': typeof AuthenticatedConhecimentoRoute
   '/crm-leads': typeof AuthenticatedCrmLeadsRoute
@@ -159,7 +152,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
-  '/admin': typeof AuthenticatedAdminRoute
   '/assistente': typeof AuthenticatedAssistenteRoute
   '/conhecimento': typeof AuthenticatedConhecimentoRoute
   '/crm-leads': typeof AuthenticatedCrmLeadsRoute
@@ -182,7 +174,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
-  '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/assistente': typeof AuthenticatedAssistenteRoute
   '/_authenticated/conhecimento': typeof AuthenticatedConhecimentoRoute
   '/_authenticated/crm-leads': typeof AuthenticatedCrmLeadsRoute
@@ -206,7 +197,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
-    | '/admin'
     | '/assistente'
     | '/conhecimento'
     | '/crm-leads'
@@ -226,7 +216,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
-    | '/admin'
     | '/assistente'
     | '/conhecimento'
     | '/crm-leads'
@@ -248,7 +237,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authenticated'
     | '/auth'
-    | '/_authenticated/admin'
     | '/_authenticated/assistente'
     | '/_authenticated/conhecimento'
     | '/_authenticated/crm-leads'
@@ -402,13 +390,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAssistenteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/admin': {
-      id: '/_authenticated/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AuthenticatedAdminRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/api/public/knowledge-file': {
       id: '/api/public/knowledge-file'
       path: '/api/public/knowledge-file'
@@ -420,7 +401,6 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAssistenteRoute: typeof AuthenticatedAssistenteRoute
   AuthenticatedConhecimentoRoute: typeof AuthenticatedConhecimentoRoute
   AuthenticatedCrmLeadsRoute: typeof AuthenticatedCrmLeadsRoute
@@ -440,7 +420,6 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAssistenteRoute: AuthenticatedAssistenteRoute,
   AuthenticatedConhecimentoRoute: AuthenticatedConhecimentoRoute,
   AuthenticatedCrmLeadsRoute: AuthenticatedCrmLeadsRoute,
@@ -470,3 +449,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
