@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { listClientProfiles, upsertClientProfile, deleteClientProfile } from "@/lib/clientprofiles.functions";
+import { listClientProfiles, upsertClientProfile, deleteClientProfile, moveClientProfile } from "@/lib/clientprofiles.functions";
 import { listCategories } from "@/lib/taxonomy.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Pencil } from "lucide-react";
+import { Plus, Trash2, Pencil, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 
 const DIFFICULTY_LABELS: Record<string, string> = {
@@ -33,6 +33,7 @@ export function ClientProfilesTab() {
   const listFn = useServerFn(listClientProfiles);
   const upsertFn = useServerFn(upsertClientProfile);
   const deleteFn = useServerFn(deleteClientProfile);
+  const moveFn = useServerFn(moveClientProfile);
   const catFn = useServerFn(listCategories);
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["client_profiles"], queryFn: () => listFn() });
@@ -41,6 +42,8 @@ export function ClientProfilesTab() {
   const categories = (catQ.data ?? []) as { id: string; name: string }[];
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<any>({ ...EMPTY });
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overCat, setOverCat] = useState<string | null>(null);
 
   const upsertMut = useMutation({
     mutationFn: (d: any) => upsertFn({ data: { ...d, category_id: d.category_id || null } }),
@@ -60,17 +63,62 @@ export function ClientProfilesTab() {
     },
     onError: () => toast.error("Erro ao remover."),
   });
+  const moveMut = useMutation({
+    mutationFn: (v: { id: string; category_id: string | null }) => moveFn({ data: v }),
+    onSuccess: () => {
+      toast.success("Perfil movido.");
+      qc.invalidateQueries({ queryKey: ["client_profiles"] });
+    },
+    onError: () => toast.error("Erro ao mover perfil."),
+  });
 
   const openNew = () => { setForm({ ...EMPTY }); setOpen(true); };
   const openEdit = (p: any) => { setForm({ ...p, category_id: p.category_id ?? "" }); setOpen(true); };
   const set = (k: string, v: string) => setForm((f: any) => ({ ...f, [k]: v }));
+
+  const columns: { id: string | null; name: string }[] = [
+    ...categories.map(c => ({ id: c.id as string | null, name: c.name })),
+    { id: null, name: "Sem categoria" },
+  ];
+
+  const handleDrop = (catId: string | null) => {
+    setOverCat(null);
+    if (!dragId) return;
+    const p = profiles.find(x => x.id === dragId);
+    setDragId(null);
+    if (!p || (p.category_id ?? null) === catId) return;
+    moveMut.mutate({ id: dragId, category_id: catId });
+  };
+
+  const renderCard = (p: any) => (
+    <Card
+      key={p.id}
+      draggable
+      onDragStart={() => setDragId(p.id)}
+      onDragEnd={() => { setDragId(null); setOverCat(null); }}
+      className={`p-3 space-y-2 cursor-grab active:cursor-grabbing ${dragId === p.id ? "opacity-50" : ""}`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-start gap-1.5 min-w-0">
+          <GripVertical className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+          <h3 className="font-semibold text-sm truncate">{p.name}</h3>
+        </div>
+        <div className="flex gap-1 shrink-0">
+          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(p)}><Pencil className="h-3 w-3" /></Button>
+          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => deleteMut.mutate(p.id)}><Trash2 className="h-3 w-3" /></Button>
+        </div>
+      </div>
+      <Badge className={DIFFICULTY_COLORS[p.difficulty] ?? ""}>{DIFFICULTY_LABELS[p.difficulty] ?? p.difficulty}</Badge>
+      {p.personality && <p className="text-xs text-muted-foreground line-clamp-2">{p.personality}</p>}
+    </Card>
+  );
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold">Perfis de Cliente</h2>
-          <p className="text-sm text-muted-foreground">Crie perfis para o Simulador MarcIAna usar como clientes virtuais.</p>
+          <p className="text-sm text-muted-foreground">Arraste os perfis entre as categorias (Filiação, Refiliação, Migração, EDT, Outros).</p>
         </div>
         <Button onClick={openNew} className="gap-2"><Plus className="h-4 w-4" /> Novo Perfil</Button>
       </div>
@@ -79,24 +127,33 @@ export function ClientProfilesTab() {
         <Card className="p-10 text-center text-muted-foreground">Nenhum perfil cadastrado ainda. Clique em "Novo Perfil" para começar.</Card>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {profiles.map((p: any) => (
-          <Card key={p.id} className="p-4 space-y-2">
-            <div className="flex items-start justify-between gap-2">
-              <h3 className="font-semibold text-sm">{p.name}</h3>
-              <div className="flex gap-1">
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(p)}><Pencil className="h-3 w-3" /></Button>
-                <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => deleteMut.mutate(p.id)}><Trash2 className="h-3 w-3" /></Button>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start">
+        {columns.map(col => {
+          const items = profiles.filter(p => (p.category_id ?? null) === col.id);
+          const isOver = overCat === (col.id ?? "__null__");
+          return (
+            <div
+              key={col.id ?? "none"}
+              onDragOver={e => { e.preventDefault(); setOverCat(col.id ?? "__null__"); }}
+              onDragLeave={() => setOverCat(null)}
+              onDrop={e => { e.preventDefault(); handleDrop(col.id); }}
+              className={`rounded-lg border bg-muted/30 p-3 space-y-3 min-h-[140px] transition-colors ${isOver ? "border-primary bg-primary/5" : ""}`}
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold">{col.name}</h3>
+                <Badge variant="outline">{items.length}</Badge>
+              </div>
+              <div className="space-y-2">
+                {items.map(renderCard)}
+                {items.length === 0 && (
+                  <p className="text-xs text-muted-foreground py-4 text-center">Solte um perfil aqui</p>
+                )}
               </div>
             </div>
-            <div className="flex flex-wrap gap-1">
-              <Badge className={DIFFICULTY_COLORS[p.difficulty] ?? ""}>{DIFFICULTY_LABELS[p.difficulty] ?? p.difficulty}</Badge>
-              {p.category?.name && <Badge variant="outline">{p.category.name}</Badge>}
-            </div>
-            {p.personality && <p className="text-xs text-muted-foreground line-clamp-2">{p.personality}</p>}
-          </Card>
-        ))}
+          );
+        })}
       </div>
+
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
