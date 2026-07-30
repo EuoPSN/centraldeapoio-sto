@@ -1,11 +1,19 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { isAdminUser } from "@/lib/authz";
+
+async function requireAdmin(ctx: { supabase: any; userId: string }) {
+  const ok = await isAdminUser(ctx.supabase, ctx.userId);
+  if (!ok) throw new Error("Acesso restrito a administradores.");
+}
 
 export const listProspeccao = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => d as { dataInicio?: string; dataFim?: string; vendedor?: string })
   .handler(async ({ data, context }) => {
-    let query = context.supabase
+    await requireAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let query = (supabaseAdmin as any)
       .from("prospeccao_diaria")
       .select("*")
       .order("data", { ascending: false });
@@ -24,14 +32,17 @@ export const upsertProspeccao = createServerFn({ method: "POST" })
     tentativas: number; oportunidades: number; vendas: number;
   })
   .handler(async ({ data, context }) => {
+    await requireAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const db = supabaseAdmin as any;
     const row = {
       data: data.data, vendedor: data.vendedor, canal: data.canal,
       tentativas: data.tentativas, oportunidades: data.oportunidades,
       vendas: data.vendas, created_by: context.userId,
     };
     const { data: result, error } = data.id
-      ? await context.supabase.from("prospeccao_diaria").update(row).eq("id", data.id).select().single()
-      : await context.supabase.from("prospeccao_diaria").insert(row).select().single();
+      ? await db.from("prospeccao_diaria").update(row).eq("id", data.id).select().single()
+      : await db.from("prospeccao_diaria").insert(row).select().single();
     if (error) throw error;
     return result;
   });
@@ -40,7 +51,9 @@ export const deleteProspeccao = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => d as { id: string })
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
+    await requireAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await (supabaseAdmin as any)
       .from("prospeccao_diaria").delete().eq("id", data.id);
     if (error) throw error;
     return { ok: true };
@@ -50,7 +63,9 @@ export const getProspeccaoStats = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => d as { dataInicio?: string; dataFim?: string })
   .handler(async ({ data, context }) => {
-    let query = context.supabase.from("prospeccao_diaria").select("*");
+    await requireAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let query = (supabaseAdmin as any).from("prospeccao_diaria").select("*");
     if (data.dataInicio) query = query.gte("data", data.dataInicio);
     if (data.dataFim) query = query.lte("data", data.dataFim);
     const { data: rows, error } = await query;

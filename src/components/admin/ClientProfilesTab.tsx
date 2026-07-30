@@ -185,7 +185,6 @@ export function ClientProfilesTab() {
                   </div>
                 </div>
               </div>
-            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>

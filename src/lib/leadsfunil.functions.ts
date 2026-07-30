@@ -1,11 +1,19 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { isAdminUser } from "@/lib/authz";
+
+async function requireAdmin(ctx: { supabase: any; userId: string }) {
+  const ok = await isAdminUser(ctx.supabase, ctx.userId);
+  if (!ok) throw new Error("Acesso restrito a administradores.");
+}
 
 export const listLeadsFunil = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => d as { dataInicio?: string; dataFim?: string; origem?: string })
   .handler(async ({ data, context }) => {
-    let query = context.supabase
+    await requireAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let query = (supabaseAdmin as any)
       .from("leads_funil").select("*").order("data", { ascending: false });
     if (data.dataInicio) query = query.gte("data", data.dataInicio);
     if (data.dataFim) query = query.lte("data", data.dataFim);
@@ -24,6 +32,9 @@ export const upsertLeadsFunil = createServerFn({ method: "POST" })
     nao_responde: number; desqualificados: number;
   })
   .handler(async ({ data, context }) => {
+    await requireAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const db = supabaseAdmin as any;
     const row = {
       data: data.data, origem: data.origem,
       leads_entrados: data.leads_entrados, qualificados: data.qualificados,
@@ -33,8 +44,8 @@ export const upsertLeadsFunil = createServerFn({ method: "POST" })
       created_by: context.userId,
     };
     const { data: result, error } = data.id
-      ? await context.supabase.from("leads_funil").update(row).eq("id", data.id).select().single()
-      : await context.supabase.from("leads_funil").insert(row).select().single();
+      ? await db.from("leads_funil").update(row).eq("id", data.id).select().single()
+      : await db.from("leads_funil").insert(row).select().single();
     if (error) throw error;
     return result;
   });
@@ -43,7 +54,9 @@ export const deleteLeadsFunil = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => d as { id: string })
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
+    await requireAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await (supabaseAdmin as any)
       .from("leads_funil").delete().eq("id", data.id);
     if (error) throw error;
     return { ok: true };
@@ -53,7 +66,9 @@ export const getLeadsFunilStats = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => d as { dataInicio?: string; dataFim?: string; origem?: string })
   .handler(async ({ data, context }) => {
-    let query = context.supabase.from("leads_funil").select("*");
+    await requireAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let query = (supabaseAdmin as any).from("leads_funil").select("*");
     if (data.dataInicio) query = query.gte("data", data.dataInicio);
     if (data.dataFim) query = query.lte("data", data.dataFim);
     if (data.origem) query = query.eq("origem", data.origem);
@@ -61,7 +76,7 @@ export const getLeadsFunilStats = createServerFn({ method: "POST" })
     if (error) throw error;
     const all = rows ?? [];
 
-    const totals = all.reduce((acc, r) => ({
+    const totals = all.reduce((acc: any, r: any) => ({
       leads_entrados: acc.leads_entrados + r.leads_entrados,
       qualificados: acc.qualificados + r.qualificados,
       apresentacao: acc.apresentacao + r.apresentacao,

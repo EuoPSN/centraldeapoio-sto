@@ -12,8 +12,8 @@ interface ContentItem {
   content: string;
   category: string | null;
   tags: string[];
-  link_externo?: string;
-  link_label?: string;
+  link_externo?: string | null;
+  link_label?: string | null;
 }
 
 export function ContentList({ title, subtitle, items, loading }: {

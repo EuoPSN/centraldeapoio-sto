@@ -12,3 +12,24 @@ export const listAllSimulatorResults = createServerFn()
     if (error) throw error;
     return data ?? [];
   });
+
+export const deleteSimulatorResult = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => d as { id: string })
+  .handler(async ({ data, context }) => {
+    const { data: role, error: roleErr } = await (context.supabase as any)
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (roleErr) throw roleErr;
+    if (!role) throw new Error("Forbidden");
+    const { error } = await (context.supabase as any)
+      .from("simulator_results")
+      .delete()
+      .eq("id", data.id);
+    if (error) throw error;
+    return { ok: true };
+  });
+

@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { chatCompletion } from "@/lib/ai-gateway.server";
 
 const PERFIS_MATURIDADE = ["Técnico", "Comercial", "Investigativo", "Empático", "Rápido", "Detalhista"];
 const NIVEIS_LIDERANCA = ["P1", "P2", "P3", "P4"];
@@ -184,26 +185,22 @@ Os níveis de liderança situacional (Hersey-Blanchard):
   "recomendacoes": "4 a 6 recomendações práticas e específicas de desenvolvimento, separadas por ponto e vírgula. Seja concreto: indique exercícios, abordagens ou situações específicas de atendimento do Cartão de Todos"
 }`;
 
-    const apiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.LOVABLE_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [{ role: "user", content: prompt }],
-        max_tokens: 800,
-      }),
+    const text = await chatCompletion({
+      model: "google/gemini-2.5-flash",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.7,
     });
 
-    const apiData = await apiResponse.json();
-    const text = apiData.choices?.[0]?.message?.content ?? "{}";
     try {
       const clean = text.replace(/```json|```/g, "").trim();
       return JSON.parse(clean);
     } catch {
-      return { analise: "Erro ao processar análise.", sugestao_perfis: [], sugestao_nivel: null, recomendacoes: "" };
+      return {
+        analise: "Erro ao processar análise.",
+        sugestao_perfis: [],
+        sugestao_nivel: null,
+        recomendacoes: ""
+      };
     }
   });
 

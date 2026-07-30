@@ -183,6 +183,7 @@ export type Database = {
       }
       chat_messages: {
         Row: {
+          attachments: Json
           content: string
           conversation_id: string
           created_at: string
@@ -190,6 +191,7 @@ export type Database = {
           role: string
         }
         Insert: {
+          attachments?: Json
           content: string
           conversation_id: string
           created_at?: string
@@ -197,6 +199,7 @@ export type Database = {
           role: string
         }
         Update: {
+          attachments?: Json
           content?: string
           conversation_id?: string
           created_at?: string
@@ -213,6 +216,54 @@ export type Database = {
           },
         ]
       }
+      client_profiles: {
+        Row: {
+          behaviors: string | null
+          cliente_cpf: string | null
+          cliente_genero: string | null
+          cliente_nome: string | null
+          cliente_regiao: string | null
+          created_at: string
+          difficulty: string | null
+          id: string
+          name: string
+          objections: string | null
+          objectives: string | null
+          personality: string | null
+          updated_at: string
+        }
+        Insert: {
+          behaviors?: string | null
+          cliente_cpf?: string | null
+          cliente_genero?: string | null
+          cliente_nome?: string | null
+          cliente_regiao?: string | null
+          created_at?: string
+          difficulty?: string | null
+          id?: string
+          name: string
+          objections?: string | null
+          objectives?: string | null
+          personality?: string | null
+          updated_at?: string
+        }
+        Update: {
+          behaviors?: string | null
+          cliente_cpf?: string | null
+          cliente_genero?: string | null
+          cliente_nome?: string | null
+          cliente_regiao?: string | null
+          created_at?: string
+          difficulty?: string | null
+          id?: string
+          name?: string
+          objections?: string | null
+          objectives?: string | null
+          personality?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       content_items: {
         Row: {
           category: string | null
@@ -220,6 +271,8 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          link_externo: string | null
+          link_label: string | null
           position: number
           section: Database["public"]["Enums"]["content_section"]
           tags: string[]
@@ -232,6 +285,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          link_externo?: string | null
+          link_label?: string | null
           position?: number
           section: Database["public"]["Enums"]["content_section"]
           tags?: string[]
@@ -244,6 +299,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          link_externo?: string | null
+          link_label?: string | null
           position?: number
           section?: Database["public"]["Enums"]["content_section"]
           tags?: string[]
@@ -251,6 +308,135 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      decision_edges: {
+        Row: {
+          created_at: string | null
+          from_node_id: string
+          id: string
+          label: string
+          motor_id: string
+          to_node_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          from_node_id: string
+          id?: string
+          label: string
+          motor_id: string
+          to_node_id: string
+        }
+        Update: {
+          created_at?: string | null
+          from_node_id?: string
+          id?: string
+          label?: string
+          motor_id?: string
+          to_node_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decision_edges_from_node_id_fkey"
+            columns: ["from_node_id"]
+            isOneToOne: false
+            referencedRelation: "decision_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "decision_edges_motor_id_fkey"
+            columns: ["motor_id"]
+            isOneToOne: false
+            referencedRelation: "decision_motors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "decision_edges_to_node_id_fkey"
+            columns: ["to_node_id"]
+            isOneToOne: false
+            referencedRelation: "decision_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      decision_motors: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+        }
+        Relationships: []
+      }
+      decision_nodes: {
+        Row: {
+          created_at: string | null
+          documentos: string | null
+          id: string
+          is_start: boolean | null
+          mensagem: string | null
+          motor_id: string
+          observacoes: string | null
+          orientacoes: string | null
+          processo: string | null
+          question_type: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          documentos?: string | null
+          id?: string
+          is_start?: boolean | null
+          mensagem?: string | null
+          motor_id: string
+          observacoes?: string | null
+          orientacoes?: string | null
+          processo?: string | null
+          question_type?: string | null
+          title: string
+          type: string
+        }
+        Update: {
+          created_at?: string | null
+          documentos?: string | null
+          id?: string
+          is_start?: boolean | null
+          mensagem?: string | null
+          motor_id?: string
+          observacoes?: string | null
+          orientacoes?: string | null
+          processo?: string | null
+          question_type?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decision_nodes_motor_id_fkey"
+            columns: ["motor_id"]
+            isOneToOne: false
+            referencedRelation: "decision_motors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       flow_edges: {
         Row: {
@@ -423,6 +609,51 @@ export type Database = {
           },
         ]
       }
+      funcionarios_metas: {
+        Row: {
+          created_at: string | null
+          dias_uteis: number
+          id: string
+          mes_referencia: string
+          meta_diaria: number | null
+          meta_mensal: number
+          meta_semanal: number | null
+          nivel_lideranca: string | null
+          nome: string
+          perfis_maturidade: string[] | null
+          recomendacoes: string | null
+          recomendacoes_atualizadas_em: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dias_uteis?: number
+          id?: string
+          mes_referencia: string
+          meta_diaria?: number | null
+          meta_mensal?: number
+          meta_semanal?: number | null
+          nivel_lideranca?: string | null
+          nome: string
+          perfis_maturidade?: string[] | null
+          recomendacoes?: string | null
+          recomendacoes_atualizadas_em?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          dias_uteis?: number
+          id?: string
+          mes_referencia?: string
+          meta_diaria?: number | null
+          meta_mensal?: number
+          meta_semanal?: number | null
+          nivel_lideranca?: string | null
+          nome?: string
+          perfis_maturidade?: string[] | null
+          recomendacoes?: string | null
+          recomendacoes_atualizadas_em?: string | null
+        }
+        Relationships: []
+      }
       knowledge_chunks: {
         Row: {
           content: string
@@ -520,6 +751,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      leads_funil: {
+        Row: {
+          apresentacao: number
+          created_at: string | null
+          created_by: string | null
+          data: string
+          desqualificados: number
+          id: string
+          leads_entrados: number
+          nao_responde: number
+          negociacao: number
+          origem: string
+          qualificados: number
+          sem_interesse: number
+          vendas_fechadas: number
+        }
+        Insert: {
+          apresentacao?: number
+          created_at?: string | null
+          created_by?: string | null
+          data: string
+          desqualificados?: number
+          id?: string
+          leads_entrados?: number
+          nao_responde?: number
+          negociacao?: number
+          origem: string
+          qualificados?: number
+          sem_interesse?: number
+          vendas_fechadas?: number
+        }
+        Update: {
+          apresentacao?: number
+          created_at?: string | null
+          created_by?: string | null
+          data?: string
+          desqualificados?: number
+          id?: string
+          leads_entrados?: number
+          nao_responde?: number
+          negociacao?: number
+          origem?: string
+          qualificados?: number
+          sem_interesse?: number
+          vendas_fechadas?: number
+        }
+        Relationships: []
       }
       messages: {
         Row: {
@@ -655,28 +934,124 @@ export type Database = {
       }
       profiles: {
         Row: {
+          cargo: string | null
           created_at: string
           display_name: string | null
           email: string
           id: string
           is_active: boolean
+          last_seen_at: string | null
+          nivel_lideranca: string | null
+          perfis_maturidade: string[] | null
           updated_at: string
+          xp: number
         }
         Insert: {
+          cargo?: string | null
           created_at?: string
           display_name?: string | null
           email: string
           id: string
           is_active?: boolean
+          last_seen_at?: string | null
+          nivel_lideranca?: string | null
+          perfis_maturidade?: string[] | null
           updated_at?: string
+          xp?: number
         }
         Update: {
+          cargo?: string | null
           created_at?: string
           display_name?: string | null
           email?: string
           id?: string
           is_active?: boolean
+          last_seen_at?: string | null
+          nivel_lideranca?: string | null
+          perfis_maturidade?: string[] | null
           updated_at?: string
+          xp?: number
+        }
+        Relationships: []
+      }
+      prospeccao_diaria: {
+        Row: {
+          canal: string
+          created_at: string | null
+          created_by: string | null
+          data: string
+          id: string
+          oportunidades: number
+          tentativas: number
+          vendas: number
+          vendedor: string
+        }
+        Insert: {
+          canal: string
+          created_at?: string | null
+          created_by?: string | null
+          data: string
+          id?: string
+          oportunidades?: number
+          tentativas?: number
+          vendas?: number
+          vendedor: string
+        }
+        Update: {
+          canal?: string
+          created_at?: string | null
+          created_by?: string | null
+          data?: string
+          id?: string
+          oportunidades?: number
+          tentativas?: number
+          vendas?: number
+          vendedor?: string
+        }
+        Relationships: []
+      }
+      relatorio_prospeccao: {
+        Row: {
+          area: string
+          created_at: string | null
+          data: string
+          id: string
+          ligacoes: number
+          mensagens: number
+          oportunidades: number
+          tentativas: number
+          updated_at: string | null
+          user_id: string
+          vendas: number
+          ztalk: number
+        }
+        Insert: {
+          area: string
+          created_at?: string | null
+          data: string
+          id?: string
+          ligacoes?: number
+          mensagens?: number
+          oportunidades?: number
+          tentativas?: number
+          updated_at?: string | null
+          user_id: string
+          vendas?: number
+          ztalk?: number
+        }
+        Update: {
+          area?: string
+          created_at?: string | null
+          data?: string
+          id?: string
+          ligacoes?: number
+          mensagens?: number
+          oportunidades?: number
+          tentativas?: number
+          updated_at?: string | null
+          user_id?: string
+          vendas?: number
+          ztalk?: number
         }
         Relationships: []
       }
@@ -718,6 +1093,56 @@ export type Database = {
           usage_note?: string | null
         }
         Relationships: []
+      }
+      simulator_results: {
+        Row: {
+          created_at: string
+          difficulty: string
+          erros: string[]
+          id: string
+          nota: number
+          pontos_fortes: string[]
+          pontos_melhoria: string[]
+          profile_id: string | null
+          profile_name: string
+          resumo: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          difficulty: string
+          erros?: string[]
+          id?: string
+          nota: number
+          pontos_fortes?: string[]
+          pontos_melhoria?: string[]
+          profile_id?: string | null
+          profile_name: string
+          resumo?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          difficulty?: string
+          erros?: string[]
+          id?: string
+          nota?: number
+          pontos_fortes?: string[]
+          pontos_melhoria?: string[]
+          profile_id?: string | null
+          profile_name?: string
+          resumo?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulator_results_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       simulator_sessions: {
         Row: {
@@ -817,6 +1242,41 @@ export type Database = {
         }
         Relationships: []
       }
+      training_completions: {
+        Row: {
+          completed_at: string
+          content_id: string
+          created_at: string
+          id: string
+          progress_pct: number
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          content_id: string
+          created_at?: string
+          id?: string
+          progress_pct?: number
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          content_id?: string
+          created_at?: string
+          id?: string
+          progress_pct?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_completions_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -843,13 +1303,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
       match_knowledge: {
         Args: { match_count?: number; query_embedding: string }
         Returns: {
@@ -865,7 +1318,11 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "funcionario"
-      content_section: "conhecimento" | "problemas" | "tutoriais"
+      content_section:
+        | "conhecimento"
+        | "problemas"
+        | "tutoriais"
+        | "treinamentos"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -994,7 +1451,12 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "funcionario"],
-      content_section: ["conhecimento", "problemas", "tutoriais"],
+      content_section: [
+        "conhecimento",
+        "problemas",
+        "tutoriais",
+        "treinamentos",
+      ],
     },
   },
 } as const

@@ -1,0 +1,1 @@
+ALTER TYPE public.content_section ADD VALUE IF NOT EXISTS 'treinamentos';
