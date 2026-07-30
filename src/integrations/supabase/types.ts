@@ -219,6 +219,7 @@ export type Database = {
       client_profiles: {
         Row: {
           behaviors: string | null
+          category_id: string | null
           cliente_cpf: string | null
           cliente_genero: string | null
           cliente_nome: string | null
@@ -234,6 +235,7 @@ export type Database = {
         }
         Insert: {
           behaviors?: string | null
+          category_id?: string | null
           cliente_cpf?: string | null
           cliente_genero?: string | null
           cliente_nome?: string | null
@@ -249,6 +251,7 @@ export type Database = {
         }
         Update: {
           behaviors?: string | null
+          category_id?: string | null
           cliente_cpf?: string | null
           cliente_genero?: string | null
           cliente_nome?: string | null
@@ -262,7 +265,15 @@ export type Database = {
           personality?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "client_profiles_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       content_items: {
         Row: {
