@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { simulatorChat } from "@/lib/simulator.chat.functions";
 import { saveSimulatorResult } from "@/lib/gamification.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { listClientProfileStates } from "@/lib/clientprofilestates.functions";
 
 
 interface Profile {
@@ -22,6 +23,11 @@ interface Profile {
   cliente_cpf?: string;
   cliente_regiao?: string;
   cliente_genero?: string;
+}
+interface ClientProfileState {
+  id: string; profile_id: string; position: number; name: string;
+  description: string | null; example_lines: string | null; advance_criteria: string | null;
+  attachment_url: string | null; attachment_label: string | null;
 }
 interface Message { role: "atendente" | "cliente"; content: string; images?: string[]; }
 
@@ -44,6 +50,14 @@ const fileInputRef = useRef<HTMLInputElement>(null);
   const [xpGanho, setXpGanho] = useState<number | null>(null);
   const [aguardandoResposta, setAguardandoResposta] = useState(false);
   const [pendingAttendantMessages, setPendingAttendantMessages] = useState<string[]>([]);
+
+  const statesFn = useServerFn(listClientProfileStates);
+  const statesQ = useQuery({
+    queryKey: ["profile_states", profile.id],
+    queryFn: () => statesFn({ data: { profile_id: profile.id } }),
+  });
+  const states = (statesQ.data ?? []) as ClientProfileState[];
+  const [stateIndex, setStateIndex] = useState(0);
 
 const handleFilesSelected = async (files: FileList | null) => {
   if (!files || files.length === 0) return;
@@ -88,7 +102,8 @@ const handleFilesSelected = async (files: FileList | null) => {
   const saveResultFn = useServerFn(saveSimulatorResult);
   const [avaliacao, setAvaliacao] = useState<any>(null);
 
-  const systemPrompt = `Você é um cliente virtual chamado ${profile.name} sendo atendido por um vendedor do Cartão de Todos.
+  const buildSystemPrompt = (idx: number) => {
+    const base = `Você é um cliente virtual chamado ${profile.name} sendo atendido por um vendedor do Cartão de Todos.
 Personalidade: ${profile.personality}.
 Objetivos: ${profile.objectives}.
 Objeções típicas: ${profile.objections}.
@@ -97,8 +112,26 @@ Nível de dificuldade: ${DIFFICULTY_LABELS[profile.difficulty]}.
 Responda APENAS como o cliente — nunca quebre o personagem.
 Respostas curtas e naturais, como numa conversa real de WhatsApp.
 Se o atendente der uma boa resposta às suas objeções, vá cedendo gradualmente.
-Se o atendente errar muito, fique mais resistente.
+Se o atendente errar muito, fique mais resistente.`;
+
+    if (states.length === 0) {
+      return `${base}
 Você pode responder com 1, 2 ou até 3 mensagens curtas separadas, exatamente como faria no WhatsApp — quebre em mensagens naturais usando o separador ||BREAK|| entre elas. Exemplo: 'Oi tudo bem?' ||BREAK|| 'Me fala mais sobre esse cartão' ||BREAK|| 'Quanto custa?'. Use múltiplas mensagens apenas quando for natural — não force.`;
+    }
+
+    const atual = states[idx];
+    const proximo = states[idx + 1];
+    return `${base}
+
+FUNIL DE ATENDIMENTO — você está atualmente no estado "${atual.name}" (etapa ${idx + 1} de ${states.length}).
+${atual.description ? `Descrição deste estado: ${atual.description}` : ""}
+${atual.example_lines ? `Exemplos de falas típicas deste estado: ${atual.example_lines}` : ""}
+Critério para você avançar para o próximo estado${proximo ? ` ("${proximo.name}")` : ""}: ${atual.advance_criteria || "a seu critério, quando fizer sentido na conversa"}.
+
+Avalie se a ÚLTIMA mensagem do atendente atende esse critério. Responda SEMPRE em JSON válido, sem markdown e sem nenhum texto fora do JSON, neste formato exato:
+{"avanca": true ou false, "mensagens": ["fala curta 1", "fala curta 2"]}
+"mensagens" deve ter de 1 a 3 falas curtas e naturais (estilo WhatsApp). Se "avanca" for true, a fala já deve refletir a transição de personagem para o novo estado.`;
+  };
 
   const sendAI = useServerFn(simulatorChat);
 const sendMut = useMutation({
@@ -116,7 +149,7 @@ const sendMut = useMutation({
       return { role: m.role === "atendente" ? "user" : "assistant", content: m.content };
     });
     const payload = [
-      { role: "system", content: systemPrompt },
+      { role: "system", content: buildSystemPrompt(stateIndex) },
       ...history,
       { role: "user", content: text }
     ];
@@ -124,11 +157,34 @@ const sendMut = useMutation({
     return content;
   },
   onSuccess: (result) => {
-    const partes = result.split("||BREAK||").map((p: string) => p.trim()).filter(Boolean);
-    setMessages(prev => [
-      ...prev,
-      ...partes.map((p: string) => ({ role: "cliente" as const, content: p }))
-    ]);
+    if (states.length === 0) {
+      const partes = result.split("||BREAK||").map((p: string) => p.trim()).filter(Boolean);
+      setMessages(prev => [...prev, ...partes.map((p: string) => ({ role: "cliente" as const, content: p }))]);
+      setAguardandoResposta(false);
+      return;
+    }
+    try {
+      const clean = result.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(clean);
+      const falas: string[] = Array.isArray(parsed.mensagens) && parsed.mensagens.length > 0
+        ? parsed.mensagens
+        : [String(parsed.mensagens ?? result)];
+      setMessages(prev => [...prev, ...falas.map((f: string) => ({ role: "cliente" as const, content: f }))]);
+      if (parsed.avanca && stateIndex < states.length - 1) {
+        const proximo = states[stateIndex + 1];
+        setStateIndex(stateIndex + 1);
+        if (proximo?.attachment_url) {
+          setMessages(prev => [...prev, {
+            role: "cliente" as const,
+            content: proximo.attachment_label || "Segue o documento.",
+            images: [proximo.attachment_url as string],
+          }]);
+        }
+      }
+    } catch {
+      const partes = result.split("||BREAK||").map((p: string) => p.trim()).filter(Boolean);
+      setMessages(prev => [...prev, ...partes.map((p: string) => ({ role: "cliente" as const, content: p }))]);
+    }
     setAguardandoResposta(false);
   },
   onError: () => toast.error("Erro ao obter resposta do cliente virtual.")
@@ -315,6 +371,19 @@ O JSON deve ter exatamente estes campos:
           {avaliarMut.isPending ? "Avaliando..." : "Encerrar e Avaliar"}
         </Button>
       </div>
+
+      {states.length > 0 && (
+        <div className="space-y-1">
+          <div className="flex items-center gap-1">
+            {states.map((s, i) => (
+              <div key={s.id} className={`h-1.5 flex-1 rounded-full ${i <= stateIndex ? "bg-primary" : "bg-muted"}`} title={s.name} />
+            ))}
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Etapa {stateIndex + 1}/{states.length}: <span className="font-medium text-foreground">{states[stateIndex]?.name}</span>
+          </p>
+        </div>
+      )}
 
       <div className="flex flex-col gap-2 min-h-[300px] max-h-[400px] overflow-y-auto p-2 bg-muted/20 rounded-md">
         {messages.length === 0 && (
