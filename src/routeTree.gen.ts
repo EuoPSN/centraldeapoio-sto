@@ -9,34 +9,34 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
-import { Route as AuthenticatedTutoriaisRouteImport } from './routes/_authenticated/tutoriais'
-import { Route as AuthenticatedTreinamentosRouteImport } from './routes/_authenticated/treinamentos'
-import { Route as AuthenticatedSugestoesRouteImport } from './routes/_authenticated/sugestoes'
-import { Route as AuthenticatedScriptsRouteImport } from './routes/_authenticated/scripts'
-import { Route as AuthenticatedRankingRouteImport } from './routes/_authenticated/ranking'
-import { Route as AuthenticatedProblemasRouteImport } from './routes/_authenticated/problemas'
-import { Route as AuthenticatedPrecosRouteImport } from './routes/_authenticated/precos'
-import { Route as AuthenticatedMotorDecisaoRouteImport } from './routes/_authenticated/motor-decisao'
-import { Route as AuthenticatedMeusRelatoriosRouteImport } from './routes/_authenticated/meus-relatorios'
-import { Route as AuthenticatedFuncionariosRouteImport } from './routes/_authenticated/funcionarios'
-import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedCrmProspeccaoRouteImport } from './routes/_authenticated/crm-prospeccao'
-import { Route as AuthenticatedCrmLeadsRouteImport } from './routes/_authenticated/crm-leads'
-import { Route as AuthenticatedConhecimentoRouteImport } from './routes/_authenticated/conhecimento'
-import { Route as AuthenticatedAssistenteRouteImport } from './routes/_authenticated/assistente'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedAssistenteRouteImport } from './routes/_authenticated/assistente'
+import { Route as AuthenticatedConhecimentoRouteImport } from './routes/_authenticated/conhecimento'
+import { Route as AuthenticatedCrmLeadsRouteImport } from './routes/_authenticated/crm-leads'
+import { Route as AuthenticatedCrmProspeccaoRouteImport } from './routes/_authenticated/crm-prospeccao'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedFuncionariosRouteImport } from './routes/_authenticated/funcionarios'
+import { Route as AuthenticatedMeusRelatoriosRouteImport } from './routes/_authenticated/meus-relatorios'
+import { Route as AuthenticatedMotorDecisaoRouteImport } from './routes/_authenticated/motor-decisao'
+import { Route as AuthenticatedPrecosRouteImport } from './routes/_authenticated/precos'
+import { Route as AuthenticatedProblemasRouteImport } from './routes/_authenticated/problemas'
+import { Route as AuthenticatedRankingRouteImport } from './routes/_authenticated/ranking'
+import { Route as AuthenticatedScriptsRouteImport } from './routes/_authenticated/scripts'
+import { Route as AuthenticatedSugestoesRouteImport } from './routes/_authenticated/sugestoes'
+import { Route as AuthenticatedTreinamentosRouteImport } from './routes/_authenticated/treinamentos'
+import { Route as AuthenticatedTutoriaisRouteImport } from './routes/_authenticated/tutoriais'
 import { Route as ApiPublicKnowledgeFileRouteImport } from './routes/api/public/knowledge-file'
 
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
-  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
@@ -44,74 +44,14 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedTutoriaisRoute = AuthenticatedTutoriaisRouteImport.update({
-  id: '/tutoriais',
-  path: '/tutoriais',
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedTreinamentosRoute =
-  AuthenticatedTreinamentosRouteImport.update({
-    id: '/treinamentos',
-    path: '/treinamentos',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedSugestoesRoute = AuthenticatedSugestoesRouteImport.update({
-  id: '/sugestoes',
-  path: '/sugestoes',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedScriptsRoute = AuthenticatedScriptsRouteImport.update({
-  id: '/scripts',
-  path: '/scripts',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedRankingRoute = AuthenticatedRankingRouteImport.update({
-  id: '/ranking',
-  path: '/ranking',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedProblemasRoute = AuthenticatedProblemasRouteImport.update({
-  id: '/problemas',
-  path: '/problemas',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedPrecosRoute = AuthenticatedPrecosRouteImport.update({
-  id: '/precos',
-  path: '/precos',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedMotorDecisaoRoute =
-  AuthenticatedMotorDecisaoRouteImport.update({
-    id: '/motor-decisao',
-    path: '/motor-decisao',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedMeusRelatoriosRoute =
-  AuthenticatedMeusRelatoriosRouteImport.update({
-    id: '/meus-relatorios',
-    path: '/meus-relatorios',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedFuncionariosRoute =
-  AuthenticatedFuncionariosRouteImport.update({
-    id: '/funcionarios',
-    path: '/funcionarios',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedCrmProspeccaoRoute =
-  AuthenticatedCrmProspeccaoRouteImport.update({
-    id: '/crm-prospeccao',
-    path: '/crm-prospeccao',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedCrmLeadsRoute = AuthenticatedCrmLeadsRouteImport.update({
-  id: '/crm-leads',
-  path: '/crm-leads',
+const AuthenticatedAssistenteRoute = AuthenticatedAssistenteRouteImport.update({
+  id: '/assistente',
+  path: '/assistente',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedConhecimentoRoute =
@@ -120,14 +60,74 @@ const AuthenticatedConhecimentoRoute =
     path: '/conhecimento',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAssistenteRoute = AuthenticatedAssistenteRouteImport.update({
-  id: '/assistente',
-  path: '/assistente',
+const AuthenticatedCrmLeadsRoute = AuthenticatedCrmLeadsRouteImport.update({
+  id: '/crm-leads',
+  path: '/crm-leads',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
+const AuthenticatedCrmProspeccaoRoute =
+  AuthenticatedCrmProspeccaoRouteImport.update({
+    id: '/crm-prospeccao',
+    path: '/crm-prospeccao',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedFuncionariosRoute =
+  AuthenticatedFuncionariosRouteImport.update({
+    id: '/funcionarios',
+    path: '/funcionarios',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedMeusRelatoriosRoute =
+  AuthenticatedMeusRelatoriosRouteImport.update({
+    id: '/meus-relatorios',
+    path: '/meus-relatorios',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedMotorDecisaoRoute =
+  AuthenticatedMotorDecisaoRouteImport.update({
+    id: '/motor-decisao',
+    path: '/motor-decisao',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPrecosRoute = AuthenticatedPrecosRouteImport.update({
+  id: '/precos',
+  path: '/precos',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedProblemasRoute = AuthenticatedProblemasRouteImport.update({
+  id: '/problemas',
+  path: '/problemas',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedRankingRoute = AuthenticatedRankingRouteImport.update({
+  id: '/ranking',
+  path: '/ranking',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedScriptsRoute = AuthenticatedScriptsRouteImport.update({
+  id: '/scripts',
+  path: '/scripts',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSugestoesRoute = AuthenticatedSugestoesRouteImport.update({
+  id: '/sugestoes',
+  path: '/sugestoes',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTreinamentosRoute =
+  AuthenticatedTreinamentosRouteImport.update({
+    id: '/treinamentos',
+    path: '/treinamentos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedTutoriaisRoute = AuthenticatedTutoriaisRouteImport.update({
+  id: '/tutoriais',
+  path: '/tutoriais',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const ApiPublicKnowledgeFileRoute = ApiPublicKnowledgeFileRouteImport.update({
@@ -276,18 +276,18 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_authenticated': {
       id: '/_authenticated'
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/': {
@@ -297,102 +297,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/tutoriais': {
-      id: '/_authenticated/tutoriais'
-      path: '/tutoriais'
-      fullPath: '/tutoriais'
-      preLoaderRoute: typeof AuthenticatedTutoriaisRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/treinamentos': {
-      id: '/_authenticated/treinamentos'
-      path: '/treinamentos'
-      fullPath: '/treinamentos'
-      preLoaderRoute: typeof AuthenticatedTreinamentosRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/sugestoes': {
-      id: '/_authenticated/sugestoes'
-      path: '/sugestoes'
-      fullPath: '/sugestoes'
-      preLoaderRoute: typeof AuthenticatedSugestoesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/scripts': {
-      id: '/_authenticated/scripts'
-      path: '/scripts'
-      fullPath: '/scripts'
-      preLoaderRoute: typeof AuthenticatedScriptsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/ranking': {
-      id: '/_authenticated/ranking'
-      path: '/ranking'
-      fullPath: '/ranking'
-      preLoaderRoute: typeof AuthenticatedRankingRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/problemas': {
-      id: '/_authenticated/problemas'
-      path: '/problemas'
-      fullPath: '/problemas'
-      preLoaderRoute: typeof AuthenticatedProblemasRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/precos': {
-      id: '/_authenticated/precos'
-      path: '/precos'
-      fullPath: '/precos'
-      preLoaderRoute: typeof AuthenticatedPrecosRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/motor-decisao': {
-      id: '/_authenticated/motor-decisao'
-      path: '/motor-decisao'
-      fullPath: '/motor-decisao'
-      preLoaderRoute: typeof AuthenticatedMotorDecisaoRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/meus-relatorios': {
-      id: '/_authenticated/meus-relatorios'
-      path: '/meus-relatorios'
-      fullPath: '/meus-relatorios'
-      preLoaderRoute: typeof AuthenticatedMeusRelatoriosRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/funcionarios': {
-      id: '/_authenticated/funcionarios'
-      path: '/funcionarios'
-      fullPath: '/funcionarios'
-      preLoaderRoute: typeof AuthenticatedFuncionariosRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/crm-prospeccao': {
-      id: '/_authenticated/crm-prospeccao'
-      path: '/crm-prospeccao'
-      fullPath: '/crm-prospeccao'
-      preLoaderRoute: typeof AuthenticatedCrmProspeccaoRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/crm-leads': {
-      id: '/_authenticated/crm-leads'
-      path: '/crm-leads'
-      fullPath: '/crm-leads'
-      preLoaderRoute: typeof AuthenticatedCrmLeadsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/conhecimento': {
-      id: '/_authenticated/conhecimento'
-      path: '/conhecimento'
-      fullPath: '/conhecimento'
-      preLoaderRoute: typeof AuthenticatedConhecimentoRouteImport
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/assistente': {
@@ -402,11 +311,102 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAssistenteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/admin': {
-      id: '/_authenticated/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+    '/_authenticated/conhecimento': {
+      id: '/_authenticated/conhecimento'
+      path: '/conhecimento'
+      fullPath: '/conhecimento'
+      preLoaderRoute: typeof AuthenticatedConhecimentoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/crm-leads': {
+      id: '/_authenticated/crm-leads'
+      path: '/crm-leads'
+      fullPath: '/crm-leads'
+      preLoaderRoute: typeof AuthenticatedCrmLeadsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/crm-prospeccao': {
+      id: '/_authenticated/crm-prospeccao'
+      path: '/crm-prospeccao'
+      fullPath: '/crm-prospeccao'
+      preLoaderRoute: typeof AuthenticatedCrmProspeccaoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/funcionarios': {
+      id: '/_authenticated/funcionarios'
+      path: '/funcionarios'
+      fullPath: '/funcionarios'
+      preLoaderRoute: typeof AuthenticatedFuncionariosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/meus-relatorios': {
+      id: '/_authenticated/meus-relatorios'
+      path: '/meus-relatorios'
+      fullPath: '/meus-relatorios'
+      preLoaderRoute: typeof AuthenticatedMeusRelatoriosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/motor-decisao': {
+      id: '/_authenticated/motor-decisao'
+      path: '/motor-decisao'
+      fullPath: '/motor-decisao'
+      preLoaderRoute: typeof AuthenticatedMotorDecisaoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/precos': {
+      id: '/_authenticated/precos'
+      path: '/precos'
+      fullPath: '/precos'
+      preLoaderRoute: typeof AuthenticatedPrecosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/problemas': {
+      id: '/_authenticated/problemas'
+      path: '/problemas'
+      fullPath: '/problemas'
+      preLoaderRoute: typeof AuthenticatedProblemasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ranking': {
+      id: '/_authenticated/ranking'
+      path: '/ranking'
+      fullPath: '/ranking'
+      preLoaderRoute: typeof AuthenticatedRankingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/scripts': {
+      id: '/_authenticated/scripts'
+      path: '/scripts'
+      fullPath: '/scripts'
+      preLoaderRoute: typeof AuthenticatedScriptsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/sugestoes': {
+      id: '/_authenticated/sugestoes'
+      path: '/sugestoes'
+      fullPath: '/sugestoes'
+      preLoaderRoute: typeof AuthenticatedSugestoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/treinamentos': {
+      id: '/_authenticated/treinamentos'
+      path: '/treinamentos'
+      fullPath: '/treinamentos'
+      preLoaderRoute: typeof AuthenticatedTreinamentosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/tutoriais': {
+      id: '/_authenticated/tutoriais'
+      path: '/tutoriais'
+      fullPath: '/tutoriais'
+      preLoaderRoute: typeof AuthenticatedTutoriaisRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/public/knowledge-file': {
@@ -470,3 +470,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
