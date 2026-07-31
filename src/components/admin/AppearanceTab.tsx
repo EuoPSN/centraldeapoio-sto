@@ -9,6 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { useTheme } from "@/hooks/useTheme";
+import { THEMES, type ThemePreset } from "@/lib/themes";
+import { Check } from "lucide-react";
+
 
 interface Settings {
   platform_name: string; tagline: string | null;
@@ -49,7 +53,18 @@ export function AppearanceTab() {
   if (!form) return <p className="text-muted-foreground">Carregando...</p>;
 
   return (
+    <div className="space-y-6">
+      <ThemeGallery
+        form={form}
+        onSaved={() => {
+          qc.invalidateQueries({ queryKey: ["app-settings"] });
+          qc.invalidateQueries({ queryKey: ["app-settings-admin"] });
+        }}
+        onLocalChange={(id) => setForm({ ...form, active_theme: id })}
+      />
+
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
       <Card className="p-5 space-y-3">
         <h3 className="font-semibold">Identidade</h3>
         <div><Label>Nome da plataforma</Label><Input value={form.platform_name} onChange={(e) => setForm({ ...form, platform_name: e.target.value })} /></div>
@@ -86,8 +101,89 @@ export function AppearanceTab() {
         <Button onClick={() => mut.mutate()} disabled={mut.isPending}>Salvar aparência</Button>
       </div>
     </div>
+    </div>
   );
 }
+
+
+function ThemeGallery({ form, onSaved, onLocalChange }: {
+  form: Settings;
+  onSaved: () => void;
+  onLocalChange: (id: string) => void;
+}) {
+  const { themeId, setTheme } = useTheme();
+  const update = useServerFn(updateAppSettings);
+
+  const save = useMutation({
+    mutationFn: (id: string) => update({ data: {
+      platform_name: form.platform_name, tagline: form.tagline,
+      logo_url: form.logo_url, favicon_url: form.favicon_url, cover_url: form.cover_url,
+      primary_color: form.primary_color, secondary_color: form.secondary_color,
+      accent_color: form.accent_color, background_color: form.background_color,
+      active_theme: id,
+    } }),
+    onSuccess: () => { toast.success("Tema aplicado para todos os usuários."); onSaved(); },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao salvar tema"),
+  });
+
+  const activeId = form.active_theme && THEMES.some((t) => t.id === form.active_theme)
+    ? form.active_theme
+    : themeId;
+
+  const apply = (theme: ThemePreset) => {
+    setTheme(theme.id);
+    onLocalChange(theme.id);
+    save.mutate(theme.id);
+  };
+
+  return (
+    <Card className="p-5 space-y-4">
+      <div>
+        <h3 className="font-semibold">Temas de cores</h3>
+        <p className="text-sm text-muted-foreground">Escolha uma paleta pronta. O tema selecionado vale para todos os usuários.</p>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        {THEMES.map((theme) => {
+          const isActive = theme.id === activeId;
+          return (
+            <div
+              key={theme.id}
+              className={`rounded-xl border p-4 space-y-3 transition-all duration-200 ${isActive ? "border-primary ring-2 ring-primary/30 bg-primary/5" : "border-border"}`}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="font-medium">{theme.name}</p>
+                  <p className="text-xs text-muted-foreground">{theme.description}</p>
+                </div>
+                {isActive && <Check className="h-4 w-4 text-primary shrink-0" />}
+              </div>
+              <div className="flex gap-2">
+                {[theme.primary, theme.accent, theme.sidebar].map((c, i) => (
+                  <span
+                    key={i}
+                    className="h-7 w-7 rounded-full border shadow-sm"
+                    style={{ backgroundColor: `hsl(${c})` }}
+                  />
+                ))}
+              </div>
+              <Button
+                variant={isActive ? "secondary" : "default"}
+                size="sm"
+                className="w-full"
+                disabled={save.isPending}
+                onClick={() => apply(theme)}
+              >
+                {isActive ? "Tema ativo" : "Aplicar"}
+              </Button>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
+
 
 function ColorField({ label, value, onChange }: { label: string; value: string | null; onChange: (v: string | null) => void }) {
   return (

@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { applyThemeVars, getTheme, THEMES } from "@/lib/themes";
+import { THEME_STORAGE_KEY } from "@/hooks/useTheme";
 
 interface AppSettings {
   platform_name: string;
@@ -26,11 +28,28 @@ function hexToOklchVar(hex: string): string {
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const { data } = useQuery({ queryKey: ["app-settings"], queryFn: fetchSettings, staleTime: 60_000 });
 
+  // Aplica imediatamente o tema salvo localmente (funciona mesmo sem dado no banco)
+  useEffect(() => {
+    try {
+      const local = window.localStorage.getItem(THEME_STORAGE_KEY);
+      if (local) applyThemeVars(getTheme(local));
+    } catch {
+      /* storage indisponível */
+    }
+  }, []);
+
   useEffect(() => {
     if (!data) return;
     const root = document.documentElement;
     if (data.active_theme === "dark") root.classList.add("dark");
     else root.classList.remove("dark");
+
+    // Tema global definido pelo administrador (vale para todos os usuários)
+    const preset = THEMES.find((t) => t.id === data.active_theme);
+    if (preset) {
+      applyThemeVars(preset);
+      try { window.localStorage.setItem(THEME_STORAGE_KEY, preset.id); } catch { /* noop */ }
+    }
 
     if (data.primary_color) root.style.setProperty("--primary", hexToOklchVar(data.primary_color));
     if (data.accent_color) root.style.setProperty("--accent", hexToOklchVar(data.accent_color));

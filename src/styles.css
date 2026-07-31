@@ -60,6 +60,14 @@
 :root {
   --radius: 0.625rem;
 
+  /* ===== Variáveis de tema customizáveis (valores padrão = verde Cartão de Todos) ===== */
+  --theme-primary: 177 100% 32%;              /* verde teal #00A19A */
+  --theme-primary-foreground: 0 0% 100%;
+  --theme-accent: 89 72% 48%;                 /* verde lima #7ED321 */
+  --theme-accent-foreground: 140 40% 15%;
+  --theme-sidebar-bg: 0 0% 100%;
+  --theme-sidebar-text: 220 15% 30%;
+
   /* Fundos / superfícies */
   --background: oklch(0.985 0.005 200);          /* #F5F7FA cinza muito claro */
   --foreground: oklch(0.22 0.03 240);            /* #2D3748 cinza escuro */
@@ -69,13 +77,13 @@
   --popover-foreground: oklch(0.22 0.03 240);
 
   /* Verde teal institucional (#00A19A aprox) */
-  --primary: oklch(0.625 0.135 178);
-  --primary-foreground: oklch(1 0 0);
-  --primary-glow: oklch(0.72 0.14 175);
+  --primary: hsl(var(--theme-primary));
+  --primary-foreground: hsl(var(--theme-primary-foreground));
+  --primary-glow: hsl(var(--theme-primary) / 0.75);
 
   /* Verde lima vibrante (#7ED321 aprox) */
-  --accent: oklch(0.82 0.21 130);
-  --accent-foreground: oklch(0.22 0.05 140);
+  --accent: hsl(var(--theme-accent));
+  --accent-foreground: hsl(var(--theme-accent-foreground));
 
   --secondary: oklch(0.965 0.01 200);
   --secondary-foreground: oklch(0.28 0.03 240);
@@ -94,18 +102,19 @@
 
   --border: oklch(0.92 0.008 220);
   --input: oklch(0.92 0.008 220);
-  --ring: oklch(0.625 0.135 178);
+  --ring: hsl(var(--theme-primary));
 
-  /* Sidebar — fundo branco com acento teal */
-  --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.3 0.025 240);
-  --sidebar-primary: oklch(0.625 0.135 178);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.96 0.018 178);
-  --sidebar-accent-foreground: oklch(0.4 0.09 178);
-  --sidebar-border: oklch(0.93 0.008 220);
-  --sidebar-ring: oklch(0.625 0.135 178);
+  /* Sidebar — controlada pelas variáveis de tema */
+  --sidebar: hsl(var(--theme-sidebar-bg));
+  --sidebar-foreground: hsl(var(--theme-sidebar-text));
+  --sidebar-primary: hsl(var(--theme-primary));
+  --sidebar-primary-foreground: hsl(var(--theme-primary-foreground));
+  --sidebar-accent: hsl(var(--theme-primary) / 0.12);
+  --sidebar-accent-foreground: hsl(var(--theme-primary));
+  --sidebar-border: hsl(var(--theme-sidebar-text) / 0.15);
+  --sidebar-ring: hsl(var(--theme-primary));
 }
+
 
 .dark {
   --background: oklch(0.18 0.02 230);
