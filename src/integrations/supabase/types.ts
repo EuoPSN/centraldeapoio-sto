@@ -216,6 +216,56 @@ export type Database = {
           },
         ]
       }
+      client_profile_states: {
+        Row: {
+          advance_criteria: string | null
+          attachment_label: string | null
+          attachment_url: string | null
+          created_at: string
+          description: string | null
+          example_lines: string | null
+          id: string
+          name: string
+          position: number
+          profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          advance_criteria?: string | null
+          attachment_label?: string | null
+          attachment_url?: string | null
+          created_at?: string
+          description?: string | null
+          example_lines?: string | null
+          id?: string
+          name: string
+          position?: number
+          profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          advance_criteria?: string | null
+          attachment_label?: string | null
+          attachment_url?: string | null
+          created_at?: string
+          description?: string | null
+          example_lines?: string | null
+          id?: string
+          name?: string
+          position?: number
+          profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_profile_states_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_profiles: {
         Row: {
           behaviors: string | null
