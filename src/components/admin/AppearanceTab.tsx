@@ -53,7 +53,18 @@ export function AppearanceTab() {
   if (!form) return <p className="text-muted-foreground">Carregando...</p>;
 
   return (
+    <div className="space-y-6">
+      <ThemeGallery
+        form={form}
+        onSaved={() => {
+          qc.invalidateQueries({ queryKey: ["app-settings"] });
+          qc.invalidateQueries({ queryKey: ["app-settings-admin"] });
+        }}
+        onLocalChange={(id) => setForm({ ...form, active_theme: id })}
+      />
+
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
       <Card className="p-5 space-y-3">
         <h3 className="font-semibold">Identidade</h3>
         <div><Label>Nome da plataforma</Label><Input value={form.platform_name} onChange={(e) => setForm({ ...form, platform_name: e.target.value })} /></div>
