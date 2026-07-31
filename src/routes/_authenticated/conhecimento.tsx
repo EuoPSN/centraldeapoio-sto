@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Markdown } from "@/components/Markdown";
+import { SkeletonCard } from "@/components/ui/skeleton-card";
 import {
   BookOpen, Search, Shield, ListChecks, FileText, MessagesSquare, Paperclip, GraduationCap,
   Download, ExternalLink,
@@ -122,7 +123,12 @@ function KindList({ kind }: { kind: KnowledgeKind }) {
         </div>
       )}
 
-      {q.isLoading && <p className="text-muted-foreground">Carregando...</p>}
+      {q.isLoading && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+      )}
       {!q.isLoading && filtered.length === 0 && (
         <Card className="p-10 text-center">
           <p className="text-muted-foreground">Nenhum item cadastrado.</p>
