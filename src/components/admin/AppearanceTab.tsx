@@ -9,6 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { useTheme } from "@/hooks/useTheme";
+import { THEMES, type ThemePreset } from "@/lib/themes";
+import { Check } from "lucide-react";
+
 
 interface Settings {
   platform_name: string; tagline: string | null;
