@@ -9,8 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Markdown } from "@/components/Markdown";
-import {
 import { SkeletonCard } from "@/components/ui/skeleton-card";
+import {
   BookOpen, Search, Shield, ListChecks, FileText, MessagesSquare, Paperclip, GraduationCap,
   Download, ExternalLink,
 } from "lucide-react";
