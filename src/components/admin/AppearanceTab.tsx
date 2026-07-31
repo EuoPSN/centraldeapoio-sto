@@ -105,7 +105,6 @@ export function AppearanceTab() {
   );
 }
 
-interface Settings2 { active_theme: string; [k: string]: unknown }
 
 function ThemeGallery({ form, onSaved, onLocalChange }: {
   form: Settings;
