@@ -16,6 +16,7 @@ import { Search, MessageSquareQuote, Network, Play, GraduationCap } from "lucide
 import { SimuladorIA } from "@/components/SimuladorIA";
 import { listClientProfilesForTraining } from "@/lib/clientprofiles.functions";
 import { listCategories } from "@/lib/taxonomy.functions";
+import { SkeletonCard } from "@/components/ui/skeleton-card";
 
 export const Route = createFileRoute("/_authenticated/scripts")({
   component: Page,
@@ -133,7 +134,12 @@ function Biblioteca() {
 
       <p className="text-xs text-muted-foreground mb-3">{filtered.length} mensagem(ns)</p>
 
-      {q.isLoading && <p className="text-muted-foreground">Carregando...</p>}
+      {q.isLoading && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+      )}
       {!q.isLoading && filtered.length === 0 && (
         <Card className="p-10 text-center">
           <p className="text-muted-foreground">Nenhuma mensagem encontrada.</p>

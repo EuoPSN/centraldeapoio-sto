@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { SkeletonCard } from "@/components/ui/skeleton-card";
 
 const STATUS = [
   { v: "pendente", label: "Pendente" },
@@ -38,7 +39,12 @@ export function SuggestionsTab() {
 
   return (
     <div className="space-y-3">
-      {q.isLoading && <p className="text-muted-foreground">Carregando...</p>}
+      {q.isLoading && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+      )}
       {(q.data ?? []).length === 0 && <Card className="p-10 text-center text-muted-foreground">Nenhuma sugestão.</Card>}
       {(q.data ?? []).map((s: { id: string; title: string; description: string; status: string; category: string; admin_response: string | null; created_at: string; profile: { display_name: string | null; email: string } | null }) => (
         <Card key={s.id} className="p-4">

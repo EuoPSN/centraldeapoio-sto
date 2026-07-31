@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DollarSign, Search } from "lucide-react";
+import { SkeletonCard } from "@/components/ui/skeleton-card";
 
 export const Route = createFileRoute("/_authenticated/precos")({
   component: Page,
@@ -54,7 +55,12 @@ function Page() {
         <Input className="pl-9" placeholder="Buscar especialidade..." value={filter} onChange={(e) => setFilter(e.target.value)} />
       </div>
 
-      {q.isLoading && <p className="text-muted-foreground">Carregando...</p>}
+      {q.isLoading && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+      )}
       {!q.isLoading && (q.data?.length ?? 0) === 0 && (
         <Card className="p-10 text-center">
           <p className="text-muted-foreground">Tabela de preços ainda não cadastrada.</p>
