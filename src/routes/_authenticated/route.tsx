@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, useNavigate, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
@@ -26,6 +26,7 @@ function AppLayout() {
   const touch = useServerFn(touchLastSeen);
   const { data } = useQuery({ queryKey: ["me"], queryFn: () => me({}) });
   useNavigate();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
     touch({}).catch(() => {});
@@ -56,7 +57,7 @@ function AppLayout() {
             </Button>
           </header>
 
-          <main className="flex-1 min-w-0">
+          <main key={pathname} className="flex-1 min-w-0 page-transition">
             <Outlet />
           </main>
 
