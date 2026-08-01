@@ -259,8 +259,8 @@ export function ClientProfilesTab() {
 
             <TabsContent value="jornada" className="pt-4">
               {form.id ? (
-                <ClientProfileStatesEditor profileId={form.id} />
-              ) : (
+<ClientProfileStatesEditor profileId={form.id} profileNome={form.cliente_nome} profileCpf={form.cliente_cpf} />
+    ) : (
                 <p className="text-sm text-muted-foreground">
                   Clique em "Salvar" na aba Geral primeiro — depois que o perfil existir, você poderá cadastrar os estados da jornada aqui.
                 </p>
