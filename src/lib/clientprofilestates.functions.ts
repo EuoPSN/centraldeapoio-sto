@@ -31,6 +31,11 @@ const StateInput = z.object({
   advance_criteria: z.string().optional().nullable(),
   attachment_url: z.string().optional().nullable(),
   attachment_label: z.string().optional().nullable(),
+  overlay_enabled: z.boolean().optional().default(false),
+  overlay_nome_x: z.number().nullable().optional(),
+  overlay_nome_y: z.number().nullable().optional(),
+  overlay_cpf_x: z.number().nullable().optional(),
+  overlay_cpf_y: z.number().nullable().optional(),
 });
 
 export const upsertClientProfileState = createServerFn({ method: "POST" })
