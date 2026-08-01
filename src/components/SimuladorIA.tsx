@@ -28,8 +28,89 @@ interface ClientProfileState {
   id: string; profile_id: string; position: number; name: string;
   description: string | null; example_lines: string | null; advance_criteria: string | null;
   attachment_url: string | null; attachment_label: string | null;
+  overlay_enabled: boolean | null;
+  overlay_nome_x: number | null; overlay_nome_y: number | null;
+  overlay_cpf_x: number | null; overlay_cpf_y: number | null;
 }
 interface Message { role: "atendente" | "cliente"; content: string; images?: string[]; }
+
+// Desenha o nome e CPF fictícios do perfil por cima do molde de documento,
+// nas posições marcadas pelo admin, e retorna uma imagem final (data URL).
+function composeOverlayImage(
+  templateUrl: string,
+  nome: string | undefined,
+  cpf: string | undefined,
+  pos: { nomeX: number | null; nomeY: number | null; cpfX: number | null; cpfY: number | null }
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { resolve(templateUrl); return; }
+        ctx.drawImage(img, 0, 0);
+        ctx.fillStyle = "#111";
+        ctx.font = `${Math.round(img.naturalWidth * 0.032)}px sans-serif`;
+        ctx.textBaseline = "middle";
+        if (pos.nomeX != null && pos.nomeY != null && nome) {
+          ctx.fillText(nome, (pos.nomeX / 100) * img.naturalWidth, (pos.nomeY / 100) * img.naturalHeight);
+        }
+        if (pos.cpfX != null && pos.cpfY != null && cpf) {
+          ctx.fillText(cpf, (pos.cpfX / 100) * img.naturalWidth, (pos.cpfY / 100) * img.naturalHeight);
+        }
+        resolve(canvas.toDataURL("image/png"));
+      } catch {
+        // Se a imagem "tainted" o canvas (CORS) ou algo falhar, cai para a imagem original sem overlay.
+        resolve(templateUrl);
+      }
+    };
+    img.onerror = () => resolve(templateUrl);
+    img.src = templateUrl;
+  });
+}
+
+// Desenha o nome e CPF fictícios do perfil por cima do molde de documento,
+// nas posições marcadas pelo admin, e retorna uma imagem final (data URL).
+function composeOverlayImage(
+  templateUrl: string,
+  nome: string | undefined,
+  cpf: string | undefined,
+  pos: { nomeX: number | null; nomeY: number | null; cpfX: number | null; cpfY: number | null }
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { resolve(templateUrl); return; }
+        ctx.drawImage(img, 0, 0);
+        ctx.fillStyle = "#111";
+        ctx.font = `${Math.round(img.naturalWidth * 0.032)}px sans-serif`;
+        ctx.textBaseline = "middle";
+        if (pos.nomeX != null && pos.nomeY != null && nome) {
+          ctx.fillText(nome, (pos.nomeX / 100) * img.naturalWidth, (pos.nomeY / 100) * img.naturalHeight);
+        }
+        if (pos.cpfX != null && pos.cpfY != null && cpf) {
+          ctx.fillText(cpf, (pos.cpfX / 100) * img.naturalWidth, (pos.cpfY / 100) * img.naturalHeight);
+        }
+        resolve(canvas.toDataURL("image/png"));
+      } catch {
+        // Se a imagem "tainted" o canvas (CORS) ou algo falhar, cai para a imagem original sem overlay.
+        resolve(templateUrl);
+      }
+    };
+    img.onerror = () => resolve(templateUrl);
+    img.src = templateUrl;
+  });
+}
 
 const DIFFICULTY_COLORS: Record<string, string> = {
   facil: "bg-green-100 text-green-800", medio: "bg-yellow-100 text-yellow-800",
@@ -156,7 +237,7 @@ const sendMut = useMutation({
     const { content } = await sendAI({ data: { messages: payload, model: "google/gemini-2.5-flash" } });
     return content;
   },
-  onSuccess: (result) => {
+  onSuccess: async (result) => {
     if (states.length === 0) {
       const partes = result.split("||BREAK||").map((p: string) => p.trim()).filter(Boolean);
       setMessages(prev => [...prev, ...partes.map((p: string) => ({ role: "cliente" as const, content: p }))]);
@@ -174,10 +255,17 @@ const sendMut = useMutation({
         const proximo = states[stateIndex + 1];
         setStateIndex(stateIndex + 1);
         if (proximo?.attachment_url) {
+          let imagemFinal = proximo.attachment_url;
+          if (proximo.overlay_enabled) {
+            imagemFinal = await composeOverlayImage(proximo.attachment_url, profile.cliente_nome, profile.cliente_cpf, {
+              nomeX: proximo.overlay_nome_x, nomeY: proximo.overlay_nome_y,
+              cpfX: proximo.overlay_cpf_x, cpfY: proximo.overlay_cpf_y,
+            });
+          }
           setMessages(prev => [...prev, {
             role: "cliente" as const,
             content: proximo.attachment_label || "Segue o documento.",
-            images: [proximo.attachment_url as string],
+            images: [imagemFinal],
           }]);
         }
       }
