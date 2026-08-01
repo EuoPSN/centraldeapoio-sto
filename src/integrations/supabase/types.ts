@@ -226,6 +226,11 @@ export type Database = {
           example_lines: string | null
           id: string
           name: string
+          overlay_cpf_x: number | null
+          overlay_cpf_y: number | null
+          overlay_enabled: boolean
+          overlay_nome_x: number | null
+          overlay_nome_y: number | null
           position: number
           profile_id: string
           updated_at: string
@@ -239,6 +244,11 @@ export type Database = {
           example_lines?: string | null
           id?: string
           name: string
+          overlay_cpf_x?: number | null
+          overlay_cpf_y?: number | null
+          overlay_enabled?: boolean
+          overlay_nome_x?: number | null
+          overlay_nome_y?: number | null
           position?: number
           profile_id: string
           updated_at?: string
@@ -252,6 +262,11 @@ export type Database = {
           example_lines?: string | null
           id?: string
           name?: string
+          overlay_cpf_x?: number | null
+          overlay_cpf_y?: number | null
+          overlay_enabled?: boolean
+          overlay_nome_x?: number | null
+          overlay_nome_y?: number | null
           position?: number
           profile_id?: string
           updated_at?: string
