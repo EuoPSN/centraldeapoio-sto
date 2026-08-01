@@ -73,45 +73,6 @@ function composeOverlayImage(
   });
 }
 
-// Desenha o nome e CPF fictícios do perfil por cima do molde de documento,
-// nas posições marcadas pelo admin, e retorna uma imagem final (data URL).
-function composeOverlayImage(
-  templateUrl: string,
-  nome: string | undefined,
-  cpf: string | undefined,
-  pos: { nomeX: number | null; nomeY: number | null; cpfX: number | null; cpfY: number | null }
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      try {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) { resolve(templateUrl); return; }
-        ctx.drawImage(img, 0, 0);
-        ctx.fillStyle = "#111";
-        ctx.font = `${Math.round(img.naturalWidth * 0.032)}px sans-serif`;
-        ctx.textBaseline = "middle";
-        if (pos.nomeX != null && pos.nomeY != null && nome) {
-          ctx.fillText(nome, (pos.nomeX / 100) * img.naturalWidth, (pos.nomeY / 100) * img.naturalHeight);
-        }
-        if (pos.cpfX != null && pos.cpfY != null && cpf) {
-          ctx.fillText(cpf, (pos.cpfX / 100) * img.naturalWidth, (pos.cpfY / 100) * img.naturalHeight);
-        }
-        resolve(canvas.toDataURL("image/png"));
-      } catch {
-        // Se a imagem "tainted" o canvas (CORS) ou algo falhar, cai para a imagem original sem overlay.
-        resolve(templateUrl);
-      }
-    };
-    img.onerror = () => resolve(templateUrl);
-    img.src = templateUrl;
-  });
-}
-
 const DIFFICULTY_COLORS: Record<string, string> = {
   facil: "bg-green-100 text-green-800", medio: "bg-yellow-100 text-yellow-800",
   dificil: "bg-orange-100 text-orange-800", especialista: "bg-red-100 text-red-800"
