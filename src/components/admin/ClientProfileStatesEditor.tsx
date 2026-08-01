@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -12,9 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { ArrowDown, ArrowUp, ImagePlus, Pencil, Plus, Trash2, X, Sparkles } from "lucide-react";
+import { ArrowDown, ArrowUp, ImagePlus, Pencil, Plus, Trash2, X, Sparkles, MapPin } from "lucide-react";
 import { toast } from "sonner";
 
 interface JourneyState {
@@ -27,6 +28,11 @@ interface JourneyState {
   advance_criteria: string | null;
   attachment_url: string | null;
   attachment_label: string | null;
+  overlay_enabled: boolean | null;
+  overlay_nome_x: number | null;
+  overlay_nome_y: number | null;
+  overlay_cpf_x: number | null;
+  overlay_cpf_y: number | null;
 }
 
 const EMPTY_STATE = {
@@ -37,6 +43,11 @@ const EMPTY_STATE = {
   advance_criteria: "",
   attachment_url: "",
   attachment_label: "",
+  overlay_enabled: false,
+  overlay_nome_x: null as number | null,
+  overlay_nome_y: null as number | null,
+  overlay_cpf_x: null as number | null,
+  overlay_cpf_y: null as number | null,
 };
 
 const DEFAULT_FUNNEL = [
@@ -67,7 +78,15 @@ const DEFAULT_FUNNEL = [
   },
 ];
 
-export function ClientProfileStatesEditor({ profileId }: { profileId: string }) {
+export function ClientProfileStatesEditor({
+  profileId,
+  profileNome,
+  profileCpf,
+}: {
+  profileId: string;
+  profileNome?: string;
+  profileCpf?: string;
+}) {
   const listFn = useServerFn(listClientProfileStates);
   const upsertFn = useServerFn(upsertClientProfileState);
   const deleteFn = useServerFn(deleteClientProfileState);
@@ -80,6 +99,9 @@ export function ClientProfileStatesEditor({ profileId }: { profileId: string }) 
   const [form, setForm] = useState<typeof EMPTY_STATE>({ ...EMPTY_STATE });
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [armMode, setArmMode] = useState<"nome" | "cpf" | null>(null);
+  const imgWrapRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const upsertMut = useMutation({
     mutationFn: (payload: any) => upsertFn({ data: payload }),
@@ -87,6 +109,7 @@ export function ClientProfileStatesEditor({ profileId }: { profileId: string }) 
       qc.invalidateQueries({ queryKey });
       setOpen(false);
       setForm({ ...EMPTY_STATE });
+      setArmMode(null);
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao salvar estado."),
   });
@@ -96,13 +119,19 @@ export function ClientProfileStatesEditor({ profileId }: { profileId: string }) 
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao remover."),
   });
 
-  const openNew = () => { setForm({ ...EMPTY_STATE }); setOpen(true); };
+  const openNew = () => { setForm({ ...EMPTY_STATE }); setArmMode(null); setOpen(true); };
   const openEdit = (s: JourneyState) => {
     setForm({
       id: s.id, name: s.name, description: s.description ?? "",
       example_lines: s.example_lines ?? "", advance_criteria: s.advance_criteria ?? "",
       attachment_url: s.attachment_url ?? "", attachment_label: s.attachment_label ?? "",
+      overlay_enabled: s.overlay_enabled ?? false,
+      overlay_nome_x: s.overlay_nome_x ?? null,
+      overlay_nome_y: s.overlay_nome_y ?? null,
+      overlay_cpf_x: s.overlay_cpf_x ?? null,
+      overlay_cpf_y: s.overlay_cpf_y ?? null,
     });
+    setArmMode(null);
     setOpen(true);
   };
 
@@ -118,6 +147,11 @@ export function ClientProfileStatesEditor({ profileId }: { profileId: string }) 
       advance_criteria: form.advance_criteria || null,
       attachment_url: form.attachment_url || null,
       attachment_label: form.attachment_label || null,
+      overlay_enabled: form.overlay_enabled,
+      overlay_nome_x: form.overlay_nome_x,
+      overlay_nome_y: form.overlay_nome_y,
+      overlay_cpf_x: form.overlay_cpf_x,
+      overlay_cpf_y: form.overlay_cpf_y,
     });
   };
 
@@ -168,6 +202,44 @@ export function ClientProfileStatesEditor({ profileId }: { profileId: string }) 
     toast.success("Funil padrão de 5 etapas adicionado.");
   };
 
+  const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!armMode || !imgWrapRef.current) return;
+    const rect = imgWrapRef.current.getBoundingClientRect();
+    const xPct = ((e.clientX - rect.left) / rect.width) * 100;
+    const yPct = ((e.clientY - rect.top) / rect.height) * 100;
+    if (armMode === "nome") {
+      setForm((f) => ({ ...f, overlay_nome_x: xPct, overlay_nome_y: yPct }));
+    } else {
+      setForm((f) => ({ ...f, overlay_cpf_x: xPct, overlay_cpf_y: yPct }));
+    }
+    setArmMode(null);
+  };
+
+  // Desenha uma prévia real (imagem + textos) no canvas sempre que algo relevante mudar.
+  useEffect(() => {
+    if (!form.overlay_enabled || !form.attachment_url || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      ctx.drawImage(img, 0, 0);
+      ctx.fillStyle = "#111";
+      ctx.font = `${Math.round(img.naturalWidth * 0.032)}px sans-serif`;
+      ctx.textBaseline = "middle";
+      if (form.overlay_nome_x != null && form.overlay_nome_y != null) {
+        ctx.fillText(profileNome || "Nome do cliente", (form.overlay_nome_x / 100) * img.naturalWidth, (form.overlay_nome_y / 100) * img.naturalHeight);
+      }
+      if (form.overlay_cpf_x != null && form.overlay_cpf_y != null) {
+        ctx.fillText(profileCpf || "000.000.000-00", (form.overlay_cpf_x / 100) * img.naturalWidth, (form.overlay_cpf_y / 100) * img.naturalHeight);
+      }
+    };
+    img.src = form.attachment_url;
+  }, [form.overlay_enabled, form.attachment_url, form.overlay_nome_x, form.overlay_nome_y, form.overlay_cpf_x, form.overlay_cpf_y, profileNome, profileCpf]);
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -207,7 +279,7 @@ export function ClientProfileStatesEditor({ profileId }: { profileId: string }) 
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="outline">{i + 1}</Badge>
                 <span className="font-medium text-sm">{s.name}</span>
-                {s.attachment_url && <Badge variant="secondary" className="gap-1 text-[10px]"><ImagePlus className="h-3 w-3" /> {s.attachment_label || "anexo"}</Badge>}
+                {s.attachment_url && <Badge variant="secondary" className="gap-1 text-[10px]"><ImagePlus className="h-3 w-3" /> {s.attachment_label || "anexo"}{s.overlay_enabled ? " · com overlay" : ""}</Badge>}
               </div>
               {s.advance_criteria && (
                 <p className="text-xs text-muted-foreground mt-1 line-clamp-2">Critério: {s.advance_criteria}</p>
@@ -249,13 +321,13 @@ export function ClientProfileStatesEditor({ profileId }: { profileId: string }) 
                 <div className="relative h-20 w-20">
                   <img src={form.attachment_url} alt="anexo" className="h-20 w-20 object-cover rounded-md border" />
                   <button type="button" className="absolute -top-1.5 -right-1.5 bg-black/70 text-white rounded-full p-0.5"
-                    onClick={() => setForm((f) => ({ ...f, attachment_url: "" }))}>
+                    onClick={() => setForm((f) => ({ ...f, attachment_url: "", overlay_enabled: false, overlay_nome_x: null, overlay_nome_y: null, overlay_cpf_x: null, overlay_cpf_y: null }))}>
                     <X className="h-3 w-3" />
                   </button>
                 </div>
               ) : (
                 <Button type="button" size="sm" variant="outline" className="gap-2" disabled={uploading} onClick={() => fileRef.current?.click()}>
-                  <ImagePlus className="h-4 w-4" /> {uploading ? "Enviando..." : "Enviar imagem"}
+                  <ImagePlus className="h-4 w-4" /> {uploading ? "Enviando..." : "Enviar imagem (molde do documento)"}
                 </Button>
               )}
               <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e.target.files)} />
@@ -264,6 +336,62 @@ export function ClientProfileStatesEditor({ profileId }: { profileId: string }) 
                   placeholder="Legenda (ex: Conta de luz)" />
               )}
             </div>
+
+            {form.attachment_url && (
+              <div className="border-t pt-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Sobrepor nome e CPF do perfil nesta imagem</Label>
+                    <p className="text-xs text-muted-foreground">Desenha os dados fictícios do perfil (aba "Dados fictícios") por cima do molde ao enviar.</p>
+                  </div>
+                  <Switch checked={form.overlay_enabled} onCheckedChange={(v) => setForm((f) => ({ ...f, overlay_enabled: v }))} />
+                </div>
+
+                {form.overlay_enabled && (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <Button type="button" size="sm" variant={armMode === "nome" ? "default" : "outline"} className="gap-1"
+                        onClick={() => setArmMode(armMode === "nome" ? null : "nome")}>
+                        <MapPin className="h-3.5 w-3.5" /> Marcar posição do Nome
+                      </Button>
+                      <Button type="button" size="sm" variant={armMode === "cpf" ? "default" : "outline"} className="gap-1"
+                        onClick={() => setArmMode(armMode === "cpf" ? null : "cpf")}>
+                        <MapPin className="h-3.5 w-3.5" /> Marcar posição do CPF
+                      </Button>
+                    </div>
+                    {armMode && (
+                      <p className="text-xs text-primary">Clique no ponto da imagem abaixo onde o {armMode === "nome" ? "nome" : "CPF"} deve aparecer.</p>
+                    )}
+                    <div
+                      ref={imgWrapRef}
+                      onClick={handleImageClick}
+                      className={`relative inline-block border rounded-md overflow-hidden ${armMode ? "cursor-crosshair ring-2 ring-primary" : ""}`}
+                    >
+                      <img src={form.attachment_url} alt="molde" className="max-w-full max-h-64 block" />
+                      {form.overlay_nome_x != null && form.overlay_nome_y != null && (
+                        <div className="absolute -translate-x-1/2 -translate-y-1/2 flex items-center gap-1" style={{ left: `${form.overlay_nome_x}%`, top: `${form.overlay_nome_y}%` }}>
+                          <span className="h-2.5 w-2.5 rounded-full bg-blue-500 border border-white" />
+                          <span className="text-[10px] bg-blue-500 text-white px-1 rounded">Nome</span>
+                        </div>
+                      )}
+                      {form.overlay_cpf_x != null && form.overlay_cpf_y != null && (
+                        <div className="absolute -translate-x-1/2 -translate-y-1/2 flex items-center gap-1" style={{ left: `${form.overlay_cpf_x}%`, top: `${form.overlay_cpf_y}%` }}>
+                          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 border border-white" />
+                          <span className="text-[10px] bg-emerald-500 text-white px-1 rounded">CPF</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {(form.overlay_nome_x != null || form.overlay_cpf_x != null) && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-1">Prévia (com os dados fictícios reais do perfil):</p>
+                        <canvas ref={canvasRef} className="max-w-full max-h-64 border rounded-md" />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
