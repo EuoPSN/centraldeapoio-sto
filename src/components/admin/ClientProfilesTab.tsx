@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Pencil, GripVertical } from "lucide-react";
+import { Plus, Trash2, Pencil, GripVertical, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { ClientProfileStatesEditor } from "@/components/admin/ClientProfileStatesEditor";
 
@@ -46,6 +46,9 @@ export function ClientProfilesTab() {
   const [form, setForm] = useState<any>({ ...EMPTY });
   const [dragId, setDragId] = useState<string | null>(null);
   const [overCat, setOverCat] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+
+  const toggleCollapsed = (id: string) => setCollapsed(p => ({ ...p, [id]: !p[id] }));
 
   const upsertMut = useMutation({
     mutationFn: (d: any) => upsertFn({ data: { ...d, category_id: d.category_id || null } }),
@@ -142,10 +145,16 @@ export function ClientProfilesTab() {
               className={`rounded-lg border bg-muted/30 p-3 space-y-3 min-h-[140px] transition-colors ${isOver ? "border-primary bg-primary/5" : ""}`}
             >
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold">{col.name}</h3>
+                <button
+                  onClick={() => toggleCollapsed(col.id ?? "none")}
+                  className="flex items-center gap-1.5 flex-1 text-left"
+                >
+                  <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${collapsed[col.id ?? "none"] ? "-rotate-90" : ""}`} />
+                  <h3 className="text-sm font-semibold">{col.name}</h3>
+                </button>
                 <Badge variant="outline">{items.length}</Badge>
               </div>
-              <div className="space-y-2">
+              <div className={`space-y-2 overflow-hidden transition-all duration-200 ${collapsed[col.id ?? "none"] ? "max-h-0" : "max-h-[2000px]"}`}>
                 {items.map(renderCard)}
                 {items.length === 0 && (
                   <p className="text-xs text-muted-foreground py-4 text-center">Solte um perfil aqui</p>
