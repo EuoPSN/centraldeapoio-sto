@@ -7,6 +7,7 @@ import {
   deleteClientProfileState,
 } from "@/lib/clientprofilestates.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { simulatorChat } from "@/lib/simulator.chat.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -82,10 +83,22 @@ export function ClientProfileStatesEditor({
   profileId,
   profileNome,
   profileCpf,
+  profileTitulo,
+  profilePersonality,
+  profileObjectives,
+  profileObjections,
+  profileBehaviors,
+  profileDifficulty,
 }: {
   profileId: string;
   profileNome?: string;
   profileCpf?: string;
+  profileTitulo?: string;
+  profilePersonality?: string;
+  profileObjectives?: string;
+  profileObjections?: string;
+  profileBehaviors?: string;
+  profileDifficulty?: string;
 }) {
   const listFn = useServerFn(listClientProfileStates);
   const upsertFn = useServerFn(upsertClientProfileState);
@@ -202,6 +215,60 @@ export function ClientProfileStatesEditor({
     toast.success("Funil padrão de 5 etapas adicionado.");
   };
 
+  const genAI = useServerFn(simulatorChat);
+  const [generating, setGenerating] = useState(false);
+  const generateWithAI = async () => {
+    setGenerating(true);
+    try {
+      const prompt = `Você é um especialista em criar jornadas de atendimento para simulações de treinamento de vendas do "Cartão de Todos" (produto que dá desconto na conta de energia).
+
+Baseado no perfil de cliente abaixo, crie uma jornada única de 4 a 6 estados que representam a evolução desse cliente durante o atendimento — do jeito que combina com a personalidade e as objeções DELE especificamente, não um funil genérico.
+
+Perfil do cliente:
+Nome do perfil: ${profileTitulo || "-"}
+Personalidade: ${profilePersonality || "-"}
+Objetivos: ${profileObjectives || "-"}
+Objeções típicas: ${profileObjections || "-"}
+Comportamentos: ${profileBehaviors || "-"}
+Dificuldade: ${profileDifficulty || "-"}
+
+Regras obrigatórias:
+- O primeiro estado reflete a objeção/desconfiança inicial típica desse perfil.
+- Um dos estados do meio deve ser exatamente o momento em que o cliente concorda em enviar a foto da conta de energia e um documento com CPF — esse estado deve se chamar "Documentos" e ter "sendsDocument": true.
+- O último estado é o fechamento da simulação.
+- "advance_criteria" deve ser uma frase objetiva e checável (uma ação concreta que o atendente precisa fazer), nunca vaga.
+- "example_lines" deve ter 1 a 2 falas de exemplo entre aspas, no tom da personalidade descrita.
+
+Responda APENAS com JSON válido, sem markdown e sem texto fora do JSON, neste formato exato:
+{"estados": [{"name": "...", "example_lines": "...", "advance_criteria": "...", "sendsDocument": false}]}`;
+
+      const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: "Gere a jornada." }], model: "google/gemini-2.5-flash" } });
+      const clean = content.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(clean);
+      const estados = Array.isArray(parsed.estados) ? parsed.estados : [];
+      if (estados.length === 0) throw new Error("A IA não retornou estados válidos.");
+      for (let i = 0; i < estados.length; i++) {
+        const e = estados[i];
+        await upsertFn({
+          data: {
+            profile_id: profileId,
+            position: items.length + i,
+            name: e.name || `Estado ${i + 1}`,
+            example_lines: e.example_lines || null,
+            advance_criteria: e.advance_criteria || null,
+            attachment_label: e.sendsDocument ? "Aguardando upload da foto do documento" : null,
+          },
+        });
+      }
+      qc.invalidateQueries({ queryKey });
+      toast.success(`Jornada com ${estados.length} etapas gerada! Falta só anexar a foto do documento na etapa "Documentos".`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao gerar jornada com IA.");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!armMode || !imgWrapRef.current) return;
     const rect = imgWrapRef.current.getBoundingClientRect();
@@ -252,9 +319,14 @@ export function ClientProfileStatesEditor({
           <Plus className="h-4 w-4" /> Novo estado
         </Button>
         {items.length === 0 && (
-          <Button size="sm" variant="secondary" className="gap-2" onClick={seedDefaultFunnel}>
-            <Sparkles className="h-4 w-4" /> Usar funil padrão (5 etapas)
-          </Button>
+          <>
+            <Button size="sm" variant="secondary" className="gap-2" onClick={seedDefaultFunnel}>
+              <Sparkles className="h-4 w-4" /> Usar funil padrão (5 etapas)
+            </Button>
+            <Button size="sm" variant="secondary" className="gap-2" onClick={generateWithAI} disabled={generating}>
+              <Sparkles className="h-4 w-4" /> {generating ? "Gerando..." : "Gerar jornada com IA"}
+            </Button>
+          </>
         )}
       </div>
 
