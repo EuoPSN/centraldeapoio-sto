@@ -95,6 +95,20 @@ export function ClientProfilesTab() {
     moveMut.mutate({ id: dragId, category_id: catId });
   };
 
+  const handleDragOver = (e: React.DragEvent, catId: string | null) => {
+    e.preventDefault();
+    setOverCat(catId ?? "__null__");
+    const ZONE = 120;
+    const SPEED = 12;
+    const y = e.clientY;
+    const vh = window.innerHeight;
+    if (y < ZONE) {
+      window.scrollBy({ top: -SPEED, behavior: "instant" });
+    } else if (y > vh - ZONE) {
+      window.scrollBy({ top: SPEED, behavior: "instant" });
+    }
+  };
+
   const renderCard = (p: any) => (
     <Card
       key={p.id}
@@ -139,7 +153,7 @@ export function ClientProfilesTab() {
           return (
             <div
               key={col.id ?? "none"}
-              onDragOver={e => { e.preventDefault(); setOverCat(col.id ?? "__null__"); }}
+              onDragOver={e => handleDragOver(e, col.id)}
               onDragLeave={() => setOverCat(null)}
               onDrop={e => { e.preventDefault(); handleDrop(col.id); }}
               className={`rounded-lg border bg-muted/30 p-3 space-y-3 min-h-[140px] transition-colors ${isOver ? "border-primary bg-primary/5" : ""}`}
