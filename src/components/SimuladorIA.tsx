@@ -144,13 +144,20 @@ const handleFilesSelected = async (files: FileList | null) => {
   const saveResultFn = useServerFn(saveSimulatorResult);
   const [avaliacao, setAvaliacao] = useState<any>(null);
 
-  const buildSystemPrompt = (idx: number) => {
+const buildSystemPrompt = (idx: number) => {
+    const dadosFicticios = [
+      profile.cliente_nome ? `Nome completo: ${profile.cliente_nome}` : null,
+      profile.cliente_cpf ? `CPF: ${profile.cliente_cpf}` : null,
+      profile.cliente_regiao ? `Região/cidade onde mora: ${profile.cliente_regiao}` : null,
+    ].filter(Boolean).join(" | ");
+
     const base = `Você é um cliente virtual chamado ${profile.name} sendo atendido por um vendedor do Cartão de Todos.
 Personalidade: ${profile.personality}.
 Objetivos: ${profile.objectives}.
 Objeções típicas: ${profile.objections}.
 Comportamentos: ${profile.behaviors}.
 Nível de dificuldade: ${DIFFICULTY_LABELS[profile.difficulty]}.
+${dadosFicticios ? `Seus dados pessoais fictícios (use-os SOMENTE se o atendente perguntar diretamente, informando com naturalidade): ${dadosFicticios}.` : ""}
 Responda APENAS como o cliente — nunca quebre o personagem.
 Respostas curtas e naturais, como numa conversa real de WhatsApp.
 Se o atendente der uma boa resposta às suas objeções, vá cedendo gradualmente.
