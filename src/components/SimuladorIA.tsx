@@ -13,7 +13,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { simulatorChat } from "@/lib/simulator.chat.functions";
 import { saveSimulatorResult } from "@/lib/gamification.functions";
 import { supabase } from "@/integrations/supabase/client";
-import { listClientProfileStates } from "@/lib/clientprofilestates.functions";
+import { listClientProfileStates } from "@/lib/clientprofilestates.functions"; 
+import { WhatsAppText } from "@/components/WhatsAppText";
 
 
 interface Profile {
@@ -460,7 +461,7 @@ O JSON deve ter exatamente estes campos:
                   ))}
                 </div>
               )}
-              {m.content}
+            <WhatsAppText text={m.content} />
             </div>
           </div>
         ))}
