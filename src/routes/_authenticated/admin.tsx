@@ -36,7 +36,6 @@ import { AppearanceTab } from "@/components/admin/AppearanceTab";
 import { KnowledgeTab } from "@/components/admin/KnowledgeTab";
 import { ClientProfilesTab } from "@/components/admin/ClientProfilesTab";
 import { SimulatorResultsTab } from "@/components/admin/SimulatorResultsTab";
-import { MotorDecisaoAdminTab } from "@/components/admin/MotorDecisaoAdminTab";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   beforeLoad: async () => {
@@ -80,7 +79,6 @@ function AdminPage() {
           <TabsTrigger value="ai">IA & Indexação</TabsTrigger>
           <TabsTrigger value="perfis">Perfis de Cliente</TabsTrigger>
             <TabsTrigger value="atendimentos">Atendimentos</TabsTrigger>
-            <TabsTrigger value="motor">Motor de Decisão</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-6"><OverviewTab /></TabsContent>
@@ -98,7 +96,6 @@ function AdminPage() {
         <TabsContent value="ai" className="mt-6"><AiTab /></TabsContent>
           <TabsContent value="perfis" className="mt-6"><ClientProfilesTab /></TabsContent>
 <TabsContent value="atendimentos" className="mt-6"><SimulatorResultsTab /></TabsContent>
-<TabsContent value="motor" className="mt-6"><MotorDecisaoAdminTab /></TabsContent>
       </Tabs>
     </div>
   );
