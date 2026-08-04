@@ -12,9 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Pencil, GripVertical, ChevronDown } from "lucide-react";
+import { Plus, Trash2, Pencil, GripVertical, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { ClientProfileStatesEditor } from "@/components/admin/ClientProfileStatesEditor";
+import { simulatorChat } from "@/lib/simulator.chat.functions";
 
 const DIFFICULTY_LABELS: Record<string, string> = {
   facil: "Fácil",
@@ -31,6 +32,19 @@ const DIFFICULTY_COLORS: Record<string, string> = {
 
 const EMPTY = { name: "", category_id: "", personality: "", difficulty: "medio", objectives: "", objections: "", behaviors: "", cliente_nome: "", cliente_cpf: "", cliente_regiao: "", cliente_genero: "masculino" };
 
+// Padrões reais extraídos de atendimentos finalizados, por subcategoria.
+// Atualize este texto conforme mais atendimentos forem analisados.
+function guidancePorSubcategoria(nomeCategoria: string): string {
+  const n = (nomeCategoria || "").toLowerCase();
+  if (n.includes("refili")) {
+    return `Padrão real de clientes de Refiliação: já foram clientes antes e pedem reativação/atualização cadastral diretamente — não começam desconfiados sobre o produto em si. Dúvidas típicas giram em torno da diferença entre pacotes (Regular vs Ouro), inclusão ou remoção de dependentes, e a indicação de 5 contatos para isenção da taxa de reativação.`;
+  }
+  if (n.includes("filia") && !n.includes("refilia")) {
+    return `Padrão real de clientes de Filiação: já demonstram interesse inicial (não é preciso convencer do zero sobre o produto); a objeção típica não é desconfiança, e sim timing/valor do pagamento — "vou pagar já?", "não tenho esse valor agora", "vou esperar receber". Também costumam pedir para incluir dependentes durante o cadastro.`;
+  }
+  return `Ainda não há atendimentos reais analisados especificamente para esta subcategoria — baseie-se no fluxo geral de vendas do Cartão de Todos (apresentação, coleta de dados, pagamento, termo de fidelidade, documentos, fechamento) e na descrição fornecida pelo administrador.`;
+}
+
 export function ClientProfilesTab() {
   const listFn = useServerFn(listClientProfiles);
   const upsertFn = useServerFn(upsertClientProfile);
@@ -46,9 +60,61 @@ export function ClientProfilesTab() {
   const [form, setForm] = useState<any>({ ...EMPTY });
   const [dragId, setDragId] = useState<string | null>(null);
   const [overCat, setOverCat] = useState<string | null>(null);
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
-  const toggleCollapsed = (id: string) => setCollapsed(p => ({ ...p, [id]: !p[id] }));
+  const genAI = useServerFn(simulatorChat);
+  const [genOpen, setGenOpen] = useState(false);
+  const [genCategoria, setGenCategoria] = useState("");
+  const [genDescricao, setGenDescricao] = useState("");
+  const [generating, setGenerating] = useState(false);
+
+  const generateProfile = async () => {
+    setGenerating(true);
+    try {
+      const categoriaNome = categories.find(c => c.id === genCategoria)?.name || "Sem subcategoria";
+      const prompt = `Você cria perfis de clientes fictícios para simulações de treinamento de atendimento do "Cartão de Todos" (cartão de descontos em saúde).
+
+Subcategoria do atendimento: ${categoriaNome}
+${guidancePorSubcategoria(categoriaNome)}
+
+Descrição breve dada pelo administrador sobre este cliente específico: "${genDescricao || "-"}"
+
+Crie um perfil de cliente fictício coerente com o padrão real acima E com a descrição dada. Responda APENAS com JSON válido, sem markdown e sem texto fora do JSON, neste formato exato:
+{"nome_sugerido": "...", "personality": "...", "objectives": "...", "objections": "...", "behaviors": "..."}
+
+- "nome_sugerido": nome curto do PERFIL (não do cliente fictício), ex: "Cliente Curioso - Filiação".
+- "personality": 1 a 2 frases descrevendo o jeito desse cliente.
+- "objectives": o que ele quer alcançar no atendimento.
+- "objections": as objeções típicas que ele levanta, baseadas no padrão real informado.
+- "behaviors": como ele se comporta durante a conversa.`;
+
+      const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: "Gere o perfil." }], model: "google/gemini-2.5-flash" } });
+      const clean = content.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(clean);
+
+      const created: any = await upsertFn({
+        data: {
+          category_id: genCategoria || null,
+          name: parsed.nome_sugerido || "Novo perfil gerado por IA",
+          difficulty: "medio",
+          personality: parsed.personality || "",
+          objectives: parsed.objectives || "",
+          objections: parsed.objections || "",
+          behaviors: parsed.behaviors || "",
+        },
+      });
+
+      qc.invalidateQueries({ queryKey: ["client_profiles"] });
+      setGenOpen(false);
+      setGenDescricao("");
+      setForm({ ...created, category_id: created.category_id ?? "" });
+      setOpen(true);
+      toast.success("Perfil gerado! Confira os campos, ajuste o que quiser, adicione os dados fictícios e depois gere a Jornada.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao gerar perfil com IA.");
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const upsertMut = useMutation({
     mutationFn: (d: any) => upsertFn({ data: { ...d, category_id: d.category_id || null } }),
@@ -95,20 +161,6 @@ export function ClientProfilesTab() {
     moveMut.mutate({ id: dragId, category_id: catId });
   };
 
-  const handleDragOver = (e: React.DragEvent, catId: string | null) => {
-    e.preventDefault();
-    setOverCat(catId ?? "__null__");
-    const ZONE = 120;
-    const SPEED = 12;
-    const y = e.clientY;
-    const vh = window.innerHeight;
-    if (y < ZONE) {
-      window.scrollBy({ top: -SPEED, behavior: "instant" });
-    } else if (y > vh - ZONE) {
-      window.scrollBy({ top: SPEED, behavior: "instant" });
-    }
-  };
-
   const renderCard = (p: any) => (
     <Card
       key={p.id}
@@ -139,7 +191,10 @@ export function ClientProfilesTab() {
           <h2 className="text-lg font-semibold">Perfis de Cliente</h2>
           <p className="text-sm text-muted-foreground">Arraste os perfis entre as categorias (Filiação, Refiliação, Migração, EDT, Outros).</p>
         </div>
-        <Button onClick={openNew} className="gap-2"><Plus className="h-4 w-4" /> Novo Perfil</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setGenOpen(true)} className="gap-2"><Sparkles className="h-4 w-4" /> Gerar perfil com IA</Button>
+          <Button onClick={openNew} className="gap-2"><Plus className="h-4 w-4" /> Novo Perfil</Button>
+        </div>
       </div>
 
       {profiles.length === 0 && (
@@ -153,22 +208,16 @@ export function ClientProfilesTab() {
           return (
             <div
               key={col.id ?? "none"}
-              onDragOver={e => handleDragOver(e, col.id)}
+              onDragOver={e => { e.preventDefault(); setOverCat(col.id ?? "__null__"); }}
               onDragLeave={() => setOverCat(null)}
               onDrop={e => { e.preventDefault(); handleDrop(col.id); }}
               className={`rounded-lg border bg-muted/30 p-3 space-y-3 min-h-[140px] transition-colors ${isOver ? "border-primary bg-primary/5" : ""}`}
             >
               <div className="flex items-center justify-between">
-                <button
-                  onClick={() => toggleCollapsed(col.id ?? "none")}
-                  className="flex items-center gap-1.5 flex-1 text-left"
-                >
-                  <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${collapsed[col.id ?? "none"] ? "-rotate-90" : ""}`} />
-                  <h3 className="text-sm font-semibold">{col.name}</h3>
-                </button>
+                <h3 className="text-sm font-semibold">{col.name}</h3>
                 <Badge variant="outline">{items.length}</Badge>
               </div>
-              <div className={`space-y-2 overflow-hidden transition-all duration-200 ${collapsed[col.id ?? "none"] ? "max-h-0" : "max-h-[2000px]"}`}>
+              <div className="space-y-2">
                 {items.map(renderCard)}
                 {items.length === 0 && (
                   <p className="text-xs text-muted-foreground py-4 text-center">Solte um perfil aqui</p>
@@ -282,7 +331,7 @@ export function ClientProfilesTab() {
 
             <TabsContent value="jornada" className="pt-4">
               {form.id ? (
-<ClientProfileStatesEditor
+                <ClientProfileStatesEditor
                   profileId={form.id}
                   profileNome={form.cliente_nome}
                   profileCpf={form.cliente_cpf}
@@ -293,7 +342,7 @@ export function ClientProfilesTab() {
                   profileBehaviors={form.behaviors}
                   profileDifficulty={form.difficulty}
                 />
-    ) : (
+              ) : (
                 <p className="text-sm text-muted-foreground">
                   Clique em "Salvar" na aba Geral primeiro — depois que o perfil existir, você poderá cadastrar os estados da jornada aqui.
                 </p>
@@ -305,6 +354,38 @@ export function ClientProfilesTab() {
             <Button variant="outline" onClick={() => setOpen(false)}>Fechar</Button>
             <Button onClick={() => upsertMut.mutate(form)} disabled={!form.name || upsertMut.isPending}>
               {upsertMut.isPending ? "Salvando..." : form.id ? "Salvar alterações" : "Salvar e continuar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={genOpen} onOpenChange={setGenOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Gerar perfil com IA</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Subcategoria</Label>
+              <Select value={genCategoria || "none"} onValueChange={v => setGenCategoria(v === "none" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="— Sem subcategoria —" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— Sem subcategoria —</SelectItem>
+                  {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                A IA usa o padrão real de atendimentos analisados dessa subcategoria (quando disponível) para gerar um perfil coerente.
+              </p>
+            </div>
+            <div>
+              <Label>Breve descrição deste cliente</Label>
+              <Textarea rows={3} value={genDescricao} onChange={e => setGenDescricao(e.target.value)}
+                placeholder='Ex: "Cliente mais curioso, faz muitas perguntas antes de decidir"' />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setGenOpen(false)}>Cancelar</Button>
+            <Button onClick={generateProfile} disabled={generating}>
+              {generating ? "Gerando..." : "Gerar perfil"}
             </Button>
           </DialogFooter>
         </DialogContent>
