@@ -71,7 +71,7 @@ function AdminPage() {
   }, {});
   const orderedGroups = [...ADMIN_GROUP_ORDER, ...Object.keys(grouped).filter((g) => !ADMIN_GROUP_ORDER.includes(g))];
 
-  const TAB_COMPONENTS: Record<string, () => JSX.Element> = {
+  const TAB_COMPONENTS: Record<string, React.ComponentType> = {
     users: UsersTab,
     knowledge: KnowledgeTab,
     messages: MessagesTab,
