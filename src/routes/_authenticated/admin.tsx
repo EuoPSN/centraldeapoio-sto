@@ -15,7 +15,6 @@ import {
 import { reindexAll, getIndexStats } from "@/lib/embeddings.functions";
 import { seedInitialData } from "@/lib/seed.functions";
 import { getAiSettings, updateAiSettings } from "@/lib/chat.functions";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +25,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Database, Pencil, Plus, RefreshCw, Settings, Sparkles, Trash2, UserPlus, Users } from "lucide-react";
+import { Database, LayoutDashboard, Pencil, Plus, RefreshCw, Settings, Sparkles, Trash2, UserPlus, Users } from "lucide-react";
 import { MessagesTab } from "@/components/admin/MessagesTab";
 import { TaxonomyTab } from "@/components/admin/TaxonomyTab";
 import { SuggestionsTab } from "@/components/admin/SuggestionsTab";
@@ -35,6 +34,10 @@ import { AppearanceTab } from "@/components/admin/AppearanceTab";
 import { KnowledgeTab } from "@/components/admin/KnowledgeTab";
 import { ClientProfilesTab } from "@/components/admin/ClientProfilesTab";
 import { SimulatorResultsTab } from "@/components/admin/SimulatorResultsTab";
+import { AdminSectionsTab, ADMIN_GROUP_ORDER } from "@/components/admin/AdminSectionsTab";
+import { listAdminSections } from "@/lib/settings.functions";
+import { getIcon } from "@/lib/icon-map";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   beforeLoad: async () => {
@@ -52,6 +55,45 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 function AdminPage() {
+  const sectionsFn = useServerFn(listAdminSections);
+  const sectionsQ = useQuery({ queryKey: ["admin-sections-nav"], queryFn: () => sectionsFn({}) });
+  const sections = (sectionsQ.data ?? []) as {
+    id: string; tab_key: string; label: string; icon: string;
+    group_name: string; position: number; visible: boolean;
+  }[];
+
+  const [active, setActive] = useState("overview");
+
+  const visibleSections = sections.filter((s) => s.visible);
+  const grouped = visibleSections.reduce<Record<string, typeof visibleSections>>((acc, s) => {
+    (acc[s.group_name] ??= []).push(s);
+    return acc;
+  }, {});
+  const orderedGroups = [...ADMIN_GROUP_ORDER, ...Object.keys(grouped).filter((g) => !ADMIN_GROUP_ORDER.includes(g))];
+
+  const TAB_COMPONENTS: Record<string, () => JSX.Element> = {
+    users: UsersTab,
+    knowledge: KnowledgeTab,
+    messages: MessagesTab,
+    taxonomy: TaxonomyTab,
+    content: ContentTab,
+    pricing: PricingTab,
+    suggestions: SuggestionsTab,
+    menu: MenuTab,
+    appearance: AppearanceTab,
+    ai: AiTab,
+    perfis: ClientProfilesTab,
+    atendimentos: SimulatorResultsTab,
+    organizacao: AdminSectionsTab,
+  };
+  const ActiveComponent = active === "overview" ? OverviewTab : (TAB_COMPONENTS[active] ?? OverviewTab);
+
+  const navButtonClass = (key: string) =>
+    cn(
+      "flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-left transition-colors",
+      active === key ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+    );
+
   return (
     <div className="p-6 lg:p-10 max-w-7xl mx-auto">
       <header className="mb-6">
@@ -61,39 +103,39 @@ function AdminPage() {
         <p className="text-muted-foreground mt-1">Gestão de conteúdo, usuários e IA.</p>
       </header>
 
-      <Tabs defaultValue="overview">
-        <TabsList className="flex-wrap h-auto justify-start">
-          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-          <TabsTrigger value="users">Usuários</TabsTrigger>
-          <TabsTrigger value="knowledge">Base IA</TabsTrigger>
-<TabsTrigger value="messages">Mensagens</TabsTrigger>
-          <TabsTrigger value="taxonomy">Categorias</TabsTrigger>
-          
-          <TabsTrigger value="content">Conteúdo (legado)</TabsTrigger>
-          <TabsTrigger value="pricing">Preços</TabsTrigger>
-          <TabsTrigger value="suggestions">Sugestões</TabsTrigger>
-          <TabsTrigger value="menu">Menu</TabsTrigger>
-          <TabsTrigger value="appearance">Aparência</TabsTrigger>
-          <TabsTrigger value="ai">IA & Indexação</TabsTrigger>
-          <TabsTrigger value="perfis">Perfis de Cliente</TabsTrigger>
-            <TabsTrigger value="atendimentos">Atendimentos</TabsTrigger>
-        </TabsList>
+      <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6 items-start">
+        <nav className="lg:sticky lg:top-6 space-y-4">
+          <button onClick={() => setActive("overview")} className={navButtonClass("overview")}>
+            <LayoutDashboard className="h-4 w-4" /> Visão Geral
+          </button>
 
-        <TabsContent value="overview" className="mt-6"><OverviewTab /></TabsContent>
-        <TabsContent value="users" className="mt-6"><UsersTab /></TabsContent>
-        <TabsContent value="knowledge" className="mt-6"><KnowledgeTab /></TabsContent>
-        <TabsContent value="messages" className="mt-6"><MessagesTab /></TabsContent>
-        <TabsContent value="taxonomy" className="mt-6"><TaxonomyTab /></TabsContent>
-        
-        <TabsContent value="content" className="mt-6"><ContentTab /></TabsContent>
-        <TabsContent value="pricing" className="mt-6"><PricingTab /></TabsContent>
-        <TabsContent value="suggestions" className="mt-6"><SuggestionsTab /></TabsContent>
-        <TabsContent value="menu" className="mt-6"><MenuTab /></TabsContent>
-        <TabsContent value="appearance" className="mt-6"><AppearanceTab /></TabsContent>
-        <TabsContent value="ai" className="mt-6"><AiTab /></TabsContent>
-          <TabsContent value="perfis" className="mt-6"><ClientProfilesTab /></TabsContent>
-<TabsContent value="atendimentos" className="mt-6"><SimulatorResultsTab /></TabsContent>
-      </Tabs>
+          {sectionsQ.isLoading && <p className="px-3 text-xs text-muted-foreground">Carregando menu...</p>}
+
+          {orderedGroups.map((group) => {
+            const list = grouped[group];
+            if (!list?.length) return null;
+            return (
+              <div key={group}>
+                <p className="px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">{group}</p>
+                <div className="space-y-0.5">
+                  {list.map((s) => {
+                    const Icon = getIcon(s.icon);
+                    return (
+                      <button key={s.tab_key} onClick={() => setActive(s.tab_key)} className={navButtonClass(s.tab_key)}>
+                        <Icon className="h-4 w-4" /> {s.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </nav>
+
+        <div className="min-w-0">
+          <ActiveComponent />
+        </div>
+      </div>
     </div>
   );
 }
@@ -119,18 +161,16 @@ function OverviewTab() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
   });
 
-  const cards = [
+const cards = [
     { label: "Usuários", value: sQ.data?.totalUsers ?? 0 },
     { label: "Conversas IA", value: sQ.data?.totalConversations ?? 0 },
     { label: "Perguntas feitas", value: sQ.data?.totalUserMessages ?? 0 },
     { label: "Chunks indexados", value: iQ.data?.totalChunks ?? 0 },
-    { label: "Scripts", value: sQ.data?.totalScripts ?? 0 },
-    { label: "Itens de conteúdo", value: sQ.data?.totalContentItems ?? 0 },
   ];
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {cards.map((c) => (
           <Card key={c.label} className="p-4">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">{c.label}</p>
