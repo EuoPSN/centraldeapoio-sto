@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ComponentType } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   listContent, upsertContent, deleteContent,
@@ -71,7 +71,7 @@ function AdminPage() {
   }, {});
   const orderedGroups = [...ADMIN_GROUP_ORDER, ...Object.keys(grouped).filter((g) => !ADMIN_GROUP_ORDER.includes(g))];
 
-  const TAB_COMPONENTS: Record<string, () => JSX.Element> = {
+  const TAB_COMPONENTS: Record<string, ComponentType> = {
     users: UsersTab,
     knowledge: KnowledgeTab,
     messages: MessagesTab,
