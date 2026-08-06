@@ -86,6 +86,38 @@ export const deleteNavItem = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+// ============ ADMIN SECTIONS (organização das abas do Painel Admin) ============
+export const listAdminSections = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("admin_sections").select("*")
+      .order("group_name", { ascending: true })
+      .order("position", { ascending: true });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
+const AdminSectionInput = z.object({
+  id: z.string().uuid(),
+  label: z.string().min(1).max(80).optional(),
+  icon: z.string().min(1).max(60).optional(),
+  group_name: z.string().min(1).max(60).optional(),
+  position: z.number().int().optional(),
+  visible: z.boolean().optional(),
+});
+
+export const updateAdminSection = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => AdminSectionInput.parse(d))
+  .handler(async ({ data, context }) => {
+    await admin(context);
+    const { id, ...rest } = data;
+    const { data: r, error } = await context.supabase
+      .from("admin_sections").update(rest).eq("id", id).select().single();
+    if (error) throw new Error(error.message);
+    return r;
+  });
 
 // ============ THEMES ============
 export const listThemes = createServerFn({ method: "GET" })
