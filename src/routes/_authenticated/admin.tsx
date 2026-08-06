@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ComponentType } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   listContent, upsertContent, deleteContent,
