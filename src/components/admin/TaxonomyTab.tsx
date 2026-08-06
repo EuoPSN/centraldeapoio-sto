@@ -14,7 +14,6 @@ import { toast } from "sonner";
 
 const SCOPES = [
   { value: "message", label: "Mensagens" },
-  { value: "flow", label: "Fluxos" },
   { value: "suggestion", label: "Sugestões" },
   { value: "content", label: "Conteúdo" },
   { value: "client_profile", label: "Perfis de Cliente (Simulador IA)" },
