@@ -22,8 +22,8 @@ CREATE POLICY "admin_sections_read_auth" ON public.admin_sections
 
 CREATE POLICY "admin_sections_write_admin" ON public.admin_sections
   FOR ALL TO authenticated
-  USING (public.has_role(auth.uid(), 'admin'))
-  WITH CHECK (public.has_role(auth.uid(), 'admin'));
+  USING (private.has_role(auth.uid(), 'admin'::app_role))
+  WITH CHECK (private.has_role(auth.uid(), 'admin'::app_role));
 
 CREATE TRIGGER trg_admin_sections_updated
   BEFORE UPDATE ON public.admin_sections
