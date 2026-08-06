@@ -25,6 +25,7 @@ import { Route as AuthenticatedPrecosRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedProblemasRouteImport } from './routes/_authenticated/problemas'
 import { Route as AuthenticatedRankingRouteImport } from './routes/_authenticated/ranking'
 import { Route as AuthenticatedScriptsRouteImport } from './routes/_authenticated/scripts'
+import { Route as AuthenticatedSimuladorIaRouteImport } from './routes/_authenticated/simulador-ia'
 import { Route as AuthenticatedSugestoesRouteImport } from './routes/_authenticated/sugestoes'
 import { Route as AuthenticatedTreinamentosRouteImport } from './routes/_authenticated/treinamentos'
 import { Route as AuthenticatedTutoriaisRouteImport } from './routes/_authenticated/tutoriais'
@@ -114,6 +115,12 @@ const AuthenticatedScriptsRoute = AuthenticatedScriptsRouteImport.update({
   path: '/scripts',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSimuladorIaRoute =
+  AuthenticatedSimuladorIaRouteImport.update({
+    id: '/simulador-ia',
+    path: '/simulador-ia',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSugestoesRoute = AuthenticatedSugestoesRouteImport.update({
   id: '/sugestoes',
   path: '/sugestoes',
@@ -152,6 +159,7 @@ export interface FileRoutesByFullPath {
   '/problemas': typeof AuthenticatedProblemasRoute
   '/ranking': typeof AuthenticatedRankingRoute
   '/scripts': typeof AuthenticatedScriptsRoute
+  '/simulador-ia': typeof AuthenticatedSimuladorIaRoute
   '/sugestoes': typeof AuthenticatedSugestoesRoute
   '/treinamentos': typeof AuthenticatedTreinamentosRoute
   '/tutoriais': typeof AuthenticatedTutoriaisRoute
@@ -172,6 +180,7 @@ export interface FileRoutesByTo {
   '/problemas': typeof AuthenticatedProblemasRoute
   '/ranking': typeof AuthenticatedRankingRoute
   '/scripts': typeof AuthenticatedScriptsRoute
+  '/simulador-ia': typeof AuthenticatedSimuladorIaRoute
   '/sugestoes': typeof AuthenticatedSugestoesRoute
   '/treinamentos': typeof AuthenticatedTreinamentosRoute
   '/tutoriais': typeof AuthenticatedTutoriaisRoute
@@ -195,6 +204,7 @@ export interface FileRoutesById {
   '/_authenticated/problemas': typeof AuthenticatedProblemasRoute
   '/_authenticated/ranking': typeof AuthenticatedRankingRoute
   '/_authenticated/scripts': typeof AuthenticatedScriptsRoute
+  '/_authenticated/simulador-ia': typeof AuthenticatedSimuladorIaRoute
   '/_authenticated/sugestoes': typeof AuthenticatedSugestoesRoute
   '/_authenticated/treinamentos': typeof AuthenticatedTreinamentosRoute
   '/_authenticated/tutoriais': typeof AuthenticatedTutoriaisRoute
@@ -219,6 +229,7 @@ export interface FileRouteTypes {
     | '/problemas'
     | '/ranking'
     | '/scripts'
+    | '/simulador-ia'
     | '/sugestoes'
     | '/treinamentos'
     | '/tutoriais'
@@ -239,6 +250,7 @@ export interface FileRouteTypes {
     | '/problemas'
     | '/ranking'
     | '/scripts'
+    | '/simulador-ia'
     | '/sugestoes'
     | '/treinamentos'
     | '/tutoriais'
@@ -261,6 +273,7 @@ export interface FileRouteTypes {
     | '/_authenticated/problemas'
     | '/_authenticated/ranking'
     | '/_authenticated/scripts'
+    | '/_authenticated/simulador-ia'
     | '/_authenticated/sugestoes'
     | '/_authenticated/treinamentos'
     | '/_authenticated/tutoriais'
@@ -388,6 +401,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedScriptsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/simulador-ia': {
+      id: '/_authenticated/simulador-ia'
+      path: '/simulador-ia'
+      fullPath: '/simulador-ia'
+      preLoaderRoute: typeof AuthenticatedSimuladorIaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/sugestoes': {
       id: '/_authenticated/sugestoes'
       path: '/sugestoes'
@@ -433,6 +453,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProblemasRoute: typeof AuthenticatedProblemasRoute
   AuthenticatedRankingRoute: typeof AuthenticatedRankingRoute
   AuthenticatedScriptsRoute: typeof AuthenticatedScriptsRoute
+  AuthenticatedSimuladorIaRoute: typeof AuthenticatedSimuladorIaRoute
   AuthenticatedSugestoesRoute: typeof AuthenticatedSugestoesRoute
   AuthenticatedTreinamentosRoute: typeof AuthenticatedTreinamentosRoute
   AuthenticatedTutoriaisRoute: typeof AuthenticatedTutoriaisRoute
@@ -453,6 +474,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProblemasRoute: AuthenticatedProblemasRoute,
   AuthenticatedRankingRoute: AuthenticatedRankingRoute,
   AuthenticatedScriptsRoute: AuthenticatedScriptsRoute,
+  AuthenticatedSimuladorIaRoute: AuthenticatedSimuladorIaRoute,
   AuthenticatedSugestoesRoute: AuthenticatedSugestoesRoute,
   AuthenticatedTreinamentosRoute: AuthenticatedTreinamentosRoute,
   AuthenticatedTutoriaisRoute: AuthenticatedTutoriaisRoute,
