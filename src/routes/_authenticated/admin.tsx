@@ -28,7 +28,6 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Database, Pencil, Plus, RefreshCw, Settings, Sparkles, Trash2, UserPlus, Users } from "lucide-react";
 import { MessagesTab } from "@/components/admin/MessagesTab";
-import { FlowsTab } from "@/components/admin/FlowsTab";
 import { TaxonomyTab } from "@/components/admin/TaxonomyTab";
 import { SuggestionsTab } from "@/components/admin/SuggestionsTab";
 import { MenuTab } from "@/components/admin/MenuTab";
@@ -67,8 +66,7 @@ function AdminPage() {
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="users">Usuários</TabsTrigger>
           <TabsTrigger value="knowledge">Base IA</TabsTrigger>
-          <TabsTrigger value="messages">Mensagens</TabsTrigger>
-          <TabsTrigger value="flows">Fluxos</TabsTrigger>
+<TabsTrigger value="messages">Mensagens</TabsTrigger>
           <TabsTrigger value="taxonomy">Categorias</TabsTrigger>
           
           <TabsTrigger value="content">Conteúdo (legado)</TabsTrigger>
@@ -85,7 +83,6 @@ function AdminPage() {
         <TabsContent value="users" className="mt-6"><UsersTab /></TabsContent>
         <TabsContent value="knowledge" className="mt-6"><KnowledgeTab /></TabsContent>
         <TabsContent value="messages" className="mt-6"><MessagesTab /></TabsContent>
-        <TabsContent value="flows" className="mt-6"><FlowsTab /></TabsContent>
         <TabsContent value="taxonomy" className="mt-6"><TaxonomyTab /></TabsContent>
         
         <TabsContent value="content" className="mt-6"><ContentTab /></TabsContent>
