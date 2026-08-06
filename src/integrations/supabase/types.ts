@@ -44,6 +44,42 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_sections: {
+        Row: {
+          created_at: string
+          group_name: string
+          icon: string
+          id: string
+          label: string
+          position: number
+          tab_key: string
+          updated_at: string
+          visible: boolean
+        }
+        Insert: {
+          created_at?: string
+          group_name?: string
+          icon?: string
+          id?: string
+          label: string
+          position?: number
+          tab_key: string
+          updated_at?: string
+          visible?: boolean
+        }
+        Update: {
+          created_at?: string
+          group_name?: string
+          icon?: string
+          id?: string
+          label?: string
+          position?: number
+          tab_key?: string
+          updated_at?: string
+          visible?: boolean
+        }
+        Relationships: []
+      }
       ai_settings: {
         Row: {
           id: number
