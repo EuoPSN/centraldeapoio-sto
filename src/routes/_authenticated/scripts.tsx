@@ -3,16 +3,12 @@ import { useState, useMemo } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { listMessages } from "@/lib/messages.functions";
-import { listFlows } from "@/lib/flows.functions";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/CopyButton";
 import { Markdown } from "@/components/Markdown";
-import { FlowViewer } from "@/components/FlowEditor";
-import { SimulatorRunner } from "@/components/SimulatorRunner";
-import { Search, MessageSquareQuote, Network, Play, GraduationCap } from "lucide-react";
+import { Search, MessageSquareQuote } from "lucide-react";
 import { SkeletonCard } from "@/components/ui/skeleton-card";
 
 export const Route = createFileRoute("/_authenticated/scripts")({
@@ -27,21 +23,11 @@ function Page() {
           <MessageSquareQuote className="h-7 w-7 text-primary" /> Atendimento
         </h1>
         <p className="text-muted-foreground mt-1">
-          Biblioteca de mensagens, fluxos visuais de atendimento e simulador de treinamento.
+          Biblioteca de mensagens prontas para o atendimento.
         </p>
       </header>
 
-      <Tabs defaultValue="biblioteca">
-        <TabsList>
-          <TabsTrigger value="biblioteca" className="gap-2"><MessageSquareQuote className="h-4 w-4" /> Biblioteca de Mensagens</TabsTrigger>
-          <TabsTrigger value="fluxos" className="gap-2"><Network className="h-4 w-4" /> Central de Fluxos</TabsTrigger>
-          <TabsTrigger value="simulador" className="gap-2"><Play className="h-4 w-4" /> Simulador</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="biblioteca" className="mt-6"><Biblioteca /></TabsContent>
-        <TabsContent value="fluxos" className="mt-6"><CentralFluxos /></TabsContent>
-        <TabsContent value="simulador" className="mt-6"><Simulador /></TabsContent>
-      </Tabs>
+      <Biblioteca />
     </div>
   );
 }
@@ -171,78 +157,6 @@ function Biblioteca() {
             {m.internal_note && <p className="text-xs text-muted-foreground italic">📝 {m.internal_note}</p>}
           </Card>
         ))}
-      </div>
-    </div>
-  );
-}
-
-interface FlowRow { id: string; title: string; description: string | null; is_training: boolean; }
-
-function CentralFluxos() {
-  const fnList = useServerFn(listFlows);
-  const flowsQ = useQuery({ queryKey: ["flows", "operacional"], queryFn: () => fnList({ data: { training: false } }) });
-  const [selected, setSelected] = useState<string | null>(null);
-  const flows = (flowsQ.data ?? []) as FlowRow[];
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4">
-      <Card className="p-3 h-fit">
-        <h3 className="font-semibold mb-2 px-2 text-sm">Fluxos disponíveis</h3>
-        {flows.length === 0 && <p className="text-xs text-muted-foreground p-2">Nenhum fluxo cadastrado. Crie no Admin.</p>}
-        <div className="space-y-1">
-          {flows.map((f) => (
-            <button key={f.id} onClick={() => setSelected(f.id)}
-              className={`w-full text-left text-sm px-3 py-2 rounded-md transition ${selected === f.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"}`}>
-              {f.title}
-            </button>
-          ))}
-        </div>
-      </Card>
-
-      <div>
-        {!selected && <Card className="p-10 text-center text-muted-foreground">Selecione um fluxo para visualizá-lo.</Card>}
-        {selected && (
-          <Card className="p-2">
-            <FlowViewer flowId={selected} />
-            <p className="text-xs text-muted-foreground p-2">
-              👁️ Modo leitura. Para editar este fluxo, vá em Admin → Fluxos.
-            </p>
-          </Card>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function Simulador() {
-  const fnList = useServerFn(listFlows);
-  const flowsQ = useQuery({ queryKey: ["flows", "training"], queryFn: () => fnList({ data: { training: true } }) });
-  const flows = (flowsQ.data ?? []) as FlowRow[];
-  const [selectedFlow, setSelectedFlow] = useState<string | null>(null);
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4">
-      <Card className="p-3 h-fit">
-        <h3 className="font-semibold mb-2 px-2 text-sm flex items-center gap-2">
-          <GraduationCap className="h-4 w-4 text-primary" /> Cenários
-        </h3>
-        {flows.length === 0 && (
-          <p className="text-xs text-muted-foreground p-2">
-            Nenhum cenário cadastrado. No Admin → Fluxos, marque um fluxo como <strong>"Treinamento"</strong>.
-          </p>
-        )}
-        <div className="space-y-1">
-          {flows.map((f) => (
-            <button key={f.id} onClick={() => setSelectedFlow(f.id)}
-              className={`w-full text-left text-sm px-3 py-2 rounded-md transition ${selectedFlow === f.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"}`}>
-              {f.title}
-            </button>
-          ))}
-        </div>
-      </Card>
-      <div>
-        {!selectedFlow && <Card className="p-10 text-center text-muted-foreground">Selecione um cenário para começar o treinamento.</Card>}
-        {selectedFlow && <SimulatorRunner flowId={selectedFlow} />}
       </div>
     </div>
   );
