@@ -26,6 +26,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Database, LayoutDashboard, Pencil, Plus, RefreshCw, Settings, Sparkles, Trash2, UserPlus, Users } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { simulatorChat } from "@/lib/simulator.chat.functions";
 import { MessagesTab } from "@/components/admin/MessagesTab";
 import { TaxonomyTab } from "@/components/admin/TaxonomyTab";
 import { SuggestionsTab } from "@/components/admin/SuggestionsTab";
@@ -497,6 +499,69 @@ function PricingTab() {
 
   const [edit, setEdit] = useState<null | { id?: string; category: string; specialty: string; cartao_price: string; particular_price: string; notes: string }>(null);
 
+  // ---- Preenchimento automático via IA ----
+  type AiPricingItem = { category: string; specialty: string; cartao_price: number | null; particular_price: number | null; notes: string | null; selected: boolean };
+  const genAI = useServerFn(simulatorChat);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiInput, setAiInput] = useState("");
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiImporting, setAiImporting] = useState(false);
+  const [aiPreview, setAiPreview] = useState<AiPricingItem[]>([]);
+
+  const generateFromAI = async () => {
+    if (!aiInput.trim()) return;
+    setAiGenerating(true);
+    try {
+      const prompt = `Você organiza tabelas de preços de um cartão de descontos em saúde (Cartão de Todos) a partir de texto livre enviado por um administrador.
+Extraia cada especialidade ou procedimento mencionado no texto e devolva um array JSON, um objeto por item, no formato exato:
+[{"category": "...", "specialty": "...", "cartao_price": numero ou null, "particular_price": numero ou null, "notes": "texto curto ou null"}]
+
+Regras:
+- "category" agrupa itens parecidos (ex: "Consultas", "Exames", "Procedimentos", "Odontologia"). Use categorias curtas e consistentes entre os itens.
+- "specialty" é o nome específico da especialidade ou procedimento (ex: "Cardiologista", "Hemograma completo").
+- "cartao_price" e "particular_price" são números em reais, com ponto como separador decimal (ex: 45.90), sem o símbolo R$. Se um valor não aparecer no texto, use null.
+- "notes" é opcional: use apenas se houver informação extra relevante sobre como a especialidade/procedimento funciona (ex: "necessário agendamento com 48h de antecedência"). Caso não haja nada relevante, use null.
+- Responda APENAS com o array JSON, sem markdown, sem nenhum texto fora do JSON.`;
+      const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: aiInput }], model: "google/gemini-2.5-flash" } });
+      const clean = content.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(clean);
+      const items: AiPricingItem[] = (Array.isArray(parsed) ? parsed : [])
+        .map((it: any) => ({
+          category: it.category || "Outros",
+          specialty: it.specialty || "",
+          cartao_price: typeof it.cartao_price === "number" ? it.cartao_price : null,
+          particular_price: typeof it.particular_price === "number" ? it.particular_price : null,
+          notes: it.notes || null,
+          selected: true,
+        }))
+        .filter((it: AiPricingItem) => it.specialty);
+      if (items.length === 0) { toast.error("A IA não conseguiu identificar nenhum item no texto enviado."); return; }
+      setAiPreview(items);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao gerar com IA.");
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
+  const importSelected = async () => {
+    const toImport = aiPreview.filter((i) => i.selected);
+    if (toImport.length === 0) return;
+    setAiImporting(true);
+    try {
+      for (const item of toImport) {
+        await upsert({ data: { category: item.category, specialty: item.specialty, cartao_price: item.cartao_price, particular_price: item.particular_price, notes: item.notes, position: 0 } });
+      }
+      toast.success(`${toImport.length} item(ns) importado(s)!`);
+      qc.invalidateQueries({ queryKey: ["pricing"] });
+      setAiOpen(false); setAiInput(""); setAiPreview([]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao importar itens.");
+    } finally {
+      setAiImporting(false);
+    }
+  };
+
   const upsertMut = useMutation({
     mutationFn: () => upsert({
       data: {
@@ -519,11 +584,16 @@ function PricingTab() {
 
   return (
     <Card className="overflow-hidden">
-      <div className="flex justify-between items-center p-4 border-b border-border">
+<div className="flex justify-between items-center p-4 border-b border-border">
         <h3 className="font-semibold">Itens de Preço ({q.data?.length ?? 0})</h3>
-        <Button size="sm" className="gap-2" onClick={() => setEdit({ category: "Consultas", specialty: "", cartao_price: "", particular_price: "", notes: "" })}>
-          <Plus className="h-4 w-4" /> Novo
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" className="gap-2" onClick={() => setAiOpen(true)}>
+            <Sparkles className="h-4 w-4" /> Preencher com IA
+          </Button>
+          <Button size="sm" className="gap-2" onClick={() => setEdit({ category: "Consultas", specialty: "", cartao_price: "", particular_price: "", notes: "" })}>
+            <Plus className="h-4 w-4" /> Novo
+          </Button>
+        </div>
       </div>
       <Table>
         <TableHeader>
@@ -565,7 +635,71 @@ function PricingTab() {
               <div><Label>Observações</Label><Input value={edit.notes} onChange={(e) => setEdit({ ...edit, notes: e.target.value })} /></div>
             </div>
           )}
-          <DialogFooter><Button onClick={() => upsertMut.mutate()} disabled={upsertMut.isPending}>Salvar</Button></DialogFooter>
+<DialogFooter><Button onClick={() => upsertMut.mutate()} disabled={upsertMut.isPending}>Salvar</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={aiOpen} onOpenChange={(v) => { setAiOpen(v); if (!v) { setAiPreview([]); setAiInput(""); } }}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Preencher tabela de preços com IA</DialogTitle></DialogHeader>
+
+          {aiPreview.length === 0 ? (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Cole abaixo o conteúdo com as especialidades, valores (Cartão de Todos e Particular) e qualquer observação extra. Pode colar de forma livre, como está no seu material — a IA organiza.
+              </p>
+              <Textarea rows={12} value={aiInput} onChange={(e) => setAiInput(e.target.value)}
+                placeholder={"Ex:\nCardiologia - consulta - R$ 80 pelo cartão, R$ 180 particular\nExame de sangue completo - R$ 45 cartão / R$ 90 particular - precisa jejum de 8h\n..."} />
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Confira os itens abaixo antes de importar. Desmarque o que não estiver certo — você pode ajustar manualmente depois na lista.
+              </p>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-8"></TableHead>
+                    <TableHead>Categoria</TableHead>
+                    <TableHead>Especialidade</TableHead>
+                    <TableHead className="text-right">CDT</TableHead>
+                    <TableHead className="text-right">Particular</TableHead>
+                    <TableHead>Observações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {aiPreview.map((item, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell>
+                        <Checkbox checked={item.selected}
+                          onCheckedChange={(v) => setAiPreview((prev) => prev.map((p, i) => i === idx ? { ...p, selected: !!v } : p))} />
+                      </TableCell>
+                      <TableCell><Badge variant="secondary">{item.category}</Badge></TableCell>
+                      <TableCell className="font-medium">{item.specialty}</TableCell>
+                      <TableCell className="text-right">{item.cartao_price != null ? `R$ ${item.cartao_price.toFixed(2)}` : "—"}</TableCell>
+                      <TableCell className="text-right">{item.particular_price != null ? `R$ ${item.particular_price.toFixed(2)}` : "—"}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{item.notes || "—"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+
+          <DialogFooter>
+            {aiPreview.length === 0 ? (
+              <Button onClick={generateFromAI} disabled={aiGenerating || !aiInput.trim()} className="gap-2">
+                <Sparkles className="h-4 w-4" /> {aiGenerating ? "Gerando..." : "Gerar com IA"}
+              </Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => setAiPreview([])}>Voltar</Button>
+                <Button onClick={importSelected} disabled={aiImporting || aiPreview.every((p) => !p.selected)}>
+                  {aiImporting ? "Importando..." : `Importar ${aiPreview.filter((p) => p.selected).length} item(ns)`}
+                </Button>
+              </>
+            )}
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </Card>
