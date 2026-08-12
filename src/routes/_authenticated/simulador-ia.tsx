@@ -6,7 +6,8 @@ import { listClientProfilesForTraining } from "@/lib/clientprofiles.functions";
 import { listCategories } from "@/lib/taxonomy.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { SimuladorIA } from "@/components/SimuladorIA";
+import { SimuladorIA, DIFFICULTY_COLORS, DIFFICULTY_LABELS } from "@/components/SimuladorIA";
+import { Badge } from "@/components/ui/badge";
 import { Bot, GraduationCap } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/simulador-ia")({
