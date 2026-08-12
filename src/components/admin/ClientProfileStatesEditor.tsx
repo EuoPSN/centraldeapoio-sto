@@ -8,6 +8,8 @@ import {
 } from "@/lib/clientprofilestates.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { simulatorChat } from "@/lib/simulator.chat.functions";
+import { listMessages } from "@/lib/messages.functions";
+import { listContent } from "@/lib/content.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,17 +57,17 @@ const DEFAULT_FUNNEL = [
   {
     name: "Desconfiado",
     example_lines: "\"Nunca ouvi falar disso. Como funciona?\"",
-    advance_criteria: "O atendente explicou claramente o que é o Cartão de Todos e como funciona o desconto.",
+    advance_criteria: "O atendente explicou claramente o que é o Cartão de Todos e como funciona o benefício.",
   },
   {
     name: "Interessado",
-    example_lines: "\"Então eu continuo pagando a Cemig normalmente?\" / \"Tem algum contrato?\"",
-    advance_criteria: "O atendente explicou corretamente como funciona o pagamento e as condições contratuais.",
+    example_lines: "\"Isso vale pra minha família toda?\" / \"Tem algum contrato?\"",
+    advance_criteria: "O atendente esclareceu a dúvida específica do cliente e as condições contratuais.",
   },
   {
     name: "Convencido",
     example_lines: "\"E o que vocês precisam de mim?\" / \"Tudo bem, vou enviar.\"",
-    advance_criteria: "O atendente pediu a foto da conta de energia e um documento com CPF.",
+    advance_criteria: "O atendente pediu os documentos necessários (ex: CPF) para prosseguir com o cadastro.",
   },
   {
     name: "Cadastro",
@@ -74,7 +76,7 @@ const DEFAULT_FUNNEL = [
   },
   {
     name: "Fechamento",
-    example_lines: "\"Quando começo a receber o desconto?\" / \"Como acompanho isso?\"",
+    example_lines: "\"Quando começa a valer?\" / \"Como acompanho isso?\"",
     advance_criteria: "O atendente concluiu o cadastro e explicou os próximos passos.",
   },
 ];
@@ -107,6 +109,11 @@ export function ClientProfileStatesEditor({
   const queryKey = ["profile_states_admin", profileId];
   const q = useQuery({ queryKey, queryFn: () => listFn({ data: { profile_id: profileId } }) });
   const items = (q.data ?? []) as JourneyState[];
+
+  const listMsgFn = useServerFn(listMessages);
+  const messagesQ = useQuery({ queryKey: ["messages", "for-ai-context"], queryFn: () => listMsgFn({}) });
+  const listContentFn = useServerFn(listContent);
+  const knowledgeQ = useQuery({ queryKey: ["content", "conhecimento", "for-ai-context"], queryFn: () => listContentFn({ data: { section: "conhecimento" } }) });
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<typeof EMPTY_STATE>({ ...EMPTY_STATE });
@@ -217,12 +224,30 @@ export function ClientProfileStatesEditor({
 
   const genAI = useServerFn(simulatorChat);
   const [generating, setGenerating] = useState(false);
+  const [genJornadaOpen, setGenJornadaOpen] = useState(false);
+  const [referenciaManual, setReferenciaManual] = useState("");
+
+  // Monta uma amostra do conteúdo real (Biblioteca de Mensagens + Conhecimento Geral)
+  // para a IA usar como base, em vez de inventar temas/produtos.
+  const montarBaseConhecimento = () => {
+    const msgs = (messagesQ.data ?? []) as any[];
+    const conhecimento = (knowledgeQ.data ?? []) as any[];
+    const partesMsgs = msgs.slice(0, 12).map((m) => `- [${m.category?.name || "Geral"}] ${m.title}: ${String(m.content || "").slice(0, 240)}`);
+    const partesConhecimento = conhecimento.slice(0, 8).map((c) => `- ${c.title}: ${String(c.content || "").slice(0, 240)}`);
+    let base = "";
+    if (partesMsgs.length > 0) base += `Trechos reais da Biblioteca de Mensagens (script aprovado da empresa):\n${partesMsgs.join("\n")}\n\n`;
+    if (partesConhecimento.length > 0) base += `Trechos reais do Conhecimento Geral:\n${partesConhecimento.join("\n")}\n\n`;
+    return base;
+  };
+
   const generateWithAI = async () => {
     setGenerating(true);
     try {
-      const prompt = `Você é um especialista em criar jornadas de atendimento para simulações de treinamento de vendas do "Cartão de Todos" (produto que dá desconto na conta de energia).
+      const baseConhecimento = montarBaseConhecimento();
+      const prompt = `Você é um especialista em criar jornadas de atendimento para simulações de treinamento de vendas do "Cartão de Todos" (cartão de descontos em diversos serviços — consultas, exames, dentista, plataforma de cursos Refuturiza, entre outros benefícios, cada um com suas próprias regras).
 
-Baseado no perfil de cliente abaixo, crie uma jornada única de 4 a 6 estados que representam a evolução desse cliente durante o atendimento — do jeito que combina com a personalidade e as objeções DELE especificamente, não um funil genérico.
+${baseConhecimento ? `Use o conteúdo real abaixo (script aprovado da empresa) como base para as dúvidas, falas e critérios — não invente temas fora dele:\n${baseConhecimento}` : ""}${referenciaManual ? `Conteúdo de referência adicional informado pelo administrador (priorize isto):\n${referenciaManual}\n\n` : ""}
+Baseado no perfil de cliente abaixo, crie uma jornada única de 4 a 6 estados que representam a evolução desse cliente durante o atendimento — do jeito que combina com a personalidade e as objeções DELE especificamente, não um funil genérico. A dúvida principal do cliente pode ser sobre QUALQUER parte do conteúdo acima (consultas, exames, dentista, Refuturiza, valores, etc.) — não fixe sempre no mesmo assunto.
 
 Perfil do cliente:
 Nome do perfil: ${profileTitulo || "-"}
@@ -233,11 +258,11 @@ Comportamentos: ${profileBehaviors || "-"}
 Dificuldade: ${profileDifficulty || "-"}
 
 Regras obrigatórias:
-- O primeiro estado reflete a objeção/desconfiança inicial típica desse perfil.
-- Um dos estados do meio deve ser exatamente o momento em que o cliente concorda em enviar a foto da conta de energia e um documento com CPF — esse estado deve se chamar "Documentos" e ter "sendsDocument": true.
+- O primeiro estado reflete a objeção/desconfiança inicial típica desse perfil, ligada a um tema específico do conteúdo de referência (não genérico).
+- Um dos estados do meio deve ser exatamente o momento em que o cliente concorda em enviar um documento (ex: CPF) para prosseguir com o cadastro — esse estado deve se chamar "Documentos" e ter "sendsDocument": true.
 - O último estado é o fechamento da simulação.
 - "advance_criteria" deve ser uma frase objetiva e checável (uma ação concreta que o atendente precisa fazer), nunca vaga.
-- "example_lines" deve ter 1 a 2 falas de exemplo entre aspas, no tom da personalidade descrita.
+- "example_lines" deve ter 1 a 2 falas de exemplo entre aspas, no tom da personalidade descrita, mencionando o tema específico da dúvida.
 
 Responda APENAS com JSON válido, sem markdown e sem texto fora do JSON, neste formato exato:
 {"estados": [{"name": "...", "example_lines": "...", "advance_criteria": "...", "sendsDocument": false}]}`;
@@ -261,6 +286,8 @@ Responda APENAS com JSON válido, sem markdown e sem texto fora do JSON, neste f
         });
       }
       qc.invalidateQueries({ queryKey });
+      setGenJornadaOpen(false);
+      setReferenciaManual("");
       toast.success(`Jornada com ${estados.length} etapas gerada! Falta só anexar a foto do documento na etapa "Documentos".`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao gerar jornada com IA.");
@@ -323,7 +350,7 @@ Responda APENAS com JSON válido, sem markdown e sem texto fora do JSON, neste f
             <Button size="sm" variant="secondary" className="gap-2" onClick={seedDefaultFunnel}>
               <Sparkles className="h-4 w-4" /> Usar funil padrão (5 etapas)
             </Button>
-            <Button size="sm" variant="secondary" className="gap-2" onClick={generateWithAI} disabled={generating}>
+            <Button size="sm" variant="secondary" className="gap-2" onClick={() => setGenJornadaOpen(true)} disabled={generating}>
               <Sparkles className="h-4 w-4" /> {generating ? "Gerando..." : "Gerar jornada com IA"}
             </Button>
           </>
@@ -364,6 +391,28 @@ Responda APENAS com JSON válido, sem markdown e sem texto fora do JSON, neste f
           </Card>
         ))}
       </div>
+
+      <Dialog open={genJornadaOpen} onOpenChange={setGenJornadaOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Gerar jornada com IA</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Por padrão, a IA já usa uma amostra real da Biblioteca de Mensagens e do Conhecimento Geral como base, para não inventar temas. Se quiser, você pode reforçar ou direcionar o conteúdo abaixo (opcional).
+            </p>
+            <div>
+              <Label>Conteúdo de referência (opcional)</Label>
+              <Textarea rows={5} value={referenciaManual} onChange={(e) => setReferenciaManual(e.target.value)}
+                placeholder='Ex: "Esse cliente tem dúvida principalmente sobre a Refuturiza e os cursos" ou cole um trecho de atendimento real.' />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setGenJornadaOpen(false)}>Cancelar</Button>
+            <Button onClick={generateWithAI} disabled={generating}>
+              {generating ? "Gerando..." : "Gerar jornada"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
