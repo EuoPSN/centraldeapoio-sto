@@ -921,6 +921,7 @@ export type Database = {
           id: string
           internal_note: string | null
           position: number
+          shortcut: string | null
           subcategory_id: string | null
           tags: string[]
           title: string
@@ -934,6 +935,7 @@ export type Database = {
           id?: string
           internal_note?: string | null
           position?: number
+          shortcut?: string | null
           subcategory_id?: string | null
           tags?: string[]
           title: string
@@ -947,6 +949,7 @@ export type Database = {
           id?: string
           internal_note?: string | null
           position?: number
+          shortcut?: string | null
           subcategory_id?: string | null
           tags?: string[]
           title?: string

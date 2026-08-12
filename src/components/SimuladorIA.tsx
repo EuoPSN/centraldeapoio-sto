@@ -75,11 +75,11 @@ function composeOverlayImage(
   });
 }
 
-const DIFFICULTY_COLORS: Record<string, string> = {
+export const DIFFICULTY_COLORS: Record<string, string> = {
   facil: "bg-green-100 text-green-800", medio: "bg-yellow-100 text-yellow-800",
   dificil: "bg-orange-100 text-orange-800", especialista: "bg-red-100 text-red-800"
 };
-const DIFFICULTY_LABELS: Record<string, string> = {
+export const DIFFICULTY_LABELS: Record<string, string> = {
   facil: "Fácil", medio: "Médio", dificil: "Difícil", especialista: "Especialista"
 };
 
