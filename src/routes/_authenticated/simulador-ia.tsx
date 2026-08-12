@@ -81,7 +81,14 @@ function Page() {
                 {profilesFiltrados.map((p: any) => (
                   <button key={p.id} onClick={() => setSelectedProfile(p)}
                     className="w-full text-left text-sm px-3 py-2 rounded-md hover:bg-muted transition">
-                    {p.name}
+                    <span className="flex items-center gap-2 flex-wrap">
+                      <span>{p.name}</span>
+                      {p.difficulty && DIFFICULTY_LABELS[p.difficulty] && (
+                        <Badge className={`text-[10px] ${DIFFICULTY_COLORS[p.difficulty]}`}>
+                          {DIFFICULTY_LABELS[p.difficulty]}
+                        </Badge>
+                      )}
+                    </span>
                     {p.category?.name && (
                       <span className="block text-[10px] text-muted-foreground">{p.category.name}</span>
                     )}
