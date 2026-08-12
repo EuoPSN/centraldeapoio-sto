@@ -46,15 +46,21 @@ const DependenteInput = z.object({
   situacao: z.string().optional().nullable(),
 });
 
+// Aceita string ou lista de strings (converte lista em texto multilinha)
+const TextOrList = z.preprocess(
+  (v) => (Array.isArray(v) ? v.filter(Boolean).join("\n") : v ?? ""),
+  z.string(),
+).default("");
+
 const ClientProfileInput = z.object({
   id: z.string().uuid().optional(),
   category_id: z.string().uuid().nullable().optional(),
   name: z.string().min(1).max(200),
-  personality: z.string().default(""),
+  personality: TextOrList,
   difficulty: z.string().min(1).max(50),
-  objectives: z.string().default(""),
-  objections: z.string().default(""),
-  behaviors: z.string().default(""),
+  objectives: TextOrList,
+  objections: TextOrList,
+  behaviors: TextOrList,
   cliente_nome: z.string().optional().nullable(),
   cliente_cpf: z.string().optional().nullable(),
   cliente_regiao: z.string().optional().nullable(),
