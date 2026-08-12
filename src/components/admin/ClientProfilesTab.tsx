@@ -30,7 +30,12 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   especialista: "bg-red-100 text-red-800",
 };
 
-const EMPTY = { name: "", category_id: "", personality: "", difficulty: "medio", objectives: "", objections: "", behaviors: "", cliente_nome: "", cliente_cpf: "", cliente_regiao: "", cliente_genero: "masculino" };
+const EMPTY = {
+  name: "", category_id: "", personality: "", difficulty: "medio", objectives: "", objections: "", behaviors: "",
+  cliente_nome: "", cliente_cpf: "", cliente_regiao: "", cliente_genero: "masculino", cliente_telefone: "",
+  endereco_rua: "", endereco_numero: "", endereco_complemento: "", endereco_bairro: "", endereco_cidade: "", endereco_estado: "", endereco_cep: "",
+  dependentes: [] as { nome: string; cpf: string; nascimento: string; situacao: string }[],
+};
 
 // Padrões reais extraídos de atendimentos finalizados, por subcategoria.
 // Atualize este texto conforme mais atendimentos forem analisados.
@@ -54,8 +59,8 @@ export function ClientProfilesTab() {
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["client_profiles"], queryFn: () => listFn() });
   const catQ = useQuery({ queryKey: ["cats", "client_profile"], queryFn: () => catFn({ data: { scope: "client_profile" } }) });
-  const profiles = (q.data ?? []) as any[];
-  const categories = (catQ.data ?? []) as { id: string; name: string }[];
+const profiles = (q.data ?? []) as any[];
+  const categories = (catQ.data ?? []) as { id: string; name: string; slug?: string }[];
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<any>({ ...EMPTY });
   const [dragId, setDragId] = useState<string | null>(null);
@@ -144,8 +149,17 @@ Crie um perfil de cliente fictício coerente com o padrão real acima E com a de
   });
 
   const openNew = () => { setForm({ ...EMPTY }); setOpen(true); };
-  const openEdit = (p: any) => { setForm({ ...p, category_id: p.category_id ?? "" }); setOpen(true); };
+const openEdit = (p: any) => { setForm({ ...p, category_id: p.category_id ?? "", dependentes: p.dependentes ?? [] }); setOpen(true); };
   const set = (k: string, v: string) => setForm((f: any) => ({ ...f, [k]: v }));
+
+  const selectedCategory = categories.find(c => c.id === form.category_id);
+  const isCadastroExistente = !!selectedCategory && selectedCategory.slug !== "filiacao";
+
+  const addDependente = () => setForm((f: any) => ({ ...f, dependentes: [...(f.dependentes ?? []), { nome: "", cpf: "", nascimento: "", situacao: "ativo" }] }));
+  const updateDependente = (idx: number, key: string, value: string) =>
+    setForm((f: any) => ({ ...f, dependentes: (f.dependentes ?? []).map((d: any, i: number) => (i === idx ? { ...d, [key]: value } : d)) }));
+  const removeDependente = (idx: number) =>
+    setForm((f: any) => ({ ...f, dependentes: (f.dependentes ?? []).filter((_: any, i: number) => i !== idx) }));
 
   const columns: { id: string | null; name: string }[] = [
     ...categories.map(c => ({ id: c.id as string | null, name: c.name })),
@@ -315,7 +329,7 @@ Crie um perfil de cliente fictício coerente com o padrão real acima E com a de
                     onChange={e => set("cliente_regiao", e.target.value)}
                     placeholder="Ex: Belo Horizonte - MG" />
                 </div>
-                <div>
+<div>
                   <Label>Gênero do avatar</Label>
                   <Select value={form.cliente_genero ?? "masculino"}
                     onValueChange={v => set("cliente_genero", v)}>
@@ -327,6 +341,70 @@ Crie um perfil de cliente fictício coerente com o padrão real acima E com a de
                   </Select>
                 </div>
               </div>
+
+              {isCadastroExistente && (
+                <div className="space-y-3 pt-2 border-t">
+                  <div>
+                    <p className="text-sm font-medium">Cadastro existente (Refiliação/Migração/EDT)</p>
+                    <p className="text-xs text-muted-foreground">
+                      Esse cliente já tem cadastro na empresa. A IA vai usar esses dados pra <strong>confirmar</strong> o que o atendente disser — e corrigir quando estiver errado, em vez de simplesmente concordar com tudo.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label>Telefone</Label>
+                      <Input value={form.cliente_telefone ?? ""} onChange={e => set("cliente_telefone", e.target.value)} placeholder="Ex: (31) 99999-0000" />
+                    </div>
+                    <div>
+                      <Label>CEP</Label>
+                      <Input value={form.endereco_cep ?? ""} onChange={e => set("endereco_cep", e.target.value)} placeholder="Ex: 33800-000" />
+                    </div>
+                    <div>
+                      <Label>Rua</Label>
+                      <Input value={form.endereco_rua ?? ""} onChange={e => set("endereco_rua", e.target.value)} placeholder="Ex: Rua José Pedro Pereira" />
+                    </div>
+                    <div>
+                      <Label>Número</Label>
+                      <Input value={form.endereco_numero ?? ""} onChange={e => set("endereco_numero", e.target.value)} placeholder="Ex: 206" />
+                    </div>
+                    <div>
+                      <Label>Complemento</Label>
+                      <Input value={form.endereco_complemento ?? ""} onChange={e => set("endereco_complemento", e.target.value)} placeholder="Ex: Apto 101" />
+                    </div>
+                    <div>
+                      <Label>Bairro</Label>
+                      <Input value={form.endereco_bairro ?? ""} onChange={e => set("endereco_bairro", e.target.value)} placeholder="Ex: São Pedro" />
+                    </div>
+                    <div>
+                      <Label>Cidade</Label>
+                      <Input value={form.endereco_cidade ?? ""} onChange={e => set("endereco_cidade", e.target.value)} placeholder="Ex: Ribeirão das Neves" />
+                    </div>
+                    <div>
+                      <Label>Estado</Label>
+                      <Input value={form.endereco_estado ?? ""} onChange={e => set("endereco_estado", e.target.value)} placeholder="Ex: MG" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Dependentes cadastrados</Label>
+                      <Button type="button" size="sm" variant="outline" onClick={addDependente}>+ Adicionar dependente</Button>
+                    </div>
+                    {(form.dependentes ?? []).length === 0 && (
+                      <p className="text-xs text-muted-foreground">Nenhum dependente cadastrado neste perfil.</p>
+                    )}
+                    {(form.dependentes ?? []).map((d: any, idx: number) => (
+                      <div key={idx} className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2 items-end border rounded-md p-2">
+                        <div><Label className="text-xs">Nome</Label><Input value={d.nome ?? ""} onChange={e => updateDependente(idx, "nome", e.target.value)} placeholder="Nome" /></div>
+                        <div><Label className="text-xs">CPF</Label><Input value={d.cpf ?? ""} onChange={e => updateDependente(idx, "cpf", e.target.value)} placeholder="CPF" /></div>
+                        <div><Label className="text-xs">Nascimento</Label><Input value={d.nascimento ?? ""} onChange={e => updateDependente(idx, "nascimento", e.target.value)} placeholder="dd/mm/aaaa" /></div>
+                        <div><Label className="text-xs">Situação</Label><Input value={d.situacao ?? ""} onChange={e => updateDependente(idx, "situacao", e.target.value)} placeholder="ativo" /></div>
+                        <Button type="button" size="icon" variant="ghost" className="text-destructive" onClick={() => removeDependente(idx)}><Trash2 className="h-4 w-4" /></Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="jornada" className="pt-4">
