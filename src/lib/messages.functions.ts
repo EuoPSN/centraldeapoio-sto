@@ -24,6 +24,7 @@ const Input = z.object({
   internal_note: z.string().nullable().optional(),
   tags: z.array(z.string()).default([]),
   position: z.number().int().default(0),
+  shortcut: z.string().max(40).nullable().optional(),
 });
 
 async function admin(ctx: { supabase: unknown; userId: string }) {
@@ -35,9 +36,11 @@ async function admin(ctx: { supabase: unknown; userId: string }) {
 export const upsertMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => Input.parse(d))
-  .handler(async ({ data, context }) => {
+.handler(async ({ data, context }) => {
     await admin(context);
-    const row = { ...data, created_by: context.userId };
+    // normaliza o atalho: sem barra, sem espaço, guardado como digitado (comparação é case-insensitive no simulador)
+    const cleanShortcut = data.shortcut ? data.shortcut.trim().replace(/^\/+/, "").replace(/\s+/g, "") : "";
+    const row = { ...data, shortcut: cleanShortcut || null, created_by: context.userId };
     const { data: r, error } = data.id
       ? await context.supabase.from("messages").update(row).eq("id", data.id).select().single()
       : await context.supabase.from("messages").insert(row).select().single();
