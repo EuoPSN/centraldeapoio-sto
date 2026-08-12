@@ -292,7 +292,7 @@ const sendMut = useMutation({
         if (proximo?.attachment_url) {
           let imagemFinal = proximo.attachment_url;
           if (proximo.overlay_enabled) {
-            imagemFinal = await composeOverlayImage(proximo.attachment_url, profile.cliente_nome, profile.cliente_cpf, {
+            imagemFinal = await composeOverlayImage(proximo.attachment_url, profile.cliente_nome ?? undefined, profile.cliente_cpf ?? undefined, {
               nomeX: proximo.overlay_nome_x, nomeY: proximo.overlay_nome_y,
               cpfX: proximo.overlay_cpf_x, cpfY: proximo.overlay_cpf_y,
             });
@@ -448,7 +448,7 @@ O JSON deve ter exatamente estes campos:
     {/* Card do cliente */}
     <Card className="p-4 space-y-4 sticky top-4">
       <div className="flex flex-col items-center text-center gap-2">
-        <ClienteAvatar genero={profile.cliente_genero} size={80} />
+        <ClienteAvatar genero={profile.cliente_genero ?? undefined} size={80} />
         <div>
           <p className="font-semibold text-sm">{profile.cliente_nome || profile.name}</p>
           <Badge className={`text-xs mt-1 ${DIFFICULTY_COLORS[profile.difficulty]}`}>{DIFFICULTY_LABELS[profile.difficulty]}</Badge>
