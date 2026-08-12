@@ -192,7 +192,7 @@ Se o atendente errar muito, fique mais resistente.`;
 Você pode responder com 1, 2 ou até 3 mensagens curtas separadas, exatamente como faria no WhatsApp — quebre em mensagens naturais usando o separador ||BREAK|| entre elas. Exemplo: 'Oi tudo bem?' ||BREAK|| 'Me fala mais sobre esse cartão' ||BREAK|| 'Quanto custa?'. Use múltiplas mensagens apenas quando for natural — não force.`;
     }
 
-    const atual = states[idx];
+const atual = states[idx];
     const proximo = states[idx + 1];
     return `${base}
 
@@ -201,7 +201,9 @@ ${atual.description ? `Descrição deste estado: ${atual.description}` : ""}
 ${atual.example_lines ? `Exemplos de falas típicas deste estado: ${atual.example_lines}` : ""}
 Critério para você avançar para o próximo estado${proximo ? ` ("${proximo.name}")` : ""}: ${atual.advance_criteria || "a seu critério, quando fizer sentido na conversa"}.
 
-Avalie se a ÚLTIMA mensagem do atendente atende esse critério. Responda SEMPRE em JSON válido, sem markdown e sem nenhum texto fora do JSON, neste formato exato:
+REGRA ANTI-ENROLAÇÃO (obrigatória): se o critério de avanço envolve o atendente pedir dados seus (nome completo, CPF, endereço, e-mail etc.), você NÃO pode dizer "já te mando", "um minuto" ou algo do tipo e já marcar avanço. Você é obrigado a efetivamente informar esses dados${dadosFicticios ? `, usando os valores fictícios fornecidos (${dadosFicticios})` : ""}, na mesma mensagem ou, no máximo, na resposta seguinte — nunca deixando só a promessa. Só marque "avanca": true quando o dado pedido já tiver aparecido de fato em alguma das SUAS mensagens nesta conversa, nunca com base apenas numa promessa de enviar depois. Se ainda não enviou, envie agora (ex: "opa, deixa eu ver aqui" ||BREAK|| "CPF é 123.456.789-00") em vez de adiar.
+
+Avalie se a ÚLTIMA mensagem do atendente atende esse critério, considerando também se os dados pedidos já foram realmente entregues na conversa (não apenas prometidos). Responda SEMPRE em JSON válido, sem markdown e sem nenhum texto fora do JSON, neste formato exato:
 {"avanca": true ou false, "mensagens": ["fala curta 1", "fala curta 2"]}
 "mensagens" deve ter de 1 a 3 falas curtas e naturais (estilo WhatsApp). Se "avanca" for true, a fala já deve refletir a transição de personagem para o novo estado.`;
   };
