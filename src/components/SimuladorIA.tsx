@@ -19,6 +19,28 @@ import { WhatsAppText } from "@/components/WhatsAppText";
 
 
 interface Profile {
+  id: string;
+  name: string;
+  personality: string;
+  objectives: string;
+  objections: string;
+  behaviors: string;
+  difficulty: string;
+  category?: { slug?: string | null; name?: string | null } | null;
+  cliente_nome?: string | null;
+  cliente_cpf?: string | null;
+  cliente_telefone?: string | null;
+  cliente_regiao?: string | null;
+  cliente_genero?: string | null;
+  endereco_rua?: string | null;
+  endereco_numero?: string | null;
+  endereco_complemento?: string | null;
+  endereco_bairro?: string | null;
+  endereco_cidade?: string | null;
+  endereco_estado?: string | null;
+  endereco_cep?: string | null;
+  dependentes?: { nome?: string; cpf?: string; nascimento?: string; situacao?: string }[] | null;
+}
 
 interface ClientProfileState {
   id: string; profile_id: string; position: number; name: string;
