@@ -325,8 +325,17 @@ export type Database = {
           cliente_genero: string | null
           cliente_nome: string | null
           cliente_regiao: string | null
+          cliente_telefone: string | null
           created_at: string
+          dependentes: Json
           difficulty: string | null
+          endereco_bairro: string | null
+          endereco_cep: string | null
+          endereco_cidade: string | null
+          endereco_complemento: string | null
+          endereco_estado: string | null
+          endereco_numero: string | null
+          endereco_rua: string | null
           id: string
           name: string
           objections: string | null
@@ -341,8 +350,17 @@ export type Database = {
           cliente_genero?: string | null
           cliente_nome?: string | null
           cliente_regiao?: string | null
+          cliente_telefone?: string | null
           created_at?: string
+          dependentes?: Json
           difficulty?: string | null
+          endereco_bairro?: string | null
+          endereco_cep?: string | null
+          endereco_cidade?: string | null
+          endereco_complemento?: string | null
+          endereco_estado?: string | null
+          endereco_numero?: string | null
+          endereco_rua?: string | null
           id?: string
           name: string
           objections?: string | null
@@ -357,8 +375,17 @@ export type Database = {
           cliente_genero?: string | null
           cliente_nome?: string | null
           cliente_regiao?: string | null
+          cliente_telefone?: string | null
           created_at?: string
+          dependentes?: Json
           difficulty?: string | null
+          endereco_bairro?: string | null
+          endereco_cep?: string | null
+          endereco_cidade?: string | null
+          endereco_complemento?: string | null
+          endereco_estado?: string | null
+          endereco_numero?: string | null
+          endereco_rua?: string | null
           id?: string
           name?: string
           objections?: string | null
