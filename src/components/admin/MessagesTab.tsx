@@ -30,8 +30,8 @@ export function MessagesTab() {
   const parents = cats.filter((c) => !c.parent_id);
   const childrenOf = (id: string) => cats.filter((c) => c.parent_id === id);
 
-  const [edit, setEdit] = useState<null | {
-    id?: string; category_id: string; subcategory_id: string; title: string; content: string; internal_note: string;
+const [edit, setEdit] = useState<null | {
+    id?: string; category_id: string; subcategory_id: string; title: string; content: string; internal_note: string; shortcut: string;
   }>(null);
 
   const mUp = useMutation({
@@ -41,9 +41,10 @@ export function MessagesTab() {
       subcategory_id: edit!.subcategory_id || null,
       title: edit!.title,
       content: edit!.content,
-      internal_note: edit!.internal_note || null,
+internal_note: edit!.internal_note || null,
       tags: [],
       position: 0,
+      shortcut: edit!.shortcut || null,
     } }),
     onSuccess: () => { toast.success("Salvo."); setEdit(null); qc.invalidateQueries({ queryKey: ["messages"] }); },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
@@ -57,21 +58,22 @@ export function MessagesTab() {
     <Card className="overflow-hidden">
       <div className="flex justify-between items-center p-4 border-b border-border">
         <h3 className="font-semibold">Mensagens ({q.data?.length ?? 0})</h3>
-        <Button size="sm" className="gap-2" onClick={() => setEdit({ category_id: "", subcategory_id: "", title: "", content: "", internal_note: "" })}>
+<Button size="sm" className="gap-2" onClick={() => setEdit({ category_id: "", subcategory_id: "", title: "", content: "", internal_note: "", shortcut: "" })}>
           <Plus className="h-4 w-4" /> Nova mensagem
         </Button>
       </div>
       <Table>
-        <TableHeader><TableRow><TableHead>Categoria</TableHead><TableHead>Título</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
+<TableHeader><TableRow><TableHead>Categoria</TableHead><TableHead>Título</TableHead><TableHead>Atalho</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
         <TableBody>
-          {(q.data ?? []).map((m: { id: string; title: string; category: { name: string } | null; subcategory: { name: string } | null; content: string; internal_note: string | null; category_id: string | null; subcategory_id: string | null; }) => (
+          {(q.data ?? []).map((m: { id: string; title: string; category: { name: string } | null; subcategory: { name: string } | null; content: string; internal_note: string | null; category_id: string | null; subcategory_id: string | null; shortcut: string | null; }) => (
             <TableRow key={m.id}>
               <TableCell><Badge variant="secondary">{m.category?.name ?? "—"}{m.subcategory ? ` · ${m.subcategory.name}` : ""}</Badge></TableCell>
               <TableCell className="font-medium">{m.title}</TableCell>
+              <TableCell>{m.shortcut ? <Badge variant="outline">/{m.shortcut}</Badge> : <span className="text-xs text-muted-foreground">—</span>}</TableCell>
               <TableCell className="text-right space-x-1">
                 <Button size="icon" variant="ghost" onClick={() => setEdit({
                   id: m.id, category_id: m.category_id ?? "", subcategory_id: m.subcategory_id ?? "",
-                  title: m.title, content: m.content, internal_note: m.internal_note ?? "",
+                  title: m.title, content: m.content, internal_note: m.internal_note ?? "", shortcut: m.shortcut ?? "",
                 })}><Pencil className="h-4 w-4" /></Button>
                 <Button size="icon" variant="ghost" onClick={() => confirm("Excluir?") && mDel.mutate(m.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
               </TableCell>
@@ -107,7 +109,13 @@ export function MessagesTab() {
                   </Select>
                 </div>
               </div>
-              <div><Label>Título</Label><Input value={edit.title} onChange={(e) => setEdit({ ...edit, title: e.target.value })} /></div>
+<div className="grid grid-cols-2 gap-3">
+                <div><Label>Título</Label><Input value={edit.title} onChange={(e) => setEdit({ ...edit, title: e.target.value })} /></div>
+                <div>
+                  <Label>Atalho no simulador (opcional)</Label>
+                  <Input value={edit.shortcut} onChange={(e) => setEdit({ ...edit, shortcut: e.target.value })} placeholder="ex: ola (sem a barra)" />
+                </div>
+              </div>
               <div><Label>Conteúdo</Label><Textarea rows={8} value={edit.content} onChange={(e) => setEdit({ ...edit, content: e.target.value })} /></div>
               <div><Label>Observação interna</Label><Input value={edit.internal_note} onChange={(e) => setEdit({ ...edit, internal_note: e.target.value })} /></div>
             </div>
