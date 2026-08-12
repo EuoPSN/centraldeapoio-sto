@@ -1,6 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { listMessages } from "@/lib/messages.functions";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -92,7 +93,29 @@ const fileInputRef = useRef<HTMLInputElement>(null);
   const [encerrado, setEncerrado] = useState(false);
   const [xpGanho, setXpGanho] = useState<number | null>(null);
   const [aguardandoResposta, setAguardandoResposta] = useState(false);
-  const [pendingAttendantMessages, setPendingAttendantMessages] = useState<string[]>([]);
+const [pendingAttendantMessages, setPendingAttendantMessages] = useState<string[]>([]);
+
+  // Atalhos "/palavra" (respostas rápidas cadastradas em Admin → Mensagens)
+  const shortcutsFn = useServerFn(listMessages);
+  const shortcutsQ = useQuery({ queryKey: ["messages", "shortcuts"], queryFn: () => shortcutsFn({}) });
+  const shortcutMessages = ((shortcutsQ.data ?? []) as Array<{ id: string; title: string; content: string; shortcut: string | null }>)
+    .filter((m) => !!m.shortcut);
+
+  // Só ativa a sugestão quando a caixa contém SÓ "/algo", sem espaço (igual WhatsApp Business)
+  const slashMatch = /^\/(\S*)$/.exec(input);
+  const slashQuery = slashMatch ? slashMatch[1].toLowerCase() : null;
+  const shortcutMatches = useMemo(() => {
+    if (slashQuery === null) return [];
+    return shortcutMessages.filter((m) => m.shortcut!.toLowerCase().startsWith(slashQuery)).slice(0, 6);
+  }, [slashQuery, shortcutMessages]);
+
+  const [shortcutIndex, setShortcutIndex] = useState(0);
+  useEffect(() => { setShortcutIndex(0); }, [slashQuery]);
+
+  const applyShortcut = (m: { content: string }) => {
+    setInput(m.content);
+    setShortcutIndex(0);
+  };
 
   const statesFn = useServerFn(listClientProfileStates);
   const statesQ = useQuery({
@@ -489,16 +512,38 @@ O JSON deve ter exatamente estes campos:
             ))}
           </div>
         )}
+{shortcutMatches.length > 0 && (
+          <div className="border border-border rounded-md bg-popover shadow-md overflow-hidden max-h-56 overflow-y-auto">
+            {shortcutMatches.map((m, i) => (
+              <button key={m.id} type="button"
+                className={`w-full text-left px-3 py-2 text-sm flex flex-col gap-0.5 border-b border-border/50 last:border-0 ${i === shortcutIndex ? "bg-primary/10" : "hover:bg-muted/50"}`}
+                onMouseEnter={() => setShortcutIndex(i)}
+                onClick={() => applyShortcut(m)}>
+                <span className="font-medium text-primary">/{m.shortcut}</span>
+                <span className="text-xs text-muted-foreground truncate">{m.title} — {m.content}</span>
+              </button>
+            ))}
+          </div>
+        )}
         <div className="flex gap-2">
+          <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden"
+            onChange={(e) => handleFilesSelected(e.target.files)} />
           <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden"
             onChange={(e) => handleFilesSelected(e.target.files)} />
           <Button type="button" variant="outline" size="icon" className="shrink-0"
             onClick={() => fileInputRef.current?.click()} disabled={uploadingImg || attachedImages.length >= 2 || encerrado}>
             <Paperclip className="h-4 w-4" />
           </Button>
-          <Textarea value={input} onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-            placeholder="Digite sua mensagem..." rows={2} className="resize-none" />
+<Textarea value={input} onChange={e => setInput(e.target.value)}
+            onKeyDown={e => {
+              if (shortcutMatches.length > 0) {
+                if (e.key === "ArrowDown") { e.preventDefault(); setShortcutIndex(i => (i + 1) % shortcutMatches.length); return; }
+                if (e.key === "ArrowUp") { e.preventDefault(); setShortcutIndex(i => (i - 1 + shortcutMatches.length) % shortcutMatches.length); return; }
+                if ((e.key === "Enter" || e.key === "Tab") && !e.shiftKey) { e.preventDefault(); applyShortcut(shortcutMatches[shortcutIndex]); return; }
+              }
+              if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
+            }}
+            placeholder="Digite sua mensagem... (use / para respostas rápidas)" rows={2} className="resize-none" />
           <div className="flex flex-col gap-2">
             <Button onClick={handleSend} disabled={(!input.trim() && attachedImages.length === 0) || encerrado} className="gap-1 text-xs">
               <Send className="h-4 w-4" />
