@@ -30,11 +30,21 @@ export const listClientProfilesForTraining = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await (supabaseAdmin as any)
       .from("client_profiles")
-      .select("id, name, personality, difficulty, objectives, objections, behaviors, cliente_nome, cliente_regiao, cliente_genero, category_id, category:categories(id,name), created_at")
+      .select(`id, name, personality, difficulty, objectives, objections, behaviors,
+        cliente_nome, cliente_cpf, cliente_regiao, cliente_genero, cliente_telefone,
+        endereco_rua, endereco_numero, endereco_complemento, endereco_bairro, endereco_cidade, endereco_estado, endereco_cep,
+        dependentes, category_id, category:categories(id,name,slug), created_at`)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return data ?? [];
   });
+
+const DependenteInput = z.object({
+  nome: z.string().default(""),
+  cpf: z.string().optional().nullable(),
+  nascimento: z.string().optional().nullable(),
+  situacao: z.string().optional().nullable(),
+});
 
 const ClientProfileInput = z.object({
   id: z.string().uuid().optional(),
@@ -49,6 +59,15 @@ const ClientProfileInput = z.object({
   cliente_cpf: z.string().optional().nullable(),
   cliente_regiao: z.string().optional().nullable(),
   cliente_genero: z.string().optional().nullable(),
+  cliente_telefone: z.string().optional().nullable(),
+  endereco_rua: z.string().optional().nullable(),
+  endereco_numero: z.string().optional().nullable(),
+  endereco_complemento: z.string().optional().nullable(),
+  endereco_bairro: z.string().optional().nullable(),
+  endereco_cidade: z.string().optional().nullable(),
+  endereco_estado: z.string().optional().nullable(),
+  endereco_cep: z.string().optional().nullable(),
+  dependentes: z.array(DependenteInput).default([]),
 });
 
 export const upsertClientProfile = createServerFn({ method: "POST" })
@@ -58,7 +77,7 @@ export const upsertClientProfile = createServerFn({ method: "POST" })
     await requireAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const db = supabaseAdmin as any;
-    const row = {
+const row = {
       category_id: data.category_id ?? null,
       name: data.name,
       personality: data.personality,
@@ -70,6 +89,15 @@ export const upsertClientProfile = createServerFn({ method: "POST" })
       cliente_cpf: data.cliente_cpf ?? null,
       cliente_regiao: data.cliente_regiao ?? null,
       cliente_genero: data.cliente_genero ?? "masculino",
+      cliente_telefone: data.cliente_telefone ?? null,
+      endereco_rua: data.endereco_rua ?? null,
+      endereco_numero: data.endereco_numero ?? null,
+      endereco_complemento: data.endereco_complemento ?? null,
+      endereco_bairro: data.endereco_bairro ?? null,
+      endereco_cidade: data.endereco_cidade ?? null,
+      endereco_estado: data.endereco_estado ?? null,
+      endereco_cep: data.endereco_cep ?? null,
+      dependentes: data.dependentes ?? [],
     };
     const { data: result, error } = data.id
       ? await db.from("client_profiles").update(row).eq("id", data.id).select().single()
