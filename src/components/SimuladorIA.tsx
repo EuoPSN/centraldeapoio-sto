@@ -19,13 +19,7 @@ import { WhatsAppText } from "@/components/WhatsAppText";
 
 
 interface Profile {
-  id: string; name: string; personality: string; difficulty: string;
-  objectives: string; objections: string; behaviors: string;
-  cliente_nome?: string;
-  cliente_cpf?: string;
-  cliente_regiao?: string;
-  cliente_genero?: string;
-}
+
 interface ClientProfileState {
   id: string; profile_id: string; position: number; name: string;
   description: string | null; example_lines: string | null; advance_criteria: string | null;
@@ -169,11 +163,36 @@ const handleFilesSelected = async (files: FileList | null) => {
   const [avaliacao, setAvaliacao] = useState<any>(null);
 
 const buildSystemPrompt = (idx: number) => {
+    // Filiação = cliente novo, ainda fornecendo os dados dele.
+    // Refiliação/Migração/EDT = cliente já tem cadastro, e vai CONFERIR o que o atendente disser.
+    const isCadastroExistente = !!profile.category?.slug && profile.category.slug !== "filiacao";
+
+    const enderecoTexto = [
+      profile.endereco_rua, profile.endereco_numero ? `nº ${profile.endereco_numero}` : null, profile.endereco_complemento,
+    ].filter(Boolean).join(", ") + [
+      profile.endereco_bairro ? ` - ${profile.endereco_bairro}` : "",
+      profile.endereco_cidade ? `, ${profile.endereco_cidade}` : "",
+      profile.endereco_estado ? `/${profile.endereco_estado}` : "",
+      profile.endereco_cep ? `, CEP ${profile.endereco_cep}` : "",
+    ].join("");
+
     const dadosFicticios = [
       profile.cliente_nome ? `Nome completo: ${profile.cliente_nome}` : null,
       profile.cliente_cpf ? `CPF: ${profile.cliente_cpf}` : null,
+      profile.cliente_telefone ? `Telefone: ${profile.cliente_telefone}` : null,
       profile.cliente_regiao ? `Região/cidade onde mora: ${profile.cliente_regiao}` : null,
+      enderecoTexto.trim() ? `Endereço: ${enderecoTexto.trim()}` : null,
     ].filter(Boolean).join(" | ");
+
+    const dependentesTexto = profile.dependentes && profile.dependentes.length > 0
+      ? profile.dependentes.map(d => `${d.nome}${d.cpf ? ` (CPF ${d.cpf})` : ""}${d.nascimento ? `, nasc. ${d.nascimento}` : ""}${d.situacao ? ` — ${d.situacao}` : ""}`).join("; ")
+      : null;
+
+    const dadosBlock = isCadastroExistente
+      ? `Você JÁ POSSUI CADASTRO na empresa — este NÃO é um atendimento de filiação nova, é uma reativação/atualização cadastral. Seu cadastro atual é: ${dadosFicticios || "nenhum dado de cadastro foi definido para este perfil"}.
+${dependentesTexto ? `Dependentes cadastrados atualmente no seu nome: ${dependentesTexto}.` : "Você não possui nenhum dependente cadastrado."}
+Comportamento obrigatório: quando o atendente perguntar ou tentar confirmar um dado seu (nome, CPF, telefone, endereço, dependentes), CONFIRA com o cadastro acima antes de responder. Se o dado que ele disser bater exatamente com o cadastro, confirme naturalmente ("Sim, isso mesmo", "Correto"). Se ele disser um dado diferente do cadastro, corrija com o valor certo (ex: "Não, meu CPF é ..."). Nunca confirme automaticamente um dado que não bate com o que está acima, e nunca invente um dado que não foi definido.`
+      : `${dadosFicticios ? `Seus dados pessoais fictícios (use-os SOMENTE se o atendente perguntar diretamente, informando com naturalidade): ${dadosFicticios}.` : ""}`;
 
     const base = `Você é um cliente virtual chamado ${profile.name} sendo atendido por um vendedor do Cartão de Todos.
 Personalidade: ${profile.personality}.
@@ -181,7 +200,7 @@ Objetivos: ${profile.objectives}.
 Objeções típicas: ${profile.objections}.
 Comportamentos: ${profile.behaviors}.
 Nível de dificuldade: ${DIFFICULTY_LABELS[profile.difficulty]}.
-${dadosFicticios ? `Seus dados pessoais fictícios (use-os SOMENTE se o atendente perguntar diretamente, informando com naturalidade): ${dadosFicticios}.` : ""}
+${dadosBlock}
 Responda APENAS como o cliente — nunca quebre o personagem.
 Respostas curtas e naturais, como numa conversa real de WhatsApp.
 Se o atendente der uma boa resposta às suas objeções, vá cedendo gradualmente.
