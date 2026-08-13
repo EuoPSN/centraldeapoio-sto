@@ -141,6 +141,7 @@ const PricingInput = z.object({
   particular_price: z.number().nullable().optional(),
   category: z.string().min(1).max(60).default("consulta"),
   notes: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
   position: z.number().int().default(0),
 });
 
