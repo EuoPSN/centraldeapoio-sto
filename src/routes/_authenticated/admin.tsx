@@ -497,7 +497,8 @@ function PricingTab() {
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["pricing"], queryFn: () => list({}) });
 
-  const [edit, setEdit] = useState<null | { id?: string; category: string; specialty: string; cartao_price: string; particular_price: string; notes: string }>(null);
+ const [edit, setEdit] = useState<null | { id?: string; category: string; specialty: string; cartao_price: string; particular_price: string; notes: string; description: string }>(null);
+  const [descGenerating, setDescGenerating] = useState(false);
 
   // ---- Preenchimento automático via IA ----
   type AiPricingItem = { category: string; specialty: string; cartao_price: number | null; particular_price: number | null; notes: string | null; selected: boolean };
@@ -562,6 +563,28 @@ Regras:
     }
   };
 
+const generateDescription = async () => {
+    if (!edit || !edit.specialty.trim()) { toast.error("Preencha o nome da especialidade primeiro."); return; }
+    setDescGenerating(true);
+    try {
+      const prompt = `Você escreve descrições curtas para itens de uma tabela de preços de um cartão de descontos em saúde (Cartão de Todos), com o objetivo de ajudar uma busca por palavra-chave a encontrar o item certo mesmo quando o funcionário digita um sintoma, sinônimo ou termo relacionado, em vez do nome exato.
+
+Item: ${edit.specialty}
+Categoria: ${edit.category}
+Observações cadastradas: ${edit.notes || "-"}
+
+Escreva uma descrição curta (1 a 2 frases, até 240 caracteres), em texto corrido, mencionando: o que essa especialidade/procedimento trata ou resolve, e 3 a 6 palavras-chave/sinônimos relacionados (sintomas comuns, termos populares, área do corpo, etc.) que uma pessoa leiga poderia usar para buscar isso.
+
+Responda APENAS com o texto da descrição, sem aspas, sem markdown, sem introdução.`;
+      const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: "Gere a descrição." }], model: "google/gemini-2.5-flash" } });
+      setEdit((f) => f ? { ...f, description: content.trim() } : f);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao gerar descrição.");
+    } finally {
+      setDescGenerating(false);
+    }
+  };
+
   const upsertMut = useMutation({
     mutationFn: () => upsert({
       data: {
@@ -571,6 +594,7 @@ Regras:
         cartao_price: edit!.cartao_price ? Number(edit!.cartao_price) : null,
         particular_price: edit!.particular_price ? Number(edit!.particular_price) : null,
         notes: edit!.notes || null,
+        description: edit!.description || null,
         position: 0,
       },
     }),
@@ -590,7 +614,7 @@ Regras:
           <Button size="sm" variant="outline" className="gap-2" onClick={() => setAiOpen(true)}>
             <Sparkles className="h-4 w-4" /> Preencher com IA
           </Button>
-          <Button size="sm" className="gap-2" onClick={() => setEdit({ category: "Consultas", specialty: "", cartao_price: "", particular_price: "", notes: "" })}>
+<Button size="sm" className="gap-2" onClick={() => setEdit({ category: "Consultas", specialty: "", cartao_price: "", particular_price: "", notes: "", description: "" })}>
             <Plus className="h-4 w-4" /> Novo
           </Button>
         </div>
@@ -613,7 +637,7 @@ Regras:
               <TableCell className="text-right">{p.cartao_price != null ? `R$ ${Number(p.cartao_price).toFixed(2)}` : "—"}</TableCell>
               <TableCell className="text-right">{p.particular_price != null ? `R$ ${Number(p.particular_price).toFixed(2)}` : "—"}</TableCell>
               <TableCell className="text-right space-x-1">
-                <Button size="icon" variant="ghost" onClick={() => setEdit({ id: p.id, category: p.category, specialty: p.specialty, cartao_price: p.cartao_price?.toString() ?? "", particular_price: p.particular_price?.toString() ?? "", notes: p.notes ?? "" })}><Pencil className="h-4 w-4" /></Button>
+<Button size="icon" variant="ghost" onClick={() => setEdit({ id: p.id, category: p.category, specialty: p.specialty, cartao_price: p.cartao_price?.toString() ?? "", particular_price: p.particular_price?.toString() ?? "", notes: p.notes ?? "", description: (p as any).description ?? "" })}><Pencil className="h-4 w-4" /></Button>
                 <Button size="icon" variant="ghost" onClick={() => confirm("Excluir?") && delMut.mutate(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
               </TableCell>
             </TableRow>
@@ -632,7 +656,17 @@ Regras:
                 <div><Label>Valor CDT (R$)</Label><Input type="number" step="0.01" value={edit.cartao_price} onChange={(e) => setEdit({ ...edit, cartao_price: e.target.value })} /></div>
                 <div><Label>Valor Particular (R$)</Label><Input type="number" step="0.01" value={edit.particular_price} onChange={(e) => setEdit({ ...edit, particular_price: e.target.value })} /></div>
               </div>
-              <div><Label>Observações</Label><Input value={edit.notes} onChange={(e) => setEdit({ ...edit, notes: e.target.value })} /></div>
+<div><Label>Observações</Label><Input value={edit.notes} onChange={(e) => setEdit({ ...edit, notes: e.target.value })} /></div>
+              <div>
+                <div className="flex items-center justify-between">
+                  <Label>Descrição para busca (opcional)</Label>
+                  <Button type="button" size="sm" variant="outline" className="gap-1 h-7 text-xs" onClick={generateDescription} disabled={descGenerating}>
+                    <Sparkles className="h-3.5 w-3.5" /> {descGenerating ? "Gerando..." : "Gerar com IA"}
+                  </Button>
+                </div>
+                <Textarea rows={3} value={edit.description} onChange={(e) => setEdit({ ...edit, description: e.target.value })}
+                  placeholder="Gerada por IA: ajuda a busca a encontrar por sintomas/sinônimos." />
+              </div>
             </div>
           )}
 <DialogFooter><Button onClick={() => upsertMut.mutate()} disabled={upsertMut.isPending}>Salvar</Button></DialogFooter>
