@@ -577,11 +577,43 @@ Escreva uma descrição curta (1 a 2 frases, até 240 caracteres), em texto corr
 
 Responda APENAS com o texto da descrição, sem aspas, sem markdown, sem introdução.`;
       const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: "Gere a descrição." }], model: "google/gemini-2.5-flash" } });
-      setEdit((f) => f ? { ...f, description: content.trim() } : f);
+setEdit((f) => f ? { ...f, description: content.trim() } : f);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao gerar descrição.");
     } finally {
       setDescGenerating(false);
+    }
+  };
+
+  const [bulkGenerating, setBulkGenerating] = useState(false);
+  const generateAllMissingDescriptions = async () => {
+    const faltando = (q.data ?? []).filter((p: any) => !p.description);
+    if (faltando.length === 0) { toast.info("Todos os itens já têm descrição."); return; }
+    setBulkGenerating(true);
+    let sucesso = 0;
+    try {
+      for (const item of faltando) {
+        try {
+          const prompt = `Você escreve descrições curtas para itens de uma tabela de preços de um cartão de descontos em saúde (Cartão de Todos), com o objetivo de ajudar uma busca por palavra-chave a encontrar o item certo mesmo quando o funcionário digita um sintoma, sinônimo ou termo relacionado, em vez do nome exato.
+
+Item: ${item.specialty}
+Categoria: ${item.category}
+Observações cadastradas: ${item.notes || "-"}
+
+Escreva uma descrição curta (1 a 2 frases, até 240 caracteres), em texto corrido, mencionando: o que essa especialidade/procedimento trata ou resolve, e 3 a 6 palavras-chave/sinônimos relacionados (sintomas comuns, termos populares, área do corpo, etc.) que uma pessoa leiga poderia usar para buscar isso.
+
+Responda APENAS com o texto da descrição, sem aspas, sem markdown, sem introdução.`;
+          const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: "Gere a descrição." }], model: "google/gemini-2.5-flash" } });
+          await upsert({ data: { id: item.id, category: item.category, specialty: item.specialty, cartao_price: item.cartao_price, particular_price: item.particular_price, notes: item.notes, description: content.trim(), position: 0 } });
+          sucesso++;
+        } catch {
+          // Continua tentando os próximos itens mesmo se um falhar.
+        }
+      }
+      toast.success(`${sucesso} de ${faltando.length} descrição(ões) gerada(s).`);
+      qc.invalidateQueries({ queryKey: ["pricing"] });
+    } finally {
+      setBulkGenerating(false);
     }
   };
 
@@ -611,8 +643,11 @@ Responda APENAS com o texto da descrição, sem aspas, sem markdown, sem introdu
 <div className="flex justify-between items-center p-4 border-b border-border">
         <h3 className="font-semibold">Itens de Preço ({q.data?.length ?? 0})</h3>
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" className="gap-2" onClick={() => setAiOpen(true)}>
+<Button size="sm" variant="outline" className="gap-2" onClick={() => setAiOpen(true)}>
             <Sparkles className="h-4 w-4" /> Preencher com IA
+          </Button>
+          <Button size="sm" variant="outline" className="gap-2" onClick={generateAllMissingDescriptions} disabled={bulkGenerating}>
+            <Sparkles className="h-4 w-4" /> {bulkGenerating ? "Gerando..." : "Gerar descrições faltantes"}
           </Button>
 <Button size="sm" className="gap-2" onClick={() => setEdit({ category: "Consultas", specialty: "", cartao_price: "", particular_price: "", notes: "", description: "" })}>
             <Plus className="h-4 w-4" /> Novo
