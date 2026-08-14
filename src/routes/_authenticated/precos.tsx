@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CopyButton } from "@/components/CopyButton";
-import { DollarSign, Search, TrendingDown, ListChecks, AlertTriangle } from "lucide-react";
+import { DollarSign, Search, TrendingDown, ListChecks, AlertTriangle, Info } from "lucide-react";
 import { SkeletonCard } from "@/components/ui/skeleton-card";
 
 export const Route = createFileRoute("/_authenticated/precos")({
@@ -39,7 +39,8 @@ function Page() {
   const fn = useServerFn(listPricing);
   const q = useQuery({ queryKey: ["pricing"], queryFn: () => fn({}) });
   const [filter, setFilter] = useState("");
-  const [activeCat, setActiveCat] = useState<string>("todos");
+const [activeCat, setActiveCat] = useState<string>("todos");
+  const [expandedDesc, setExpandedDesc] = useState<Set<string>>(new Set());
 
   const rows = (q.data ?? []) as PricingRow[];
 
@@ -176,8 +177,33 @@ function Page() {
             </h2>
             <div className="space-y-3">
               {specialties.map(({ specialty, variants }) => (
-                <Card key={specialty} className="p-4">
-                  <h3 className="font-semibold mb-3">{specialty}</h3>
+<Card key={specialty} className="p-4">
+                  {(() => {
+                    const descKey = `${category}|${specialty}`;
+                    const desc = variants.find((v) => v.description)?.description;
+                    const isOpen = expandedDesc.has(descKey);
+                    return (
+                      <div className="mb-3">
+                        <div className="flex items-center gap-1.5">
+                          <h3 className="font-semibold">{specialty}</h3>
+                          {desc && (
+                            <button type="button" title="O que é essa especialidade"
+                              onClick={() => setExpandedDesc((prev) => {
+                                const next = new Set(prev);
+                                next.has(descKey) ? next.delete(descKey) : next.add(descKey);
+                                return next;
+                              })}
+                              className="text-muted-foreground hover:text-primary">
+                              <Info className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+                        {desc && isOpen && (
+                          <p className="text-xs text-muted-foreground mt-1 max-w-2xl">{desc}</p>
+                        )}
+                      </div>
+                    );
+                  })()}
                   <div className="space-y-3">
                     {variants.map((v) => {
                       const eco = economia(v.cartao_price, v.particular_price);
