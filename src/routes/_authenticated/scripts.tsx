@@ -3,12 +3,14 @@ import { useState, useMemo } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { listMessages } from "@/lib/messages.functions";
+import { listFlowStages } from "@/lib/messageflow.functions";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/CopyButton";
 import { Markdown } from "@/components/Markdown";
-import { Search, MessageSquareQuote } from "lucide-react";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { Search, MessageSquareQuote, ListOrdered, Library } from "lucide-react";
 import { SkeletonCard } from "@/components/ui/skeleton-card";
 
 export const Route = createFileRoute("/_authenticated/scripts")({
@@ -16,6 +18,7 @@ export const Route = createFileRoute("/_authenticated/scripts")({
 });
 
 function Page() {
+  const [mode, setMode] = useState<"biblioteca" | "fluxo">("biblioteca");
   return (
     <div className="p-6 lg:p-10 max-w-7xl mx-auto">
       <header className="mb-6">
@@ -23,11 +26,20 @@ function Page() {
           <MessageSquareQuote className="h-7 w-7 text-primary" /> Atendimento
         </h1>
         <p className="text-muted-foreground mt-1">
-          Biblioteca de mensagens prontas para o atendimento.
+          {mode === "biblioteca" ? "Biblioteca de mensagens prontas para o atendimento." : "A ordem das mensagens dentro de um atendimento, etapa por etapa."}
         </p>
       </header>
 
-      <Biblioteca />
+      <div className="flex gap-2 mb-6">
+        <Button size="sm" variant={mode === "biblioteca" ? "default" : "outline"} className="gap-2" onClick={() => setMode("biblioteca")}>
+          <Library className="h-4 w-4" /> Biblioteca
+        </Button>
+        <Button size="sm" variant={mode === "fluxo" ? "default" : "outline"} className="gap-2" onClick={() => setMode("fluxo")}>
+          <ListOrdered className="h-4 w-4" /> Fluxo de Atendimento
+        </Button>
+      </div>
+
+      {mode === "biblioteca" ? <Biblioteca /> : <FluxoAtendimento />}
     </div>
   );
 }
@@ -41,6 +53,83 @@ interface MessageRow {
   category: { id: string; name: string; color: string | null } | null;
   subcategory: { id: string; name: string } | null;
   position: number;
+  shortcut?: string | null;
+  flow_stage_id?: string | null;
+}
+
+interface StageRow { id: string; name: string; position: number; }
+
+function FluxoAtendimento() {
+  const msgFn = useServerFn(listMessages);
+  const stageFn = useServerFn(listFlowStages);
+  const msgQ = useQuery({ queryKey: ["messages"], queryFn: () => msgFn({}) });
+  const stageQ = useQuery({ queryKey: ["flow-stages"], queryFn: () => stageFn({}) });
+
+  const rows = (msgQ.data ?? []) as unknown as MessageRow[];
+  const stages = ((stageQ.data ?? []) as StageRow[]).slice().sort((a, b) => a.position - b.position);
+
+  if (stageQ.isLoading || msgQ.isLoading) {
+    return (
+      <div className="grid gap-4 sm:grid-cols-2">
+        <SkeletonCard />
+        <SkeletonCard />
+      </div>
+    );
+  }
+
+  if (stages.length === 0) {
+    return (
+      <Card className="p-10 text-center">
+        <p className="text-muted-foreground">Nenhuma etapa de fluxo cadastrada ainda.</p>
+        <p className="text-xs text-muted-foreground mt-1">Configure em Painel Admin → Mensagens → aba "Fluxo de Atendimento".</p>
+      </Card>
+    );
+  }
+
+  return (
+    <Accordion type="multiple" defaultValue={stages.map((s) => s.id)} className="space-y-3">
+      {stages.map((stage, idx) => {
+        const stageMessages = rows
+          .filter((m) => m.flow_stage_id === stage.id)
+          .slice()
+          .sort((a, b) => (a.position - b.position) || a.title.localeCompare(b.title));
+        return (
+          <AccordionItem key={stage.id} value={stage.id} className="border border-border rounded-lg px-4 bg-card">
+            <AccordionTrigger className="hover:no-underline">
+              <div className="flex items-center gap-3">
+                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary/10 text-primary text-xs font-semibold shrink-0">{idx + 1}</span>
+                <span className="font-semibold">{stage.name}</span>
+                <span className="text-xs text-muted-foreground font-normal">{stageMessages.length} mensagem(ns)</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              {stageMessages.length === 0 ? (
+                <p className="text-sm text-muted-foreground pb-3">Nenhuma mensagem atribuída a esta etapa ainda.</p>
+              ) : (
+                <div className="space-y-3 pb-3">
+                  {stageMessages.map((m) => (
+                    <div key={m.id} className="rounded-md border border-border p-3">
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {m.shortcut && <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-primary/10 text-primary shrink-0">/{m.shortcut}</span>}
+                          <h4 className="font-medium truncate">{m.title}</h4>
+                        </div>
+                        <CopyButton text={m.content} />
+                      </div>
+                      <div className="rounded-md bg-muted/40 border border-border p-3 max-h-56 overflow-y-auto">
+                        <Markdown>{m.content}</Markdown>
+                      </div>
+                      {m.internal_note && <p className="text-xs text-muted-foreground italic mt-2">📝 {m.internal_note}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </AccordionContent>
+          </AccordionItem>
+        );
+      })}
+    </Accordion>
+  );
 }
 
 function Biblioteca() {
