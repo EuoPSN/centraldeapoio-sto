@@ -82,18 +82,21 @@ export type Database = {
       }
       ai_settings: {
         Row: {
+          essential_facts: string | null
           id: number
           model: string
           system_prompt: string
           updated_at: string
         }
         Insert: {
+          essential_facts?: string | null
           id?: number
           model?: string
           system_prompt: string
           updated_at?: string
         }
         Update: {
+          essential_facts?: string | null
           id?: number
           model?: string
           system_prompt?: string
