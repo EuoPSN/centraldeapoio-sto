@@ -416,10 +416,10 @@ ${partes.join("\n")}
 
 Responda apenas com a lista de fatos essenciais (e eventuais conflitos), sem introdução, sem título, sem markdown de cabeçalho.`;
 
-    const { content } = await chatCompletion({
+    const content = await chatCompletion({
       model: "google/gemini-2.5-flash",
       temperature: 0.1,
       messages: [{ role: "system", content: prompt }, { role: "user", content: "Gere a lista." }],
     });
-    return { draft: content.trim() };
+    return { draft: (content ?? "").trim() };
   });
