@@ -224,13 +224,14 @@ export const sendMessage = createServerFn({ method: "POST" })
 
     // 4) Carrega prompt-base (admin-only table; uso de service role no servidor)
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: settings } = await supabaseAdmin
+const { data: settings } = await supabaseAdmin
       .from("ai_settings")
-      .select("system_prompt,model")
+      .select("system_prompt,model,essential_facts")
       .eq("id", 1)
       .single();
     const systemPrompt = settings?.system_prompt ?? "Você é um assistente do Cartão de Todos.";
     const model = settings?.model ?? "google/gemini-3-flash-preview";
+    const essentialFacts = (settings?.essential_facts ?? "").trim();
 
     // 5) RAG híbrido: busca textual primeiro (não consome IA) + embedding semântico como complemento.
     let ragContext = "";
@@ -279,18 +280,19 @@ export const sendMessage = createServerFn({ method: "POST" })
         .map((m) => ({ title: m.title, source_type: m.source_type }));
     }
 
-    let reply: string;
-    if (!foundAny && data.images.length === 0) {
+let reply: string;
+    if (!foundAny && !essentialFacts && data.images.length === 0) {
       reply = "Não encontrei essa informação na base de conhecimento. Peça para um administrador cadastrar esse conteúdo em **Conhecimento → Base de Conhecimento IA** e tente novamente.";
     } else {
         const augmentedSystem = `${systemPrompt}
-
+${essentialFacts ? `\nFATOS ESSENCIAIS (sempre corretos e atualizados — em caso de conflito com qualquer outra fonte abaixo, estes prevalecem):\n${essentialFacts}\n` : ""}
 REGRAS:
+- Os "FATOS ESSENCIAIS" acima (quando presentes) são a fonte mais confiável que existe — priorize-os sobre qualquer fonte buscada abaixo em caso de conflito, e pode responder com base neles mesmo sem outra fonte relevante.
 - Use as fontes abaixo (Base de Conhecimento da empresa) como sua fonte primária quando houver.
 - Se o usuário enviar uma imagem, analise-a e responda com base no que for solicitado, combinando as fontes quando fizer sentido.
 - Se as fontes responderem parcialmente, responda o que houver e indique de forma breve o que faltou.
-- Se NENHUMA fonte tiver relação com a pergunta e não houver imagem anexada, diga exatamente: "Não encontrei essa informação na base de conhecimento."
-- Não invente fatos, valores ou políticas que não estejam nas fontes — isso vale mesmo respondendo de forma mais natural.
+- Se NENHUMA fonte tiver relação com a pergunta, não houver imagem anexada, e os Fatos Essenciais também não cobrirem o assunto, diga exatamente: "Não encontrei essa informação na base de conhecimento."
+- Não invente fatos, valores ou políticas que não estejam nas fontes ou nos Fatos Essenciais — isso vale mesmo respondendo de forma mais natural.
 - Cite a fonte apenas quando isso ajudar o atendente a confiar na informação, de forma natural dentro da frase — não como uma bibliografia formal.
 - Responda como alguém experiente conversando com um colega de trabalho: direto, natural, sem soar como um FAQ robótico.
 - Varie a forma de apresentar a informação: um parágrafo curto muitas vezes resolve melhor que uma lista. Use listas numeradas ou com marcadores só quando o conteúdo for mesmo uma sequência de passos ou vários itens distintos.
@@ -356,6 +358,7 @@ export const getAiSettings = createServerFn({ method: "GET" })
 const SettingsInput = z.object({
   system_prompt: z.string().min(10),
   model: z.string().min(1).default("google/gemini-3-flash-preview"),
+  essential_facts: z.string().optional().nullable(),
 });
 
 export const updateAiSettings = createServerFn({ method: "POST" })
@@ -366,8 +369,57 @@ export const updateAiSettings = createServerFn({ method: "POST" })
     if (!isAdmin) throw new Error("Apenas administradores podem editar as configurações da IA.");
     const { error } = await context.supabase
       .from("ai_settings")
-      .update({ system_prompt: data.system_prompt, model: data.model })
+      .update({ system_prompt: data.system_prompt, model: data.model, essential_facts: data.essential_facts ?? null })
       .eq("id", 1);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+// ============================================================
+// Rascunho de Fatos Essenciais gerado por IA
+// ============================================================
+export const generateEssentialFactsDraft = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const isAdmin = await isAdminUser(context.supabase, context.userId);
+    if (!isAdmin) throw new Error("Apenas administradores podem gerar este rascunho.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const [msgRes, contentRes, keRes, pricingRes] = await Promise.all([
+      supabaseAdmin.from("messages").select("title,content").limit(60),
+      supabaseAdmin.from("content_items").select("title,content,section").limit(40),
+      supabaseAdmin.from("knowledge_entries").select("title,content,kind").limit(40),
+      supabaseAdmin.from("pricing_items").select("cartao_price").limit(60),
+    ]);
+
+    const trecho = (s: string, max = 500) => (s || "").slice(0, max);
+    const partes: string[] = [];
+    for (const m of (msgRes.data ?? []) as any[]) partes.push(`[Mensagem] ${m.title}: ${trecho(m.content)}`);
+    for (const c of (contentRes.data ?? []) as any[]) partes.push(`[${c.section}] ${c.title}: ${trecho(c.content)}`);
+    for (const k of (keRes.data ?? []) as any[]) partes.push(`[${k.kind}] ${k.title}: ${trecho(k.content)}`);
+
+    const precosCartao = (pricingRes.data ?? []).map((p: any) => Number(p.cartao_price)).filter((n: number) => !isNaN(n));
+    const precosResumo = precosCartao.length > 0
+      ? `A Tabela de Preços já tem ${precosCartao.length} itens cadastrados, de R$ ${Math.min(...precosCartao).toFixed(2)} a R$ ${Math.max(...precosCartao).toFixed(2)} pelo Cartão de Todos — NÃO liste preços de especialidades individuais aqui, isso já é coberto por outra tela.`
+      : "";
+
+    const prompt = `Você vai ler um conjunto de conteúdos cadastrados no sistema de um cartão de descontos em saúde ("Cartão de Todos") e extrair APENAS os fatos mais essenciais, estáveis e de alto risco de erro — coisas como: valor da mensalidade, taxa de adesão, prazo de fidelidade e multa de cancelamento, formas de pagamento aceitas, documentos exigidos no cadastro, restrições de dependentes.
+
+Regras importantes:
+- Se o mesmo fato aparecer com valores DIFERENTES em fontes diferentes, NÃO escolha um arbitrariamente — liste isso como um conflito a ser revisado por um humano, no formato: "⚠️ CONFLITO: <fato> aparece como X em uma fonte e Y em outra — confirmar valor correto."
+- ${precosResumo}
+- Seja extremamente conciso: no máximo 15 linhas, formato de lista simples (uma linha por fato).
+- Não invente nada que não esteja no conteúdo abaixo. Se não encontrar informação suficiente sobre algum desses temas, simplesmente não o inclua (não invente um valor).
+
+Conteúdo cadastrado no sistema:
+${partes.join("\n")}
+
+Responda apenas com a lista de fatos essenciais (e eventuais conflitos), sem introdução, sem título, sem markdown de cabeçalho.`;
+
+    const { content } = await chatCompletion({
+      model: "google/gemini-2.5-flash",
+      temperature: 0.1,
+      messages: [{ role: "system", content: prompt }, { role: "user", content: "Gere a lista." }],
+    });
+    return { draft: content.trim() };
   });
