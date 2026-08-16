@@ -27,6 +27,11 @@ const KIND_META: Record<KnowledgeKind, { label: string; icon: typeof Shield; col
 };
 
 function Page() {
+  const [initialKind] = useState<string>(() => {
+    if (typeof window === "undefined") return "regra";
+    const h = window.location.hash.replace("#", "");
+    return (KNOWLEDGE_KINDS as readonly string[]).includes(h) ? h : "regra";
+  });
   return (
     <div className="p-6 lg:p-10 max-w-7xl mx-auto">
       <header className="mb-6">
@@ -38,7 +43,7 @@ function Page() {
         </p>
       </header>
 
-      <Tabs defaultValue="regra">
+      <Tabs defaultValue={initialKind}>
         <TabsList className="flex-wrap h-auto">
           {KNOWLEDGE_KINDS.map((k) => {
             const m = KIND_META[k];
