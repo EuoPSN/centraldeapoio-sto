@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { GlobalSearch } from "@/components/GlobalSearch";
+import { ChangelogWidget } from "@/components/ChangelogWidget";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getMe } from "@/lib/content.functions";
@@ -61,7 +62,8 @@ function AppLayout() {
             <Outlet />
           </main>
 
-          <GlobalSearch />
+<GlobalSearch />
+          <ChangelogWidget />
         </div>
       </div>
     </SidebarProvider>
