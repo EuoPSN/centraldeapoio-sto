@@ -421,5 +421,5 @@ Responda apenas com a lista de fatos essenciais (e eventuais conflitos), sem int
       temperature: 0.1,
       messages: [{ role: "system", content: prompt }, { role: "user", content: "Gere a lista." }],
     });
-    return { draft: content.trim() };
+    return { draft: (content ?? "").trim() };
   });
