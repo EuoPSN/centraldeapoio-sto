@@ -57,8 +57,9 @@ export const setMessageFlowStage = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await admin(context);
-    const update: Record<string, unknown> = { flow_stage_id: data.flow_stage_id };
+    const update: { flow_stage_id: string | null; position?: number } = { flow_stage_id: data.flow_stage_id };
     if (data.position !== undefined) update.position = data.position;
+
     const { error } = await context.supabase.from("messages").update(update).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
