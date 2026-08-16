@@ -14,7 +14,7 @@ import {
 } from "@/lib/users.functions";
 import { reindexAll, getIndexStats } from "@/lib/embeddings.functions";
 import { seedInitialData } from "@/lib/seed.functions";
-import { getAiSettings, updateAiSettings } from "@/lib/chat.functions";
+import { getAiSettings, updateAiSettings, generateEssentialFactsDraft } from "@/lib/chat.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +25,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Database, LayoutDashboard, Pencil, Plus, RefreshCw, Settings, Sparkles, Trash2, UserPlus, Users } from "lucide-react";
+import { Database, LayoutDashboard, Pencil, Plus, RefreshCw, Settings, Sparkles, Trash2, UserPlus, Users, ShieldCheck } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { simulatorChat } from "@/lib/simulator.chat.functions";
 import { MessagesTab } from "@/components/admin/MessagesTab";
@@ -805,11 +805,14 @@ function AiTab() {
     queryFn: () => getSettings({}),
   });
 
-  const [name, setName] = useState("");
+const [name, setName] = useState("");
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState("google/gemini-3-flash-preview");
   const [genderArticle, setGenderArticle] = useState("a");
   const [resumeReindex, setResumeReindex] = useState(false);
+  const [essentialFacts, setEssentialFacts] = useState("");
+  const [factsGenerating, setFactsGenerating] = useState(false);
+  const genFactsDraft = useServerFn(generateEssentialFactsDraft);
 
   useEffect(() => {
     if (sSettings.data) {
@@ -820,8 +823,22 @@ function AiTab() {
       if (sSettings.data.model) {
         setModel(sSettings.data.model);
       }
+      setEssentialFacts((sSettings.data as any).essential_facts ?? "");
     }
   }, [sSettings.data]);
+
+  const generateFactsDraft = async () => {
+    setFactsGenerating(true);
+    try {
+      const { draft } = await genFactsDraft({});
+      setEssentialFacts(draft);
+      toast.success("Rascunho gerado — revise e clique em \"Salvar configurações\" para aplicar.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao gerar rascunho.");
+    } finally {
+      setFactsGenerating(false);
+    }
+  };
 
   const mut = useMutation({
     mutationFn: () => reindex({ data: { reset: !resumeReindex } }),
@@ -853,7 +870,7 @@ function AiTab() {
 
 
 
-  const saveSettingsMut = useMutation({
+const saveSettingsMut = useMutation({
     mutationFn: () => {
       const article = name === "Assistente IA do Cartão de Todos" ? "o" : "a";
       const finalPrompt = name ? `Você é ${article} ${name}, ${prompt}` : prompt;
@@ -861,6 +878,7 @@ function AiTab() {
         data: {
           system_prompt: finalPrompt,
           model,
+          essential_facts: essentialFacts,
         },
       });
     },
@@ -911,6 +929,29 @@ function AiTab() {
         <h3 className="font-semibold flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> Modelo da IA</h3>
         <p className="text-sm text-muted-foreground mt-1">
           O assistente usa <code className="text-xs bg-muted px-1 py-0.5 rounded">google/gemini-3-flash-preview</code> via Lovable AI Gateway, com busca híbrida na base interna. Embeddings em 1536 dimensões compatíveis com <code className="text-xs bg-muted px-1 py-0.5 rounded">text-embedding-3-small</code>.
+        </p>
+      </Card>
+
+<Card className="p-5 space-y-3">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="font-semibold flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-primary" /> Fatos Essenciais</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Fatos de alto risco (mensalidade, taxa de adesão, fidelidade, formas de pagamento...) que a MarcIAna SEMPRE usa como fonte confiável, mesmo sem busca — evita que conteúdo antigo ou duplicado na base a confunda. Sempre revise antes de salvar.
+            </p>
+          </div>
+          <Button variant="outline" size="sm" className="gap-2 shrink-0" onClick={generateFactsDraft} disabled={factsGenerating}>
+            <Sparkles className="h-4 w-4" /> {factsGenerating ? "Gerando..." : "Gerar rascunho com IA"}
+          </Button>
+        </div>
+        <Textarea
+          rows={8}
+          value={essentialFacts}
+          onChange={(e) => setEssentialFacts(e.target.value)}
+          placeholder='Ex: "Mensalidade: R$ 33,40. Taxa de adesão: R$ 66,80 (ou isenta com 5 indicações). Fidelidade: 12 meses, multa de 50% das mensalidades restantes. Pagamento: apenas cartão de crédito ou débito."'
+        />
+        <p className="text-xs text-muted-foreground">
+          Lembre-se de clicar em "Salvar configurações" no final da página para aplicar as mudanças.
         </p>
       </Card>
 
