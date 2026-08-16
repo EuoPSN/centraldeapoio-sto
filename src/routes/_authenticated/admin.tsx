@@ -37,6 +37,7 @@ import { KnowledgeTab } from "@/components/admin/KnowledgeTab";
 import { ClientProfilesTab } from "@/components/admin/ClientProfilesTab";
 import { SimulatorResultsTab } from "@/components/admin/SimulatorResultsTab";
 import { AdminSectionsTab, ADMIN_GROUP_ORDER } from "@/components/admin/AdminSectionsTab";
+import { ChangelogTab } from "@/components/admin/ChangelogTab";
 import { listAdminSections } from "@/lib/settings.functions";
 import { getIcon } from "@/lib/icon-map";
 import { cn } from "@/lib/utils";
@@ -86,7 +87,8 @@ function AdminPage() {
     ai: AiTab,
     perfis: ClientProfilesTab,
     atendimentos: SimulatorResultsTab,
-    organizacao: AdminSectionsTab,
+organizacao: AdminSectionsTab,
+    changelog: ChangelogTab,
   };
   const ActiveComponent = active === "overview" ? OverviewTab : (TAB_COMPONENTS[active] ?? OverviewTab);
 
