@@ -19,7 +19,8 @@ import { Pencil, Plus, Trash2, ArrowUp, ArrowDown, Sparkles } from "lucide-react
 import { toast } from "sonner";
 
 interface Cat { id: string; name: string; parent_id: string | null; }
-interface Stage { id: string; name: string; position: number; }
+interface Stage { id: string; name: string; position: number; category_id: string | null; }
+type ScriptDraft = { title: string; content: string; shortcut: string; internal_note: string; selected: boolean };
 
 export function MessagesTab() {
   const list = useServerFn(listMessages);
@@ -40,7 +41,8 @@ export function MessagesTab() {
   const cats = (catsQ.data ?? []) as Cat[];
   const parents = cats.filter((c) => !c.parent_id);
   const childrenOf = (id: string) => cats.filter((c) => c.parent_id === id);
-  const stages = ((stagesQ.data ?? []) as Stage[]).slice().sort((a, b) => a.position - b.position);
+  const stages = (stagesQ.data ?? []) as Stage[];
+  const allMessages = (q.data ?? []) as any[];
 
   const [edit, setEdit] = useState<null | {
     id?: string; category_id: string; subcategory_id: string; title: string; content: string; internal_note: string; shortcut: string;
@@ -66,35 +68,99 @@ export function MessagesTab() {
     onSuccess: () => { toast.success("Removida."); qc.invalidateQueries({ queryKey: ["messages"] }); },
   });
 
-  // ---- Fluxo de Atendimento: etapas (independentes de Categoria) ----
+  // ---- Gerar scripts novos com IA a partir de uma descrição ----
+  const [showGen, setShowGen] = useState(false);
+  const [genCategoryId, setGenCategoryId] = useState("");
+  const [genDesc, setGenDesc] = useState("");
+  const [genLoading, setGenLoading] = useState(false);
+  const [genDrafts, setGenDrafts] = useState<ScriptDraft[]>([]);
+  const [genSaving, setGenSaving] = useState(false);
+
+  const generateScripts = async () => {
+    if (!genDesc.trim()) return;
+    setGenLoading(true);
+    try {
+      const prompt = `Você escreve mensagens de script de atendimento ao cliente via WhatsApp, para o Cartão de Todos (cartão de descontos em saúde).
+A partir da descrição abaixo do que é necessário, crie um ou mais scripts de mensagem prontos pra copiar e enviar ao cliente.
+Cada item deve ter:
+- "title": título curto (poucas palavras) pra identificar o script na lista.
+- "content": o texto da mensagem em si, no tom apropriado à descrição, pronto pra uso real (pode usar *negrito* estilo WhatsApp).
+- "shortcut": uma palavra curta, minúscula, sem espaço ou acento, pra usar como atalho tipo /palavra no simulador (invente algo intuitivo relacionado ao título).
+- "internal_note": uma frase curta dizendo quando o atendente deve usar essa mensagem.
+Responda APENAS com um array JSON, no formato exato: [{"title":"...","content":"...","shortcut":"...","internal_note":"..."}]. Sem markdown, sem texto fora do JSON.`;
+      const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: genDesc }], model: "google/gemini-2.5-flash" } });
+      const clean = content.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(clean);
+      const items: ScriptDraft[] = (Array.isArray(parsed) ? parsed : [])
+        .map((it: any) => ({ title: it.title || "", content: it.content || "", shortcut: it.shortcut || "", internal_note: it.internal_note || "", selected: true }))
+        .filter((it: ScriptDraft) => it.title && it.content);
+      if (items.length === 0) { toast.error("A IA não conseguiu gerar nenhum script a partir da descrição."); return; }
+      setGenDrafts(items);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao gerar com IA.");
+    } finally {
+      setGenLoading(false);
+    }
+  };
+
+  const saveGenerated = async () => {
+    const toSave = genDrafts.filter((d) => d.selected);
+    if (toSave.length === 0) return;
+    setGenSaving(true);
+    try {
+      for (const item of toSave) {
+        await upsert({ data: {
+          category_id: genCategoryId || null, subcategory_id: null,
+          title: item.title, content: item.content, internal_note: item.internal_note || null,
+          tags: [], position: 0, shortcut: item.shortcut || null,
+        } });
+      }
+      toast.success(`${toSave.length} script(s) criado(s)!`);
+      qc.invalidateQueries({ queryKey: ["messages"] });
+      setGenDrafts([]); setGenDesc(""); setShowGen(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao salvar scripts.");
+    } finally {
+      setGenSaving(false);
+    }
+  };
+
+  // ---- Fluxo de Atendimento: agora com uma aba de categoria (tipo de atendimento) ----
+  const [flowCat, setFlowCat] = useState<string>("geral");
+  const flowCategoryId = flowCat === "geral" ? null : flowCat;
+  const stagesForCat = stages
+    .filter((s) => (s.category_id ?? null) === flowCategoryId)
+    .slice()
+    .sort((a, b) => a.position - b.position);
+  const messagesForCat = allMessages.filter((m) => (m.category_id ?? null) === flowCategoryId);
+
   const [newStageName, setNewStageName] = useState("");
   const addStage = async () => {
     if (!newStageName.trim()) return;
-    await upsertStageFn({ data: { name: newStageName.trim(), position: stages.length * 10 } });
+    await upsertStageFn({ data: { name: newStageName.trim(), position: stagesForCat.length * 10, category_id: flowCategoryId } });
     setNewStageName("");
     qc.invalidateQueries({ queryKey: ["flow-stages"] });
   };
   const renameStage = async (stage: Stage, name: string) => {
     if (!name.trim() || name === stage.name) return;
-    await upsertStageFn({ data: { id: stage.id, name: name.trim(), position: stage.position } });
+    await upsertStageFn({ data: { id: stage.id, name: name.trim(), position: stage.position, category_id: stage.category_id } });
     qc.invalidateQueries({ queryKey: ["flow-stages"] });
   };
   const removeStage = async (stage: Stage) => {
-    if (!confirm(`Excluir a etapa "${stage.name}"? As mensagens dela voltam para "sem etapa" (continuam na Biblioteca normalmente).`)) return;
+    if (!confirm(`Excluir a etapa "${stage.name}"? As mensagens dela voltam para "sem etapa".`)) return;
     await delStageFn({ data: { id: stage.id } });
     qc.invalidateQueries({ queryKey: ["flow-stages"] });
     qc.invalidateQueries({ queryKey: ["messages"] });
   };
   const moveStage = async (idx: number, dir: -1 | 1) => {
-    const arr = [...stages];
+    const arr = [...stagesForCat];
     const j = idx + dir;
     if (j < 0 || j >= arr.length) return;
     [arr[idx], arr[j]] = [arr[j], arr[idx]];
-    await Promise.all(arr.map((s, i) => upsertStageFn({ data: { id: s.id, name: s.name, position: i * 10 } })));
+    await Promise.all(arr.map((s, i) => upsertStageFn({ data: { id: s.id, name: s.name, position: i * 10, category_id: s.category_id } })));
     qc.invalidateQueries({ queryKey: ["flow-stages"] });
   };
 
-  // ---- Fluxo de Atendimento: reordenar mensagens dentro de uma etapa ----
   const moveMessage = async (msgs: any[], idx: number, dir: -1 | 1) => {
     const arr = [...msgs];
     const j = idx + dir;
@@ -104,13 +170,11 @@ export function MessagesTab() {
     qc.invalidateQueries({ queryKey: ["messages"] });
   };
 
-  // ---- Fluxo de Atendimento: atribuir/mover mensagem entre etapas ----
   const assignStage = async (messageId: string, stageId: string | null) => {
     await setStageFn({ data: { id: messageId, flow_stage_id: stageId, position: 0 } });
     qc.invalidateQueries({ queryKey: ["messages"] });
   };
 
-  // ---- Fluxo de Atendimento: gerar "quando usar" com IA ----
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const generateDescription = async (m: any) => {
     setGeneratingId(m.id);
@@ -135,9 +199,6 @@ Responda APENAS com a frase da descrição, sem aspas, sem markdown, sem texto a
     }
   };
 
-  const allMessages = (q.data ?? []) as any[];
-  const semEtapa = allMessages.filter((m) => !m.flow_stage_id);
-
   return (
     <div className="space-y-4">
       <Tabs defaultValue="biblioteca">
@@ -150,10 +211,69 @@ Responda APENAS com a frase da descrição, sem aspas, sem markdown, sem texto a
           <Card className="overflow-hidden">
             <div className="flex justify-between items-center p-4 border-b border-border">
               <h3 className="font-semibold">Mensagens ({q.data?.length ?? 0})</h3>
-              <Button size="sm" className="gap-2" onClick={() => setEdit({ category_id: "", subcategory_id: "", title: "", content: "", internal_note: "", shortcut: "" })}>
-                <Plus className="h-4 w-4" /> Nova mensagem
-              </Button>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" className="gap-2" onClick={() => setShowGen((v) => !v)}>
+                  <Sparkles className="h-4 w-4" /> Gerar scripts com IA
+                </Button>
+                <Button size="sm" className="gap-2" onClick={() => setEdit({ category_id: "", subcategory_id: "", title: "", content: "", internal_note: "", shortcut: "" })}>
+                  <Plus className="h-4 w-4" /> Nova mensagem
+                </Button>
+              </div>
             </div>
+
+            {showGen && (
+              <div className="p-4 border-b border-border space-y-3 bg-muted/30">
+                <p className="text-sm text-muted-foreground">Descreva o que você precisa (tom, assunto, situação) — a IA monta os scripts pra você revisar antes de salvar.</p>
+                <div className="grid grid-cols-[1fr_220px] gap-2">
+                  <Textarea rows={4} value={genDesc} onChange={(e) => setGenDesc(e.target.value)}
+                    placeholder="Ex: preciso de 3 mensagens formais explicando a política de cancelamento e reembolso, e uma mensagem curta cobrando retorno de cliente que sumiu na conversa." />
+                  <div>
+                    <Label className="text-xs">Categoria (opcional)</Label>
+                    <Select value={genCategoryId || "none"} onValueChange={(v) => setGenCategoryId(v === "none" ? "" : v)}>
+                      <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">— sem categoria —</SelectItem>
+                        {parents.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <Button size="sm" onClick={generateScripts} disabled={genLoading || !genDesc.trim()} className="gap-2">
+                  <Sparkles className="h-4 w-4" /> {genLoading ? "Gerando..." : "Gerar com IA"}
+                </Button>
+
+                {genDrafts.length > 0 && (
+                  <div className="space-y-2 pt-2 border-t border-border">
+                    <p className="text-sm font-medium">Prévia — revise antes de salvar:</p>
+                    {genDrafts.map((d, idx) => (
+                      <div key={idx} className="flex gap-2 items-start p-2 rounded-md border border-border bg-background">
+                        <input type="checkbox" checked={d.selected} className="mt-1.5"
+                          onChange={(e) => setGenDrafts((prev) => prev.map((p, i) => i === idx ? { ...p, selected: e.target.checked } : p))} />
+                        <div className="flex-1 space-y-1">
+                          <div className="flex gap-2">
+                            <Input value={d.title} className="font-medium"
+                              onChange={(e) => setGenDrafts((prev) => prev.map((p, i) => i === idx ? { ...p, title: e.target.value } : p))} />
+                            <Input value={d.shortcut} className="w-32" placeholder="atalho"
+                              onChange={(e) => setGenDrafts((prev) => prev.map((p, i) => i === idx ? { ...p, shortcut: e.target.value } : p))} />
+                          </div>
+                          <Textarea rows={3} value={d.content}
+                            onChange={(e) => setGenDrafts((prev) => prev.map((p, i) => i === idx ? { ...p, content: e.target.value } : p))} />
+                          <Input value={d.internal_note} placeholder="Quando usar (observação interna)"
+                            onChange={(e) => setGenDrafts((prev) => prev.map((p, i) => i === idx ? { ...p, internal_note: e.target.value } : p))} />
+                        </div>
+                      </div>
+                    ))}
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setGenDrafts([])}>Descartar</Button>
+                      <Button size="sm" onClick={saveGenerated} disabled={genSaving || genDrafts.every((d) => !d.selected)}>
+                        {genSaving ? "Salvando..." : `Salvar ${genDrafts.filter((d) => d.selected).length} script(s)`}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <Table>
               <TableHeader><TableRow><TableHead>Categoria</TableHead><TableHead>Título</TableHead><TableHead>Atalho</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
               <TableBody>
@@ -178,21 +298,28 @@ Responda APENAS com a frase da descrição, sem aspas, sem markdown, sem texto a
 
         <TabsContent value="fluxo" className="mt-4 space-y-3">
           <p className="text-sm text-muted-foreground">
-            Etapas do fluxo de atendimento (Apresentação, Documentos, Pagamento...) — independentes das Categorias da Biblioteca. Organize a ordem das etapas e das mensagens dentro delas.
+            Cada tipo de atendimento tem seu próprio fluxo de etapas. Escolha a categoria abaixo pra organizar (ou use "Geral" pra um fluxo comum a todos).
           </p>
 
+          <div className="flex gap-2 flex-wrap">
+            <Button size="sm" variant={flowCat === "geral" ? "default" : "outline"} onClick={() => setFlowCat("geral")}>Geral</Button>
+            {parents.map((c) => (
+              <Button key={c.id} size="sm" variant={flowCat === c.id ? "default" : "outline"} onClick={() => setFlowCat(c.id)}>{c.name}</Button>
+            ))}
+          </div>
+
           <div className="flex gap-2 max-w-md">
-            <Input placeholder="Nome da nova etapa (ex: Apresentação)" value={newStageName} onChange={(e) => setNewStageName(e.target.value)}
+            <Input placeholder="Nome da nova etapa" value={newStageName} onChange={(e) => setNewStageName(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") addStage(); }} />
             <Button size="sm" className="gap-1 shrink-0" onClick={addStage}><Plus className="h-4 w-4" /> Adicionar etapa</Button>
           </div>
 
-          {stages.length === 0 && (
-            <p className="text-sm text-muted-foreground">Nenhuma etapa criada ainda. Adicione a primeira acima.</p>
+          {stagesForCat.length === 0 && (
+            <p className="text-sm text-muted-foreground">Nenhuma etapa criada ainda para "{flowCat === "geral" ? "Geral" : parents.find((c) => c.id === flowCat)?.name}". Adicione a primeira acima.</p>
           )}
 
-          {stages.map((stage, stageIdx) => {
-            const stageMessages = allMessages
+          {stagesForCat.map((stage, stageIdx) => {
+            const stageMessages = messagesForCat
               .filter((m) => m.flow_stage_id === stage.id)
               .slice()
               .sort((a, b) => (a.position - b.position) || a.title.localeCompare(b.title));
@@ -204,7 +331,7 @@ Responda APENAS com a frase da descrição, sem aspas, sem markdown, sem texto a
                   <div className="flex gap-1 shrink-0">
                     <Button size="icon" variant="ghost" className="h-7 w-7" disabled={stageIdx === 0}
                       onClick={() => moveStage(stageIdx, -1)}><ArrowUp className="h-3.5 w-3.5" /></Button>
-                    <Button size="icon" variant="ghost" className="h-7 w-7" disabled={stageIdx === stages.length - 1}
+                    <Button size="icon" variant="ghost" className="h-7 w-7" disabled={stageIdx === stagesForCat.length - 1}
                       onClick={() => moveStage(stageIdx, 1)}><ArrowDown className="h-3.5 w-3.5" /></Button>
                     <Button size="icon" variant="ghost" onClick={() => removeStage(stage)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                   </div>
@@ -228,7 +355,7 @@ Responda APENAS com a frase da descrição, sem aspas, sem markdown, sem texto a
                         <SelectTrigger className="h-7 w-32 text-xs shrink-0"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">sem etapa</SelectItem>
-                          {stages.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                          {stagesForCat.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
                       <Button size="sm" variant="outline" className="gap-1 shrink-0" disabled={generatingId === m.id}
@@ -242,11 +369,11 @@ Responda APENAS com a frase da descrição, sem aspas, sem markdown, sem texto a
             );
           })}
 
-          {semEtapa.length > 0 && (
+          {messagesForCat.filter((m) => !m.flow_stage_id).length > 0 && (
             <Card className="p-3">
-              <h4 className="font-semibold mb-2 text-muted-foreground">Sem etapa ({semEtapa.length})</h4>
+              <h4 className="font-semibold mb-2 text-muted-foreground">Sem etapa ({messagesForCat.filter((m) => !m.flow_stage_id).length})</h4>
               <div className="space-y-1">
-                {semEtapa.map((m) => (
+                {messagesForCat.filter((m) => !m.flow_stage_id).map((m) => (
                   <div key={m.id} className="flex items-center gap-2 p-2 rounded-md border border-border/60">
                     {m.shortcut && <Badge variant="outline" className="shrink-0">/{m.shortcut}</Badge>}
                     <div className="min-w-0 flex-1">
@@ -256,7 +383,7 @@ Responda APENAS com a frase da descrição, sem aspas, sem markdown, sem texto a
                       <SelectTrigger className="h-7 w-40 text-xs shrink-0"><SelectValue placeholder="Atribuir etapa..." /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="none">sem etapa</SelectItem>
-                        {stages.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                        {stagesForCat.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
