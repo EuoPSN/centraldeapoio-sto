@@ -26,6 +26,7 @@ const StageInput = z.object({
   id: z.string().uuid().optional(),
   name: z.string().min(1).max(120),
   position: z.number().int().default(0),
+  category_id: z.string().uuid().nullable().optional(),
 });
 
 export const upsertFlowStage = createServerFn({ method: "POST" })
