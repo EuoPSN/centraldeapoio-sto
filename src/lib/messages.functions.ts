@@ -8,7 +8,7 @@ export const listMessages = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("messages")
-.select("*, category:categories!messages_category_id_fkey(id,name,icon,color), subcategory:categories!messages_subcategory_id_fkey(id,name), flow_stage:message_flow_stages(id,name,position)")
+.select("*, category:categories!messages_category_id_fkey(id,name,icon,color), subcategory:categories!messages_subcategory_id_fkey(id,name), flow_links:message_flow_links(id,flow_stage_id,position)")
       .order("position", { ascending: true })
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
