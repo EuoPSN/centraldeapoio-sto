@@ -16,7 +16,7 @@ export const listClientProfiles = createServerFn({ method: "GET" })
     const db = supabaseAdmin as any;
     const { data, error } = await db
       .from("client_profiles")
-      .select("*, category:categories(id,name,color)")
+      .select("*, category:categories(id,name,color,slug)")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return data ?? [];
