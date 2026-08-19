@@ -93,11 +93,16 @@ export function MessagesTab() {
     setGenLoading(true);
     try {
       const prompt = `Você escreve mensagens de script de atendimento ao cliente via WhatsApp, para o Cartão de Todos (cartão de descontos em saúde).
-A partir da descrição abaixo do que é necessário, crie um ou mais scripts de mensagem prontos pra copiar e enviar ao cliente.
+
+O texto abaixo pode ser uma descrição livre, ou pode incluir conteúdo de referência (ex: mensagens de um script já existente, informações de um produto/pacote). Trate esse conteúdo como MATÉRIA-PRIMA E CONTEXTO FACTUAL, não como um molde pra copiar.
+
+REGRA CRÍTICA: se o pedido é pra adaptar/refazer algo para um novo produto, pacote, situação ou público (ex: "refaça isso para o Pacote Ouro"), o resultado tem que ser conteúdo GENUINAMENTE NOVO e ESPECÍFICO sobre esse novo assunto — mencionando de forma concreta seus detalhes, benefícios, valores, diferenciais reais. NÃO é aceitável pegar as mensagens de referência e só trocar o título/atalho mantendo o mesmo texto ou estrutura genérica. Se o conteúdo de referência não tiver informação suficiente sobre o novo assunto pedido, use bom senso e conhecimento geral do setor pra preencher os detalhes plausíveis, mas ainda assim escreva do zero.
+
+Crie um ou mais scripts de mensagem prontos pra copiar e enviar ao cliente, cobrindo a sequência de atendimento que fizer sentido pro pedido (ex: apresentação, explicação do produto, fechamento).
 Cada item deve ter:
 - "title": título curto (poucas palavras) pra identificar o script na lista.
-- "content": o texto da mensagem em si, no tom apropriado à descrição, pronto pra uso real (pode usar *negrito* estilo WhatsApp).
-- "shortcut": uma palavra curta, minúscula, sem espaço ou acento, pra usar como atalho tipo /palavra no simulador (invente algo intuitivo relacionado ao título).
+- "content": o texto da mensagem em si, pronto pra uso real (pode usar *negrito* estilo WhatsApp).
+- "shortcut": uma palavra curta, minúscula, sem espaço ou acento, pra usar como atalho tipo /palavra no simulador (invente algo intuitivo relacionado ao título — se for regeneração de um script existente, o atalho pode mudar pra refletir o novo assunto).
 - "internal_note": uma frase curta dizendo quando o atendente deve usar essa mensagem.
 Responda APENAS com um array JSON, no formato exato: [{"title":"...","content":"...","shortcut":"...","internal_note":"..."}]. Sem markdown, sem texto fora do JSON.`;
       const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: genDesc }], model: "google/gemini-2.5-flash" } });
