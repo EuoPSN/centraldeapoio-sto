@@ -3,6 +3,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { listClientProfiles, upsertClientProfile, deleteClientProfile, moveClientProfile } from "@/lib/clientprofiles.functions";
 import { listCategories } from "@/lib/taxonomy.functions";
+import { listClientProfileStates } from "@/lib/clientprofilestates.functions";
+import { listFlowStages } from "@/lib/messageflow.functions";
+import { listMessages } from "@/lib/messages.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Pencil, GripVertical, Sparkles } from "lucide-react";
+import { Plus, Trash2, Pencil, GripVertical, Sparkles, FlaskConical } from "lucide-react";
 import { toast } from "sonner";
 import { ClientProfileStatesEditor } from "@/components/admin/ClientProfileStatesEditor";
 import { simulatorChat } from "@/lib/simulator.chat.functions";
@@ -121,6 +124,151 @@ Crie um perfil de cliente fictício coerente com o padrão real acima E com a de
     }
   };
 
+  // ---- Teste automático de estabilidade: IA joga como cliente E como atendente, do início ao fim ----
+  const statesFn = useServerFn(listClientProfileStates);
+  const stagesFn = useServerFn(listFlowStages);
+  const msgsFn = useServerFn(listMessages);
+  const testAI = useServerFn(simulatorChat);
+
+  const [testOpen, setTestOpen] = useState(false);
+  const [testProfileName, setTestProfileName] = useState("");
+  const [testRunning, setTestRunning] = useState(false);
+  const [testLog, setTestLog] = useState<{ role: "atendente" | "cliente"; text: string }[]>([]);
+  const [testStateIdx, setTestStateIdx] = useState(0);
+  const [testResult, setTestResult] = useState<null | { status: "sucesso" | "travou" | "limite"; stateName?: string; diagnostico?: string }>(null);
+
+  const runStabilityTest = async (p: any) => {
+    setTestProfileName(p.name);
+    setTestOpen(true);
+    setTestRunning(true);
+    setTestLog([]);
+    setTestStateIdx(0);
+    setTestResult(null);
+
+    try {
+      const states = (await statesFn({ data: { profile_id: p.id } })) as any[];
+      if (!states || states.length === 0) {
+        setTestResult({ status: "travou", diagnostico: "Este perfil não tem etapas de Jornada cadastradas — cadastre a Jornada primeiro pra poder testar." });
+        setTestRunning(false);
+        return;
+      }
+      const allStages = (await stagesFn({})) as any[];
+      const allMsgs = (await msgsFn({})) as any[];
+      const catStages = allStages.filter((s: any) => (s.category_id ?? null) === (p.category_id ?? null));
+      const isCadastroExistente = !!p.category?.slug && p.category.slug !== "filiacao";
+
+      const enderecoTexto = [p.endereco_rua, p.endereco_numero ? `nº ${p.endereco_numero}` : null, p.endereco_complemento]
+        .filter(Boolean).join(", ") + [
+          p.endereco_bairro ? ` - ${p.endereco_bairro}` : "",
+          p.endereco_cidade ? `, ${p.endereco_cidade}` : "",
+          p.endereco_estado ? `/${p.endereco_estado}` : "",
+          p.endereco_cep ? `, CEP ${p.endereco_cep}` : "",
+        ].join("");
+      const dadosFicticios = [
+        p.cliente_nome ? `Nome completo: ${p.cliente_nome}` : null,
+        p.cliente_cpf ? `CPF: ${p.cliente_cpf}` : null,
+        p.cliente_telefone ? `Telefone: ${p.cliente_telefone}` : null,
+        p.cliente_regiao ? `Região/cidade onde mora: ${p.cliente_regiao}` : null,
+        enderecoTexto.trim() ? `Endereço: ${enderecoTexto.trim()}` : null,
+      ].filter(Boolean).join(" | ");
+      const dependentesTexto = p.dependentes && p.dependentes.length > 0
+        ? p.dependentes.map((d: any) => `${d.nome}${d.cpf ? ` (CPF ${d.cpf})` : ""}${d.nascimento ? `, nasc. ${d.nascimento}` : ""}${d.situacao ? ` — ${d.situacao}` : ""}`).join("; ")
+        : null;
+      const dadosBlock = isCadastroExistente
+        ? `Você JÁ POSSUI CADASTRO na empresa — não é filiação nova. Seu cadastro atual é: ${dadosFicticios || "nenhum dado definido"}. ${dependentesTexto ? `Dependentes: ${dependentesTexto}.` : "Sem dependentes."} Confirme dados que baterem com o cadastro, corrija os que não baterem.`
+        : `${dadosFicticios ? `Seus dados fictícios (use só se perguntado): ${dadosFicticios}.` : ""}`;
+
+      const clientePrompt = (idx: number) => {
+        const atual = states[idx];
+        const proximo = states[idx + 1];
+        return `Você é um cliente virtual chamado ${p.name} sendo atendido por um vendedor do Cartão de Todos.
+Personalidade: ${p.personality}. Objetivos: ${p.objectives}. Objeções: ${p.objections}. Comportamentos: ${p.behaviors}.
+${dadosBlock}
+Responda APENAS como o cliente, curto e natural, estilo WhatsApp.
+
+FUNIL — estado atual: "${atual.name}" (etapa ${idx + 1} de ${states.length}).
+${atual.description ? `Descrição: ${atual.description}` : ""}
+Critério pra avançar${proximo ? ` (próximo: "${proximo.name}")` : ""}: ${atual.advance_criteria || "a seu critério"}.
+Se o atendente pedir um dado seu, você é OBRIGADO a informar de fato (não só prometer) antes de marcar avanço.
+Responda em JSON: {"avanca": true ou false, "mensagens": ["fala curta"]}`;
+      };
+
+      const atendentePrompt = (idx: number) => {
+        const atual = states[idx];
+        const stageMsgs = allMsgs.filter((m: any) =>
+          catStages.some((s: any) => (m.flow_links ?? []).some((l: any) => l.flow_stage_id === s.id))
+        );
+        const scriptsTexto = stageMsgs.length > 0
+          ? stageMsgs.map((m: any) => `- ${m.title}: ${m.content}`).slice(0, 15).join("\n")
+          : "Nenhum script cadastrado pra esse tipo de atendimento ainda — use seu bom senso.";
+        return `Você é um atendente humano experiente do Cartão de Todos, conduzindo um atendimento de verdade pelo WhatsApp.
+Objetivo AGORA: cumprir o critério da etapa "${atual.name}": ${atual.advance_criteria || atual.description || "avance a conversa naturalmente"}.
+Scripts reais disponíveis pra esse tipo de atendimento (use como referência, adapte à conversa, não precisa copiar literalmente):
+${scriptsTexto}
+Escreva sua próxima mensagem pro cliente (pode ser 1-2 frases). Responda APENAS com o texto da mensagem, sem JSON, sem aspas.`;
+      };
+
+      let idx = 0;
+      let noAdvanceCount = 0;
+      const log: { role: "atendente" | "cliente"; text: string }[] = [];
+      const maxTurns = 30;
+      let turns = 0;
+      let status: "sucesso" | "travou" | "limite" = "limite";
+      let stuckStateName = "";
+
+      while (turns < maxTurns) {
+        turns++;
+        const historyForAtendente = log.map((l) => ({ role: l.role === "atendente" ? ("assistant" as const) : ("user" as const), content: l.text }));
+        const { content: atendMsg } = await testAI({ data: { messages: [{ role: "system", content: atendentePrompt(idx) }, ...historyForAtendente], model: "google/gemini-2.5-flash" } });
+        log.push({ role: "atendente", text: atendMsg.trim() });
+        setTestLog([...log]);
+
+        const historyForCliente = log.map((l) => ({ role: l.role === "atendente" ? ("user" as const) : ("assistant" as const), content: l.text }));
+        const { content: clienteRaw } = await testAI({ data: { messages: [{ role: "system", content: clientePrompt(idx) }, ...historyForCliente], model: "google/gemini-2.5-flash" } });
+        let avanca = false;
+        let falas: string[] = [];
+        try {
+          const parsed = JSON.parse(clienteRaw.replace(/```json|```/g, "").trim());
+          avanca = !!parsed.avanca;
+          falas = Array.isArray(parsed.mensagens) && parsed.mensagens.length > 0 ? parsed.mensagens : [String(parsed.mensagens ?? clienteRaw)];
+        } catch {
+          falas = [clienteRaw];
+        }
+        falas.forEach((f: string) => log.push({ role: "cliente", text: f }));
+        setTestLog([...log]);
+
+        if (avanca) {
+          noAdvanceCount = 0;
+          idx++;
+          setTestStateIdx(idx);
+          if (idx >= states.length) { status = "sucesso"; break; }
+        } else {
+          noAdvanceCount++;
+          if (noAdvanceCount >= 4) { status = "travou"; stuckStateName = states[idx].name; break; }
+        }
+      }
+      if (turns >= maxTurns && status === "limite") stuckStateName = states[Math.min(idx, states.length - 1)]?.name ?? "";
+
+      let diagnostico = "";
+      if (status !== "sucesso") {
+        try {
+          const transcript = log.map((l) => `${l.role === "atendente" ? "Atendente" : "Cliente"}: ${l.text}`).join("\n");
+          const diagPrompt = `Leia esta simulação automática de atendimento que ${status === "travou" ? `travou na etapa "${stuckStateName}"` : "excedeu o limite de turnos sem terminar"}. Em até 3 frases, diga o que provavelmente deu errado (ex: dado prometido e nunca enviado, atendente repetindo a mesma pergunta, critério de avanço confuso). Seja direto, sem rodeios.\n\nTranscrição:\n${transcript}`;
+          const { content } = await testAI({ data: { messages: [{ role: "user", content: diagPrompt }], model: "google/gemini-2.5-flash" } });
+          diagnostico = content.trim();
+        } catch {
+          diagnostico = "Não foi possível gerar o diagnóstico automático.";
+        }
+      }
+
+      setTestResult({ status, stateName: stuckStateName || states[Math.min(idx, states.length - 1)]?.name, diagnostico });
+    } catch (e) {
+      setTestResult({ status: "travou", diagnostico: e instanceof Error ? e.message : "Erro ao rodar o teste." });
+    } finally {
+      setTestRunning(false);
+    }
+  };
+
   const upsertMut = useMutation({
     mutationFn: (d: any) => upsertFn({ data: { ...d, category_id: d.category_id || null } }),
     onSuccess: (result: any) => {
@@ -189,6 +337,7 @@ const openEdit = (p: any) => { setForm({ ...p, category_id: p.category_id ?? "",
           <h3 className="font-semibold text-sm truncate">{p.name}</h3>
         </div>
         <div className="flex gap-1 shrink-0">
+          <Button size="icon" variant="ghost" className="h-7 w-7" title="Testar atendimento completo" onClick={() => runStabilityTest(p)}><FlaskConical className="h-3 w-3" /></Button>
           <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(p)}><Pencil className="h-3 w-3" /></Button>
           <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => deleteMut.mutate(p.id)}><Trash2 className="h-3 w-3" /></Button>
         </div>
@@ -466,6 +615,35 @@ const openEdit = (p: any) => { setForm({ ...p, category_id: p.category_id ?? "",
               {generating ? "Gerando..." : "Gerar perfil"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+         <Dialog open={testOpen} onOpenChange={(v) => { if (!testRunning) setTestOpen(v); }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Teste de estabilidade — {testProfileName}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            {testRunning && (
+              <p className="text-sm text-muted-foreground">Rodando atendimento automático... etapa atual: {testStateIdx + 1}</p>
+            )}
+            {testResult && (
+              <Card className={`p-4 ${testResult.status === "sucesso" ? "bg-emerald-50 border-emerald-200" : "bg-red-50 border-red-200"}`}>
+                <p className="font-semibold text-sm">
+                  {testResult.status === "sucesso"
+                    ? "Atendimento completo, sem travar."
+                    : testResult.status === "travou"
+                    ? `Travou na etapa "${testResult.stateName}".`
+                    : `Excedeu o limite de turnos (parado na etapa "${testResult.stateName}").`}
+                </p>
+                {testResult.diagnostico && <p className="text-xs text-muted-foreground mt-1">{testResult.diagnostico}</p>}
+              </Card>
+            )}
+            <div className="border rounded-md max-h-80 overflow-y-auto p-3 space-y-2 bg-muted/20">
+              {testLog.map((l, i) => (
+                <div key={i} className="text-xs">
+                  <span className="font-semibold">{l.role === "atendente" ? "Atendente: " : "Cliente: "}</span>{l.text}
+                </div>
+              ))}
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
