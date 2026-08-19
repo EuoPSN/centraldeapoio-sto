@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { listMessages } from "@/lib/messages.functions";
 import { listFlowStages } from "@/lib/messageflow.functions";
+import { listCategories } from "@/lib/taxonomy.functions";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -54,21 +55,33 @@ interface MessageRow {
   subcategory: { id: string; name: string } | null;
   position: number;
   shortcut?: string | null;
-  flow_stage_id?: string | null;
+  category_id?: string | null;
+  flow_links?: { id: string; flow_stage_id: string; position: number }[];
 }
 
-interface StageRow { id: string; name: string; position: number; }
+interface StageRow { id: string; name: string; position: number; category_id: string | null; }
+interface FlowCatRow { id: string; name: string; parent_id: string | null; }
 
 function FluxoAtendimento() {
   const msgFn = useServerFn(listMessages);
   const stageFn = useServerFn(listFlowStages);
+  const catFn = useServerFn(listCategories);
   const msgQ = useQuery({ queryKey: ["messages"], queryFn: () => msgFn({}) });
   const stageQ = useQuery({ queryKey: ["flow-stages"], queryFn: () => stageFn({}) });
+  const catQ = useQuery({ queryKey: ["cats", "message"], queryFn: () => catFn({ data: { scope: "message" } }) });
 
   const rows = (msgQ.data ?? []) as unknown as MessageRow[];
-  const stages = ((stageQ.data ?? []) as StageRow[]).slice().sort((a, b) => a.position - b.position);
+  const allStages = (stageQ.data ?? []) as StageRow[];
+  const parents = ((catQ.data ?? []) as FlowCatRow[]).filter((c) => !c.parent_id);
 
-  if (stageQ.isLoading || msgQ.isLoading) {
+  const [flowCat, setFlowCat] = useState<string>("geral");
+  const flowCategoryId = flowCat === "geral" ? null : flowCat;
+  const stages = allStages
+    .filter((s) => (s.category_id ?? null) === flowCategoryId)
+    .slice()
+    .sort((a, b) => a.position - b.position);
+
+  if (stageQ.isLoading || msgQ.isLoading || catQ.isLoading) {
     return (
       <div className="grid gap-4 sm:grid-cols-2">
         <SkeletonCard />
@@ -77,58 +90,71 @@ function FluxoAtendimento() {
     );
   }
 
-  if (stages.length === 0) {
-    return (
-      <Card className="p-10 text-center">
-        <p className="text-muted-foreground">Nenhuma etapa de fluxo cadastrada ainda.</p>
-        <p className="text-xs text-muted-foreground mt-1">Configure em Painel Admin → Mensagens → aba "Fluxo de Atendimento".</p>
-      </Card>
-    );
-  }
-
   return (
-    <Accordion type="multiple" defaultValue={stages.map((s) => s.id)} className="space-y-3">
-      {stages.map((stage, idx) => {
-        const stageMessages = rows
-          .filter((m) => m.flow_stage_id === stage.id)
-          .slice()
-          .sort((a, b) => (a.position - b.position) || a.title.localeCompare(b.title));
-        return (
-          <AccordionItem key={stage.id} value={stage.id} className="border border-border rounded-lg px-4 bg-card">
-            <AccordionTrigger className="hover:no-underline">
-              <div className="flex items-center gap-3">
-                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary/10 text-primary text-xs font-semibold shrink-0">{idx + 1}</span>
-                <span className="font-semibold">{stage.name}</span>
-                <span className="text-xs text-muted-foreground font-normal">{stageMessages.length} mensagem(ns)</span>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent>
-              {stageMessages.length === 0 ? (
-                <p className="text-sm text-muted-foreground pb-3">Nenhuma mensagem atribuída a esta etapa ainda.</p>
-              ) : (
-                <div className="space-y-3 pb-3">
-                  {stageMessages.map((m) => (
-                    <div key={m.id} className="rounded-md border border-border p-3">
-                      <div className="flex items-start justify-between gap-3 mb-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          {m.shortcut && <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-primary/10 text-primary shrink-0">/{m.shortcut}</span>}
-                          <h4 className="font-medium truncate">{m.title}</h4>
+    <div className="space-y-4">
+      {parents.length > 0 && (
+        <div className="flex gap-2 flex-wrap">
+          <Button size="sm" variant={flowCat === "geral" ? "default" : "outline"} onClick={() => setFlowCat("geral")}>Geral</Button>
+          {parents.map((c) => (
+            <Button key={c.id} size="sm" variant={flowCat === c.id ? "default" : "outline"} onClick={() => setFlowCat(c.id)}>{c.name}</Button>
+          ))}
+        </div>
+      )}
+
+      {stages.length === 0 ? (
+        <Card className="p-10 text-center">
+          <p className="text-muted-foreground">Nenhuma etapa de fluxo cadastrada ainda para "{flowCat === "geral" ? "Geral" : parents.find((c) => c.id === flowCat)?.name}".</p>
+          <p className="text-xs text-muted-foreground mt-1">Configure em Painel Admin → Mensagens → aba "Fluxo de Atendimento".</p>
+        </Card>
+      ) : (
+        <Accordion type="multiple" defaultValue={stages.map((s) => s.id)} className="space-y-3">
+          {stages.map((stage, idx) => {
+            const stageMessages = rows
+              .filter((m) => (m.flow_links ?? []).some((l) => l.flow_stage_id === stage.id))
+              .slice()
+              .sort((a, b) => {
+                const la = (a.flow_links ?? []).find((l) => l.flow_stage_id === stage.id)?.position ?? 0;
+                const lb = (b.flow_links ?? []).find((l) => l.flow_stage_id === stage.id)?.position ?? 0;
+                return la - lb;
+              });
+            return (
+              <AccordionItem key={stage.id} value={stage.id} className="border border-border rounded-lg px-4 bg-card">
+                <AccordionTrigger className="hover:no-underline">
+                  <div className="flex items-center gap-3">
+                    <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary/10 text-primary text-xs font-semibold shrink-0">{idx + 1}</span>
+                    <span className="font-semibold">{stage.name}</span>
+                    <span className="text-xs text-muted-foreground font-normal">{stageMessages.length} mensagem(ns)</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  {stageMessages.length === 0 ? (
+                    <p className="text-sm text-muted-foreground pb-3">Nenhuma mensagem atribuída a esta etapa ainda.</p>
+                  ) : (
+                    <div className="space-y-3 pb-3">
+                      {stageMessages.map((m) => (
+                        <div key={m.id} className="rounded-md border border-border p-3">
+                          <div className="flex items-start justify-between gap-3 mb-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              {m.shortcut && <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-primary/10 text-primary shrink-0">/{m.shortcut}</span>}
+                              <h4 className="font-medium truncate">{m.title}</h4>
+                            </div>
+                            <CopyButton text={m.content} />
+                          </div>
+                          <div className="rounded-md bg-muted/40 border border-border p-3 max-h-56 overflow-y-auto">
+                            <Markdown>{m.content}</Markdown>
+                          </div>
+                          {m.internal_note && <p className="text-xs text-muted-foreground italic mt-2">📝 {m.internal_note}</p>}
                         </div>
-                        <CopyButton text={m.content} />
-                      </div>
-                      <div className="rounded-md bg-muted/40 border border-border p-3 max-h-56 overflow-y-auto">
-                        <Markdown>{m.content}</Markdown>
-                      </div>
-                      {m.internal_note && <p className="text-xs text-muted-foreground italic mt-2">📝 {m.internal_note}</p>}
+                      ))}
                     </div>
-                  ))}
-                </div>
-              )}
-            </AccordionContent>
-          </AccordionItem>
-        );
-      })}
-    </Accordion>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+            );
+          })}
+        </Accordion>
+      )}
+    </div>
   );
 }
 
