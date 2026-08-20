@@ -499,11 +499,11 @@ function PricingTab() {
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["pricing"], queryFn: () => list({}) });
 
- const [edit, setEdit] = useState<null | { id?: string; category: string; specialty: string; cartao_price: string; particular_price: string; notes: string; description: string }>(null);
+ const [edit, setEdit] = useState<null | { id?: string; category: string; specialty: string; cartao_price: string; particular_price: string; notes: string; description: string; regioes_principais: string; regioes_outras: string }>(null);
   const [descGenerating, setDescGenerating] = useState(false);
 
   // ---- Preenchimento automático via IA ----
-  type AiPricingItem = { category: string; specialty: string; cartao_price: number | null; particular_price: number | null; notes: string | null; selected: boolean };
+   type AiPricingItem = { category: string; specialty: string; cartao_price: number | null; particular_price: number | null; notes: string | null; regioes_principais: string[]; regioes_outras: string[]; selected: boolean };
   const genAI = useServerFn(simulatorChat);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiInput, setAiInput] = useState("");
@@ -517,13 +517,14 @@ function PricingTab() {
     try {
       const prompt = `Você organiza tabelas de preços de um cartão de descontos em saúde (Cartão de Todos) a partir de texto livre enviado por um administrador.
 Extraia cada especialidade ou procedimento mencionado no texto e devolva um array JSON, um objeto por item, no formato exato:
-[{"category": "...", "specialty": "...", "cartao_price": numero ou null, "particular_price": numero ou null, "notes": "texto curto ou null"}]
+[{"category": "...", "specialty": "...", "cartao_price": numero ou null, "particular_price": numero ou null, "notes": "texto curto ou null", "regioes_principais": ["..."], "regioes_outras": ["..."]}]
 
 Regras:
 - "category" agrupa itens parecidos (ex: "Consultas", "Exames", "Procedimentos", "Odontologia"). Use categorias curtas e consistentes entre os itens.
 - "specialty" é o nome específico da especialidade ou procedimento (ex: "Cardiologista", "Hemograma completo").
 - "cartao_price" e "particular_price" são números em reais, com ponto como separador decimal (ex: 45.90), sem o símbolo R$. Se um valor não aparecer no texto, use null.
 - "notes" é opcional: use apenas se houver informação extra relevante sobre como a especialidade/procedimento funciona (ex: "necessário agendamento com 48h de antecedência"). Caso não haja nada relevante, use null.
+- "regioes_principais" e "regioes_outras" são listas de nomes de bairro/região/cidade, SE o texto mencionar onde aquele item está disponível, separando as regiões de destaque das demais. Se o texto não falar nada sobre região, devolva as duas listas vazias.
 - Responda APENAS com o array JSON, sem markdown, sem nenhum texto fora do JSON.`;
       const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: aiInput }], model: "google/gemini-2.5-flash" } });
       const clean = content.replace(/```json|```/g, "").trim();
@@ -535,6 +536,8 @@ Regras:
           cartao_price: typeof it.cartao_price === "number" ? it.cartao_price : null,
           particular_price: typeof it.particular_price === "number" ? it.particular_price : null,
           notes: it.notes || null,
+          regioes_principais: Array.isArray(it.regioes_principais) ? it.regioes_principais : [],
+          regioes_outras: Array.isArray(it.regioes_outras) ? it.regioes_outras : [],
           selected: true,
         }))
         .filter((it: AiPricingItem) => it.specialty);
@@ -553,7 +556,7 @@ Regras:
     setAiImporting(true);
     try {
       for (const item of toImport) {
-        await upsert({ data: { category: item.category, specialty: item.specialty, cartao_price: item.cartao_price, particular_price: item.particular_price, notes: item.notes, position: 0 } });
+        await upsert({ data:         await upsert({ data: { category: item.category, specialty: item.specialty, cartao_price: item.cartao_price, particular_price: item.particular_price, notes: item.notes, regioes_principais: item.regioes_principais, regioes_outras: item.regioes_outras, position: 0 } });
       }
       toast.success(`${toImport.length} item(ns) importado(s)!`);
       qc.invalidateQueries({ queryKey: ["pricing"] });
@@ -619,6 +622,8 @@ Responda APENAS com o texto da descrição, sem aspas, sem markdown, sem introdu
     }
   };
 
+  const parseRegioes = (s: string) => s.split(",").map((r) => r.trim()).filter(Boolean);
+
   const upsertMut = useMutation({
     mutationFn: () => upsert({
       data: {
@@ -629,6 +634,8 @@ Responda APENAS com o texto da descrição, sem aspas, sem markdown, sem introdu
         particular_price: edit!.particular_price ? Number(edit!.particular_price) : null,
         notes: edit!.notes || null,
         description: edit!.description || null,
+        regioes_principais: parseRegioes(edit!.regioes_principais),
+        regioes_outras: parseRegioes(edit!.regioes_outras),
         position: 0,
       },
     }),
@@ -651,7 +658,7 @@ Responda APENAS com o texto da descrição, sem aspas, sem markdown, sem introdu
           <Button size="sm" variant="outline" className="gap-2" onClick={generateAllMissingDescriptions} disabled={bulkGenerating}>
             <Sparkles className="h-4 w-4" /> {bulkGenerating ? "Gerando..." : "Gerar descrições faltantes"}
           </Button>
-<Button size="sm" className="gap-2" onClick={() => setEdit({ category: "Consultas", specialty: "", cartao_price: "", particular_price: "", notes: "", description: "" })}>
+<Button size="sm" className="gap-2" onClick={() => setEdit({ category: "Consultas", specialty: "", cartao_price: "", particular_price: "", notes: "", description: "", regioes_principais: "", regioes_outras: "" })}>
             <Plus className="h-4 w-4" /> Novo
           </Button>
         </div>
@@ -674,7 +681,7 @@ Responda APENAS com o texto da descrição, sem aspas, sem markdown, sem introdu
               <TableCell className="text-right">{p.cartao_price != null ? `R$ ${Number(p.cartao_price).toFixed(2)}` : "—"}</TableCell>
               <TableCell className="text-right">{p.particular_price != null ? `R$ ${Number(p.particular_price).toFixed(2)}` : "—"}</TableCell>
               <TableCell className="text-right space-x-1">
-<Button size="icon" variant="ghost" onClick={() => setEdit({ id: p.id, category: p.category, specialty: p.specialty, cartao_price: p.cartao_price?.toString() ?? "", particular_price: p.particular_price?.toString() ?? "", notes: p.notes ?? "", description: (p as any).description ?? "" })}><Pencil className="h-4 w-4" /></Button>
+<Button size="icon" variant="ghost" onClick={() => setEdit({ id: p.id, category: p.category, specialty: p.specialty, cartao_price: p.cartao_price?.toString() ?? "", particular_price: p.particular_price?.toString() ?? "", notes: p.notes ?? "", description: (p as any).description ?? "", regioes_principais: ((p as any).regioes_principais ?? []).join(", "), regioes_outras: ((p as any).regioes_outras ?? []).join(", ") })}><Pencil className="h-4 w-4" /></Button>
                 <Button size="icon" variant="ghost" onClick={() => confirm("Excluir?") && delMut.mutate(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
               </TableCell>
             </TableRow>
@@ -694,6 +701,16 @@ Responda APENAS com o texto da descrição, sem aspas, sem markdown, sem introdu
                 <div><Label>Valor Particular (R$)</Label><Input type="number" step="0.01" value={edit.particular_price} onChange={(e) => setEdit({ ...edit, particular_price: e.target.value })} /></div>
               </div>
 <div><Label>Observações</Label><Input value={edit.notes} onChange={(e) => setEdit({ ...edit, notes: e.target.value })} /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Regiões principais</Label>
+                  <Input value={edit.regioes_principais} onChange={(e) => setEdit({ ...edit, regioes_principais: e.target.value })} placeholder="Ex: Veneza, Justinópolis" />
+                </div>
+                <div>
+                  <Label>Outras regiões</Label>
+                  <Input value={edit.regioes_outras} onChange={(e) => setEdit({ ...edit, regioes_outras: e.target.value })} placeholder="Ex: Venda Nova, Belo Horizonte" />
+                </div>
+              </div>
               <div>
                 <div className="flex items-center justify-between">
                   <Label>Descrição para busca (opcional)</Label>
