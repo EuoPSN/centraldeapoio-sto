@@ -143,6 +143,8 @@ const PricingInput = z.object({
   notes: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   position: z.number().int().default(0),
+  regioes_principais: z.array(z.string()).default([]),
+  regioes_outras: z.array(z.string()).default([]),
 });
 
 export const upsertPricing = createServerFn({ method: "POST" })
