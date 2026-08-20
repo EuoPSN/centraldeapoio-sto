@@ -966,26 +966,76 @@ export type Database = {
         }
         Relationships: []
       }
+      message_flow_links: {
+        Row: {
+          created_at: string
+          flow_stage_id: string
+          id: string
+          message_id: string
+          position: number
+        }
+        Insert: {
+          created_at?: string
+          flow_stage_id: string
+          id?: string
+          message_id: string
+          position?: number
+        }
+        Update: {
+          created_at?: string
+          flow_stage_id?: string
+          id?: string
+          message_id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_flow_links_flow_stage_id_fkey"
+            columns: ["flow_stage_id"]
+            isOneToOne: false
+            referencedRelation: "message_flow_stages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_flow_links_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_flow_stages: {
         Row: {
+          category_id: string | null
           created_at: string
           id: string
           name: string
           position: number
         }
         Insert: {
+          category_id?: string | null
           created_at?: string
           id?: string
           name: string
           position?: number
         }
         Update: {
+          category_id?: string | null
           created_at?: string
           id?: string
           name?: string
           position?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "message_flow_stages_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       messages: {
         Row: {
@@ -993,7 +1043,6 @@ export type Database = {
           content: string
           created_at: string
           created_by: string | null
-          flow_stage_id: string | null
           id: string
           internal_note: string | null
           position: number
@@ -1008,7 +1057,6 @@ export type Database = {
           content?: string
           created_at?: string
           created_by?: string | null
-          flow_stage_id?: string | null
           id?: string
           internal_note?: string | null
           position?: number
@@ -1023,7 +1071,6 @@ export type Database = {
           content?: string
           created_at?: string
           created_by?: string | null
-          flow_stage_id?: string | null
           id?: string
           internal_note?: string | null
           position?: number
@@ -1039,13 +1086,6 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "messages_flow_stage_id_fkey"
-            columns: ["flow_stage_id"]
-            isOneToOne: false
-            referencedRelation: "message_flow_stages"
             referencedColumns: ["id"]
           },
           {
@@ -1106,6 +1146,8 @@ export type Database = {
           notes: string | null
           particular_price: number | null
           position: number
+          regioes_outras: string[]
+          regioes_principais: string[]
           specialty: string
           updated_at: string
         }
@@ -1118,6 +1160,8 @@ export type Database = {
           notes?: string | null
           particular_price?: number | null
           position?: number
+          regioes_outras?: string[]
+          regioes_principais?: string[]
           specialty: string
           updated_at?: string
         }
@@ -1130,6 +1174,8 @@ export type Database = {
           notes?: string | null
           particular_price?: number | null
           position?: number
+          regioes_outras?: string[]
+          regioes_principais?: string[]
           specialty?: string
           updated_at?: string
         }
