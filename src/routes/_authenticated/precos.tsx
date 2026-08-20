@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CopyButton } from "@/components/CopyButton";
-import { DollarSign, Search, TrendingDown, ListChecks, AlertTriangle, Info } from "lucide-react";
+import { DollarSign, Search, TrendingDown, ListChecks, AlertTriangle, Info, MapPin } from "lucide-react";
 import { SkeletonCard } from "@/components/ui/skeleton-card";
 
 export const Route = createFileRoute("/_authenticated/precos")({
@@ -23,6 +23,8 @@ interface PricingRow {
   category: string;
   notes: string | null;
   description: string | null;
+  regioes_principais: string[] | null;
+  regioes_outras: string[] | null;
 }
 
 const fmt = (n: number | string | null) =>
@@ -237,6 +239,21 @@ const [activeCat, setActiveCat] = useState<string>("todos");
                             <p className="text-xs text-amber-700 mt-1.5 flex items-start gap-1">
                               <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" /> {v.notes}
                             </p>
+                          )}
+                          {((v.regioes_principais && v.regioes_principais.length > 0) || (v.regioes_outras && v.regioes_outras.length > 0)) && (
+                            <div className="text-xs text-muted-foreground mt-1.5 space-y-0.5">
+                              {v.regioes_principais && v.regioes_principais.length > 0 && (
+                                <p className="flex items-start gap-1">
+                                  <MapPin className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
+                                  <span><span className="font-medium text-foreground">Principais:</span> {v.regioes_principais.join(", ")}</span>
+                                </p>
+                              )}
+                              {v.regioes_outras && v.regioes_outras.length > 0 && (
+                                <p className="flex items-start gap-1 pl-[18px]">
+                                  <span><span className="font-medium">Outras regiões:</span> {v.regioes_outras.join(", ")}</span>
+                                </p>
+                              )}
+                            </div>
                           )}
                         </div>
                       );
