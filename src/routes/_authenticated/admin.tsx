@@ -556,7 +556,18 @@ Regras:
     setAiImporting(true);
     try {
       for (const item of toImport) {
-        await upsert({ data:         await upsert({ data: { category: item.category, specialty: item.specialty, cartao_price: item.cartao_price, particular_price: item.particular_price, notes: item.notes, regioes_principais: item.regioes_principais, regioes_outras: item.regioes_outras, position: 0 } });
+        await upsert({
+          data: {
+            category: item.category,
+            specialty: item.specialty,
+            cartao_price: item.cartao_price,
+            particular_price: item.particular_price,
+            notes: item.notes,
+            regioes_principais: item.regioes_principais,
+            regioes_outras: item.regioes_outras,
+            position: 0,
+          },
+        });
       }
       toast.success(`${toImport.length} item(ns) importado(s)!`);
       qc.invalidateQueries({ queryKey: ["pricing"] });
