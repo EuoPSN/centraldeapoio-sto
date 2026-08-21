@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   listContent, upsertContent, deleteContent,
   listScripts, upsertScript, deleteScript,
-  listPricing, upsertPricing, deletePricing,
+  listPricing, upsertPricing, deletePricing, setPricingItemUnidades,
 } from "@/lib/content.functions";
 import {
   listUsers, promoteUser, setUserActive, createUser, resetUserPassword, deleteUser,
@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import { Database, LayoutDashboard, Pencil, Plus, RefreshCw, Settings, Sparkles, Trash2, UserPlus, Users, ShieldCheck } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { simulatorChat } from "@/lib/simulator.chat.functions";
+import { listUnidades, upsertUnidade } from "@/lib/unidades.functions";
 import { MessagesTab } from "@/components/admin/MessagesTab";
 import { TaxonomyTab } from "@/components/admin/TaxonomyTab";
 import { SuggestionsTab } from "@/components/admin/SuggestionsTab";
@@ -498,14 +499,20 @@ function PricingTab() {
   const list = useServerFn(listPricing);
   const upsert = useServerFn(upsertPricing);
   const del = useServerFn(deletePricing);
+  const setUnidadesFn = useServerFn(setPricingItemUnidades);
+  const unidadesListFn = useServerFn(listUnidades);
+  const upsertUnidadeFn = useServerFn(upsertUnidade);
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["pricing"], queryFn: () => list({}) });
+  const unidadesQ = useQuery({ queryKey: ["unidades"], queryFn: () => unidadesListFn({}) });
+  const unidadesList = (unidadesQ.data ?? []) as { id: string; nome: string }[];
 
- const [edit, setEdit] = useState<null | { id?: string; category: string; specialty: string; cartao_price: string; particular_price: string; notes: string; description: string; regioes_principais: string; regioes_outras: string }>(null);
+  type UnidadeSel = "none" | "principal" | "outras";
+  const [edit, setEdit] = useState<null | { id?: string; category: string; specialty: string; cartao_price: string; particular_price: string; notes: string; description: string; unidadesSel: Record<string, UnidadeSel> }>(null);
   const [descGenerating, setDescGenerating] = useState(false);
 
   // ---- Preenchimento automático via IA ----
-   type AiPricingItem = { category: string; specialty: string; cartao_price: number | null; particular_price: number | null; notes: string | null; regioes_principais: string[]; regioes_outras: string[]; selected: boolean };
+  type AiPricingItem = { category: string; specialty: string; cartao_price: number | null; particular_price: number | null; notes: string | null; regioes_principais: string[]; regioes_outras: string[]; selected: boolean };
   const genAI = useServerFn(simulatorChat);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiInput, setAiInput] = useState("");
@@ -525,8 +532,8 @@ Regras:
 - "category" agrupa itens parecidos (ex: "Consultas", "Exames", "Procedimentos", "Odontologia"). Use categorias curtas e consistentes entre os itens.
 - "specialty" é o nome específico da especialidade ou procedimento (ex: "Cardiologista", "Hemograma completo").
 - "cartao_price" e "particular_price" são números em reais, com ponto como separador decimal (ex: 45.90), sem o símbolo R$. Se um valor não aparecer no texto, use null.
-- "notes" é opcional: use apenas se houver informação extra relevante sobre como a especialidade/procedimento funciona (ex: "necessário agendamento com 48h de antecedência"). Caso não haja nada relevante, use null.
-- "regioes_principais" e "regioes_outras" são listas de nomes de bairro/região/cidade, SE o texto mencionar onde aquele item está disponível, separando as regiões de destaque das demais. Se o texto não falar nada sobre região, devolva as duas listas vazias.
+- "notes" é opcional: use apenas se houver informação extra relevante sobre como a especialidade/procedimento funciona.
+- "regioes_principais" e "regioes_outras" são listas de nomes de bairro/região/cidade, SE o texto mencionar onde aquele item está disponível. Se não houver nada, devolva as duas listas vazias.
 - Responda APENAS com o array JSON, sem markdown, sem nenhum texto fora do JSON.`;
       const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: aiInput }], model: "google/gemini-2.5-flash" } });
       const clean = content.replace(/```json|```/g, "").trim();
@@ -552,27 +559,35 @@ Regras:
     }
   };
 
+  // acha a unidade pelo nome (sem diferenciar maiúsc/minúsc) ou cria uma nova
+  const resolveUnidadeId = async (nome: string, cache: Map<string, string>) => {
+    const key = nome.trim().toLowerCase();
+    if (cache.has(key)) return cache.get(key)!;
+    const existing = unidadesList.find((u) => u.nome.trim().toLowerCase() === key);
+    if (existing) { cache.set(key, existing.id); return existing.id; }
+    const created = await upsertUnidadeFn({ data: { nome: nome.trim(), position: 0 } });
+    cache.set(key, created.id);
+    return created.id;
+  };
+
   const importSelected = async () => {
     const toImport = aiPreview.filter((i) => i.selected);
     if (toImport.length === 0) return;
     setAiImporting(true);
+    const cache = new Map<string, string>();
     try {
       for (const item of toImport) {
-        await upsert({
-          data: {
-            category: item.category,
-            specialty: item.specialty,
-            cartao_price: item.cartao_price,
-            particular_price: item.particular_price,
-            notes: item.notes,
-            regioes_principais: item.regioes_principais,
-            regioes_outras: item.regioes_outras,
-            position: 0,
-          },
-        });
+        const created = await upsert({ data: { category: item.category, specialty: item.specialty, cartao_price: item.cartao_price, particular_price: item.particular_price, notes: item.notes, position: 0 } });
+        const links: { unidade_id: string; destaque: boolean }[] = [];
+        for (const nome of item.regioes_principais) links.push({ unidade_id: await resolveUnidadeId(nome, cache), destaque: true });
+        for (const nome of item.regioes_outras) links.push({ unidade_id: await resolveUnidadeId(nome, cache), destaque: false });
+        if (links.length > 0 && created?.id) {
+          await setUnidadesFn({ data: { pricing_item_id: created.id, unidades: links } });
+        }
       }
       toast.success(`${toImport.length} item(ns) importado(s)!`);
       qc.invalidateQueries({ queryKey: ["pricing"] });
+      qc.invalidateQueries({ queryKey: ["unidades"] });
       setAiOpen(false); setAiInput(""); setAiPreview([]);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao importar itens.");
@@ -581,7 +596,7 @@ Regras:
     }
   };
 
-const generateDescription = async () => {
+  const generateDescription = async () => {
     if (!edit || !edit.specialty.trim()) { toast.error("Preencha o nome da especialidade primeiro."); return; }
     setDescGenerating(true);
     try {
@@ -595,7 +610,7 @@ Escreva uma descrição curta (1 a 2 frases, até 240 caracteres), em texto corr
 
 Responda APENAS com o texto da descrição, sem aspas, sem markdown, sem introdução.`;
       const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: "Gere a descrição." }], model: "google/gemini-2.5-flash" } });
-setEdit((f) => f ? { ...f, description: content.trim() } : f);
+      setEdit((f) => f ? { ...f, description: content.trim() } : f);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao gerar descrição.");
     } finally {
@@ -635,23 +650,26 @@ Responda APENAS com o texto da descrição, sem aspas, sem markdown, sem introdu
     }
   };
 
-  const parseRegioes = (s: string) => s.split(",").map((r) => r.trim()).filter(Boolean);
-
   const upsertMut = useMutation({
-    mutationFn: () => upsert({
-      data: {
-        id: edit!.id,
-        category: edit!.category,
-        specialty: edit!.specialty,
-        cartao_price: edit!.cartao_price ? Number(edit!.cartao_price) : null,
-        particular_price: edit!.particular_price ? Number(edit!.particular_price) : null,
-        notes: edit!.notes || null,
-        description: edit!.description || null,
-        regioes_principais: parseRegioes(edit!.regioes_principais),
-        regioes_outras: parseRegioes(edit!.regioes_outras),
-        position: 0,
-      },
-    }),
+    mutationFn: async () => {
+      const saved = await upsert({
+        data: {
+          id: edit!.id,
+          category: edit!.category,
+          specialty: edit!.specialty,
+          cartao_price: edit!.cartao_price ? Number(edit!.cartao_price) : null,
+          particular_price: edit!.particular_price ? Number(edit!.particular_price) : null,
+          notes: edit!.notes || null,
+          description: edit!.description || null,
+          position: 0,
+        },
+      });
+      const pricingItemId = edit!.id ?? saved.id;
+      const unidades = Object.entries(edit!.unidadesSel)
+        .filter(([, sel]) => sel !== "none")
+        .map(([unidade_id, sel]) => ({ unidade_id, destaque: sel === "principal" }));
+      await setUnidadesFn({ data: { pricing_item_id: pricingItemId, unidades } });
+    },
     onSuccess: () => { toast.success("Salvo."); setEdit(null); qc.invalidateQueries({ queryKey: ["pricing"] }); },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
   });
@@ -660,18 +678,30 @@ Responda APENAS com o texto da descrição, sem aspas, sem markdown, sem introdu
     onSuccess: () => { toast.success("Removido."); qc.invalidateQueries({ queryKey: ["pricing"] }); },
   });
 
+  const openEdit = (p: any) => {
+    const sel: Record<string, UnidadeSel> = {};
+    ((p.unidades ?? []) as { destaque: boolean; unidade: { id: string; nome: string } | null }[]).forEach((link) => {
+      if (link.unidade) sel[link.unidade.id] = link.destaque ? "principal" : "outras";
+    });
+    setEdit({
+      id: p.id, category: p.category, specialty: p.specialty,
+      cartao_price: p.cartao_price?.toString() ?? "", particular_price: p.particular_price?.toString() ?? "",
+      notes: p.notes ?? "", description: (p as any).description ?? "", unidadesSel: sel,
+    });
+  };
+
   return (
     <Card className="overflow-hidden">
-<div className="flex justify-between items-center p-4 border-b border-border">
+      <div className="flex justify-between items-center p-4 border-b border-border">
         <h3 className="font-semibold">Itens de Preço ({q.data?.length ?? 0})</h3>
         <div className="flex gap-2">
-<Button size="sm" variant="outline" className="gap-2" onClick={() => setAiOpen(true)}>
+          <Button size="sm" variant="outline" className="gap-2" onClick={() => setAiOpen(true)}>
             <Sparkles className="h-4 w-4" /> Preencher com IA
           </Button>
           <Button size="sm" variant="outline" className="gap-2" onClick={generateAllMissingDescriptions} disabled={bulkGenerating}>
             <Sparkles className="h-4 w-4" /> {bulkGenerating ? "Gerando..." : "Gerar descrições faltantes"}
           </Button>
-<Button size="sm" className="gap-2" onClick={() => setEdit({ category: "Consultas", specialty: "", cartao_price: "", particular_price: "", notes: "", description: "", regioes_principais: "", regioes_outras: "" })}>
+          <Button size="sm" className="gap-2" onClick={() => setEdit({ category: "Consultas", specialty: "", cartao_price: "", particular_price: "", notes: "", description: "", unidadesSel: {} })}>
             <Plus className="h-4 w-4" /> Novo
           </Button>
         </div>
@@ -687,14 +717,14 @@ Responda APENAS com o texto da descrição, sem aspas, sem markdown, sem introdu
           </TableRow>
         </TableHeader>
         <TableBody>
-          {(q.data ?? []).map((p) => (
+          {(q.data ?? []).map((p: any) => (
             <TableRow key={p.id}>
               <TableCell><Badge variant="secondary">{p.category}</Badge></TableCell>
               <TableCell className="font-medium">{p.specialty}</TableCell>
               <TableCell className="text-right">{p.cartao_price != null ? `R$ ${Number(p.cartao_price).toFixed(2)}` : "—"}</TableCell>
               <TableCell className="text-right">{p.particular_price != null ? `R$ ${Number(p.particular_price).toFixed(2)}` : "—"}</TableCell>
               <TableCell className="text-right space-x-1">
-<Button size="icon" variant="ghost" onClick={() => setEdit({ id: p.id, category: p.category, specialty: p.specialty, cartao_price: p.cartao_price?.toString() ?? "", particular_price: p.particular_price?.toString() ?? "", notes: p.notes ?? "", description: (p as any).description ?? "", regioes_principais: ((p as any).regioes_principais ?? []).join(", "), regioes_outras: ((p as any).regioes_outras ?? []).join(", ") })}><Pencil className="h-4 w-4" /></Button>
+                <Button size="icon" variant="ghost" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
                 <Button size="icon" variant="ghost" onClick={() => confirm("Excluir?") && delMut.mutate(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
               </TableCell>
             </TableRow>
@@ -703,7 +733,7 @@ Responda APENAS com o texto da descrição, sem aspas, sem markdown, sem introdu
       </Table>
 
       <Dialog open={!!edit} onOpenChange={(v) => !v && setEdit(null)}>
-        <DialogContent>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{edit?.id ? "Editar preço" : "Novo preço"}</DialogTitle></DialogHeader>
           {edit && (
             <div className="space-y-3">
@@ -713,17 +743,31 @@ Responda APENAS com o texto da descrição, sem aspas, sem markdown, sem introdu
                 <div><Label>Valor CDT (R$)</Label><Input type="number" step="0.01" value={edit.cartao_price} onChange={(e) => setEdit({ ...edit, cartao_price: e.target.value })} /></div>
                 <div><Label>Valor Particular (R$)</Label><Input type="number" step="0.01" value={edit.particular_price} onChange={(e) => setEdit({ ...edit, particular_price: e.target.value })} /></div>
               </div>
-<div><Label>Observações</Label><Input value={edit.notes} onChange={(e) => setEdit({ ...edit, notes: e.target.value })} /></div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Regiões principais</Label>
-                  <Input value={edit.regioes_principais} onChange={(e) => setEdit({ ...edit, regioes_principais: e.target.value })} placeholder="Ex: Veneza, Justinópolis" />
-                </div>
-                <div>
-                  <Label>Outras regiões</Label>
-                  <Input value={edit.regioes_outras} onChange={(e) => setEdit({ ...edit, regioes_outras: e.target.value })} placeholder="Ex: Venda Nova, Belo Horizonte" />
+              <div><Label>Observações</Label><Input value={edit.notes} onChange={(e) => setEdit({ ...edit, notes: e.target.value })} /></div>
+
+              <div>
+                <Label>Unidades onde está disponível</Label>
+                {unidadesList.length === 0 && <p className="text-xs text-muted-foreground mt-1">Nenhuma unidade cadastrada — vá em Admin → Unidades primeiro.</p>}
+                <div className="space-y-1 mt-1">
+                  {unidadesList.map((u) => (
+                    <div key={u.id} className="flex items-center justify-between gap-2 text-sm p-1.5 rounded border border-border/60">
+                      <span>{u.nome}</span>
+                      <Select
+                        value={edit.unidadesSel[u.id] ?? "none"}
+                        onValueChange={(v) => setEdit({ ...edit, unidadesSel: { ...edit.unidadesSel, [u.id]: v as UnidadeSel } })}
+                      >
+                        <SelectTrigger className="h-7 w-36 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Não vinculada</SelectItem>
+                          <SelectItem value="principal">Principal</SelectItem>
+                          <SelectItem value="outras">Outras regiões</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ))}
                 </div>
               </div>
+
               <div>
                 <div className="flex items-center justify-between">
                   <Label>Descrição para busca (opcional)</Label>
@@ -736,7 +780,7 @@ Responda APENAS com o texto da descrição, sem aspas, sem markdown, sem introdu
               </div>
             </div>
           )}
-<DialogFooter><Button onClick={() => upsertMut.mutate()} disabled={upsertMut.isPending}>Salvar</Button></DialogFooter>
+          <DialogFooter><Button onClick={() => upsertMut.mutate()} disabled={upsertMut.isPending}>Salvar</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
