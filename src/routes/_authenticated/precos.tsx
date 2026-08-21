@@ -23,8 +23,7 @@ interface PricingRow {
   category: string;
   notes: string | null;
   description: string | null;
-  regioes_principais: string[] | null;
-  regioes_outras: string[] | null;
+  unidades: { destaque: boolean; unidade: { id: string; nome: string } | null }[] | null;
 }
 
 const fmt = (n: number | string | null) =>
@@ -240,21 +239,26 @@ const [activeCat, setActiveCat] = useState<string>("todos");
                               <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" /> {v.notes}
                             </p>
                           )}
-                          {((v.regioes_principais && v.regioes_principais.length > 0) || (v.regioes_outras && v.regioes_outras.length > 0)) && (
-                            <div className="text-xs text-muted-foreground mt-1.5 space-y-0.5">
-                              {v.regioes_principais && v.regioes_principais.length > 0 && (
-                                <p className="flex items-start gap-1">
-                                  <MapPin className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
-                                  <span><span className="font-medium text-foreground">Principais:</span> {v.regioes_principais.join(", ")}</span>
-                                </p>
-                              )}
-                              {v.regioes_outras && v.regioes_outras.length > 0 && (
-                                <p className="flex items-start gap-1 pl-[18px]">
-                                  <span><span className="font-medium">Outras regiões:</span> {v.regioes_outras.join(", ")}</span>
-                                </p>
-                              )}
-                            </div>
-                          )}
+                          {(() => {
+                            const principais = (v.unidades ?? []).filter((l) => l.destaque && l.unidade).map((l) => l.unidade!.nome);
+                            const outras = (v.unidades ?? []).filter((l) => !l.destaque && l.unidade).map((l) => l.unidade!.nome);
+                            if (principais.length === 0 && outras.length === 0) return null;
+                            return (
+                              <div className="text-xs text-muted-foreground mt-1.5 space-y-0.5">
+                                {principais.length > 0 && (
+                                  <p className="flex items-start gap-1">
+                                    <MapPin className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
+                                    <span><span className="font-medium text-foreground">Principais:</span> {principais.join(", ")}</span>
+                                  </p>
+                                )}
+                                {outras.length > 0 && (
+                                  <p className="flex items-start gap-1 pl-[18px]">
+                                    <span><span className="font-medium">Outras regiões:</span> {outras.join(", ")}</span>
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                       );
                     })}
