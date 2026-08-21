@@ -126,7 +126,7 @@ export const listPricing = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("pricing_items")
-      .select("*")
+      .select("*, unidades:pricing_item_unidades(destaque, unidade:unidades(id,nome))")
       .order("category", { ascending: true })
       .order("position", { ascending: true })
       .order("specialty", { ascending: true });
@@ -143,9 +143,30 @@ const PricingInput = z.object({
   notes: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   position: z.number().int().default(0),
-  regioes_principais: z.array(z.string()).default([]),
-  regioes_outras: z.array(z.string()).default([]),
 });
+
+const PricingUnidadesInput = z.object({
+  pricing_item_id: z.string().uuid(),
+  unidades: z.array(z.object({ unidade_id: z.string().uuid(), destaque: z.boolean() })).default([]),
+});
+
+export const setPricingItemUnidades = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => PricingUnidadesInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const isAdmin = await isAdminUser(context.supabase, context.userId);
+    if (!isAdmin) throw new Error("Apenas administradores podem editar a tabela de preços.");
+    const { error: delErr } = await context.supabase
+      .from("pricing_item_unidades").delete().eq("pricing_item_id", data.pricing_item_id);
+    if (delErr) throw new Error(delErr.message);
+    if (data.unidades.length > 0) {
+      const { error: insErr } = await context.supabase
+        .from("pricing_item_unidades")
+        .insert(data.unidades.map((u) => ({ pricing_item_id: data.pricing_item_id, unidade_id: u.unidade_id, destaque: u.destaque })));
+      if (insErr) throw new Error(insErr.message);
+    }
+    return { ok: true };
+  });
 
 export const upsertPricing = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
