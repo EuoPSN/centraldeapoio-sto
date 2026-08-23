@@ -280,15 +280,16 @@ const { data: settings } = await supabaseAdmin
         .map((m) => ({ title: m.title, source_type: m.source_type }));
     }
 
-let reply: string;
+    let reply: string;
     if (!foundAny && !essentialFacts && data.images.length === 0) {
       reply = "Não encontrei essa informação na base de conhecimento. Peça para um administrador cadastrar esse conteúdo em **Conhecimento → Base de Conhecimento IA** e tente novamente.";
     } else {
         const augmentedSystem = `${systemPrompt}
 ${essentialFacts ? `\nFATOS ESSENCIAIS (sempre corretos e atualizados — em caso de conflito com qualquer outra fonte abaixo, estes prevalecem):\n${essentialFacts}\n` : ""}
+${foundAny ? `\nFONTES DA BASE DE CONHECIMENTO (conteúdo real recuperado para esta pergunta — use isto para responder):\n${ragContext}\n` : ""}
 REGRAS:
 - Os "FATOS ESSENCIAIS" acima (quando presentes) são a fonte mais confiável que existe — priorize-os sobre qualquer fonte buscada abaixo em caso de conflito, e pode responder com base neles mesmo sem outra fonte relevante.
-- Use as fontes abaixo (Base de Conhecimento da empresa) como sua fonte primária quando houver.
+- Use as "FONTES DA BASE DE CONHECIMENTO" acima como sua fonte primária quando houver — o conteúdo já está reproduzido ali, não diga que não encontrou se ele estiver presente.
 - Se o usuário enviar uma imagem, analise-a e responda com base no que for solicitado, combinando as fontes quando fizer sentido.
 - Se as fontes responderem parcialmente, responda o que houver e indique de forma breve o que faltou.
 - Se NENHUMA fonte tiver relação com a pergunta, não houver imagem anexada, e os Fatos Essenciais também não cobrirem o assunto, diga exatamente: "Não encontrei essa informação na base de conhecimento."
