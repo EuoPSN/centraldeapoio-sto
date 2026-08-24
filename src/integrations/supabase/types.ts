@@ -604,6 +604,78 @@ export type Database = {
           },
         ]
       }
+      exame_unidades: {
+        Row: {
+          exame_id: string
+          unidade_id: string
+        }
+        Insert: {
+          exame_id: string
+          unidade_id: string
+        }
+        Update: {
+          exame_id?: string
+          unidade_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exame_unidades_exame_id_fkey"
+            columns: ["exame_id"]
+            isOneToOne: false
+            referencedRelation: "exames"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exame_unidades_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exames: {
+        Row: {
+          categoria: string | null
+          created_at: string
+          descricao: string | null
+          id: string
+          jejum: boolean
+          material: string | null
+          nome: string
+          observacoes: string | null
+          position: number
+          preparo: string | null
+          tipo: string
+        }
+        Insert: {
+          categoria?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          jejum?: boolean
+          material?: string | null
+          nome: string
+          observacoes?: string | null
+          position?: number
+          preparo?: string | null
+          tipo?: string
+        }
+        Update: {
+          categoria?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          jejum?: boolean
+          material?: string | null
+          nome?: string
+          observacoes?: string | null
+          position?: number
+          preparo?: string | null
+          tipo?: string
+        }
+        Relationships: []
+      }
       flow_edges: {
         Row: {
           condition: string | null
@@ -1136,6 +1208,39 @@ export type Database = {
         }
         Relationships: []
       }
+      pricing_item_unidades: {
+        Row: {
+          destaque: boolean
+          pricing_item_id: string
+          unidade_id: string
+        }
+        Insert: {
+          destaque?: boolean
+          pricing_item_id: string
+          unidade_id: string
+        }
+        Update: {
+          destaque?: boolean
+          pricing_item_id?: string
+          unidade_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_item_unidades_pricing_item_id_fkey"
+            columns: ["pricing_item_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pricing_item_unidades_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pricing_items: {
         Row: {
           cartao_price: number | null
@@ -1146,8 +1251,6 @@ export type Database = {
           notes: string | null
           particular_price: number | null
           position: number
-          regioes_outras: string[]
-          regioes_principais: string[]
           specialty: string
           updated_at: string
         }
@@ -1160,8 +1263,6 @@ export type Database = {
           notes?: string | null
           particular_price?: number | null
           position?: number
-          regioes_outras?: string[]
-          regioes_principais?: string[]
           specialty: string
           updated_at?: string
         }
@@ -1174,10 +1275,71 @@ export type Database = {
           notes?: string | null
           particular_price?: number | null
           position?: number
-          regioes_outras?: string[]
-          regioes_principais?: string[]
           specialty?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      procedimento_unidades: {
+        Row: {
+          procedimento_id: string
+          unidade_id: string
+        }
+        Insert: {
+          procedimento_id: string
+          unidade_id: string
+        }
+        Update: {
+          procedimento_id?: string
+          unidade_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "procedimento_unidades_procedimento_id_fkey"
+            columns: ["procedimento_id"]
+            isOneToOne: false
+            referencedRelation: "procedimentos_odontologicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "procedimento_unidades_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      procedimentos_odontologicos: {
+        Row: {
+          categoria: string | null
+          created_at: string
+          cuidados_pos: string | null
+          descricao: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          position: number
+        }
+        Insert: {
+          categoria?: string | null
+          created_at?: string
+          cuidados_pos?: string | null
+          descricao?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          position?: number
+        }
+        Update: {
+          categoria?: string | null
+          created_at?: string
+          cuidados_pos?: string | null
+          descricao?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          position?: number
         }
         Relationships: []
       }
@@ -1525,6 +1687,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      unidades: {
+        Row: {
+          cidade: string | null
+          created_at: string
+          endereco: string | null
+          estado: string | null
+          id: string
+          nome: string
+          position: number
+        }
+        Insert: {
+          cidade?: string | null
+          created_at?: string
+          endereco?: string | null
+          estado?: string | null
+          id?: string
+          nome: string
+          position?: number
+        }
+        Update: {
+          cidade?: string | null
+          created_at?: string
+          endereco?: string | null
+          estado?: string | null
+          id?: string
+          nome?: string
+          position?: number
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

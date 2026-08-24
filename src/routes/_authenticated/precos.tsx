@@ -98,7 +98,7 @@ function ConsultasPublico() {
   const [activeCat, setActiveCat] = useState<string>("todos");
   const [expandedDesc, setExpandedDesc] = useState<Set<string>>(new Set());
 
-  const rows = (q.data ?? []) as PricingRow[];
+  const rows = (q.data ?? []) as any as PricingRow[];
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -279,7 +279,7 @@ function ExamesPublico() {
   const [filter, setFilter] = useState("");
   const [activeTipo, setActiveTipo] = useState<"todos" | "laboratorial" | "imagem">("todos");
 
-  const rows = (q.data ?? []) as ExameRow[];
+  const rows = (q.data ?? []) as any as ExameRow[];
   const filtered = useMemo(() => {
     const needle = filter.toLowerCase().trim();
     return rows.filter((r) => {
@@ -338,7 +338,7 @@ function OdontologiaPublico() {
   const q = useQuery({ queryKey: ["procedimentos"], queryFn: () => fn({}) });
   const [filter, setFilter] = useState("");
 
-  const rows = (q.data ?? []) as ProcedimentoRow[];
+  const rows = (q.data ?? []) as any as ProcedimentoRow[];
   const filtered = useMemo(() => {
     const needle = filter.toLowerCase().trim();
     if (!needle) return rows;
