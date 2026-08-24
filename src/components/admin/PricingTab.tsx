@@ -373,12 +373,12 @@ Regras:
       const clean = content.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
       const items: ExameDraft[] = (Array.isArray(parsed) ? parsed : [])
-        .map((it: any) => ({
+        .map((it: any): ExameDraft => ({
           nome: it.nome || "", tipo: it.tipo === "imagem" ? "imagem" : "laboratorial",
           categoria: it.categoria || "", material: it.material || "", jejum: !!it.jejum,
           preparo: it.preparo || "", descricao: it.descricao || "", observacoes: it.observacoes || "", selected: true,
         }))
-        .filter((it: ExameDraft) => it.nome);
+        .filter((it) => Boolean(it.nome));
       if (items.length === 0) { toast.error("A IA não conseguiu identificar nenhum exame no texto enviado."); return; }
       setAiPreview(items);
     } catch (e) {
