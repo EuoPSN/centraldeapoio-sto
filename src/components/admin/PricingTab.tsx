@@ -120,8 +120,8 @@ Regras:
       for (const item of toImport) {
         const created = await upsert({ data: { category: item.category, specialty: item.specialty, cartao_price: item.cartao_price, particular_price: item.particular_price, notes: item.notes, position: 0 } });
         const links: { unidade_id: string; destaque: boolean }[] = [];
-        for (const nome of item.regioes_principais) links.push({ unidade_id: String(await resolveUnidadeId)(nome, cache), destaque: true });
-        for (const nome of item.regioes_outras) links.push({ unidade_id: String(await resolveUnidadeId)(nome, cache), destaque: false });
+        for (const nome of item.regioes_principais) links.push({ unidade_id: await resolveUnidadeId(nome, cache), destaque: true });
+        for (const nome of item.regioes_outras) links.push({ unidade_id: await resolveUnidadeId(nome, cache), destaque: false });
         if (links.length > 0 && created?.id) await setUnidadesFn({ data: { pricing_item_id: String(created.id), unidades: links } });
       }
       toast.success(`${toImport.length} item(ns) importado(s)!`);
@@ -224,8 +224,8 @@ Responda APENAS com o texto da descrição, sem aspas, sem markdown.`;
               <div><Label>Categoria</Label><Input value={edit.category} onChange={(e) => setEdit({ ...edit, category: e.target.value })} /></div>
               <div><Label>Especialidade</Label><Input value={edit.specialty} onChange={(e) => setEdit({ ...edit, specialty: e.target.value })} /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label>Valor CDT (R$)</Label><Input type="number" step="0.01" value={edit.cartao_price} onChange={(e) => setEdit({ ...edit, cartao_price: e.target.value })} /></div>
-                <div><Label>Valor Particular (R$)</Label><Input type="number" step="0.01" value={edit.particular_price} onChange={(e) => setEdit({ ...edit, particular_price: e.target.value })} /></div>
+                <div><Label>Valor CDT (R$)</Label><Input type="number" step="0.01" value={edit.cartao_price ?? ""} onChange={(e) => setEdit({ ...edit, cartao_price: e.target.value })} /></div>
+                <div><Label>Valor Particular (R$)</Label><Input type="number" step="0.01" value={edit.particular_price ?? ""} onChange={(e) => setEdit({ ...edit, particular_price: e.target.value })} /></div>
               </div>
               <div><Label>Observações</Label><Input value={edit.notes} onChange={(e) => setEdit({ ...edit, notes: e.target.value })} /></div>
               <div>
