@@ -51,7 +51,7 @@ function ConsultasSubTab() {
   const unidadesList = (unidadesQ.data ?? []) as { id: string; nome: string }[];
 
   type UnidadeSel = "none" | "principal" | "outras";
-  const [edit, setEdit] = useState<null | { id?: string; category: string; specialty: string; cartao_price: string; particular_price: string; notes: string; description: string; unidadesSel: Record<string, UnidadeSel> }>(null);
+  const [edit, setEdit] = useState<null | { id?: string; category: string; specialty: string; cartao_price: number | string | null; particular_price: number | string | null; notes: string; description: string; unidadesSel: Record<string, UnidadeSel> }>(null);
   const [descGenerating, setDescGenerating] = useState(false);
 
   type AiPricingItem = { category: string; specialty: string; cartao_price: number | null; particular_price: number | null; notes: string | null; regioes_principais: string[]; regioes_outras: string[]; selected: boolean };
@@ -101,14 +101,14 @@ Regras:
     }
   };
 
-  const resolveUnidadeId = async (nome: string, cache: Map<string, string>) => {
+  const resolveUnidadeId = async (nome: string, cache: Map<string, string>): Promise<string> => {
     const key = nome.trim().toLowerCase();
     if (cache.has(key)) return cache.get(key)!;
     const existing = unidadesList.find((u) => u.nome.trim().toLowerCase() === key);
-    if (existing) { cache.set(key, existing.id); return existing.id; }
+    if (existing) { cache.set(key, String(existing.id)); return String(existing.id); }
     const created = await upsertUnidadeFn({ data: { nome: nome.trim(), position: 0 } });
-    cache.set(key, created.id);
-    return created.id;
+    cache.set(key, String(created.id));
+    return String(created.id);
   };
 
   const importSelected = async () => {
@@ -120,9 +120,9 @@ Regras:
       for (const item of toImport) {
         const created = await upsert({ data: { category: item.category, specialty: item.specialty, cartao_price: item.cartao_price, particular_price: item.particular_price, notes: item.notes, position: 0 } });
         const links: { unidade_id: string; destaque: boolean }[] = [];
-        for (const nome of item.regioes_principais) links.push({ unidade_id: await resolveUnidadeId(nome, cache), destaque: true });
-        for (const nome of item.regioes_outras) links.push({ unidade_id: await resolveUnidadeId(nome, cache), destaque: false });
-        if (links.length > 0 && created?.id) await setUnidadesFn({ data: { pricing_item_id: created.id, unidades: links } });
+        for (const nome of item.regioes_principais) links.push({ unidade_id: String(await resolveUnidadeId)(nome, cache), destaque: true });
+        for (const nome of item.regioes_outras) links.push({ unidade_id: String(await resolveUnidadeId)(nome, cache), destaque: false });
+        if (links.length > 0 && created?.id) await setUnidadesFn({ data: { pricing_item_id: String(created.id), unidades: links } });
       }
       toast.success(`${toImport.length} item(ns) importado(s)!`);
       qc.invalidateQueries({ queryKey: ["pricing"] });
@@ -167,11 +167,11 @@ Responda APENAS com o texto da descrição, sem aspas, sem markdown.`;
           notes: edit!.notes || null, description: edit!.description || null, position: 0,
         },
       });
-      const pricingItemId = edit!.id ?? saved.id;
+      const pricingItemId = edit!.id ?? String(saved.id);
       const unidades = Object.entries(edit!.unidadesSel)
         .filter(([, sel]) => sel !== "none")
         .map(([unidade_id, sel]) => ({ unidade_id, destaque: sel === "principal" }));
-      await setUnidadesFn({ data: { pricing_item_id: pricingItemId, unidades } });
+      await setUnidadesFn({ data: { pricing_item_id: String(pricingItemId), unidades } });
     },
     onSuccess: () => { toast.success("Salvo."); setEdit(null); qc.invalidateQueries({ queryKey: ["pricing"] }); },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
@@ -329,8 +329,8 @@ function ExamesSubTab() {
         material: edit!.material || null, jejum: edit!.jejum, preparo: edit!.preparo || null,
         descricao: edit!.descricao || null, observacoes: edit!.observacoes || null, position: 0,
       } });
-      const exameId = edit!.id ?? saved.id;
-      await setUnidadesFn({ data: { exame_id: exameId, unidade_ids: edit!.unidadeIds } });
+      const exameId = edit!.id ?? String(saved.id);
+      await setUnidadesFn({ data: { exame_id: String(exameId), unidade_ids: edit!.unidadeIds } });
     },
     onSuccess: () => { toast.success("Salvo."); setEdit(null); qc.invalidateQueries({ queryKey: ["exames"] }); },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
@@ -378,7 +378,7 @@ Regras:
           categoria: it.categoria || "", material: it.material || "", jejum: !!it.jejum,
           preparo: it.preparo || "", descricao: it.descricao || "", observacoes: it.observacoes || "", selected: true,
         }))
-        .filter((it) => Boolean(it.nome));
+        .filter((it: any) => !!it.nome) as ExameDraft[];
       if (items.length === 0) { toast.error("A IA não conseguiu identificar nenhum exame no texto enviado."); return; }
       setAiPreview(items);
     } catch (e) {
@@ -546,8 +546,8 @@ function OdontologiaSubTab() {
         id: edit!.id, nome: edit!.nome, categoria: edit!.categoria || null,
         descricao: edit!.descricao || null, cuidados_pos: edit!.cuidados_pos || null, observacoes: edit!.observacoes || null, position: 0,
       } });
-      const procId = edit!.id ?? saved.id;
-      await setUnidadesFn({ data: { procedimento_id: procId, unidade_ids: edit!.unidadeIds } });
+      const procId = edit!.id ?? String(saved.id);
+      await setUnidadesFn({ data: { procedimento_id: String(procId), unidade_ids: edit!.unidadeIds } });
     },
     onSuccess: () => { toast.success("Salvo."); setEdit(null); qc.invalidateQueries({ queryKey: ["procedimentos"] }); },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
@@ -588,7 +588,7 @@ Regras:
       const parsed = JSON.parse(clean);
       const items: ProcedimentoDraft[] = (Array.isArray(parsed) ? parsed : [])
         .map((it: any) => ({ nome: it.nome || "", categoria: it.categoria || "", descricao: it.descricao || "", cuidados_pos: it.cuidados_pos || "", observacoes: it.observacoes || "", selected: true }))
-        .filter((it: ProcedimentoDraft) => it.nome);
+        .filter((it: any) => !!it.nome) as ProcedimentoDraft[];
       if (items.length === 0) { toast.error("A IA não conseguiu identificar nenhum procedimento no texto enviado."); return; }
       setAiPreview(items);
     } catch (e) {
