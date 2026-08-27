@@ -17,6 +17,7 @@ const SCOPES = [
   { value: "suggestion", label: "Sugestões" },
   { value: "content", label: "Conteúdo" },
   { value: "client_profile", label: "Perfis de Cliente (Simulador IA)" },
+  { value: "image_library", label: "Biblioteca de Imagens (pastas)" },
 ] as const;
 
 type Scope = typeof SCOPES[number]["value"];

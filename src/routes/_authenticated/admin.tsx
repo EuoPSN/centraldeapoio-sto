@@ -41,6 +41,7 @@ import { SimulatorResultsTab } from "@/components/admin/SimulatorResultsTab";
 import { AdminSectionsTab, ADMIN_GROUP_ORDER } from "@/components/admin/AdminSectionsTab";
 import { ChangelogTab } from "@/components/admin/ChangelogTab";
 import { UnidadesTab } from "@/components/admin/UnidadesTab";
+import { ImageLibraryTab } from "@/components/admin/ImageLibraryTab";
 import { listAdminSections } from "@/lib/settings.functions";
 import { getIcon } from "@/lib/icon-map";
 import { cn } from "@/lib/utils";
@@ -93,6 +94,7 @@ function AdminPage() {
 organizacao: AdminSectionsTab,
     changelog: ChangelogTab,
     unidades: UnidadesTab,
+    imagelibrary: ImageLibraryTab,
   };
   const ActiveComponent = active === "overview" ? OverviewTab : (TAB_COMPONENTS[active] ?? OverviewTab);
 

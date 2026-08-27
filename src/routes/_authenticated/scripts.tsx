@@ -9,28 +9,15 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/CopyButton";
+import { DownloadImageButton } from "@/components/DownloadImageButton";
 import { Markdown } from "@/components/Markdown";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import { Search, MessageSquareQuote, ListOrdered, Library, Download } from "lucide-react";
+import { Search, MessageSquareQuote, ListOrdered, Library } from "lucide-react";
 import { SkeletonCard } from "@/components/ui/skeleton-card";
 
 export const Route = createFileRoute("/_authenticated/scripts")({
   component: Page,
 });
-
-// Baixa a imagem pra depois anexar em outro canal (ex: WhatsApp) — o link é
-// same-origin (proxy /api/public/message-image), então o atributo `download`
-// funciona sem precisar de fetch+blob.
-function DownloadImageButton({ url, filename }: { url: string; filename: string }) {
-  const safeName = filename.replace(/[\\/:*?"<>|]+/g, "-");
-  return (
-    <a href={url} download={safeName} onClick={(e) => e.stopPropagation()}>
-      <Button type="button" variant="outline" size="sm" className="gap-1.5">
-        <Download className="h-3.5 w-3.5" /> Baixar imagem
-      </Button>
-    </a>
-  );
-}
 
 function Page() {
   const [mode, setMode] = useState<"biblioteca" | "fluxo">("biblioteca");

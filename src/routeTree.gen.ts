@@ -19,6 +19,7 @@ import { Route as AuthenticatedCrmLeadsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedCrmProspeccaoRouteImport } from './routes/_authenticated/crm-prospeccao'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedFuncionariosRouteImport } from './routes/_authenticated/funcionarios'
+import { Route as AuthenticatedImagensRouteImport } from './routes/_authenticated/imagens'
 import { Route as AuthenticatedMeusRelatoriosRouteImport } from './routes/_authenticated/meus-relatorios'
 import { Route as AuthenticatedMotorDecisaoRouteImport } from './routes/_authenticated/motor-decisao'
 import { Route as AuthenticatedPrecosRouteImport } from './routes/_authenticated/precos'
@@ -83,6 +84,11 @@ const AuthenticatedFuncionariosRoute =
     path: '/funcionarios',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedImagensRoute = AuthenticatedImagensRouteImport.update({
+  id: '/imagens',
+  path: '/imagens',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMeusRelatoriosRoute =
   AuthenticatedMeusRelatoriosRouteImport.update({
     id: '/meus-relatorios',
@@ -153,6 +159,7 @@ export interface FileRoutesByFullPath {
   '/crm-prospeccao': typeof AuthenticatedCrmProspeccaoRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/funcionarios': typeof AuthenticatedFuncionariosRoute
+  '/imagens': typeof AuthenticatedImagensRoute
   '/meus-relatorios': typeof AuthenticatedMeusRelatoriosRoute
   '/motor-decisao': typeof AuthenticatedMotorDecisaoRoute
   '/precos': typeof AuthenticatedPrecosRoute
@@ -174,6 +181,7 @@ export interface FileRoutesByTo {
   '/crm-prospeccao': typeof AuthenticatedCrmProspeccaoRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/funcionarios': typeof AuthenticatedFuncionariosRoute
+  '/imagens': typeof AuthenticatedImagensRoute
   '/meus-relatorios': typeof AuthenticatedMeusRelatoriosRoute
   '/motor-decisao': typeof AuthenticatedMotorDecisaoRoute
   '/precos': typeof AuthenticatedPrecosRoute
@@ -198,6 +206,7 @@ export interface FileRoutesById {
   '/_authenticated/crm-prospeccao': typeof AuthenticatedCrmProspeccaoRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/funcionarios': typeof AuthenticatedFuncionariosRoute
+  '/_authenticated/imagens': typeof AuthenticatedImagensRoute
   '/_authenticated/meus-relatorios': typeof AuthenticatedMeusRelatoriosRoute
   '/_authenticated/motor-decisao': typeof AuthenticatedMotorDecisaoRoute
   '/_authenticated/precos': typeof AuthenticatedPrecosRoute
@@ -223,6 +232,7 @@ export interface FileRouteTypes {
     | '/crm-prospeccao'
     | '/dashboard'
     | '/funcionarios'
+    | '/imagens'
     | '/meus-relatorios'
     | '/motor-decisao'
     | '/precos'
@@ -244,6 +254,7 @@ export interface FileRouteTypes {
     | '/crm-prospeccao'
     | '/dashboard'
     | '/funcionarios'
+    | '/imagens'
     | '/meus-relatorios'
     | '/motor-decisao'
     | '/precos'
@@ -267,6 +278,7 @@ export interface FileRouteTypes {
     | '/_authenticated/crm-prospeccao'
     | '/_authenticated/dashboard'
     | '/_authenticated/funcionarios'
+    | '/_authenticated/imagens'
     | '/_authenticated/meus-relatorios'
     | '/_authenticated/motor-decisao'
     | '/_authenticated/precos'
@@ -359,6 +371,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFuncionariosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/imagens': {
+      id: '/_authenticated/imagens'
+      path: '/imagens'
+      fullPath: '/imagens'
+      preLoaderRoute: typeof AuthenticatedImagensRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/meus-relatorios': {
       id: '/_authenticated/meus-relatorios'
       path: '/meus-relatorios'
@@ -447,6 +466,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCrmProspeccaoRoute: typeof AuthenticatedCrmProspeccaoRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFuncionariosRoute: typeof AuthenticatedFuncionariosRoute
+  AuthenticatedImagensRoute: typeof AuthenticatedImagensRoute
   AuthenticatedMeusRelatoriosRoute: typeof AuthenticatedMeusRelatoriosRoute
   AuthenticatedMotorDecisaoRoute: typeof AuthenticatedMotorDecisaoRoute
   AuthenticatedPrecosRoute: typeof AuthenticatedPrecosRoute
@@ -468,6 +488,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCrmProspeccaoRoute: AuthenticatedCrmProspeccaoRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFuncionariosRoute: AuthenticatedFuncionariosRoute,
+  AuthenticatedImagensRoute: AuthenticatedImagensRoute,
   AuthenticatedMeusRelatoriosRoute: AuthenticatedMeusRelatoriosRoute,
   AuthenticatedMotorDecisaoRoute: AuthenticatedMotorDecisaoRoute,
   AuthenticatedPrecosRoute: AuthenticatedPrecosRoute,
