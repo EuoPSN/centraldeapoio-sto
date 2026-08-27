@@ -19,7 +19,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Pencil, Plus, Trash2, ArrowUp, ArrowDown, Sparkles, Wand2, X, Upload, Loader2, Image as ImageIcon } from "lucide-react";
+import { Pencil, Plus, Trash2, ArrowUp, ArrowDown, Sparkles, Wand2, X, Upload, Loader2, Image as ImageIcon, Download } from "lucide-react";
 import { toast } from "sonner";
 
 interface Cat { id: string; name: string; parent_id: string | null; }
@@ -597,6 +597,9 @@ As etapas devem vir na ordem certa de uso. Sem markdown, sem texto fora do JSON.
                 {edit.image_url && (
                   <div className="flex items-center gap-3">
                     <img src={edit.image_url} alt="" className="h-16 w-16 rounded-md object-cover border border-border" />
+                    <a href={edit.image_url} download={(edit.image_path?.split(".").pop() ? `imagem.${edit.image_path.split(".").pop()}` : "imagem")}>
+                      <Button size="sm" variant="outline" className="gap-1.5" type="button"><Download className="h-3.5 w-3.5" /> Baixar</Button>
+                    </a>
                     <Button size="sm" variant="ghost" onClick={() => setEdit({ ...edit, image_path: null, image_url: null })}>Remover</Button>
                   </div>
                 )}

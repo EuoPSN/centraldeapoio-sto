@@ -16,6 +16,7 @@ export const listMessages = createServerFn({ method: "GET" })
     return (data ?? []).map((m) => ({
       ...m,
       image_url: m.image_path ? `/api/public/message-image?t=${encodeURIComponent(signMessageImageToken(m.image_path))}` : null,
+      image_ext: m.image_path ? (m.image_path.split(".").pop() ?? "jpg") : null,
     }));
   });
 

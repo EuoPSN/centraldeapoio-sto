@@ -11,12 +11,26 @@ import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/CopyButton";
 import { Markdown } from "@/components/Markdown";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import { Search, MessageSquareQuote, ListOrdered, Library } from "lucide-react";
+import { Search, MessageSquareQuote, ListOrdered, Library, Download } from "lucide-react";
 import { SkeletonCard } from "@/components/ui/skeleton-card";
 
 export const Route = createFileRoute("/_authenticated/scripts")({
   component: Page,
 });
+
+// Baixa a imagem pra depois anexar em outro canal (ex: WhatsApp) — o link é
+// same-origin (proxy /api/public/message-image), então o atributo `download`
+// funciona sem precisar de fetch+blob.
+function DownloadImageButton({ url, filename }: { url: string; filename: string }) {
+  const safeName = filename.replace(/[\\/:*?"<>|]+/g, "-");
+  return (
+    <a href={url} download={safeName} onClick={(e) => e.stopPropagation()}>
+      <Button type="button" variant="outline" size="sm" className="gap-1.5">
+        <Download className="h-3.5 w-3.5" /> Baixar imagem
+      </Button>
+    </a>
+  );
+}
 
 function Page() {
   const [mode, setMode] = useState<"biblioteca" | "fluxo">("biblioteca");
@@ -58,6 +72,7 @@ interface MessageRow {
   category_id?: string | null;
   flow_links?: { id: string; flow_stage_id: string; position: number }[];
   image_url?: string | null;
+  image_ext?: string | null;
 }
 
 interface StageRow { id: string; name: string; position: number; category_id: string | null; }
@@ -144,7 +159,12 @@ function FluxoAtendimento() {
                           <div className="rounded-md bg-muted/40 border border-border p-3 max-h-56 overflow-y-auto">
                             <Markdown>{m.content}</Markdown>
                           </div>
-                          {m.image_url && <img src={m.image_url} alt={m.title} className="mt-2 rounded-md border border-border max-h-64 object-contain" />}
+                          {m.image_url && (
+                            <div className="mt-2 space-y-1.5">
+                              <img src={m.image_url} alt={m.title} className="rounded-md border border-border max-h-64 object-contain" />
+                              <DownloadImageButton url={m.image_url} filename={`${m.title}.${m.image_ext || "jpg"}`} />
+                            </div>
+                          )}
                           {m.internal_note && <p className="text-xs text-muted-foreground italic mt-2">📝 {m.internal_note}</p>}
                         </div>
                       ))}
@@ -264,7 +284,12 @@ function Biblioteca() {
             <div className="rounded-md bg-muted/40 border border-border p-3 max-h-64 overflow-y-auto">
               <Markdown>{m.content}</Markdown>
             </div>
-            {m.image_url && <img src={m.image_url} alt={m.title} className="rounded-md border border-border max-h-56 object-contain" />}
+            {m.image_url && (
+              <div className="space-y-1.5">
+                <img src={m.image_url} alt={m.title} className="rounded-md border border-border max-h-56 object-contain" />
+                <DownloadImageButton url={m.image_url} filename={`${m.title}.${m.image_ext || "jpg"}`} />
+              </div>
+            )}
             {m.tags?.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {m.tags.map((t) => (
