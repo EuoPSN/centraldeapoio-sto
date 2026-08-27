@@ -12,7 +12,11 @@ export const listMessages = createServerFn({ method: "GET" })
       .order("position", { ascending: true })
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
-    return data ?? [];
+    const { signMessageImageToken } = await import("./message-image-token.server");
+    return (data ?? []).map((m) => ({
+      ...m,
+      image_url: m.image_path ? `/api/public/message-image?t=${encodeURIComponent(signMessageImageToken(m.image_path))}` : null,
+    }));
   });
 
 const Input = z.object({
@@ -25,6 +29,7 @@ const Input = z.object({
   tags: z.array(z.string()).default([]),
   position: z.number().int().default(0),
   shortcut: z.string().max(40).nullable().optional(),
+  image_path: z.string().nullable().optional(),
 });
 
 async function admin(ctx: { supabase: unknown; userId: string }) {

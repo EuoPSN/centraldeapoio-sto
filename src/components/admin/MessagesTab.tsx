@@ -8,6 +8,7 @@ import {
   linkMessageToStage, unlinkMessageFromStage, reorderFlowLink,
 } from "@/lib/messageflow.functions";
 import { simulatorChat } from "@/lib/simulator.chat.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +19,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Pencil, Plus, Trash2, ArrowUp, ArrowDown, Sparkles, Wand2, X } from "lucide-react";
+import { Pencil, Plus, Trash2, ArrowUp, ArrowDown, Sparkles, Wand2, X, Upload, Loader2, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 
 interface Cat { id: string; name: string; parent_id: string | null; }
@@ -56,7 +57,29 @@ export function MessagesTab() {
 
   const [edit, setEdit] = useState<null | {
     id?: string; category_id: string; subcategory_id: string; title: string; content: string; internal_note: string; shortcut: string;
+    image_path: string | null; image_url: string | null;
   }>(null);
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const handleImageUpload = async (file: File) => {
+    if (!edit) return;
+    if (!file.type.startsWith("image/")) { toast.error("Envie um arquivo de imagem."); return; }
+    if (file.size > 8 * 1024 * 1024) { toast.error("Imagem excede 8MB."); return; }
+    setUploadingImg(true);
+    try {
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const path = `${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage.from("message-images").upload(path, file, {
+        contentType: file.type, upsert: false,
+      });
+      if (error) throw error;
+      setEdit((prev) => prev && { ...prev, image_path: path, image_url: URL.createObjectURL(file) });
+      toast.success("Imagem enviada.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro no upload da imagem.");
+    } finally {
+      setUploadingImg(false);
+    }
+  };
 
   const mUp = useMutation({
     mutationFn: () => upsert({ data: {
@@ -69,6 +92,7 @@ export function MessagesTab() {
       tags: [],
       position: 0,
       shortcut: edit!.shortcut || null,
+      image_path: edit!.image_path,
     } }),
     onSuccess: () => { toast.success("Salvo."); setEdit(null); qc.invalidateQueries({ queryKey: ["messages"] }); },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
@@ -315,7 +339,7 @@ As etapas devem vir na ordem certa de uso. Sem markdown, sem texto fora do JSON.
                 <Button size="sm" variant="outline" className="gap-2" onClick={() => setShowGen((v) => !v)}>
                   <Sparkles className="h-4 w-4" /> Gerar scripts com IA
                 </Button>
-                <Button size="sm" className="gap-2" onClick={() => setEdit({ category_id: "", subcategory_id: "", title: "", content: "", internal_note: "", shortcut: "" })}>
+                <Button size="sm" className="gap-2" onClick={() => setEdit({ category_id: "", subcategory_id: "", title: "", content: "", internal_note: "", shortcut: "", image_path: null, image_url: null })}>
                   <Plus className="h-4 w-4" /> Nova mensagem
                 </Button>
               </div>
@@ -387,10 +411,17 @@ As etapas devem vir na ordem certa de uso. Sem markdown, sem texto fora do JSON.
             )}
 
             <Table>
-              <TableHeader><TableRow><TableHead>Categoria</TableHead><TableHead>Título</TableHead><TableHead>Atalho</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead></TableHead><TableHead>Categoria</TableHead><TableHead>Título</TableHead><TableHead>Atalho</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
               <TableBody>
-                {allMessages.map((m: { id: string; title: string; category: { name: string } | null; subcategory: { name: string } | null; content: string; internal_note: string | null; category_id: string | null; subcategory_id: string | null; shortcut: string | null; }) => (
+                {allMessages.map((m: { id: string; title: string; category: { name: string } | null; subcategory: { name: string } | null; content: string; internal_note: string | null; category_id: string | null; subcategory_id: string | null; shortcut: string | null; image_path: string | null; image_url: string | null; }) => (
                   <TableRow key={m.id}>
+                    <TableCell>
+                      {m.image_url ? (
+                        <img src={m.image_url} alt="" className="h-8 w-8 rounded object-cover" />
+                      ) : (
+                        <span className="flex h-8 w-8 items-center justify-center rounded bg-muted text-muted-foreground"><ImageIcon className="h-4 w-4" /></span>
+                      )}
+                    </TableCell>
                     <TableCell><Badge variant="secondary">{m.category?.name ?? "—"}{m.subcategory ? ` · ${m.subcategory.name}` : ""}</Badge></TableCell>
                     <TableCell className="font-medium">{m.title}</TableCell>
                     <TableCell>{m.shortcut ? <Badge variant="outline">/{m.shortcut}</Badge> : <span className="text-xs text-muted-foreground">—</span>}</TableCell>
@@ -398,6 +429,7 @@ As etapas devem vir na ordem certa de uso. Sem markdown, sem texto fora do JSON.
                       <Button size="icon" variant="ghost" onClick={() => setEdit({
                         id: m.id, category_id: m.category_id ?? "", subcategory_id: m.subcategory_id ?? "",
                         title: m.title, content: m.content, internal_note: m.internal_note ?? "", shortcut: m.shortcut ?? "",
+                        image_path: m.image_path ?? null, image_url: m.image_url ?? null,
                       })}><Pencil className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" onClick={() => confirm("Excluir?") && mDel.mutate(m.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                     </TableCell>
@@ -555,6 +587,20 @@ As etapas devem vir na ordem certa de uso. Sem markdown, sem texto fora do JSON.
               </div>
               <div><Label>Conteúdo</Label><Textarea rows={8} value={edit.content} onChange={(e) => setEdit({ ...edit, content: e.target.value })} /></div>
               <div><Label>Observação interna</Label><Input value={edit.internal_note} onChange={(e) => setEdit({ ...edit, internal_note: e.target.value })} /></div>
+              <div className="space-y-1.5">
+                <Label className="flex items-center gap-2"><Upload className="h-4 w-4" /> Imagem (opcional)</Label>
+                <input type="file" accept="image/*"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); }}
+                  disabled={uploadingImg}
+                  className="block text-sm w-full text-foreground file:mr-3 file:px-3 file:py-1.5 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground hover:file:bg-primary/90" />
+                {uploadingImg && <p className="text-xs text-muted-foreground flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> Enviando...</p>}
+                {edit.image_url && (
+                  <div className="flex items-center gap-3">
+                    <img src={edit.image_url} alt="" className="h-16 w-16 rounded-md object-cover border border-border" />
+                    <Button size="sm" variant="ghost" onClick={() => setEdit({ ...edit, image_path: null, image_url: null })}>Remover</Button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
           <DialogFooter><Button onClick={() => mUp.mutate()} disabled={mUp.isPending}>Salvar</Button></DialogFooter>

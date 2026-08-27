@@ -1116,6 +1116,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          image_path: string | null
           internal_note: string | null
           position: number
           shortcut: string | null
@@ -1130,6 +1131,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          image_path?: string | null
           internal_note?: string | null
           position?: number
           shortcut?: string | null
@@ -1144,6 +1146,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          image_path?: string | null
           internal_note?: string | null
           position?: number
           shortcut?: string | null

@@ -57,6 +57,7 @@ interface MessageRow {
   shortcut?: string | null;
   category_id?: string | null;
   flow_links?: { id: string; flow_stage_id: string; position: number }[];
+  image_url?: string | null;
 }
 
 interface StageRow { id: string; name: string; position: number; category_id: string | null; }
@@ -143,6 +144,7 @@ function FluxoAtendimento() {
                           <div className="rounded-md bg-muted/40 border border-border p-3 max-h-56 overflow-y-auto">
                             <Markdown>{m.content}</Markdown>
                           </div>
+                          {m.image_url && <img src={m.image_url} alt={m.title} className="mt-2 rounded-md border border-border max-h-64 object-contain" />}
                           {m.internal_note && <p className="text-xs text-muted-foreground italic mt-2">📝 {m.internal_note}</p>}
                         </div>
                       ))}
@@ -262,6 +264,7 @@ function Biblioteca() {
             <div className="rounded-md bg-muted/40 border border-border p-3 max-h-64 overflow-y-auto">
               <Markdown>{m.content}</Markdown>
             </div>
+            {m.image_url && <img src={m.image_url} alt={m.title} className="rounded-md border border-border max-h-56 object-contain" />}
             {m.tags?.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {m.tags.map((t) => (
