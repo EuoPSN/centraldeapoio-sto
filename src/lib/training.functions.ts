@@ -19,9 +19,14 @@ export const listTrainingModules = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
 
     const { signKnowledgeFileToken } = await import("./knowledge-file-token.server");
+    const { signMessageImageToken } = await import("./message-image-token.server");
     return (data ?? []).map((m: any) => ({
       ...m,
       pdf_url: m.pdf_path ? `/api/public/knowledge-file?t=${encodeURIComponent(signKnowledgeFileToken(m.pdf_path))}` : null,
+      images: (m.images ?? []).map((l: any) => ({
+        ...l,
+        image: l.image ? { ...l.image, image_url: `/api/public/message-image?t=${encodeURIComponent(signMessageImageToken(l.image.image_path))}` } : null,
+      })),
     }));
   });
 
