@@ -31,6 +31,7 @@ import { Route as AuthenticatedSugestoesRouteImport } from './routes/_authentica
 import { Route as AuthenticatedTreinamentosRouteImport } from './routes/_authenticated/treinamentos'
 import { Route as AuthenticatedTutoriaisRouteImport } from './routes/_authenticated/tutoriais'
 import { Route as ApiPublicKnowledgeFileRouteImport } from './routes/api/public/knowledge-file'
+import { Route as ApiPublicMessageImageRouteImport } from './routes/api/public/message-image'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -148,6 +149,11 @@ const ApiPublicKnowledgeFileRoute = ApiPublicKnowledgeFileRouteImport.update({
   path: '/api/public/knowledge-file',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicMessageImageRoute = ApiPublicMessageImageRouteImport.update({
+  id: '/api/public/message-image',
+  path: '/api/public/message-image',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -171,6 +177,7 @@ export interface FileRoutesByFullPath {
   '/treinamentos': typeof AuthenticatedTreinamentosRoute
   '/tutoriais': typeof AuthenticatedTutoriaisRoute
   '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
+  '/api/public/message-image': typeof ApiPublicMessageImageRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -194,6 +201,7 @@ export interface FileRoutesByTo {
   '/tutoriais': typeof AuthenticatedTutoriaisRoute
   '/': typeof AuthenticatedIndexRoute
   '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
+  '/api/public/message-image': typeof ApiPublicMessageImageRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -219,6 +227,7 @@ export interface FileRoutesById {
   '/_authenticated/tutoriais': typeof AuthenticatedTutoriaisRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
+  '/api/public/message-image': typeof ApiPublicMessageImageRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -244,6 +253,7 @@ export interface FileRouteTypes {
     | '/treinamentos'
     | '/tutoriais'
     | '/api/public/knowledge-file'
+    | '/api/public/message-image'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -267,6 +277,7 @@ export interface FileRouteTypes {
     | '/tutoriais'
     | '/'
     | '/api/public/knowledge-file'
+    | '/api/public/message-image'
   id:
     | '__root__'
     | '/_authenticated'
@@ -291,12 +302,14 @@ export interface FileRouteTypes {
     | '/_authenticated/tutoriais'
     | '/_authenticated/'
     | '/api/public/knowledge-file'
+    | '/api/public/message-image'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ApiPublicKnowledgeFileRoute: typeof ApiPublicKnowledgeFileRoute
+  ApiPublicMessageImageRoute: typeof ApiPublicMessageImageRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -455,6 +468,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicKnowledgeFileRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/message-image': {
+      id: '/api/public/message-image'
+      path: '/api/public/message-image'
+      fullPath: '/api/public/message-image'
+      preLoaderRoute: typeof ApiPublicMessageImageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -509,6 +529,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ApiPublicKnowledgeFileRoute: ApiPublicKnowledgeFileRoute,
+  ApiPublicMessageImageRoute: ApiPublicMessageImageRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
