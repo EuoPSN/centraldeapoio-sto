@@ -42,6 +42,7 @@ import { AdminSectionsTab, ADMIN_GROUP_ORDER } from "@/components/admin/AdminSec
 import { ChangelogTab } from "@/components/admin/ChangelogTab";
 import { UnidadesTab } from "@/components/admin/UnidadesTab";
 import { ImageLibraryTab } from "@/components/admin/ImageLibraryTab";
+import { TreinamentosTab } from "@/components/admin/TreinamentosTab";
 import { listAdminSections } from "@/lib/settings.functions";
 import { getIcon } from "@/lib/icon-map";
 import { cn } from "@/lib/utils";
@@ -95,6 +96,7 @@ organizacao: AdminSectionsTab,
     changelog: ChangelogTab,
     unidades: UnidadesTab,
     imagelibrary: ImageLibraryTab,
+    treinamentos: TreinamentosTab,
   };
   const ActiveComponent = active === "overview" ? OverviewTab : (TAB_COMPONENTS[active] ?? OverviewTab);
 
