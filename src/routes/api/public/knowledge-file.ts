@@ -17,10 +17,24 @@ export const Route = createFileRoute("/api/public/knowledge-file")({
           .download(v.path);
         if (error || !data) return new Response("Not found", { status: 404 });
 
-        const headers = new Headers();
-        headers.set("content-type", data.type || "application/octet-stream");
-        headers.set("cache-control", "private, max-age=3600");
+        const EXT_MIME: Record<string, string> = {
+          pdf: "application/pdf",
+          png: "image/png",
+          jpg: "image/jpeg",
+          jpeg: "image/jpeg",
+          webp: "image/webp",
+          doc: "application/msword",
+          docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          txt: "text/plain",
+        };
         const filename = v.path.split("/").pop() ?? "file";
+        const ext = filename.split(".").pop()?.toLowerCase() ?? "";
+        const isGeneric = !data.type || data.type === "application/octet-stream" || data.type === "text/plain;charset=UTF-8";
+        const contentType = isGeneric && EXT_MIME[ext] ? EXT_MIME[ext] : (data.type || "application/octet-stream");
+
+        const headers = new Headers();
+        headers.set("content-type", contentType);
+        headers.set("cache-control", "private, max-age=3600");
         headers.set("content-disposition", `inline; filename="${filename}"`);
         return new Response(data, { status: 200, headers });
       },
