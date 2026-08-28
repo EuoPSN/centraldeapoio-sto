@@ -1,6 +1,6 @@
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { listMessages, upsertMessage, deleteMessage } from "@/lib/messages.functions";
 import { listCategories } from "@/lib/taxonomy.functions";
 import {
@@ -19,7 +19,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Pencil, Plus, Trash2, ArrowUp, ArrowDown, Sparkles, Wand2, X, Upload, Loader2, Image as ImageIcon, Download } from "lucide-react";
+import { Pencil, Plus, Trash2, ArrowUp, ArrowDown, Sparkles, Wand2, X, Upload, Loader2, Image as ImageIcon, Download, Search } from "lucide-react";
 import { toast } from "sonner";
 
 interface Cat { id: string; name: string; parent_id: string | null; }
@@ -49,6 +49,72 @@ export function MessagesTab() {
   const childrenOf = (id: string) => cats.filter((c) => c.parent_id === id);
   const stages = (stagesQ.data ?? []) as Stage[];
   const allMessages = (q.data ?? []) as any[];
+
+  // ---- Biblioteca: busca, filtro por categoria e seleção em massa ----
+  const [search, setSearch] = useState("");
+  const [filterCat, setFilterCat] = useState<string>("todas");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+
+  const categoryCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    allMessages.forEach((m) => { if (m.category_id) counts.set(m.category_id, (counts.get(m.category_id) ?? 0) + 1); });
+    return counts;
+  }, [allMessages]);
+
+  const filteredMessages = useMemo(() => {
+    const n = search.toLowerCase().trim();
+    return allMessages.filter((m) => {
+      if (filterCat !== "todas" && m.category_id !== filterCat) return false;
+      if (!n) return true;
+      return m.title.toLowerCase().includes(n) || (m.content ?? "").toLowerCase().includes(n);
+    });
+  }, [allMessages, search, filterCat]);
+
+  const toggleSelect = (id: string) => setSelectedIds((prev) => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+  const allVisibleSelected = filteredMessages.length > 0 && filteredMessages.every((m) => selectedIds.has(m.id));
+  const toggleSelectAllVisible = () => setSelectedIds(allVisibleSelected ? new Set() : new Set(filteredMessages.map((m) => m.id)));
+
+  const bulkChangeCategory = async (categoryId: string) => {
+    setBulkBusy(true);
+    try {
+      for (const id of selectedIds) {
+        const m = allMessages.find((x) => x.id === id);
+        if (!m) continue;
+        await upsert({ data: {
+          id: m.id, category_id: categoryId || null, subcategory_id: null,
+          title: m.title, content: m.content, internal_note: m.internal_note, tags: [], position: 0,
+          shortcut: m.shortcut, image_path: m.image_path,
+        } });
+      }
+      toast.success(`${selectedIds.size} mensagem(ns) movida(s).`);
+      setSelectedIds(new Set());
+      qc.invalidateQueries({ queryKey: ["messages"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao mover mensagens.");
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const bulkDelete = async () => {
+    if (!confirm(`Excluir ${selectedIds.size} mensagem(ns)? Isso não pode ser desfeito.`)) return;
+    setBulkBusy(true);
+    try {
+      for (const id of selectedIds) await del({ data: { id } });
+      toast.success(`${selectedIds.size} mensagem(ns) excluída(s).`);
+      setSelectedIds(new Set());
+      qc.invalidateQueries({ queryKey: ["messages"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao excluir mensagens.");
+    } finally {
+      setBulkBusy(false);
+    }
+  };
 
   const invalidateFlow = () => {
     qc.invalidateQueries({ queryKey: ["messages"] });
@@ -334,7 +400,7 @@ As etapas devem vir na ordem certa de uso. Sem markdown, sem texto fora do JSON.
         <TabsContent value="biblioteca" className="mt-4">
           <Card className="overflow-hidden">
             <div className="flex justify-between items-center p-4 border-b border-border">
-              <h3 className="font-semibold">Mensagens ({q.data?.length ?? 0})</h3>
+              <h3 className="font-semibold">Mensagens ({filteredMessages.length} de {allMessages.length})</h3>
               <div className="flex gap-2">
                 <Button size="sm" variant="outline" className="gap-2" onClick={() => setShowGen((v) => !v)}>
                   <Sparkles className="h-4 w-4" /> Gerar scripts com IA
@@ -343,6 +409,36 @@ As etapas devem vir na ordem certa de uso. Sem markdown, sem texto fora do JSON.
                   <Plus className="h-4 w-4" /> Nova mensagem
                 </Button>
               </div>
+            </div>
+
+            <div className="p-4 border-b border-border space-y-3">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input className="pl-9" placeholder="Buscar por título ou conteúdo..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                </div>
+                <Select value={filterCat} onValueChange={setFilterCat}>
+                  <SelectTrigger className="sm:w-64"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas categorias ({allMessages.length})</SelectItem>
+                    {parents.map((c) => <SelectItem key={c.id} value={c.id}>{c.name} ({categoryCounts.get(c.id) ?? 0})</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {selectedIds.size > 0 && (
+                <div className="flex flex-wrap items-center gap-2 p-2 rounded-md bg-primary/5 border border-primary/20">
+                  <span className="text-sm font-medium">{selectedIds.size} selecionada(s)</span>
+                  <Select onValueChange={(v) => bulkChangeCategory(v)} disabled={bulkBusy}>
+                    <SelectTrigger className="h-8 w-52 text-xs"><SelectValue placeholder="Mover para categoria..." /></SelectTrigger>
+                    <SelectContent>
+                      {parents.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Button size="sm" variant="destructive" disabled={bulkBusy} onClick={bulkDelete}>Excluir selecionadas</Button>
+                  <Button size="sm" variant="ghost" disabled={bulkBusy} onClick={() => setSelectedIds(new Set())}>Limpar seleção</Button>
+                </div>
+              )}
             </div>
 
             {showGen && (
@@ -411,10 +507,14 @@ As etapas devem vir na ordem certa de uso. Sem markdown, sem texto fora do JSON.
             )}
 
             <Table>
-              <TableHeader><TableRow><TableHead></TableHead><TableHead>Categoria</TableHead><TableHead>Título</TableHead><TableHead>Atalho</TableHead><TableHead className="text-right">Usos</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow>
+                <TableHead className="w-8"><input type="checkbox" checked={allVisibleSelected} onChange={toggleSelectAllVisible} /></TableHead>
+                <TableHead></TableHead><TableHead>Categoria</TableHead><TableHead>Título</TableHead><TableHead>Atalho</TableHead><TableHead className="text-right">Usos</TableHead><TableHead className="text-right">Ações</TableHead>
+              </TableRow></TableHeader>
               <TableBody>
-                {allMessages.map((m: { id: string; title: string; category: { name: string } | null; subcategory: { name: string } | null; content: string; internal_note: string | null; category_id: string | null; subcategory_id: string | null; shortcut: string | null; image_path: string | null; image_url: string | null; use_count: number | null; }) => (
+                {filteredMessages.map((m: { id: string; title: string; category: { name: string } | null; subcategory: { name: string } | null; content: string; internal_note: string | null; category_id: string | null; subcategory_id: string | null; shortcut: string | null; image_path: string | null; image_url: string | null; use_count: number | null; }) => (
                   <TableRow key={m.id}>
+                    <TableCell><input type="checkbox" checked={selectedIds.has(m.id)} onChange={() => toggleSelect(m.id)} /></TableCell>
                     <TableCell>
                       {m.image_url ? (
                         <img src={m.image_url} alt="" className="h-8 w-8 rounded object-cover" />
