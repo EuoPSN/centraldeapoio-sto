@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -892,6 +892,47 @@ export type Database = {
         }
         Relationships: []
       }
+      image_library_items: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          image_path: string
+          position: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_path: string
+          position?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_path?: string
+          position?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "image_library_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       knowledge_chunks: {
         Row: {
           content: string
@@ -1124,6 +1165,7 @@ export type Database = {
           tags: string[]
           title: string
           updated_at: string
+          use_count: number
         }
         Insert: {
           category_id?: string | null
@@ -1139,6 +1181,7 @@ export type Database = {
           tags?: string[]
           title: string
           updated_at?: string
+          use_count?: number
         }
         Update: {
           category_id?: string | null
@@ -1154,6 +1197,7 @@ export type Database = {
           tags?: string[]
           title?: string
           updated_at?: string
+          use_count?: number
         }
         Relationships: [
           {
@@ -1424,6 +1468,143 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_attempts: {
+        Row: {
+          completed_at: string
+          id: string
+          quiz_id: string
+          respostas: Json
+          score: number
+          total_questions: number
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          id?: string
+          quiz_id: string
+          respostas?: Json
+          score: number
+          total_questions: number
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          id?: string
+          quiz_id?: string
+          respostas?: Json
+          score?: number
+          total_questions?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_attempts_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_options: {
+        Row: {
+          id: string
+          is_correct: boolean
+          position: number
+          question_id: string
+          texto: string
+        }
+        Insert: {
+          id?: string
+          is_correct?: boolean
+          position?: number
+          question_id: string
+          texto: string
+        }
+        Update: {
+          id?: string
+          is_correct?: boolean
+          position?: number
+          question_id?: string
+          texto?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_options_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_questions: {
+        Row: {
+          id: string
+          pergunta: string
+          position: number
+          quiz_id: string
+          resposta_esperada: string | null
+          tipo: string
+        }
+        Insert: {
+          id?: string
+          pergunta: string
+          position?: number
+          quiz_id: string
+          resposta_esperada?: string | null
+          tipo?: string
+        }
+        Update: {
+          id?: string
+          pergunta?: string
+          position?: number
+          quiz_id?: string
+          resposta_esperada?: string | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_questions_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quizzes: {
+        Row: {
+          created_at: string
+          id: string
+          position: number
+          titulo: string
+          training_module_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          position?: number
+          titulo: string
+          training_module_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          position?: number
+          titulo?: string
+          training_module_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quizzes_training_module_id_fkey"
+            columns: ["training_module_id"]
+            isOneToOne: false
+            referencedRelation: "training_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       relatorio_prospeccao: {
         Row: {
           area: string
@@ -1691,6 +1872,69 @@ export type Database = {
           },
         ]
       }
+      training_module_images: {
+        Row: {
+          image_library_item_id: string
+          position: number
+          training_module_id: string
+        }
+        Insert: {
+          image_library_item_id: string
+          position?: number
+          training_module_id: string
+        }
+        Update: {
+          image_library_item_id?: string
+          position?: number
+          training_module_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_module_images_image_library_item_id_fkey"
+            columns: ["image_library_item_id"]
+            isOneToOne: false
+            referencedRelation: "image_library_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_module_images_training_module_id_fkey"
+            columns: ["training_module_id"]
+            isOneToOne: false
+            referencedRelation: "training_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_modules: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          id: string
+          pdf_name: string | null
+          pdf_path: string | null
+          position: number
+          titulo: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          pdf_name?: string | null
+          pdf_path?: string | null
+          position?: number
+          titulo: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          pdf_name?: string | null
+          pdf_path?: string | null
+          position?: number
+          titulo?: string
+        }
+        Relationships: []
+      }
       unidades: {
         Row: {
           cidade: string | null
@@ -1747,6 +1991,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      increment_message_use_count: {
+        Args: { msg_id: string }
+        Returns: undefined
+      }
       match_knowledge: {
         Args: { match_count?: number; query_embedding: string }
         Returns: {
