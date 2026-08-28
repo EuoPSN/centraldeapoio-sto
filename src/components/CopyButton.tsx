@@ -9,6 +9,7 @@ interface CopyButtonProps {
   variant?: "default" | "outline" | "ghost" | "secondary";
   size?: "default" | "sm" | "icon";
   className?: string;
+  onCopy?: () => void;
 }
 
 export function CopyButton({
@@ -17,6 +18,7 @@ export function CopyButton({
   variant = "outline",
   size = "sm",
   className,
+  onCopy,
 }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
   return (
@@ -29,6 +31,7 @@ export function CopyButton({
         e.stopPropagation();
         await navigator.clipboard.writeText(text);
         setCopied(true);
+        onCopy?.();
         setTimeout(() => setCopied(false), 1500);
       }}
     >
