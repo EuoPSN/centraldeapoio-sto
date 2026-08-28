@@ -115,6 +115,20 @@ export const deleteQuizOption = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// Versão segura pra quem vai FAZER o simulado — nunca inclui a resposta certa
+// (nem "is_correct" das alternativas, nem "resposta_esperada" das perguntas abertas).
+export const listQuizzesForTaking = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("quizzes")
+      .select(`id, titulo, training_module_id,
+        questions:quiz_questions(id, tipo, pergunta, position, options:quiz_options(id, texto, position))`)
+      .order("position", { ascending: true });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
 // ============ Fazer o simulado (qualquer autenticado) ============
 const AttemptInput = z.object({
   quiz_id: z.string().uuid(),
