@@ -411,9 +411,9 @@ As etapas devem vir na ordem certa de uso. Sem markdown, sem texto fora do JSON.
             )}
 
             <Table>
-              <TableHeader><TableRow><TableHead></TableHead><TableHead>Categoria</TableHead><TableHead>Título</TableHead><TableHead>Atalho</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead></TableHead><TableHead>Categoria</TableHead><TableHead>Título</TableHead><TableHead>Atalho</TableHead><TableHead className="text-right">Usos</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
               <TableBody>
-                {allMessages.map((m: { id: string; title: string; category: { name: string } | null; subcategory: { name: string } | null; content: string; internal_note: string | null; category_id: string | null; subcategory_id: string | null; shortcut: string | null; image_path: string | null; image_url: string | null; }) => (
+                {allMessages.map((m: { id: string; title: string; category: { name: string } | null; subcategory: { name: string } | null; content: string; internal_note: string | null; category_id: string | null; subcategory_id: string | null; shortcut: string | null; image_path: string | null; image_url: string | null; use_count: number | null; }) => (
                   <TableRow key={m.id}>
                     <TableCell>
                       {m.image_url ? (
@@ -425,6 +425,7 @@ As etapas devem vir na ordem certa de uso. Sem markdown, sem texto fora do JSON.
                     <TableCell><Badge variant="secondary">{m.category?.name ?? "—"}{m.subcategory ? ` · ${m.subcategory.name}` : ""}</Badge></TableCell>
                     <TableCell className="font-medium">{m.title}</TableCell>
                     <TableCell>{m.shortcut ? <Badge variant="outline">/{m.shortcut}</Badge> : <span className="text-xs text-muted-foreground">—</span>}</TableCell>
+                    <TableCell className="text-right text-sm text-muted-foreground">{m.use_count ?? 0}</TableCell>
                     <TableCell className="text-right space-x-1">
                       <Button size="icon" variant="ghost" onClick={() => setEdit({
                         id: m.id, category_id: m.category_id ?? "", subcategory_id: m.subcategory_id ?? "",
