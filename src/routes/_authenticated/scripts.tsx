@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { listMessages } from "@/lib/messages.functions";
+import { listMessages, incrementMessageUseCount } from "@/lib/messages.functions";
 import { listFlowStages } from "@/lib/messageflow.functions";
 import { listCategories } from "@/lib/taxonomy.functions";
 import { Card } from "@/components/ui/card";
@@ -69,6 +69,7 @@ function FluxoAtendimento() {
   const msgFn = useServerFn(listMessages);
   const stageFn = useServerFn(listFlowStages);
   const catFn = useServerFn(listCategories);
+  const incUse = useServerFn(incrementMessageUseCount);
   const msgQ = useQuery({ queryKey: ["messages"], queryFn: () => msgFn({}) });
   const stageQ = useQuery({ queryKey: ["flow-stages"], queryFn: () => stageFn({}) });
   const catQ = useQuery({ queryKey: ["cats", "message"], queryFn: () => catFn({ data: { scope: "message" } }) });
@@ -141,7 +142,7 @@ function FluxoAtendimento() {
                               {m.shortcut && <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-primary/10 text-primary shrink-0">/{m.shortcut}</span>}
                               <h4 className="font-medium truncate">{m.title}</h4>
                             </div>
-                            <CopyButton text={m.content} />
+                            <CopyButton text={m.content} onCopy={() => incUse({ data: { id: m.id } })} />
                           </div>
                           <div className="rounded-md bg-muted/40 border border-border p-3 max-h-56 overflow-y-auto">
                             <Markdown>{m.content}</Markdown>
@@ -169,6 +170,7 @@ function FluxoAtendimento() {
 
 function Biblioteca() {
   const fn = useServerFn(listMessages);
+  const incUse = useServerFn(incrementMessageUseCount);
   const q = useQuery({ queryKey: ["messages"], queryFn: () => fn({}) });
   const [filter, setFilter] = useState("");
   const [activeCat, setActiveCat] = useState<string>("todos");
@@ -266,7 +268,7 @@ function Biblioteca() {
                 )}
                 <h3 className="font-semibold mt-0.5">{m.title}</h3>
               </div>
-              <CopyButton text={m.content} />
+<CopyButton text={m.content} onCopy={() => incUse({ data: { id: m.id } })} />
             </div>
             <div className="rounded-md bg-muted/40 border border-border p-3 max-h-64 overflow-y-auto">
               <Markdown>{m.content}</Markdown>
