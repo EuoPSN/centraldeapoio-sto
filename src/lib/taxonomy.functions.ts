@@ -5,6 +5,19 @@ import { z } from "zod";
 
 const ScopeEnum = z.enum(["message", "flow", "suggestion", "content", "client_profile"]);
 
+// Todas as categorias, de qualquer escopo — usada pela busca global (Ctrl+K).
+export const listAllCategories = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("categories")
+      .select("*")
+      .order("scope", { ascending: true })
+      .order("name", { ascending: true });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
 export const listCategories = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ scope: ScopeEnum }).parse(d))
