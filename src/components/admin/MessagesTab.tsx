@@ -53,8 +53,11 @@ export function MessagesTab() {
   // ---- Biblioteca: busca, filtro por categoria e seleção em massa ----
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState<string>("todas");
+  const [filterSub, setFilterSub] = useState<string>("todas");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
+
+  const setFilterCatAndResetSub = (v: string) => { setFilterCat(v); setFilterSub("todas"); };
 
   const categoryCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -62,14 +65,21 @@ export function MessagesTab() {
     return counts;
   }, [allMessages]);
 
+  const subcategoryCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    allMessages.forEach((m) => { if (m.subcategory_id) counts.set(m.subcategory_id, (counts.get(m.subcategory_id) ?? 0) + 1); });
+    return counts;
+  }, [allMessages]);
+
   const filteredMessages = useMemo(() => {
     const n = search.toLowerCase().trim();
     return allMessages.filter((m) => {
       if (filterCat !== "todas" && m.category_id !== filterCat) return false;
+      if (filterCat !== "todas" && filterSub !== "todas" && m.subcategory_id !== filterSub) return false;
       if (!n) return true;
       return m.title.toLowerCase().includes(n) || (m.content ?? "").toLowerCase().includes(n);
     });
-  }, [allMessages, search, filterCat]);
+  }, [allMessages, search, filterCat, filterSub]);
 
   const toggleSelect = (id: string) => setSelectedIds((prev) => {
     const next = new Set(prev);
@@ -417,13 +427,22 @@ As etapas devem vir na ordem certa de uso. Sem markdown, sem texto fora do JSON.
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input className="pl-9" placeholder="Buscar por título ou conteúdo..." value={search} onChange={(e) => setSearch(e.target.value)} />
                 </div>
-                <Select value={filterCat} onValueChange={setFilterCat}>
-                  <SelectTrigger className="sm:w-64"><SelectValue /></SelectTrigger>
+                <Select value={filterCat} onValueChange={setFilterCatAndResetSub}>
+                  <SelectTrigger className="sm:w-56"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todas">Todas categorias ({allMessages.length})</SelectItem>
                     {parents.map((c) => <SelectItem key={c.id} value={c.id}>{c.name} ({categoryCounts.get(c.id) ?? 0})</SelectItem>)}
                   </SelectContent>
                 </Select>
+                {filterCat !== "todas" && childrenOf(filterCat).length > 0 && (
+                  <Select value={filterSub} onValueChange={setFilterSub}>
+                    <SelectTrigger className="sm:w-56"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todas">Todas subcategorias</SelectItem>
+                      {childrenOf(filterCat).map((c) => <SelectItem key={c.id} value={c.id}>{c.name} ({subcategoryCounts.get(c.id) ?? 0})</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
 
               {selectedIds.size > 0 && (
