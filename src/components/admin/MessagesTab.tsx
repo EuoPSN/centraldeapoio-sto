@@ -57,6 +57,10 @@ export function MessagesTab() {
   const [onlyNoSub, setOnlyNoSub] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkCategoryId, setBulkCategoryId] = useState("");
+  const [bulkSubcategoryId, setBulkSubcategoryId] = useState("");
+
+  const setBulkCategoryAndResetSub = (v: string) => { setBulkCategoryId(v); setBulkSubcategoryId(""); };
 
   const setFilterCatAndResetSub = (v: string) => { setFilterCat(v); setFilterSub("todas"); };
 
@@ -93,20 +97,22 @@ export function MessagesTab() {
   const allVisibleSelected = filteredMessages.length > 0 && filteredMessages.every((m) => selectedIds.has(m.id));
   const toggleSelectAllVisible = () => setSelectedIds(allVisibleSelected ? new Set() : new Set(filteredMessages.map((m) => m.id)));
 
-  const bulkChangeCategory = async (categoryId: string) => {
+  const applyBulkCategory = async () => {
+    if (!bulkCategoryId) return;
     setBulkBusy(true);
     try {
       for (const id of selectedIds) {
         const m = allMessages.find((x) => x.id === id);
         if (!m) continue;
         await upsert({ data: {
-          id: m.id, category_id: categoryId || null, subcategory_id: null,
+          id: m.id, category_id: bulkCategoryId, subcategory_id: bulkSubcategoryId || null,
           title: m.title, content: m.content, internal_note: m.internal_note, tags: [], position: 0,
           shortcut: m.shortcut, image_path: m.image_path,
         } });
       }
       toast.success(`${selectedIds.size} mensagem(ns) movida(s).`);
       setSelectedIds(new Set());
+      setBulkCategoryId(""); setBulkSubcategoryId("");
       qc.invalidateQueries({ queryKey: ["messages"] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao mover mensagens.");
@@ -460,14 +466,27 @@ As etapas devem vir na ordem certa de uso. Sem markdown, sem texto fora do JSON.
               {selectedIds.size > 0 && (
                 <div className="flex flex-wrap items-center gap-2 p-2 rounded-md bg-primary/5 border border-primary/20">
                   <span className="text-sm font-medium">{selectedIds.size} selecionada(s)</span>
-                  <Select onValueChange={(v) => bulkChangeCategory(v)} disabled={bulkBusy}>
-                    <SelectTrigger className="h-8 w-52 text-xs"><SelectValue placeholder="Mover para categoria..." /></SelectTrigger>
+                  <Select value={bulkCategoryId || "none"} onValueChange={(v) => setBulkCategoryAndResetSub(v === "none" ? "" : v)} disabled={bulkBusy}>
+                    <SelectTrigger className="h-8 w-48 text-xs"><SelectValue placeholder="Mover para categoria..." /></SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">Escolher categoria...</SelectItem>
                       {parents.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
+                  {bulkCategoryId && childrenOf(bulkCategoryId).length > 0 && (
+                    <Select value={bulkSubcategoryId || "none"} onValueChange={(v) => setBulkSubcategoryId(v === "none" ? "" : v)} disabled={bulkBusy}>
+                      <SelectTrigger className="h-8 w-48 text-xs"><SelectValue placeholder="Subcategoria (opcional)" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Sem subcategoria</SelectItem>
+                        {childrenOf(bulkCategoryId).map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {bulkCategoryId && (
+                    <Button size="sm" disabled={bulkBusy} onClick={applyBulkCategory}>Aplicar</Button>
+                  )}
                   <Button size="sm" variant="destructive" disabled={bulkBusy} onClick={bulkDelete}>Excluir selecionadas</Button>
-                  <Button size="sm" variant="ghost" disabled={bulkBusy} onClick={() => setSelectedIds(new Set())}>Limpar seleção</Button>
+                  <Button size="sm" variant="ghost" disabled={bulkBusy} onClick={() => { setSelectedIds(new Set()); setBulkCategoryId(""); setBulkSubcategoryId(""); }}>Limpar seleção</Button>
                 </div>
               )}
             </div>
