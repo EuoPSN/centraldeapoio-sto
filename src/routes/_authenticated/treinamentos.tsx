@@ -27,7 +27,7 @@ interface QuizRow { id: string; titulo: string; training_module_id: string | nul
 function Page() {
   const modFn = useServerFn(listTrainingModules);
   const quizFn = useServerFn(listQuizzesForTaking);
-  const modQ = useQuery({ queryKey: ["training-modules"], queryFn: () => modFn({}) });
+  const modQ = useQuery({ queryKey: ["training-modules"], queryFn: () => modFn({}), refetchOnWindowFocus: false, staleTime: 10 * 60 * 1000 });
   const quizQ = useQuery({ queryKey: ["quizzes-taking"], queryFn: () => quizFn({}) });
 
   const modules = (modQ.data ?? []) as ModuleRow[];
@@ -72,7 +72,11 @@ function Page() {
                     <span className="text-xs font-medium text-muted-foreground flex items-center gap-1"><FileText className="h-3.5 w-3.5" /> {m.pdf_name || "Material do módulo"}</span>
                     <a href={m.pdf_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">Abrir em nova aba</a>
                   </div>
-                  <iframe src={m.pdf_url} title={m.pdf_name ?? m.titulo} className="w-full h-[480px] rounded-md border border-border" />
+                  <iframe
+                    src={`${m.pdf_url}#toolbar=0&navpanes=0&view=FitH`}
+                    title={m.pdf_name ?? m.titulo}
+                    className="w-full h-[75vh] min-h-[560px] rounded-md border border-border"
+                  />
                 </div>
               )}
 
