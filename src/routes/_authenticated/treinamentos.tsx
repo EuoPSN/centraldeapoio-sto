@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { listTrainingModules } from "@/lib/training.functions";
@@ -24,8 +24,22 @@ interface ModuleRow {
 interface QuestionRow { id: string; tipo: "multipla_escolha" | "aberta"; pergunta: string; options: { id: string; texto: string }[]; }
 interface QuizRow { id: string; titulo: string; training_module_id: string | null; questions: QuestionRow[]; }
 
+// O visualizador de PDF embutido do Chrome tem um bug conhecido de ficar com a
+// tela preta depois que a aba do navegador fica em segundo plano e volta. Forçamos
+// o PDF a recarregar nesse momento específico pra contornar isso.
+function useReloadKeyOnTabReturn() {
+  const [reloadKey, setReloadKey] = useState(0);
+  useEffect(() => {
+    const handler = () => { if (document.visibilityState === "visible") setReloadKey((k) => k + 1); };
+    document.addEventListener("visibilitychange", handler);
+    return () => document.removeEventListener("visibilitychange", handler);
+  }, []);
+  return reloadKey;
+}
+
 function Page() {
   const modFn = useServerFn(listTrainingModules);
+  const pdfReloadKey = useReloadKeyOnTabReturn();
   const quizFn = useServerFn(listQuizzesForTaking);
   const modQ = useQuery({ queryKey: ["training-modules"], queryFn: () => modFn({}), refetchOnWindowFocus: false, staleTime: 10 * 60 * 1000 });
   const quizQ = useQuery({ queryKey: ["quizzes-taking"], queryFn: () => quizFn({}) });
@@ -73,6 +87,7 @@ function Page() {
                     <a href={m.pdf_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">Abrir em nova aba</a>
                   </div>
                   <iframe
+                    key={`${m.id}-${pdfReloadKey}`}
                     src={`${m.pdf_url}#toolbar=0&navpanes=0&view=FitH`}
                     title={m.pdf_name ?? m.titulo}
                     className="w-full h-[75vh] min-h-[560px] rounded-md border border-border"
