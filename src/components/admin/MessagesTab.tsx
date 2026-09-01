@@ -54,6 +54,7 @@ export function MessagesTab() {
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState<string>("todas");
   const [filterSub, setFilterSub] = useState<string>("todas");
+  const [onlyNoSub, setOnlyNoSub] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
 
@@ -76,10 +77,13 @@ export function MessagesTab() {
     return allMessages.filter((m) => {
       if (filterCat !== "todas" && m.category_id !== filterCat) return false;
       if (filterCat !== "todas" && filterSub !== "todas" && m.subcategory_id !== filterSub) return false;
+      if (onlyNoSub && m.subcategory_id) return false;
       if (!n) return true;
       return m.title.toLowerCase().includes(n) || (m.content ?? "").toLowerCase().includes(n);
     });
-  }, [allMessages, search, filterCat, filterSub]);
+  }, [allMessages, search, filterCat, filterSub, onlyNoSub]);
+
+  const noSubCount = useMemo(() => allMessages.filter((m) => !m.subcategory_id).length, [allMessages]);
 
   const toggleSelect = (id: string) => setSelectedIds((prev) => {
     const next = new Set(prev);
@@ -443,6 +447,14 @@ As etapas devem vir na ordem certa de uso. Sem markdown, sem texto fora do JSON.
                     </SelectContent>
                   </Select>
                 )}
+                <Button
+                  size="sm"
+                  variant={onlyNoSub ? "default" : "outline"}
+                  className="shrink-0"
+                  onClick={() => setOnlyNoSub((v) => !v)}
+                >
+                  Sem subcategoria ({noSubCount})
+                </Button>
               </div>
 
               {selectedIds.size > 0 && (
