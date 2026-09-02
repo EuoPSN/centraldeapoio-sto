@@ -3,7 +3,7 @@ import { isAdminUser } from "@/lib/authz";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
-const ScopeEnum = z.enum(["message", "flow", "suggestion", "content", "client_profile"]);
+const ScopeEnum = z.enum(["message", "flow", "suggestion", "content", "client_profile", "image_library"]);
 
 // Todas as categorias, de qualquer escopo — usada pela busca global (Ctrl+K).
 export const listAllCategories = createServerFn({ method: "GET" })
