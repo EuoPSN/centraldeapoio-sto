@@ -114,7 +114,7 @@ export function ClientProfileStatesEditor({
   const messagesQ = useQuery({ queryKey: ["messages", "for-ai-context"], queryFn: () => listMsgFn({}) });
   const listKnowledgeFn = useServerFn(listKnowledge);
   const knowledgeQ = useQuery({ queryKey: ["knowledge", "for-ai-context"], queryFn: () => listKnowledgeFn({}) });
-  const knowledgeQ = useQuery({ queryKey: ["content", "conhecimento", "for-ai-context"], queryFn: () => listContentFn({ data: { section: "conhecimento" } }) });
+  
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<typeof EMPTY_STATE>({ ...EMPTY_STATE });
