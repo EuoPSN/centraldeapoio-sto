@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { listClientProfilesForTraining } from "@/lib/clientprofiles.functions";
@@ -12,10 +12,15 @@ import { Bot, GraduationCap } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/simulador-ia")({
   component: Page,
+  validateSearch: (search: Record<string, unknown>) => ({
+    perfil: typeof search.perfil === "string" ? search.perfil : undefined,
+  }),
 });
 
 function Page() {
+  const { perfil } = Route.useSearch();
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
+  const [autoSelecionado, setAutoSelecionado] = useState(false);
 
   const listProfilesFn = useServerFn(listClientProfilesForTraining);
   const profilesQ = useQuery({
@@ -23,6 +28,16 @@ function Page() {
     queryFn: () => listProfilesFn(),
   });
   const profiles = (profilesQ.data ?? []) as any[];
+
+  // Se a página abriu com ?perfil=<id> (ex: vindo do card "Vamos testar?" da tela inicial),
+  // seleciona esse perfil automaticamente assim que a lista carregar.
+  useEffect(() => {
+    if (perfil && !autoSelecionado && profiles.length > 0) {
+      const found = profiles.find((p: any) => p.id === perfil);
+      if (found) setSelectedProfile(found);
+      setAutoSelecionado(true);
+    }
+  }, [perfil, profiles, autoSelecionado]);
 
   const listCatFn = useServerFn(listCategories);
   const catsQ = useQuery({
