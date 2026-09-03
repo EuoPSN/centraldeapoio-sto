@@ -1,5 +1,5 @@
 import logoFull from "@/assets/logo.png.asset.json";
-import { useSidebar } from "@/components/ui/sidebar";
+
 
 interface AppLogoProps {
   size?: "sm" | "md" | "lg" | "xl";
