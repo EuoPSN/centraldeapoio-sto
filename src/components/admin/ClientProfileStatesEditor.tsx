@@ -9,7 +9,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { simulatorChat } from "@/lib/simulator.chat.functions";
 import { listMessages } from "@/lib/messages.functions";
-import { listContent } from "@/lib/content.functions";
+import { listKnowledge } from "@/lib/knowledge.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -112,7 +112,8 @@ export function ClientProfileStatesEditor({
 
   const listMsgFn = useServerFn(listMessages);
   const messagesQ = useQuery({ queryKey: ["messages", "for-ai-context"], queryFn: () => listMsgFn({}) });
-  const listContentFn = useServerFn(listContent);
+  const listKnowledgeFn = useServerFn(listKnowledge);
+  const knowledgeQ = useQuery({ queryKey: ["knowledge", "for-ai-context"], queryFn: () => listKnowledgeFn({}) });
   const knowledgeQ = useQuery({ queryKey: ["content", "conhecimento", "for-ai-context"], queryFn: () => listContentFn({ data: { section: "conhecimento" } }) });
 
   const [open, setOpen] = useState(false);
