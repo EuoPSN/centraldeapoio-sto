@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Markdown } from "@/components/Markdown";
-import { Bot, Plus, Send, Trash2, User, Paperclip, X, ImageIcon } from "lucide-react";
+import { Bot, Plus, Send, Trash2, User, Paperclip, X, ImageIcon, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -277,9 +277,20 @@ const removePendingImage = (index: number) => {
   );
 }
 
+// O servidor cola as fontes no fim da resposta com esse marcador exato (ver chat.functions.ts).
+// Separamos aqui na hora de exibir pra poder esconder/mostrar com uma setinha.
+const SOURCES_MARKER = "\n\n---\n**Fontes consultadas:**\n";
+function splitSources(content: string): { main: string; sources: string | null } {
+  const idx = content.indexOf(SOURCES_MARKER);
+  if (idx === -1) return { main: content, sources: null };
+  return { main: content.slice(0, idx), sources: content.slice(idx + SOURCES_MARKER.length) };
+}
+
 function MessageBubble({ role, content, attachments }: { role: "user" | "assistant" | "system"; content: string; attachments?: string[] }) {
   if (role === "system") return null;
   const isUser = role === "user";
+  const [showSources, setShowSources] = useState(false);
+  const { main, sources } = isUser ? { main: content, sources: null } : splitSources(content);
   return (
     <div className={cn("flex gap-3", isUser && "flex-row-reverse")}>
       {!isUser && <span className="text-[11px] text-muted-foreground self-center">MarcIAna</span>}
@@ -300,11 +311,28 @@ function MessageBubble({ role, content, attachments }: { role: "user" | "assista
             ))}
           </div>
         )}
-        {content && (isUser ? (
-          <p className="whitespace-pre-wrap text-sm leading-relaxed">{content}</p>
+        {main && (isUser ? (
+          <p className="whitespace-pre-wrap text-sm leading-relaxed">{main}</p>
         ) : (
-          <Markdown>{content}</Markdown>
+          <Markdown>{main}</Markdown>
         ))}
+        {sources && (
+          <div className="mt-2 pt-2 border-t border-border/50">
+            <button
+              type="button"
+              onClick={() => setShowSources((v) => !v)}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            >
+              {showSources ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              Fontes consultadas
+            </button>
+            {showSources && (
+              <div className="mt-1.5 text-xs text-muted-foreground">
+                <Markdown>{sources}</Markdown>
+              </div>
+            )}
+          </div>
+        )}
       </Card>
     </div>
   );
