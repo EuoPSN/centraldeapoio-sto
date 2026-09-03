@@ -2,7 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getMe, listScripts, listContent, listPricing } from "@/lib/content.functions";
+import { getMe, listScripts, listPricing } from "@/lib/content.functions";
+import { listKnowledge } from "@/lib/knowledge.functions";
 import { BookOpen, Bot, DollarSign, GraduationCap, MessageSquareQuote, Wrench } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/")({
