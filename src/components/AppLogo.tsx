@@ -1,4 +1,6 @@
-import logo from "@/assets/logo.png.asset.json";
+import logoFull from "@/assets/logo.png.asset.json";
+import logoIcon from "@/assets/logo-icon.png.asset.json";
+import { useSidebar } from "@/components/ui/sidebar";
 
 interface AppLogoProps {
   size?: "sm" | "md" | "lg" | "xl";
@@ -13,9 +15,21 @@ const sizes = {
 };
 
 export function AppLogo({ size = "md", className = "" }: AppLogoProps) {
+  // useSidebar só funciona dentro do SidebarProvider (não existe na tela de login,
+  // por exemplo) — nesses casos, sempre mostramos a logo completa.
+  let collapsed = false;
+  try {
+    const { state } = useSidebar();
+    collapsed = state === "collapsed";
+  } catch {
+    collapsed = false;
+  }
+
+  const src = collapsed ? logoIcon.url : logoFull.url;
+
   return (
     <img
-      src={logo.url}
+      src={src}
       alt="Cartão de Todos"
       className={`${sizes[size]} w-auto ${className}`}
     />
