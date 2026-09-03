@@ -7,12 +7,19 @@ import { z } from "zod";
 // CONTENT ITEMS (Conhecimento / Problemas / Tutoriais)
 // ============================================================
 const SectionEnum = z.enum(["problemas", "tutoriais"]);
+// Tolerant: aceita string, array de seções (usa a primeira) ou ausência (padrão)
+const SectionInput = z.preprocess((v) => {
+  if (Array.isArray(v)) return v[0];
+  if (v == null || v === "") return "problemas";
+  return v;
+}, SectionEnum);
 
 export const listContent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
-    z.object({ section: SectionEnum }).parse(data),
+    z.object({ section: SectionInput }).parse(data ?? {}),
   )
+
   .handler(async ({ data, context }) => {
     const db = context.supabase as any;
     const { data: rows, error } = await db
