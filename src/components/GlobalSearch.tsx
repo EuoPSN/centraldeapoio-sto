@@ -11,6 +11,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listContent, listPricing } from "@/lib/content.functions";
+import { listKnowledge } from "@/lib/knowledge.functions";
 import { listMessages } from "@/lib/messages.functions";
 import { listClientProfilesForTraining } from "@/lib/clientprofiles.functions";
 import { listAllCategories } from "@/lib/taxonomy.functions";
@@ -39,9 +40,9 @@ export function GlobalSearch() {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  const lcConh = useServerFn(listContent);
   const lcProb = useServerFn(listContent);
   const lcTut = useServerFn(listContent);
+  const lKnowledge = useServerFn(listKnowledge);
   const lsMessages = useServerFn(listMessages);
   const lpPricing = useServerFn(listPricing);
   const lProfiles = useServerFn(listClientProfilesForTraining);
@@ -52,14 +53,14 @@ export function GlobalSearch() {
   const lProced = useServerFn(listProcedimentos);
   const lChangelog = useServerFn(listChangelog);
 
-  const conh = useQuery({ queryKey: ["sg-conh"], queryFn: () => lcConh({ data: { section: "conhecimento" } }), enabled: open });
+  const knowledge = useQuery({ queryKey: ["sg-knowledge"], queryFn: () => lKnowledge({}), enabled: open });
   const prob = useQuery({ queryKey: ["sg-prob"], queryFn: () => lcProb({ data: { section: "problemas" } }), enabled: open });
   const tut = useQuery({ queryKey: ["sg-tut"], queryFn: () => lcTut({ data: { section: "tutoriais" } }), enabled: open });
   const messages = useQuery({ queryKey: ["sg-messages"], queryFn: () => lsMessages({}), enabled: open });
   const pricing = useQuery({ queryKey: ["sg-pricing"], queryFn: () => lpPricing({}), enabled: open });
   const profiles = useQuery({ queryKey: ["sg-profiles"], queryFn: () => lProfiles({}), enabled: open });
   const cats = useQuery({ queryKey: ["sg-cats"], queryFn: () => lCats({}), enabled: open });
-  // Funcionários/Metas é restrito a admin — para quem não é admin essa consulta simplesmente
+  // Funcionários/Metas é restrito a admin — pra quem não é admin essa consulta simplesmente
   // falha silenciosamente (React Query não propaga o erro pra UI) e o grupo não aparece.
   const metas = useQuery({ queryKey: ["sg-metas"], queryFn: () => lMetas({}), enabled: open, retry: false });
   const unidades = useQuery({ queryKey: ["sg-unidades"], queryFn: () => lUnidades({}), enabled: open });
@@ -69,6 +70,7 @@ export function GlobalSearch() {
 
   type Item = { id: string; title: string; preview: string; icon: typeof BookOpen; route: string };
   type ContentSearchRow = { id: string; title: string; content: string };
+  type KnowledgeSearchRow = { id: string; title: string; content: string; summary: string | null };
   type MessageSearchRow = { id: string; title: string; content: string; category?: { name: string } | null };
   type PricingSearchRow = { id: string; specialty: string; category: string; cartao_price: number | null };
   type ProfileSearchRow = { id: string; name: string; difficulty: string; category?: { name: string } | null };
@@ -81,7 +83,7 @@ export function GlobalSearch() {
 
   const items = useMemo(() => ({
     messages: ((messages.data ?? []) as MessageSearchRow[]).map((r) => ({ id: r.id, title: r.title, preview: r.category?.name ? `${r.category.name} · ${r.content.slice(0, 60)}` : r.content.slice(0, 80), icon: MessageSquareQuote, route: "/scripts" })),
-    knowledge: ((conh.data ?? []) as ContentSearchRow[]).map((r) => ({ id: r.id, title: r.title, preview: r.content.slice(0, 80), icon: BookOpen, route: "/conhecimento" })),
+    knowledge: ((knowledge.data ?? []) as KnowledgeSearchRow[]).map((r) => ({ id: r.id, title: r.title, preview: (r.summary || r.content).slice(0, 80), icon: BookOpen, route: "/conhecimento" })),
     pricing: ((pricing.data ?? []) as PricingSearchRow[]).map((r) => ({ id: r.id, title: r.specialty, preview: `${r.category}${r.cartao_price ? ` · R$ ${Number(r.cartao_price).toFixed(2)}` : ""}`, icon: DollarSign, route: "/precos" })),
     problems: ((prob.data ?? []) as ContentSearchRow[]).map((r) => ({ id: r.id, title: r.title, preview: r.content.slice(0, 80), icon: Wrench, route: "/problemas" })),
     tutorials: ((tut.data ?? []) as ContentSearchRow[]).map((r) => ({ id: r.id, title: r.title, preview: r.content.slice(0, 80), icon: GraduationCap, route: "/tutoriais" })),
@@ -93,7 +95,7 @@ export function GlobalSearch() {
     procedimentos: ((procedimentos.data ?? []) as ProcedimentoSearchRow[]).map((r) => ({ id: r.id, title: r.nome, preview: r.categoria ?? "Procedimento odontológico", icon: Stethoscope, route: "/precos" })),
     changelog: ((changelog.data ?? []) as ChangelogSearchRow[]).filter((r) => r.published).map((r) => ({ id: r.id, title: r.title, preview: r.summary.slice(0, 80), icon: Star, route: "/" })),
   } satisfies Record<string, Item[]>), [
-    messages.data, conh.data, pricing.data, prob.data, tut.data, profiles.data,
+    messages.data, knowledge.data, pricing.data, prob.data, tut.data, profiles.data,
     cats.data, metas.data, unidades.data, exames.data, procedimentos.data, changelog.data,
   ]);
 
@@ -104,7 +106,7 @@ export function GlobalSearch() {
 
   const groups: { key: keyof typeof items; heading: string; limit: number }[] = [
     { key: "messages", heading: "Scripts / Mensagens", limit: 8 },
-    { key: "knowledge", heading: "Conhecimento Geral", limit: 6 },
+    { key: "knowledge", heading: "Base de Conhecimento", limit: 6 },
     { key: "pricing", heading: "Tabela de Preços", limit: 6 },
     { key: "exames", heading: "Exames", limit: 6 },
     { key: "procedimentos", heading: "Procedimentos Odontológicos", limit: 6 },
