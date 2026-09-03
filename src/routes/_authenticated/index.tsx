@@ -2,7 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getMe, listScripts, listContent, listPricing } from "@/lib/content.functions";
+import { getMe, listScripts, listPricing } from "@/lib/content.functions";
+import { listKnowledge } from "@/lib/knowledge.functions";
 import { BookOpen, Bot, DollarSign, GraduationCap, MessageSquareQuote, Wrench } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -26,8 +27,8 @@ function Home() {
   const sQ = useQuery({ queryKey: ["scripts"], queryFn: () => scripts({}) });
   const pricing = useServerFn(listPricing);
   const pQ = useQuery({ queryKey: ["pricing"], queryFn: () => pricing({}) });
-  const conh = useServerFn(listContent);
-  const cQ = useQuery({ queryKey: ["content", "conhecimento"], queryFn: () => conh({ data: { section: "conhecimento" } }) });
+  const conh = useServerFn(listKnowledge);
+  const cQ = useQuery({ queryKey: ["knowledge", "home-count"], queryFn: () => conh({}) });
 
   const name = meQ.data?.profile?.display_name ?? meQ.data?.email?.split("@")[0] ?? "";
 
