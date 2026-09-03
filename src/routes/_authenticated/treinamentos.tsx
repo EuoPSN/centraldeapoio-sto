@@ -21,7 +21,7 @@ interface ModuleRow {
   id: string; titulo: string; descricao: string | null; pdf_path: string | null; pdf_name: string | null; pdf_url: string | null;
   images: { image: { id: string; title: string; image_path: string; image_url: string } | null }[];
 }
-interface QuestionRow { id: string; tipo: "multipla_escolha" | "aberta"; pergunta: string; options: { id: string; texto: string }[]; }
+interface QuestionRow { id: string; tipo: "multipla_escolha" | "aberta"; pergunta: string; position?: number | null; options: { id: string; texto: string }[]; }
 interface QuizRow { id: string; titulo: string; training_module_id: string | null; questions: QuestionRow[]; }
 
 // O visualizador de PDF embutido do Chrome tem um bug conhecido de ficar com a
