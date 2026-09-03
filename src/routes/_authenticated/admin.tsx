@@ -420,7 +420,7 @@ function ScriptsTab() {
 
 // ============ Content (conhecimento/problemas/tutoriais) ============
 function ContentTab() {
-  const [section, setSection] = useState<"conhecimento" | "problemas" | "tutoriais" | "treinamentos">("conhecimento");
+  const [section, setSection] = useState<"problemas" | "tutoriais">("problemas");
   const list = useServerFn(listContent);
   const upsert = useServerFn(upsertContent);
   const del = useServerFn(deleteContent);
@@ -445,10 +445,8 @@ function ContentTab() {
         <Select value={section} onValueChange={(v) => setSection(v as typeof section)}>
           <SelectTrigger className="w-60"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="conhecimento">Conhecimento Geral</SelectItem>
             <SelectItem value="problemas">Problemas Técnicos</SelectItem>
             <SelectItem value="tutoriais">Tutoriais</SelectItem>
-            <SelectItem value="treinamentos">Treinamentos</SelectItem>
           </SelectContent>
         </Select>
         <Button size="sm" className="gap-2" onClick={() => setEdit({ category: "", title: "", content: "", link_externo: "", link_label: "" })}>
