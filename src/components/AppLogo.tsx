@@ -1,5 +1,4 @@
 import logoFull from "@/assets/logo.png.asset.json";
-import logoIcon from "@/assets/logo-icon.png.asset.json";
 import { useSidebar } from "@/components/ui/sidebar";
 
 interface AppLogoProps {
