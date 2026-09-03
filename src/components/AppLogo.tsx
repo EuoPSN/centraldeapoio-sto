@@ -14,16 +14,6 @@ const sizes = {
 };
 
 export function AppLogo({ size = "md", className = "" }: AppLogoProps) {
-  // useSidebar só funciona dentro do SidebarProvider (não existe na tela de login,
-  // por exemplo) — nesses casos, sempre mostramos a logo completa.
-  let collapsed = false;
-  try {
-    const { state } = useSidebar();
-    collapsed = state === "collapsed";
-  } catch {
-    collapsed = false;
-  }
-
   const src = logoFull.url;
 
   return (
