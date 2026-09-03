@@ -168,8 +168,33 @@ function FluxoAtendimento() {
   );
 }
 
-function Biblioteca() {
-  const fn = useServerFn(listMessages);
+// Busca tolerante: ignora acento e tolera pequenos erros de digitação por palavra.
+function normalize(s: string) {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function levenshtein(a: string, b: string) {
+  const m = a.length, n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  const dp: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    }
+  }
+  return dp[m][n];
+}
+
+function fuzzyWordMatch(haystackWords: string[], queryWord: string) {
+  if (queryWord.length < 3) return haystackWords.some((w) => w.startsWith(queryWord));
+  const maxDist = queryWord.length <= 5 ? 1 : 2;
+  return haystackWords.some((w) => w.startsWith(queryWord) || w.includes(queryWord) || levenshtein(w, queryWord) <= maxDist);
+}
+
+function Biblioteca() {  const fn = useServerFn(listMessages);
   const incUse = useServerFn(incrementMessageUseCount);
   const q = useQuery({ queryKey: ["messages"], queryFn: () => fn({}) });
   const [filter, setFilter] = useState("");
@@ -193,16 +218,23 @@ function Biblioteca() {
   }, [rows, activeCat]);
 
   const filtered = useMemo(() => {
-    const n = filter.toLowerCase().trim();
+    const n = normalize(filter.trim());
+    const queryWords = n.split(/\s+/).filter(Boolean);
     return rows.filter((r) => {
       if (activeCat !== "todos" && r.category?.id !== activeCat) return false;
       if (activeSub !== "todos" && r.subcategory?.id !== activeSub) return false;
-      if (!n) return true;
-      return r.title.toLowerCase().includes(n)
-        || r.content.toLowerCase().includes(n)
-        || (r.category?.name ?? "").toLowerCase().includes(n)
-        || (r.subcategory?.name ?? "").toLowerCase().includes(n)
-        || (r.tags ?? []).some((t) => t.toLowerCase().includes(n));
+      if (queryWords.length === 0) return true;
+
+      const haystack = normalize([
+        r.title, r.content, r.category?.name ?? "", r.subcategory?.name ?? "", (r.tags ?? []).join(" "),
+      ].join(" "));
+
+      // Primeiro tenta o jeito exato (mais rápido e mais preciso)
+      if (queryWords.every((w) => haystack.includes(w))) return true;
+
+      // Se não bateu, tolera acento diferente e pequenos erros de digitação por palavra
+      const haystackWords = haystack.split(/\s+/).filter(Boolean);
+      return queryWords.every((w) => fuzzyWordMatch(haystackWords, w));
     });
   }, [rows, filter, activeCat, activeSub]);
 
