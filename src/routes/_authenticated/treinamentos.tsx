@@ -149,7 +149,7 @@ function QuizRunner({ quiz, onClose }: { quiz: QuizRow; onClose: () => void }) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [result, setResult] = useState<null | { score: number; total_questions: number; respostas: { question_id: string; correta: boolean; feedback?: string }[] }>(null);
 
-  const questions = (quiz.questions ?? []).slice().sort((a, b) => a.position - b.position);
+  const questions = (quiz.questions ?? []).slice().sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
   const allAnswered = questions.every((q) => (answers[q.id] ?? "").trim().length > 0);
 
   const submitMut = useMutation({
