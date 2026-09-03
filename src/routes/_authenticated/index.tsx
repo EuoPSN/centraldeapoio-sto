@@ -26,8 +26,8 @@ function Home() {
   const sQ = useQuery({ queryKey: ["scripts"], queryFn: () => scripts({}) });
   const pricing = useServerFn(listPricing);
   const pQ = useQuery({ queryKey: ["pricing"], queryFn: () => pricing({}) });
-  const conh = useServerFn(listContent);
-  const cQ = useQuery({ queryKey: ["content", "conhecimento"], queryFn: () => conh({ data: { section: "conhecimento" } }) });
+  const conh = useServerFn(listKnowledge);
+  const cQ = useQuery({ queryKey: ["knowledge", "home-count"], queryFn: () => conh({}) });
 
   const name = meQ.data?.profile?.display_name ?? meQ.data?.email?.split("@")[0] ?? "";
 
