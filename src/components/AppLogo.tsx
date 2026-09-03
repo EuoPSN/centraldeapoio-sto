@@ -24,7 +24,7 @@ export function AppLogo({ size = "md", className = "" }: AppLogoProps) {
     collapsed = false;
   }
 
-  const src = collapsed ? logoIcon.url : logoFull.url;
+  const src = logoFull.url;
 
   return (
     <img
