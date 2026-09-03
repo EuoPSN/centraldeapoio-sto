@@ -6,7 +6,7 @@ import { z } from "zod";
 // ============================================================
 // CONTENT ITEMS (Conhecimento / Problemas / Tutoriais)
 // ============================================================
-const SectionEnum = z.enum(["conhecimento", "problemas", "tutoriais", "treinamentos"]);
+const SectionEnum = z.enum(["problemas", "tutoriais"]);
 
 export const listContent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
