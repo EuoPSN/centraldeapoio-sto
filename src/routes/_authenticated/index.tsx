@@ -73,7 +73,7 @@ function Home() {
 
   const homeMsgFn = useServerFn(listHomepageMessages);
   const homeMsgQ = useQuery({ queryKey: ["homepage-messages"], queryFn: () => homeMsgFn({}) });
-  const heroMessage = pickHomeMessage((homeMsgQ.data ?? []) as HomeMessageRow[], (meQ.data as any)?.data_nascimento);
+  const heroMessage = pickHomeMessage((homeMsgQ.data ?? []) as HomeMessageRow[], (meQ.data as any)?.profile?.data_nascimento);
 
   const pricing = useServerFn(listPricing);
   const pQ = useQuery({ queryKey: ["pricing"], queryFn: () => pricing({}) });
@@ -101,7 +101,7 @@ function Home() {
   return (
     <div className="p-6 lg:p-10 max-w-4xl mx-auto">
       <p className="text-sm text-muted-foreground mb-1">
-        Olá, {(meQ.data as any)?.display_name || (meQ.data as any)?.email?.split("@")[0] || ""}
+        Olá, {(meQ.data as any)?.profile?.display_name || (meQ.data as any)?.email?.split("@")[0] || ""} 👋
       </p>
       <Card
         className="p-6 mb-8 border-none"
