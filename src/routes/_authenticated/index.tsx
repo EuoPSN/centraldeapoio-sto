@@ -59,12 +59,12 @@ export const Route = createFileRoute("/_authenticated/")({
 });
 
 const shortcuts = [
-  { title: "Scripts", icon: MessageSquareQuote, route: "/scripts" },
-  { title: "Amor Saúde", icon: Heart, route: "/precos" },
-  { title: "Simulador IA", icon: Sparkles, route: "/simulador-ia" },
-  { title: "MarcIAna", icon: Bot, route: "/assistente" },
-  { title: "Treinamentos", icon: GraduationCap, route: "/treinamentos" },
-  { title: "Sugestões", icon: Lightbulb, route: "/sugestoes" },
+  { title: "Scripts", icon: MessageSquareQuote, route: "/scripts", gradient: "linear-gradient(135deg, #22D3EE, #0EA5E9)" },
+  { title: "Amor Saúde", icon: Heart, route: "/precos", gradient: "linear-gradient(135deg, #FB7185, #E11D48)" },
+  { title: "Simulador IA", icon: Sparkles, route: "/simulador-ia", gradient: "linear-gradient(135deg, #A78BFA, #7C3AED)" },
+  { title: "MarcIAna", icon: Bot, route: "/assistente", gradient: "linear-gradient(135deg, #34D399, #059669)" },
+  { title: "Treinamentos", icon: GraduationCap, route: "/treinamentos", gradient: "linear-gradient(135deg, #FBBF24, #D97706)" },
+  { title: "Sugestões", icon: Lightbulb, route: "/sugestoes", gradient: "linear-gradient(135deg, #38BDF8, #6366F1)" },
 ] as const;
 
 function Home() {
@@ -100,10 +100,15 @@ function Home() {
 
   return (
     <div className="p-6 lg:p-10 max-w-4xl mx-auto">
+      <p className="text-sm text-muted-foreground mb-1">
+        Olá, {(meQ.data as any)?.display_name || (meQ.data as any)?.email?.split("@")[0] || ""}
+      </p>
       <Card
         className="p-6 mb-8 border-none"
         style={{
-          backgroundColor: heroMessage?.cor_fundo ?? "hsl(var(--muted))",
+          background: heroMessage
+            ? (heroMessage.cor_fundo_2 ? `linear-gradient(135deg, ${heroMessage.cor_fundo}, ${heroMessage.cor_fundo_2})` : heroMessage.cor_fundo)
+            : "hsl(var(--muted))",
           fontFamily: heroMessage ? HOME_FONT_FAMILY[heroMessage.fonte] : undefined,
         }}
       >
@@ -117,8 +122,11 @@ function Home() {
       <section className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
         {shortcuts.map((s) => (
           <Link key={s.route} to={s.route}>
-            <Card className="p-4 h-full flex items-center gap-3 hover:bg-muted/50 transition-colors">
-              <s.icon className="h-5 w-5 text-primary shrink-0" />
+            <Card
+              className="p-4 h-full flex items-center gap-3 border-none text-white shadow-[0_2px_6px_rgba(0,0,0,0.15),inset_0_1px_0_rgba(255,255,255,0.3)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.35)] hover:-translate-y-0.5 transition-all"
+              style={{ background: s.gradient }}
+            >
+              <s.icon className="h-5 w-5 shrink-0" />
               <span className="font-medium text-sm">{s.title}</span>
             </Card>
           </Link>
