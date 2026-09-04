@@ -81,6 +81,16 @@ function ContatosSubTab({ tipo, label, temDestaque }: { tipo: Tipo; label: strin
     qc.invalidateQueries({ queryKey: ["contatos"] });
   };
 
+  const toggleDestaqueMut = useMutation({
+    mutationFn: (r: ContatoRow) => upsert({ data: {
+      id: r.id, tipo: r.tipo, nome_regiao: r.nome_regiao, endereco: r.endereco, numero: r.numero,
+      ponto_referencia: r.ponto_referencia, contato1: r.contato1, contato2: r.contato2, contato3: r.contato3,
+      destaque: !r.destaque, position: r.position,
+    } }),
+    onSuccess: (_data, r) => { toast.success(r.destaque ? "Movido para Outras regiões." : "Marcado como Principal."); qc.invalidateQueries({ queryKey: ["contatos"] }); },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao atualizar destaque."),
+  });
+
   const openEdit = (r: ContatoRow) => setEdit({
     id: r.id, nome_regiao: r.nome_regiao, endereco: r.endereco ?? "", numero: r.numero ?? "", ponto_referencia: r.ponto_referencia ?? "",
     contato1: r.contato1 ?? "", contato2: r.contato2 ?? "", contato3: r.contato3 ?? "", destaque: r.destaque, position: r.position,
@@ -234,7 +244,13 @@ Regras:
             <TableRow key={r.id}>
               <TableCell className="font-medium">{r.nome_regiao}</TableCell>
               <TableCell className="text-sm text-muted-foreground">{[r.endereco, r.numero ? `nº ${r.numero}` : null].filter(Boolean).join(", ") || "—"}</TableCell>
-              {temDestaque && <TableCell>{r.destaque ? <Badge>Principal</Badge> : <Badge variant="secondary">Outras</Badge>}</TableCell>}
+              {temDestaque && (
+                <TableCell>
+                  <button type="button" onClick={() => toggleDestaqueMut.mutate(r)} disabled={toggleDestaqueMut.isPending} title="Clique para alternar">
+                    {r.destaque ? <Badge>Principal</Badge> : <Badge variant="secondary">Outras</Badge>}
+                  </button>
+                </TableCell>
+              )}
               <TableCell className="text-sm text-muted-foreground">{[r.contato1, r.contato2, r.contato3].filter(Boolean).join(" · ") || "—"}</TableCell>
               <TableCell className="text-right space-x-1">
                 <Button size="icon" variant="ghost" className="h-7 w-7" disabled={idx === 0} onClick={() => moveRow(idx, -1)}><ArrowUp className="h-3.5 w-3.5" /></Button>
