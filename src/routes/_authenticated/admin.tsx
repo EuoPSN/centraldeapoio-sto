@@ -326,7 +326,7 @@ function UsersTab() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {(usersQ.data ?? []).map((u: any) => {
+          {[...(usersQ.data ?? [])].sort((a: any, b: any) => Number(a.is_active) - Number(b.is_active)).map((u: any) => {
             const isAdmin = u.roles.includes("admin");
             return (
               <TableRow key={u.id}>
