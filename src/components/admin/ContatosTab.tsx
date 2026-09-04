@@ -81,15 +81,20 @@ function ContatosSubTab({ tipo, label, temDestaque }: { tipo: Tipo; label: strin
     qc.invalidateQueries({ queryKey: ["contatos"] });
   };
 
-  const toggleDestaqueMut = useMutation({
-    mutationFn: (r: ContatoRow) => upsert({ data: {
-      id: r.id, tipo: r.tipo, nome_regiao: r.nome_regiao, endereco: r.endereco, numero: r.numero,
-      ponto_referencia: r.ponto_referencia, contato1: r.contato1, contato2: r.contato2, contato3: r.contato3,
-      destaque: !r.destaque, position: r.position,
-    } }),
-    onSuccess: (_data, r) => { toast.success(r.destaque ? "Movido para Outras regiões." : "Marcado como Principal."); qc.invalidateQueries({ queryKey: ["contatos"] }); },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao atualizar destaque."),
-  });
+  const toggleDestaqueDebug = async (r: ContatoRow) => {
+    try {
+      const payload = {
+        id: r.id, tipo: r.tipo, nome_regiao: r.nome_regiao, endereco: r.endereco, numero: r.numero,
+        ponto_referencia: r.ponto_referencia, contato1: r.contato1, contato2: r.contato2, contato3: r.contato3,
+        destaque: !r.destaque, position: r.position,
+      };
+      const result = await upsert({ data: payload });
+      alert("SUCESSO.\n\nEnviado: " + JSON.stringify(payload) + "\n\nRecebido de volta do servidor: " + JSON.stringify(result));
+      qc.invalidateQueries({ queryKey: ["contatos"] });
+    } catch (e) {
+      alert("ERRO ao salvar: " + (e instanceof Error ? e.message : String(e)));
+    }
+  };
 
   const openEdit = (r: ContatoRow) => setEdit({
     id: r.id, nome_regiao: r.nome_regiao, endereco: r.endereco ?? "", numero: r.numero ?? "", ponto_referencia: r.ponto_referencia ?? "",
@@ -246,7 +251,7 @@ Regras:
               <TableCell className="text-sm text-muted-foreground">{[r.endereco, r.numero ? `nº ${r.numero}` : null].filter(Boolean).join(", ") || "—"}</TableCell>
               {temDestaque && (
                 <TableCell>
-                  <button type="button" onClick={() => toggleDestaqueMut.mutate(r)} disabled={toggleDestaqueMut.isPending} title="Clique para alternar">
+                  <button type="button" onClick={() => toggleDestaqueDebug(r)} title="Clique para alternar">
                     {r.destaque ? <Badge>Principal</Badge> : <Badge variant="secondary">Outras</Badge>}
                   </button>
                 </TableCell>
