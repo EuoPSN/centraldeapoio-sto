@@ -123,6 +123,16 @@ const ResetInput = z.object({
   newPassword: z.string().min(8),
 });
 
+export const updateUserDisplayName = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ userId: z.string().uuid(), displayName: z.string().min(1).max(100) }).parse(d))
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context);
+    const { error } = await context.supabase.from("profiles").update({ display_name: data.displayName }).eq("id", data.userId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 export const resetUserPassword = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => ResetInput.parse(d))
