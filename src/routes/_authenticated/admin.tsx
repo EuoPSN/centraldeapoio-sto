@@ -10,7 +10,7 @@ import {
 } from "@/lib/content.functions";
 import {
   listUsers, promoteUser, setUserActive, createUser, resetUserPassword, deleteUser,
-  getStats, adminListConversations,
+  getStats, adminListConversations, updateUserBirthdate,
 } from "@/lib/users.functions";
 import { reindexAll, getIndexStats } from "@/lib/embeddings.functions";
 import { seedInitialData } from "@/lib/seed.functions";
@@ -230,8 +230,18 @@ function UsersTab() {
   const create = useServerFn(createUser);
   const reset = useServerFn(resetUserPassword);
   const del = useServerFn(deleteUser);
+  const setBirthdate = useServerFn(updateUserBirthdate);
   const qc = useQueryClient();
   const usersQ = useQuery({ queryKey: ["admin-users"], queryFn: () => list({}) });
+
+  const [openNew, setOpenNew] = useState(false);
+  const [newU, setNewU] = useState({ email: "", password: "", displayName: "", role: "funcionario" as "admin" | "funcionario", dataNascimento: "" });
+
+  const birthdateMut = useMutation({
+    mutationFn: (v: { userId: string; dataNascimento: string | null }) => setBirthdate({ data: v }),
+    onSuccess: () => { toast.success("Data de nascimento salva."); qc.invalidateQueries({ queryKey: ["admin-users"] }); },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
+  });
 
   const [openNew, setOpenNew] = useState(false);
   const [newU, setNewU] = useState({ email: "", password: "", displayName: "", role: "funcionario" as "admin" | "funcionario" });
@@ -247,8 +257,8 @@ function UsersTab() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
   });
   const createMut = useMutation({
-    mutationFn: () => create({ data: newU }),
-    onSuccess: () => { toast.success("Usuário criado."); setOpenNew(false); setNewU({ email: "", password: "", displayName: "", role: "funcionario" }); qc.invalidateQueries({ queryKey: ["admin-users"] }); },
+    mutationFn: () => create({ data: { ...newU, dataNascimento: newU.dataNascimento || null } }),
+    onSuccess: () => { toast.success("Usuário criado."); setOpenNew(false); setNewU({ email: "", password: "", displayName: "", role: "funcionario", dataNascimento: "" }); qc.invalidateQueries({ queryKey: ["admin-users"] }); },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
   });
   const resetMut = useMutation({
@@ -286,6 +296,10 @@ function UsersTab() {
                   </SelectContent>
                 </Select>
               </div>
+              <div>
+                <Label>Data de nascimento (opcional)</Label>
+                <Input type="date" value={newU.dataNascimento} onChange={(e) => setNewU({ ...newU, dataNascimento: e.target.value })} />
+              </div>
             </div>
             <DialogFooter>
               <Button onClick={() => createMut.mutate()} disabled={createMut.isPending}>Criar</Button>
@@ -298,12 +312,13 @@ function UsersTab() {
           <TableRow>
             <TableHead>Usuário</TableHead>
             <TableHead>Papel</TableHead>
+            <TableHead>Aniversário</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {(usersQ.data ?? []).map((u) => {
+          {(usersQ.data ?? []).map((u: any) => {
             const isAdmin = u.roles.includes("admin");
             return (
               <TableRow key={u.id}>
@@ -313,6 +328,10 @@ function UsersTab() {
                 </TableCell>
                 <TableCell>
                   <Badge variant={isAdmin ? "default" : "secondary"}>{isAdmin ? "Admin" : "Funcionário"}</Badge>
+                </TableCell>
+                <TableCell>
+                  <Input type="date" defaultValue={u.data_nascimento ?? ""} className="h-8 w-36 text-xs"
+                    onBlur={(e) => birthdateMut.mutate({ userId: u.id, dataNascimento: e.target.value || null })} />
                 </TableCell>
                 <TableCell>
                   <Badge variant={u.is_active ? "outline" : "destructive"}>{u.is_active ? "Ativo" : "Bloqueado"}</Badge>
