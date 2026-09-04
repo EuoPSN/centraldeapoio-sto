@@ -430,6 +430,42 @@ export type Database = {
           },
         ]
       }
+      contatos_enderecos: {
+        Row: {
+          contato1: string | null
+          contato2: string | null
+          contato3: string | null
+          created_at: string
+          endereco: string | null
+          id: string
+          nome_regiao: string
+          position: number
+          tipo: string
+        }
+        Insert: {
+          contato1?: string | null
+          contato2?: string | null
+          contato3?: string | null
+          created_at?: string
+          endereco?: string | null
+          id?: string
+          nome_regiao: string
+          position?: number
+          tipo: string
+        }
+        Update: {
+          contato1?: string | null
+          contato2?: string | null
+          contato3?: string | null
+          created_at?: string
+          endereco?: string | null
+          id?: string
+          nome_regiao?: string
+          position?: number
+          tipo?: string
+        }
+        Relationships: []
+      }
       content_items: {
         Row: {
           category: string | null
@@ -896,6 +932,7 @@ export type Database = {
         Row: {
           ativo: boolean
           cor_fundo: string
+          cor_fundo_2: string | null
           created_at: string
           data_fim: string | null
           data_inicio: string | null
@@ -909,6 +946,7 @@ export type Database = {
         Insert: {
           ativo?: boolean
           cor_fundo?: string
+          cor_fundo_2?: string | null
           created_at?: string
           data_fim?: string | null
           data_inicio?: string | null
@@ -922,6 +960,7 @@ export type Database = {
         Update: {
           ativo?: boolean
           cor_fundo?: string
+          cor_fundo_2?: string | null
           created_at?: string
           data_fim?: string | null
           data_inicio?: string | null
