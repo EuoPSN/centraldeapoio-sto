@@ -81,7 +81,10 @@ function ContatosSubTab({ tipo, label, temDestaque }: { tipo: Tipo; label: strin
     qc.invalidateQueries({ queryKey: ["contatos"] });
   };
 
+  const [debugOutput, setDebugOutput] = useState<string | null>(null);
+
   const toggleDestaqueDebug = async (r: ContatoRow) => {
+    setDebugOutput("Enviando...");
     try {
       const payload = {
         id: r.id, tipo: r.tipo, nome_regiao: r.nome_regiao, endereco: r.endereco, numero: r.numero,
@@ -89,10 +92,10 @@ function ContatosSubTab({ tipo, label, temDestaque }: { tipo: Tipo; label: strin
         destaque: !r.destaque, position: r.position,
       };
       const result = await upsert({ data: payload });
-      alert("SUCESSO.\n\nEnviado: " + JSON.stringify(payload) + "\n\nRecebido de volta do servidor: " + JSON.stringify(result));
+      setDebugOutput("SUCESSO.\n\nEnviado:\n" + JSON.stringify(payload, null, 2) + "\n\nRecebido de volta do servidor:\n" + JSON.stringify(result, null, 2));
       qc.invalidateQueries({ queryKey: ["contatos"] });
     } catch (e) {
-      alert("ERRO ao salvar: " + (e instanceof Error ? e.message : String(e)));
+      setDebugOutput("ERRO ao salvar:\n" + (e instanceof Error ? e.message : String(e)));
     }
   };
 
@@ -228,6 +231,11 @@ Regras:
 
   return (
     <Card className="overflow-hidden">
+      {debugOutput && (
+        <pre className="m-4 p-3 bg-black text-green-400 text-xs rounded-md overflow-auto whitespace-pre-wrap max-h-64">
+          {debugOutput}
+        </pre>
+      )}
       <div className="flex justify-between items-center p-4 border-b border-border">
         <h3 className="font-semibold">{label} ({rows.length})</h3>
         <div className="flex gap-2">
