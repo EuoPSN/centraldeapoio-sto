@@ -18,7 +18,7 @@ import { MessageSquareQuote, Heart, Sparkles, Bot, GraduationCap, Lightbulb } fr
 type HomeFonte = "padrao" | "arredondada" | "elegante" | "festiva";
 type HomeTipo = "padrao" | "data_especial" | "aniversario";
 interface HomeMessageRow {
-  id: string; titulo: string; subtitulo: string | null; cor_fundo: string; fonte: HomeFonte; tipo: HomeTipo;
+  id: string; titulo: string; subtitulo: string | null; cor_fundo: string; cor_fundo_2?: string | null; fonte: HomeFonte; tipo: HomeTipo;
   data_inicio: string | null; data_fim: string | null; ativo: boolean; position: number;
 }
 
