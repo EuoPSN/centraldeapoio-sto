@@ -222,7 +222,7 @@ Regras:
           <Button size="sm" variant="outline" className="gap-2" onClick={() => setAiOpen(true)}>
             <Sparkles className="h-4 w-4" /> Preencher com IA
           </Button>
-          <Button size="sm" className="gap-2" onClick={() => setEdit({ nome_regiao: "", endereco: "", numero: "", ponto_referencia: "", contato1: "", contato2: "", contato3: "", destaque: false, position: rows.length * 10 })}
+          <Button size="sm" className="gap-2" onClick={() => setEdit({ nome_regiao: "", endereco: "", numero: "", ponto_referencia: "", contato1: "", contato2: "", contato3: "", destaque: false, position: rows.length * 10 })}>
             <Plus className="h-4 w-4" /> Novo
           </Button>
         </div>
