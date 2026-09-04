@@ -436,9 +436,12 @@ export type Database = {
           contato2: string | null
           contato3: string | null
           created_at: string
+          destaque: boolean
           endereco: string | null
           id: string
           nome_regiao: string
+          numero: string | null
+          ponto_referencia: string | null
           position: number
           tipo: string
         }
@@ -447,9 +450,12 @@ export type Database = {
           contato2?: string | null
           contato3?: string | null
           created_at?: string
+          destaque?: boolean
           endereco?: string | null
           id?: string
           nome_regiao: string
+          numero?: string | null
+          ponto_referencia?: string | null
           position?: number
           tipo: string
         }
@@ -458,9 +464,12 @@ export type Database = {
           contato2?: string | null
           contato3?: string | null
           created_at?: string
+          destaque?: boolean
           endereco?: string | null
           id?: string
           nome_regiao?: string
+          numero?: string | null
+          ponto_referencia?: string | null
           position?: number
           tipo?: string
         }
