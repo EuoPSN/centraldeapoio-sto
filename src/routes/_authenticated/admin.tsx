@@ -42,6 +42,7 @@ import { AdminSectionsTab, ADMIN_GROUP_ORDER } from "@/components/admin/AdminSec
 import { ChangelogTab } from "@/components/admin/ChangelogTab";
 import { UnidadesTab } from "@/components/admin/UnidadesTab";
 import { HomepageMessagesTab } from "@/components/admin/HomepageMessagesTab";
+import { ContatosTab } from "@/components/admin/ContatosTab";
 import { ImageLibraryTab } from "@/components/admin/ImageLibraryTab";
 import { TreinamentosTab } from "@/components/admin/TreinamentosTab";
 import { listAdminSections } from "@/lib/settings.functions";
@@ -97,6 +98,7 @@ organizacao: AdminSectionsTab,
     changelog: ChangelogTab,
     unidades: UnidadesTab,
     homemsg: HomepageMessagesTab,
+    contatos: ContatosTab,
     imagelibrary: ImageLibraryTab,
     treinamentos: TreinamentosTab,
   };
