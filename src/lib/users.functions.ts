@@ -81,6 +81,7 @@ const CreateInput = z.object({
   password: z.string().min(8),
   displayName: z.string().min(1).max(100),
   role: z.enum(["admin", "funcionario"]).default("funcionario"),
+  dataNascimento: z.string().nullable().optional(),
 });
 
 export const createUser = createServerFn({ method: "POST" })
@@ -101,7 +102,20 @@ export const createUser = createServerFn({ method: "POST" })
       await supabaseAdmin.from("user_roles").delete().eq("user_id", created.user.id);
       await supabaseAdmin.from("user_roles").insert({ user_id: created.user.id, role: "admin" });
     }
+    if (data.dataNascimento && created.user) {
+      await supabaseAdmin.from("profiles").update({ data_nascimento: data.dataNascimento }).eq("id", created.user.id);
+    }
     return { ok: true, userId: created.user?.id };
+  });
+
+export const updateUserBirthdate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ userId: z.string().uuid(), dataNascimento: z.string().nullable() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context);
+    const { error } = await context.supabase.from("profiles").update({ data_nascimento: data.dataNascimento }).eq("id", data.userId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 const ResetInput = z.object({
