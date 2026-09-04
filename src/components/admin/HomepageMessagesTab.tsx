@@ -19,7 +19,7 @@ type Fonte = "padrao" | "arredondada" | "elegante" | "festiva";
 type Tipo = "padrao" | "data_especial" | "aniversario";
 
 interface MessageRow {
-  id: string; titulo: string; subtitulo: string | null; cor_fundo: string; fonte: Fonte; tipo: Tipo;
+  id: string; titulo: string; subtitulo: string | null; cor_fundo: string; cor_fundo_2: string | null; fonte: Fonte; tipo: Tipo;
   data_inicio: string | null; data_fim: string | null; ativo: boolean; position: number;
 }
 
@@ -35,14 +35,14 @@ export function HomepageMessagesTab() {
   const messages = (q.data ?? []) as MessageRow[];
 
   const [edit, setEdit] = useState<null | {
-    id?: string; titulo: string; subtitulo: string; cor_fundo: string; fonte: Fonte; tipo: Tipo;
+    id?: string; titulo: string; subtitulo: string; cor_fundo: string; cor_fundo_2: string; fonte: Fonte; tipo: Tipo;
     data_inicio: string; data_fim: string; ativo: boolean;
   }>(null);
 
   const upsertMut = useMutation({
     mutationFn: () => upsert({ data: {
       id: edit!.id, titulo: edit!.titulo, subtitulo: edit!.subtitulo || null,
-      cor_fundo: edit!.cor_fundo, fonte: edit!.fonte, tipo: edit!.tipo,
+      cor_fundo: edit!.cor_fundo, cor_fundo_2: edit!.cor_fundo_2 || null, fonte: edit!.fonte, tipo: edit!.tipo,
       data_inicio: edit!.tipo === "data_especial" ? (edit!.data_inicio || null) : null,
       data_fim: edit!.tipo === "data_especial" ? (edit!.data_fim || null) : null,
       ativo: edit!.ativo, position: 0,
@@ -58,7 +58,7 @@ export function HomepageMessagesTab() {
 
   const openEdit = (m: MessageRow) => {
     setEdit({
-      id: m.id, titulo: m.titulo, subtitulo: m.subtitulo ?? "", cor_fundo: m.cor_fundo, fonte: m.fonte, tipo: m.tipo,
+      id: m.id, titulo: m.titulo, subtitulo: m.subtitulo ?? "", cor_fundo: m.cor_fundo, cor_fundo_2: m.cor_fundo_2 ?? "", fonte: m.fonte, tipo: m.tipo,
       data_inicio: m.data_inicio ?? "", data_fim: m.data_fim ?? "", ativo: m.ativo,
     });
   };
@@ -80,7 +80,7 @@ export function HomepageMessagesTab() {
     <Card className="overflow-hidden">
       <div className="flex justify-between items-center p-4 border-b border-border">
         <h3 className="font-semibold">Mensagens da Tela Inicial ({messages.length})</h3>
-        <Button size="sm" className="gap-2" onClick={() => setEdit({ titulo: "", subtitulo: "", cor_fundo: "#F1F5F9", fonte: "padrao", tipo: "padrao", data_inicio: "", data_fim: "", ativo: true })}>
+        <Button size="sm" className="gap-2" onClick={() => setEdit({ titulo: "", subtitulo: "", cor_fundo: "#F1F5F9", cor_fundo_2: "", fonte: "padrao", tipo: "padrao", data_inicio: "", data_fim: "", ativo: true })}>
           <Plus className="h-4 w-4" /> Nova mensagem
         </Button>
       </div>
@@ -92,7 +92,7 @@ export function HomepageMessagesTab() {
             {padroes.map((m, idx) => (
               <TableRow key={m.id}>
                 <TableCell className="font-medium">{m.titulo}</TableCell>
-                <TableCell><span className="inline-block h-4 w-4 rounded-full border border-border align-middle" style={{ backgroundColor: m.cor_fundo }} /></TableCell>
+                <TableCell><span className="inline-block h-4 w-4 rounded-full border border-border align-middle" style={{ background: m.cor_fundo_2 ? `linear-gradient(135deg, ${m.cor_fundo}, ${m.cor_fundo_2})` : m.cor_fundo }} /></TableCell>
                 <TableCell className="text-xs text-muted-foreground">{FONTE_LABELS[m.fonte]}</TableCell>
                 <TableCell><Switch checked={m.ativo} onCheckedChange={() => toggleAtivo(m)} /></TableCell>
                 <TableCell className="text-right space-x-1">
@@ -152,6 +152,13 @@ export function HomepageMessagesTab() {
                   <div className="flex gap-2">
                     <Input type="color" value={edit.cor_fundo} onChange={(e) => setEdit({ ...edit, cor_fundo: e.target.value })} className="w-14 p-1 h-9" />
                     <Input value={edit.cor_fundo} onChange={(e) => setEdit({ ...edit, cor_fundo: e.target.value })} placeholder="#F1F5F9" />
+                  </div>
+                </div>
+                <div>
+                  <Label>2ª cor (opcional — vira gradiente)</Label>
+                  <div className="flex gap-2">
+                    <Input type="color" value={edit.cor_fundo_2 || "#F1F5F9"} onChange={(e) => setEdit({ ...edit, cor_fundo_2: e.target.value })} className="w-14 p-1 h-9" />
+                    <Input value={edit.cor_fundo_2} onChange={(e) => setEdit({ ...edit, cor_fundo_2: e.target.value })} placeholder="Deixe vazio p/ cor sólida" />
                   </div>
                 </div>
                 <div>
