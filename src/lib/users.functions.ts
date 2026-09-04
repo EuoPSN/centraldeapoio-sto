@@ -102,8 +102,13 @@ export const createUser = createServerFn({ method: "POST" })
       await supabaseAdmin.from("user_roles").delete().eq("user_id", created.user.id);
       await supabaseAdmin.from("user_roles").insert({ user_id: created.user.id, role: "admin" });
     }
-    if (data.dataNascimento && created.user) {
-      await supabaseAdmin.from("profiles").update({ data_nascimento: data.dataNascimento }).eq("id", created.user.id);
+    // Conta criada diretamente pelo admin já entra aprovada — quem precisa de aprovação
+    // é só quem se cadastra sozinho pelo site (essas nascem inativas por padrão no banco).
+    if (created.user) {
+      await supabaseAdmin.from("profiles").update({
+        is_active: true,
+        ...(data.dataNascimento ? { data_nascimento: data.dataNascimento } : {}),
+      }).eq("id", created.user.id);
     }
     return { ok: true, userId: created.user?.id };
   });
