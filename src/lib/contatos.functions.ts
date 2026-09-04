@@ -42,20 +42,31 @@ export const upsertContato = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => ContatoInput.parse(d))
   .handler(async ({ data, context }) => {
     await admin(context);
-    const row = {
-      tipo: data.tipo,
-      nome_regiao: data.nome_regiao,
-      endereco: data.endereco ?? null,
-      contato1: data.contato1 ?? null,
-      contato2: data.contato2 ?? null,
-      contato3: data.contato3 ?? null,
-      position: data.position,
-    };
-    const { data: r, error } = data.id
-      ? await context.supabase.from(TABLE).update(row).eq("id", data.id).select().single()
-      : await context.supabase.from(TABLE).insert(row).select().single();
-    if (error) throw new Error(error.message);
-    return r;
+
+    if (data.id) {
+      const { error: updateError } = await context.supabase
+        .from("contatos_enderecos")
+        .update(data)
+        .eq("id", data.id);
+      if (updateError) throw new Error(updateError.message);
+
+      // Busca de novo, numa consulta separada, pra garantir que pegamos o valor já salvo.
+      const { data: fresh, error: fetchError } = await context.supabase
+        .from("contatos_enderecos")
+        .select("*")
+        .eq("id", data.id)
+        .single();
+      if (fetchError) throw new Error(fetchError.message);
+      return fresh;
+    }
+
+    const { data: created, error: insertError } = await context.supabase
+      .from("contatos_enderecos")
+      .insert(data)
+      .select()
+      .single();
+    if (insertError) throw new Error(insertError.message);
+    return created;
   });
 
 export const deleteContato = createServerFn({ method: "POST" })
