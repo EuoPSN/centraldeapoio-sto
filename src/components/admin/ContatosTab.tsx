@@ -2,14 +2,16 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { listContatos, upsertContato, deleteContato } from "@/lib/contatos.functions";
+import { simulatorChat } from "@/lib/simulator.chat.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Plus, Pencil, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 type Tipo = "cartao_de_todos" | "clinica_amor_saude" | "outros";
@@ -51,6 +53,61 @@ function ContatosSubTab({ tipo, label }: { tipo: Tipo; label: string }) {
     id?: string; nome_regiao: string; endereco: string; contato1: string; contato2: string; contato3: string;
   }>(null);
 
+  // ---- Preencher com IA ----
+  type Draft = { nome_regiao: string; endereco: string; contato1: string; contato2: string; contato3: string; selected: boolean };
+  const genAI = useServerFn(simulatorChat);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiInput, setAiInput] = useState("");
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiImporting, setAiImporting] = useState(false);
+  const [aiPreview, setAiPreview] = useState<Draft[]>([]);
+
+  const generateFromAI = async () => {
+    if (!aiInput.trim()) return;
+    setAiGenerating(true);
+    try {
+      const prompt = `Você organiza uma lista de contatos e endereços de unidades/clínicas do Cartão de Todos, a partir de texto livre enviado por um administrador. O contexto é especificamente "${label}".
+Extraia cada unidade/endereço mencionado e devolva um array JSON, um objeto por item, no formato exato:
+[{"nome_regiao": "...", "endereco": "...", "contato1": "...", "contato2": "...", "contato3": "..."}]
+
+Regras:
+- "nome_regiao": nome da unidade/região (ex: "${label} Justinópolis").
+- "endereco": endereço completo mencionado. Use "" se não houver.
+- "contato1", "contato2", "contato3": até 3 telefones/whatsapp mencionados para essa unidade, um em cada campo, na ordem em que aparecem. Use "" para os que não existirem.
+- Responda APENAS com o array JSON, sem markdown, sem texto fora do JSON.`;
+      const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: aiInput }], model: "google/gemini-2.5-flash" } });
+      const clean = content.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(clean);
+      const items: Draft[] = (Array.isArray(parsed) ? parsed : [])
+        .map((it: any) => ({ nome_regiao: it.nome_regiao || "", endereco: it.endereco || "", contato1: it.contato1 || "", contato2: it.contato2 || "", contato3: it.contato3 || "", selected: true }))
+        .filter((it: Draft) => it.nome_regiao);
+      if (items.length === 0) { toast.error("A IA não conseguiu identificar nenhuma unidade no texto enviado."); return; }
+      setAiPreview(items);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao gerar com IA.");
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
+  const importSelected = async () => {
+    const toImport = aiPreview.filter((i) => i.selected);
+    if (toImport.length === 0) return;
+    setAiImporting(true);
+    try {
+      for (const item of toImport) {
+        await upsert({ data: { tipo, nome_regiao: item.nome_regiao, endereco: item.endereco || null, contato1: item.contato1 || null, contato2: item.contato2 || null, contato3: item.contato3 || null, position: 0 } });
+      }
+      toast.success(`${toImport.length} item(ns) importado(s)!`);
+      qc.invalidateQueries({ queryKey: ["contatos"] });
+      setAiOpen(false); setAiInput(""); setAiPreview([]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao importar.");
+    } finally {
+      setAiImporting(false);
+    }
+  };
+
   const upsertMut = useMutation({
     mutationFn: () => upsert({ data: {
       id: edit!.id, tipo, nome_regiao: edit!.nome_regiao,
@@ -83,9 +140,14 @@ function ContatosSubTab({ tipo, label }: { tipo: Tipo; label: string }) {
     <Card className="overflow-hidden">
       <div className="flex justify-between items-center p-4 border-b border-border">
         <h3 className="font-semibold">{label} ({rows.length})</h3>
-        <Button size="sm" className="gap-2" onClick={() => setEdit({ nome_regiao: "", endereco: "", contato1: "", contato2: "", contato3: "" })}>
-          <Plus className="h-4 w-4" /> Novo
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" className="gap-2" onClick={() => setAiOpen(true)}>
+            <Sparkles className="h-4 w-4" /> Preencher com IA
+          </Button>
+          <Button size="sm" className="gap-2" onClick={() => setEdit({ nome_regiao: "", endereco: "", contato1: "", contato2: "", contato3: "" })}>
+            <Plus className="h-4 w-4" /> Novo
+          </Button>
+        </div>
       </div>
       <Table>
         <TableHeader><TableRow><TableHead>Região</TableHead><TableHead>Endereço</TableHead><TableHead>Contatos</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
@@ -120,6 +182,46 @@ function ContatosSubTab({ tipo, label }: { tipo: Tipo; label: string }) {
             </div>
           )}
           <DialogFooter><Button onClick={() => upsertMut.mutate()} disabled={upsertMut.isPending}>Salvar</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={aiOpen} onOpenChange={(v) => { setAiOpen(v); if (!v) { setAiPreview([]); setAiInput(""); } }}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Preencher {label} com IA</DialogTitle></DialogHeader>
+          {aiPreview.length === 0 ? (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">Cole a lista de unidades, endereços e telefones (pode ser texto corrido, bagunçado). A IA organiza.</p>
+              <Textarea rows={12} value={aiInput} onChange={(e) => setAiInput(e.target.value)} placeholder={`Ex:
+${label} Justinópolis - Rua Exemplo, 100 - Justinópolis - (31) 99999-0000 / (31) 3333-0000`} />
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">Confira antes de importar.</p>
+              <Table>
+                <TableHeader><TableRow><TableHead className="w-8"></TableHead><TableHead>Região</TableHead><TableHead>Endereço</TableHead><TableHead>Contatos</TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {aiPreview.map((item, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell><input type="checkbox" checked={item.selected} onChange={(e) => setAiPreview((prev) => prev.map((p, i) => i === idx ? { ...p, selected: e.target.checked } : p))} /></TableCell>
+                      <TableCell className="font-medium">{item.nome_regiao}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{item.endereco || "—"}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{[item.contato1, item.contato2, item.contato3].filter(Boolean).join(" · ") || "—"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+          <DialogFooter>
+            {aiPreview.length === 0 ? (
+              <Button onClick={generateFromAI} disabled={aiGenerating || !aiInput.trim()} className="gap-2"><Sparkles className="h-4 w-4" /> {aiGenerating ? "Gerando..." : "Gerar com IA"}</Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => setAiPreview([])}>Voltar</Button>
+                <Button onClick={importSelected} disabled={aiImporting || aiPreview.every((p) => !p.selected)}>{aiImporting ? "Importando..." : `Importar ${aiPreview.filter((p) => p.selected).length} item(ns)`}</Button>
+              </>
+            )}
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </Card>
