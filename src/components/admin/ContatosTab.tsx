@@ -92,18 +92,18 @@ function ContatosSubTab({ tipo, label, temDestaque }: { tipo: Tipo; label: strin
 
   const toggleDestaque = async (r: ContatoRow) => {
     setDebugRowId(r.id);
-    setDebugText("Enviando...");
     const payload = {
       id: r.id, tipo: r.tipo, nome_regiao: r.nome_regiao, endereco: r.endereco, numero: r.numero,
       ponto_referencia: r.ponto_referencia, contato1: r.contato1, contato2: r.contato2, contato3: r.contato3,
       destaque: !r.destaque, position: r.position,
     };
+    setDebugText("r.destaque atual=" + JSON.stringify(r.destaque) + " | vou enviar destaque=" + JSON.stringify(payload.destaque));
     try {
       const result = await upsert({ data: payload });
-      setDebugText("OK — servidor respondeu destaque = " + JSON.stringify((result as any)?.destaque));
+      setDebugText((prev) => prev + " | servidor respondeu destaque=" + JSON.stringify((result as any)?.destaque));
       await qc.invalidateQueries({ queryKey: ["contatos"] });
     } catch (e) {
-      setDebugText("ERRO: " + (e instanceof Error ? e.message : String(e)));
+      setDebugText((prev) => prev + " | ERRO: " + (e instanceof Error ? e.message : String(e)));
     }
   };
 
