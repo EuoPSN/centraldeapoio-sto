@@ -54,7 +54,7 @@ function ContatosSubTab({ tipo, label, temDestaque }: { tipo: Tipo; label: strin
 
   const [edit, setEdit] = useState<null | {
     id?: string; nome_regiao: string; endereco: string; numero: string; ponto_referencia: string;
-    contato1: string; contato2: string; contato3: string; destaque: boolean;
+    contato1: string; contato2: string; contato3: string; destaque: boolean; position: number;
   }>(null);
 
   const upsertMut = useMutation({
@@ -62,7 +62,7 @@ function ContatosSubTab({ tipo, label, temDestaque }: { tipo: Tipo; label: strin
       id: edit!.id, tipo, nome_regiao: edit!.nome_regiao,
       endereco: edit!.endereco || null, numero: edit!.numero || null, ponto_referencia: edit!.ponto_referencia || null,
       contato1: edit!.contato1 || null, contato2: edit!.contato2 || null, contato3: edit!.contato3 || null,
-      destaque: edit!.destaque, position: 0,
+      destaque: edit!.destaque, position: edit!.position,
     } }),
     onSuccess: () => { toast.success("Salvo."); setEdit(null); qc.invalidateQueries({ queryKey: ["contatos"] }); },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
@@ -83,7 +83,7 @@ function ContatosSubTab({ tipo, label, temDestaque }: { tipo: Tipo; label: strin
 
   const openEdit = (r: ContatoRow) => setEdit({
     id: r.id, nome_regiao: r.nome_regiao, endereco: r.endereco ?? "", numero: r.numero ?? "", ponto_referencia: r.ponto_referencia ?? "",
-    contato1: r.contato1 ?? "", contato2: r.contato2 ?? "", contato3: r.contato3 ?? "", destaque: r.destaque,
+    contato1: r.contato1 ?? "", contato2: r.contato2 ?? "", contato3: r.contato3 ?? "", destaque: r.destaque, position: r.position,
   });
 
   // ---- Preencher com IA (novos itens a partir de texto colado) ----
@@ -222,7 +222,7 @@ Regras:
           <Button size="sm" variant="outline" className="gap-2" onClick={() => setAiOpen(true)}>
             <Sparkles className="h-4 w-4" /> Preencher com IA
           </Button>
-          <Button size="sm" className="gap-2" onClick={() => setEdit({ nome_regiao: "", endereco: "", numero: "", ponto_referencia: "", contato1: "", contato2: "", contato3: "", destaque: false })}>
+          <Button size="sm" className="gap-2" onClick={() => setEdit({ nome_regiao: "", endereco: "", numero: "", ponto_referencia: "", contato1: "", contato2: "", contato3: "", destaque: false, position: rows.length * 10 })}
             <Plus className="h-4 w-4" /> Novo
           </Button>
         </div>
