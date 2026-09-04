@@ -245,8 +245,8 @@ function UsersTab() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
   });
 
-  const [openNew, setOpenNew] = useState(false);
-  const [newU, setNewU] = useState({ email: "", password: "", displayName: "", role: "funcionario" as "admin" | "funcionario" });
+
+
 
   const promoteMut = useMutation({
     mutationFn: (v: { userId: string; role: "admin" | "funcionario" }) => promote({ data: v }),

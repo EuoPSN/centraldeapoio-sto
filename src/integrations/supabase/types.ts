@@ -892,6 +892,48 @@ export type Database = {
         }
         Relationships: []
       }
+      homepage_messages: {
+        Row: {
+          ativo: boolean
+          cor_fundo: string
+          created_at: string
+          data_fim: string | null
+          data_inicio: string | null
+          fonte: string
+          id: string
+          position: number
+          subtitulo: string | null
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          ativo?: boolean
+          cor_fundo?: string
+          created_at?: string
+          data_fim?: string | null
+          data_inicio?: string | null
+          fonte?: string
+          id?: string
+          position?: number
+          subtitulo?: string | null
+          tipo?: string
+          titulo: string
+        }
+        Update: {
+          ativo?: boolean
+          cor_fundo?: string
+          created_at?: string
+          data_fim?: string | null
+          data_inicio?: string | null
+          fonte?: string
+          id?: string
+          position?: number
+          subtitulo?: string | null
+          tipo?: string
+          titulo?: string
+        }
+        Relationships: []
+      }
       image_library_items: {
         Row: {
           category_id: string | null
@@ -1394,6 +1436,7 @@ export type Database = {
         Row: {
           cargo: string | null
           created_at: string
+          data_nascimento: string | null
           display_name: string | null
           email: string
           id: string
@@ -1407,6 +1450,7 @@ export type Database = {
         Insert: {
           cargo?: string | null
           created_at?: string
+          data_nascimento?: string | null
           display_name?: string | null
           email: string
           id: string
@@ -1420,6 +1464,7 @@ export type Database = {
         Update: {
           cargo?: string | null
           created_at?: string
+          data_nascimento?: string | null
           display_name?: string | null
           email?: string
           id?: string
