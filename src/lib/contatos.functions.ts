@@ -28,9 +28,12 @@ const ContatoInput = z.object({
   tipo: z.enum(["cartao_de_todos", "clinica_amor_saude", "outros"]),
   nome_regiao: z.string().min(1).max(200),
   endereco: z.string().nullable().optional(),
+  numero: z.string().nullable().optional(),
+  ponto_referencia: z.string().nullable().optional(),
   contato1: z.string().nullable().optional(),
   contato2: z.string().nullable().optional(),
   contato3: z.string().nullable().optional(),
+  destaque: z.boolean().default(false),
   position: z.number().int().default(0),
 });
 
