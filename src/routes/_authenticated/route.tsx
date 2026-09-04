@@ -17,6 +17,13 @@ export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async () => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/auth" });
+
+    // Bloqueia de verdade quem ainda não foi aprovado por um admin (ou foi bloqueado depois).
+    const { data: profile } = await supabase.from("profiles").select("is_active").eq("id", data.user.id).maybeSingle();
+    if (profile && profile.is_active === false) {
+      throw redirect({ to: "/pendente" });
+    }
+
     return { user: data.user };
   },
   component: AppLayout,
