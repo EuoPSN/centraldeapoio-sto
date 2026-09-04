@@ -81,28 +81,31 @@ function ContatosSubTab({ tipo, label, temDestaque }: { tipo: Tipo; label: strin
     qc.invalidateQueries({ queryKey: ["contatos"] });
   };
 
-  const [debugOutput, setDebugOutput] = useState<string | null>(null);
-
-  const toggleDestaqueDebug = async (r: ContatoRow) => {
-    setDebugOutput("Enviando...");
-    try {
-      const payload = {
-        id: r.id, tipo: r.tipo, nome_regiao: r.nome_regiao, endereco: r.endereco, numero: r.numero,
-        ponto_referencia: r.ponto_referencia, contato1: r.contato1, contato2: r.contato2, contato3: r.contato3,
-        destaque: !r.destaque, position: r.position,
-      };
-      const result = await upsert({ data: payload });
-      setDebugOutput("SUCESSO.\n\nEnviado:\n" + JSON.stringify(payload, null, 2) + "\n\nRecebido de volta do servidor:\n" + JSON.stringify(result, null, 2));
-      qc.invalidateQueries({ queryKey: ["contatos"] });
-    } catch (e) {
-      setDebugOutput("ERRO ao salvar:\n" + (e instanceof Error ? e.message : String(e)));
-    }
-  };
-
   const openEdit = (r: ContatoRow) => setEdit({
     id: r.id, nome_regiao: r.nome_regiao, endereco: r.endereco ?? "", numero: r.numero ?? "", ponto_referencia: r.ponto_referencia ?? "",
     contato1: r.contato1 ?? "", contato2: r.contato2 ?? "", contato3: r.contato3 ?? "", destaque: r.destaque, position: r.position,
   });
+
+  // ---- Alternar Principal/Outras direto na tabela ----
+  const [debugRowId, setDebugRowId] = useState<string | null>(null);
+  const [debugText, setDebugText] = useState<string>("");
+
+  const toggleDestaque = async (r: ContatoRow) => {
+    setDebugRowId(r.id);
+    setDebugText("Enviando...");
+    const payload = {
+      id: r.id, tipo: r.tipo, nome_regiao: r.nome_regiao, endereco: r.endereco, numero: r.numero,
+      ponto_referencia: r.ponto_referencia, contato1: r.contato1, contato2: r.contato2, contato3: r.contato3,
+      destaque: !r.destaque, position: r.position,
+    };
+    try {
+      const result = await upsert({ data: payload });
+      setDebugText("OK — servidor respondeu destaque = " + JSON.stringify((result as any)?.destaque));
+      await qc.invalidateQueries({ queryKey: ["contatos"] });
+    } catch (e) {
+      setDebugText("ERRO: " + (e instanceof Error ? e.message : String(e)));
+    }
+  };
 
   // ---- Preencher com IA (novos itens a partir de texto colado) ----
   type Draft = { nome_regiao: string; endereco: string; numero: string; contato1: string; contato2: string; contato3: string; selected: boolean };
@@ -122,9 +125,9 @@ Extraia cada unidade/endereço mencionado e devolva um array JSON, um objeto por
 
 Regras:
 - "nome_regiao": nome da unidade/região (ex: "${label} Justinópolis").
-- "endereco": nome da rua/avenida, SEM o número (ex: "Rua Exemplo"). Use "" se não houver.
+- "endereco": nome da rua/avenida, SEM o número. Use "" se não houver.
 - "numero": só o número do endereço, separado. Use "" se não houver.
-- "contato1", "contato2", "contato3": até 3 telefones/whatsapp mencionados para essa unidade, um em cada campo, na ordem em que aparecem. Use "" para os que não existirem.
+- "contato1", "contato2", "contato3": até 3 telefones/whatsapp mencionados para essa unidade, um em cada campo. Use "" para os que não existirem.
 - Responda APENAS com o array JSON, sem markdown, sem texto fora do JSON.`;
       const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: aiInput }], model: "google/gemini-2.5-flash" } });
       const clean = content.replace(/```json|```/g, "").trim();
@@ -178,9 +181,9 @@ Itens atuais (um por linha, formato "id :: nome_regiao :: endereco :: numero :: 
 ${linhas}
 
 Regras:
-- "nome_regiao": mantenha o nome do lugar, só padronize a capitalização (Title Case) e a nomenclatura, sempre no formato "${label} <Bairro/Cidade>". Não invente nome novo, só ajuste o formato.
-- Telefones: reformate cada um pro padrão "(DDD) XXXXX-XXXX" (celular, 9 dígitos) ou "(DDD) XXXX-XXXX" (fixo, 8 dígitos), mantendo o mesmo número, só ajustando pontuação/espaçamento. Se um campo já estava vazio, mantenha vazio.
-- Se o campo de endereço tiver um número de casa/prédio embutido no meio do texto (ex: "Rua Exemplo 123"), separe em "endereco" (só o nome da rua) e "numero" (só o número). Se o número já estava separado, mantenha como está.
+- "nome_regiao": mantenha o nome do lugar, só padronize a capitalização (Title Case) e a nomenclatura, sempre no formato "${label} <Bairro/Cidade>".
+- Telefones: reformate cada um pro padrão "(DDD) XXXXX-XXXX" (celular) ou "(DDD) XXXX-XXXX" (fixo), mantendo o mesmo número. Se um campo já estava vazio, mantenha vazio.
+- Se o campo de endereço tiver um número de casa/prédio embutido no meio do texto, separe em "endereco" (só o nome da rua) e "numero". Se o número já estava separado, mantenha como está.
 - Responda APENAS com um array JSON no formato exato: [{"id": "...", "nome_regiao": "...", "endereco": "...", "numero": "...", "contato1": "...", "contato2": "...", "contato3": "..."}]. Sem markdown, sem texto fora do JSON.`;
       const { content } = await genAI({ data: { messages: [{ role: "user", content: prompt }], model: "google/gemini-2.5-flash" } });
       const clean = content.replace(/```json|```/g, "").trim();
@@ -231,11 +234,6 @@ Regras:
 
   return (
     <Card className="overflow-hidden">
-      {debugOutput && (
-        <pre className="m-4 p-3 bg-black text-green-400 text-xs rounded-md overflow-auto whitespace-pre-wrap max-h-64">
-          {debugOutput}
-        </pre>
-      )}
       <div className="flex justify-between items-center p-4 border-b border-border">
         <h3 className="font-semibold">{label} ({rows.length})</h3>
         <div className="flex gap-2">
@@ -259,9 +257,10 @@ Regras:
               <TableCell className="text-sm text-muted-foreground">{[r.endereco, r.numero ? `nº ${r.numero}` : null].filter(Boolean).join(", ") || "—"}</TableCell>
               {temDestaque && (
                 <TableCell>
-                  <button type="button" onClick={() => toggleDestaqueDebug(r)} title="Clique para alternar">
+                  <button type="button" onClick={() => toggleDestaque(r)} title="Clique para alternar">
                     {r.destaque ? <Badge>Principal</Badge> : <Badge variant="secondary">Outras</Badge>}
                   </button>
+                  {debugRowId === r.id && <p className="text-[10px] text-red-600 mt-1 max-w-[160px]">{debugText}</p>}
                 </TableCell>
               )}
               <TableCell className="text-sm text-muted-foreground">{[r.contato1, r.contato2, r.contato3].filter(Boolean).join(" · ") || "—"}</TableCell>
