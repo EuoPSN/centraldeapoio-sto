@@ -25,6 +25,7 @@ const MessageInput = z.object({
   titulo: z.string().min(1).max(200),
   subtitulo: z.string().nullable().optional(),
   cor_fundo: z.string().min(1).max(20).default("#F1F5F9"),
+  cor_fundo_2: z.string().max(20).nullable().optional(),
   fonte: z.enum(["padrao", "arredondada", "elegante", "festiva"]).default("padrao"),
   tipo: z.enum(["padrao", "data_especial", "aniversario"]).default("padrao"),
   data_inicio: z.string().nullable().optional(),
