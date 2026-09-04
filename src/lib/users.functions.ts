@@ -16,7 +16,7 @@ export const listUsers = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: profiles, error } = await supabaseAdmin
       .from("profiles")
-      .select("id,email,display_name,is_active,created_at")
+      .select("id,email,display_name,is_active,created_at,data_nascimento")
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
 
