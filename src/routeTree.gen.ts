@@ -11,10 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as PendenteRouteImport } from './routes/pendente'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAssistenteRouteImport } from './routes/_authenticated/assistente'
 import { Route as AuthenticatedConhecimentoRouteImport } from './routes/_authenticated/conhecimento'
+import { Route as AuthenticatedContatosRouteImport } from './routes/_authenticated/contatos'
 import { Route as AuthenticatedCrmLeadsRouteImport } from './routes/_authenticated/crm-leads'
 import { Route as AuthenticatedCrmProspeccaoRouteImport } from './routes/_authenticated/crm-prospeccao'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -42,6 +44,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PendenteRoute = PendenteRouteImport.update({
+  id: '/pendente',
+  path: '/pendente',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -63,6 +70,11 @@ const AuthenticatedConhecimentoRoute =
     path: '/conhecimento',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedContatosRoute = AuthenticatedContatosRouteImport.update({
+  id: '/contatos',
+  path: '/contatos',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedCrmLeadsRoute = AuthenticatedCrmLeadsRouteImport.update({
   id: '/crm-leads',
   path: '/crm-leads',
@@ -158,9 +170,11 @@ const ApiPublicMessageImageRoute = ApiPublicMessageImageRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
+  '/pendente': typeof PendenteRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/assistente': typeof AuthenticatedAssistenteRoute
   '/conhecimento': typeof AuthenticatedConhecimentoRoute
+  '/contatos': typeof AuthenticatedContatosRoute
   '/crm-leads': typeof AuthenticatedCrmLeadsRoute
   '/crm-prospeccao': typeof AuthenticatedCrmProspeccaoRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -181,9 +195,11 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
+  '/pendente': typeof PendenteRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/assistente': typeof AuthenticatedAssistenteRoute
   '/conhecimento': typeof AuthenticatedConhecimentoRoute
+  '/contatos': typeof AuthenticatedContatosRoute
   '/crm-leads': typeof AuthenticatedCrmLeadsRoute
   '/crm-prospeccao': typeof AuthenticatedCrmProspeccaoRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -207,9 +223,11 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/pendente': typeof PendenteRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/assistente': typeof AuthenticatedAssistenteRoute
   '/_authenticated/conhecimento': typeof AuthenticatedConhecimentoRoute
+  '/_authenticated/contatos': typeof AuthenticatedContatosRoute
   '/_authenticated/crm-leads': typeof AuthenticatedCrmLeadsRoute
   '/_authenticated/crm-prospeccao': typeof AuthenticatedCrmProspeccaoRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -234,9 +252,11 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/pendente'
     | '/admin'
     | '/assistente'
     | '/conhecimento'
+    | '/contatos'
     | '/crm-leads'
     | '/crm-prospeccao'
     | '/dashboard'
@@ -257,9 +277,11 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
+    | '/pendente'
     | '/admin'
     | '/assistente'
     | '/conhecimento'
+    | '/contatos'
     | '/crm-leads'
     | '/crm-prospeccao'
     | '/dashboard'
@@ -282,9 +304,11 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authenticated'
     | '/auth'
+    | '/pendente'
     | '/_authenticated/admin'
     | '/_authenticated/assistente'
     | '/_authenticated/conhecimento'
+    | '/_authenticated/contatos'
     | '/_authenticated/crm-leads'
     | '/_authenticated/crm-prospeccao'
     | '/_authenticated/dashboard'
@@ -308,6 +332,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  PendenteRoute: typeof PendenteRoute
   ApiPublicKnowledgeFileRoute: typeof ApiPublicKnowledgeFileRoute
   ApiPublicMessageImageRoute: typeof ApiPublicMessageImageRoute
 }
@@ -326,6 +351,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pendente': {
+      id: '/pendente'
+      path: '/pendente'
+      fullPath: '/pendente'
+      preLoaderRoute: typeof PendenteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/': {
@@ -354,6 +386,13 @@ declare module '@tanstack/react-router' {
       path: '/conhecimento'
       fullPath: '/conhecimento'
       preLoaderRoute: typeof AuthenticatedConhecimentoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/contatos': {
+      id: '/_authenticated/contatos'
+      path: '/contatos'
+      fullPath: '/contatos'
+      preLoaderRoute: typeof AuthenticatedContatosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/crm-leads': {
@@ -482,6 +521,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAssistenteRoute: typeof AuthenticatedAssistenteRoute
   AuthenticatedConhecimentoRoute: typeof AuthenticatedConhecimentoRoute
+  AuthenticatedContatosRoute: typeof AuthenticatedContatosRoute
   AuthenticatedCrmLeadsRoute: typeof AuthenticatedCrmLeadsRoute
   AuthenticatedCrmProspeccaoRoute: typeof AuthenticatedCrmProspeccaoRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -504,6 +544,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAssistenteRoute: AuthenticatedAssistenteRoute,
   AuthenticatedConhecimentoRoute: AuthenticatedConhecimentoRoute,
+  AuthenticatedContatosRoute: AuthenticatedContatosRoute,
   AuthenticatedCrmLeadsRoute: AuthenticatedCrmLeadsRoute,
   AuthenticatedCrmProspeccaoRoute: AuthenticatedCrmProspeccaoRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
@@ -528,6 +569,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  PendenteRoute: PendenteRoute,
   ApiPublicKnowledgeFileRoute: ApiPublicKnowledgeFileRoute,
   ApiPublicMessageImageRoute: ApiPublicMessageImageRoute,
 }
