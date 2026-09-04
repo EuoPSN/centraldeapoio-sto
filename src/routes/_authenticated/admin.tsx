@@ -10,7 +10,7 @@ import {
 } from "@/lib/content.functions";
 import {
   listUsers, promoteUser, setUserActive, createUser, resetUserPassword, deleteUser,
-  getStats, adminListConversations, updateUserBirthdate,
+  getStats, adminListConversations, updateUserBirthdate, updateUserDisplayName,
 } from "@/lib/users.functions";
 import { reindexAll, getIndexStats } from "@/lib/embeddings.functions";
 import { seedInitialData } from "@/lib/seed.functions";
@@ -233,6 +233,7 @@ function UsersTab() {
   const reset = useServerFn(resetUserPassword);
   const del = useServerFn(deleteUser);
   const setBirthdate = useServerFn(updateUserBirthdate);
+  const setDisplayName = useServerFn(updateUserDisplayName);
   const qc = useQueryClient();
   const usersQ = useQuery({ queryKey: ["admin-users"], queryFn: () => list({}) });
 
@@ -242,6 +243,11 @@ function UsersTab() {
   const birthdateMut = useMutation({
     mutationFn: (v: { userId: string; dataNascimento: string | null }) => setBirthdate({ data: v }),
     onSuccess: () => { toast.success("Data de nascimento salva."); qc.invalidateQueries({ queryKey: ["admin-users"] }); },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
+  });
+  const displayNameMut = useMutation({
+    mutationFn: (v: { userId: string; displayName: string }) => setDisplayName({ data: v }),
+    onSuccess: () => { toast.success("Nome atualizado."); qc.invalidateQueries({ queryKey: ["admin-users"] }); },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
   });
 
@@ -325,7 +331,8 @@ function UsersTab() {
             return (
               <TableRow key={u.id}>
                 <TableCell>
-                  <div className="font-medium">{u.display_name || u.email}</div>
+                  <Input defaultValue={u.display_name || ""} placeholder={u.email} className="h-8 text-sm font-medium mb-0.5"
+                    onBlur={(e) => { if (e.target.value.trim() && e.target.value !== u.display_name) displayNameMut.mutate({ userId: u.id, displayName: e.target.value.trim() }); }} />
                   <div className="text-xs text-muted-foreground">{u.email}</div>
                 </TableCell>
                 <TableCell>
