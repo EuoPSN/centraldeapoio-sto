@@ -12,7 +12,7 @@ import { DownloadImageButton } from "@/components/DownloadImageButton";
 import { Search, Image as ImageIcon, FileText } from "lucide-react";
 import { SkeletonCard } from "@/components/ui/skeleton-card";
 
-export const Route = createFileRoute("/_authenticated/imagens")({
+export const Route = createFileRoute("/_authenticated/biblioteca")({
   component: Page,
 });
 
