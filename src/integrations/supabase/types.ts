@@ -1345,6 +1345,44 @@ export type Database = {
         }
         Relationships: []
       }
+      pdf_library_items: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          id: string
+          pdf_name: string | null
+          pdf_path: string
+          position: number
+          title: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          pdf_name?: string | null
+          pdf_path: string
+          position?: number
+          title: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          pdf_name?: string | null
+          pdf_path?: string
+          position?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pdf_library_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pricing_item_unidades: {
         Row: {
           destaque: boolean
