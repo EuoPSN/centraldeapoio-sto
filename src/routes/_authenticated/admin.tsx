@@ -43,7 +43,7 @@ import { ChangelogTab } from "@/components/admin/ChangelogTab";
 import { UnidadesTab } from "@/components/admin/UnidadesTab";
 import { HomepageMessagesTab } from "@/components/admin/HomepageMessagesTab";
 import { ContatosTab } from "@/components/admin/ContatosTab";
-import { ImageLibraryTab } from "@/components/admin/ImageLibraryTab";
+import { BibliotecaTab } from "@/components/admin/BibliotecaTab";
 import { TreinamentosTab } from "@/components/admin/TreinamentosTab";
 import { listAdminSections } from "@/lib/settings.functions";
 import { getIcon } from "@/lib/icon-map";
@@ -99,7 +99,7 @@ organizacao: AdminSectionsTab,
     unidades: UnidadesTab,
     homemsg: HomepageMessagesTab,
     contatos: ContatosTab,
-    imagelibrary: ImageLibraryTab,
+    imagelibrary: BibliotecaTab,
     treinamentos: TreinamentosTab,
   };
   const ActiveComponent = active === "overview" ? OverviewTab : (TAB_COMPONENTS[active] ?? OverviewTab);
