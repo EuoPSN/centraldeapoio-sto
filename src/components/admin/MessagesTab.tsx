@@ -5,6 +5,7 @@ import { listMessages, upsertMessage, deleteMessage } from "@/lib/messages.funct
 import { listCategories } from "@/lib/taxonomy.functions";
 import {
   listFlowStages, upsertFlowStage, deleteFlowStage,
+  listFlowPaths, upsertFlowPath, deleteFlowPath,
   linkMessageToStage, unlinkMessageFromStage, reorderFlowLink,
 } from "@/lib/messageflow.functions";
 import { simulatorChat } from "@/lib/simulator.chat.functions";
@@ -23,7 +24,8 @@ import { Pencil, Plus, Trash2, ArrowUp, ArrowDown, Sparkles, Wand2, X, Upload, L
 import { toast } from "sonner";
 
 interface Cat { id: string; name: string; parent_id: string | null; }
-interface Stage { id: string; name: string; position: number; category_id: string | null; }
+interface Stage { id: string; name: string; position: number; category_id: string | null; path_id: string | null; }
+interface FlowPath { id: string; name: string; category_id: string | null; branches_from_stage_id: string; merges_into_stage_id: string | null; position: number; }
 type ScriptDraft = { title: string; content: string; shortcut: string; internal_note: string; selected: boolean };
 type AutoStage = { name: string; messages: any[] };
 
@@ -35,6 +37,9 @@ export function MessagesTab() {
   const stagesFn = useServerFn(listFlowStages);
   const upsertStageFn = useServerFn(upsertFlowStage);
   const delStageFn = useServerFn(deleteFlowStage);
+  const pathsFn = useServerFn(listFlowPaths);
+  const upsertPathFn = useServerFn(upsertFlowPath);
+  const delPathFn = useServerFn(deleteFlowPath);
   const linkFn = useServerFn(linkMessageToStage);
   const unlinkFn = useServerFn(unlinkMessageFromStage);
   const reorderLinkFn = useServerFn(reorderFlowLink);
@@ -43,11 +48,13 @@ export function MessagesTab() {
   const q = useQuery({ queryKey: ["messages"], queryFn: () => list({}) });
   const catsQ = useQuery({ queryKey: ["cats", "message"], queryFn: () => catFn({ data: { scope: "message" } }) });
   const stagesQ = useQuery({ queryKey: ["flow-stages"], queryFn: () => stagesFn({}) });
+  const pathsQ = useQuery({ queryKey: ["flow-paths"], queryFn: () => pathsFn({}) });
 
   const cats = (catsQ.data ?? []) as Cat[];
   const parents = cats.filter((c) => !c.parent_id);
   const childrenOf = (id: string) => cats.filter((c) => c.parent_id === id);
   const stages = (stagesQ.data ?? []) as Stage[];
+  const allPaths = (pathsQ.data ?? []) as FlowPath[];
   const allMessages = (q.data ?? []) as any[];
 
   // ---- Biblioteca: busca, filtro por categoria e seleção em massa ----
@@ -139,6 +146,7 @@ export function MessagesTab() {
   const invalidateFlow = () => {
     qc.invalidateQueries({ queryKey: ["messages"] });
     qc.invalidateQueries({ queryKey: ["flow-stages"] });
+    qc.invalidateQueries({ queryKey: ["flow-paths"] });
   };
 
   const [edit, setEdit] = useState<null | {
@@ -261,7 +269,7 @@ Responda APENAS com um array JSON, no formato exato: [{"title":"...","content":"
   const [flowCat, setFlowCat] = useState<string>("geral");
   const flowCategoryId = flowCat === "geral" ? null : flowCat;
   const stagesForCat = stages
-    .filter((s) => (s.category_id ?? null) === flowCategoryId)
+    .filter((s) => (s.category_id ?? null) === flowCategoryId && !s.path_id)
     .slice()
     .sort((a, b) => a.position - b.position);
 
@@ -289,6 +297,141 @@ Responda APENAS com um array JSON, no formato exato: [{"title":"...","content":"
     [arr[idx], arr[j]] = [arr[j], arr[idx]];
     await Promise.all(arr.map((s, i) => upsertStageFn({ data: { id: s.id, name: s.name, position: i * 10, category_id: s.category_id } })));
     qc.invalidateQueries({ queryKey: ["flow-stages"] });
+  };
+
+  // ---- Caminhos: um fluxo pode se dividir em N caminhos a partir de uma etapa,
+  // e cada caminho pode (opcionalmente) voltar a se juntar numa etapa do tronco ----
+  const pathsForFork = (stageId: string) =>
+    allPaths.filter((p) => p.branches_from_stage_id === stageId).slice().sort((a, b) => a.position - b.position);
+  const stagesInPath = (pathId: string) =>
+    stages.filter((s) => s.path_id === pathId).slice().sort((a, b) => a.position - b.position);
+
+  const addPath = async (afterStage: Stage) => {
+    const siblings = pathsForFork(afterStage.id);
+    await upsertPathFn({ data: {
+      name: `Caminho ${siblings.length + 1}`,
+      category_id: flowCategoryId,
+      branches_from_stage_id: afterStage.id,
+      position: siblings.length * 10,
+    } });
+    invalidateFlow();
+  };
+  const renamePath = async (path: FlowPath, name: string) => {
+    if (!name.trim() || name === path.name) return;
+    await upsertPathFn({ data: {
+      id: path.id, name: name.trim(), branches_from_stage_id: path.branches_from_stage_id,
+      category_id: path.category_id, merges_into_stage_id: path.merges_into_stage_id, position: path.position,
+    } });
+    invalidateFlow();
+  };
+  const removePath = async (path: FlowPath) => {
+    if (!confirm(`Excluir o caminho "${path.name}"? As etapas dele também serão excluídas.`)) return;
+    await delPathFn({ data: { id: path.id } });
+    invalidateFlow();
+  };
+  const setPathMerge = async (path: FlowPath, mergesInto: string | null) => {
+    await upsertPathFn({ data: {
+      id: path.id, name: path.name, branches_from_stage_id: path.branches_from_stage_id,
+      category_id: path.category_id, merges_into_stage_id: mergesInto, position: path.position,
+    } });
+    invalidateFlow();
+  };
+
+  const [newPathStageName, setNewPathStageName] = useState<Record<string, string>>({});
+  const addStageToPath = async (path: FlowPath) => {
+    const name = (newPathStageName[path.id] || "").trim();
+    if (!name) return;
+    const siblings = stagesInPath(path.id);
+    await upsertStageFn({ data: { name, position: siblings.length * 10, category_id: flowCategoryId, path_id: path.id } });
+    setNewPathStageName((prev) => ({ ...prev, [path.id]: "" }));
+    invalidateFlow();
+  };
+  const renamePathStage = async (stage: Stage, name: string) => {
+    if (!name.trim() || name === stage.name) return;
+    await upsertStageFn({ data: { id: stage.id, name: name.trim(), position: stage.position } });
+    invalidateFlow();
+  };
+  const removePathStage = async (stage: Stage) => {
+    if (!confirm(`Excluir a etapa "${stage.name}"? As mensagens dela ficam soltas.`)) return;
+    await delStageFn({ data: { id: stage.id } });
+    invalidateFlow();
+  };
+  const movePathStage = async (path: FlowPath, idx: number, dir: -1 | 1) => {
+    const arr = stagesInPath(path.id);
+    const j = idx + dir;
+    if (j < 0 || j >= arr.length) return;
+    [arr[idx], arr[j]] = [arr[j], arr[idx]];
+    await Promise.all(arr.map((s, i) => upsertStageFn({ data: { id: s.id, name: s.name, position: i * 10 } })));
+    invalidateFlow();
+  };
+
+  // Editor de uma etapa (mensagens, reordenar, renomear, excluir) — reaproveitado
+  // tanto pelas etapas do tronco quanto pelas etapas de dentro de um caminho.
+  const renderStageCard = (
+    stage: Stage, idx: number, total: number,
+    onRename: (s: Stage, name: string) => void,
+    onMove: (idx: number, dir: -1 | 1) => void,
+    onRemove: (s: Stage) => void,
+  ) => {
+    const stageMessages = allMessages
+      .filter((m) => (m.flow_links ?? []).some((l: any) => l.flow_stage_id === stage.id))
+      .slice()
+      .sort((a, b) => {
+        const la = (a.flow_links ?? []).find((l: any) => l.flow_stage_id === stage.id)?.position ?? 0;
+        const lb = (b.flow_links ?? []).find((l: any) => l.flow_stage_id === stage.id)?.position ?? 0;
+        return la - lb;
+      });
+    return (
+      <Card key={stage.id} className="p-3">
+        <div className="flex items-center justify-between mb-2 gap-2">
+          <Input defaultValue={stage.name} className="h-8 font-semibold max-w-[240px]"
+            onBlur={(e) => onRename(stage, e.target.value)} />
+          <div className="flex gap-1 shrink-0">
+            <Button size="icon" variant="ghost" className="h-7 w-7" disabled={idx === 0}
+              onClick={() => onMove(idx, -1)}><ArrowUp className="h-3.5 w-3.5" /></Button>
+            <Button size="icon" variant="ghost" className="h-7 w-7" disabled={idx === total - 1}
+              onClick={() => onMove(idx, 1)}><ArrowDown className="h-3.5 w-3.5" /></Button>
+            <Button size="icon" variant="ghost" onClick={() => onRemove(stage)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+          </div>
+        </div>
+        {stageMessages.length === 0 && <p className="text-xs text-muted-foreground mb-1">Nenhuma mensagem nesta etapa ainda.</p>}
+        <div className="space-y-1">
+          {stageMessages.map((m, mIdx) => {
+            const link = (m.flow_links ?? []).find((l: any) => l.flow_stage_id === stage.id);
+            return (
+              <div key={m.id} className="flex items-center gap-2 p-2 rounded-md border border-border/60">
+                <div className="flex flex-col shrink-0">
+                  <Button size="icon" variant="ghost" className="h-5 w-5" disabled={mIdx === 0}
+                    onClick={() => moveMessage(stage.id, stageMessages, mIdx, -1)}><ArrowUp className="h-3 w-3" /></Button>
+                  <Button size="icon" variant="ghost" className="h-5 w-5" disabled={mIdx === stageMessages.length - 1}
+                    onClick={() => moveMessage(stage.id, stageMessages, mIdx, 1)}><ArrowDown className="h-3 w-3" /></Button>
+                </div>
+                {m.shortcut && <Badge variant="outline" className="shrink-0">/{m.shortcut}</Badge>}
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate">{m.title}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {m.internal_note || "sem descrição de uso ainda"}
+                    {(m.flow_links ?? []).length > 1 && <span className="text-primary"> · também em outro(s) fluxo(s)</span>}
+                  </p>
+                </div>
+                <Button size="sm" variant="outline" className="gap-1 shrink-0" disabled={generatingId === m.id}
+                  onClick={() => generateDescription(m)}>
+                  <Sparkles className="h-3.5 w-3.5" /> {generatingId === m.id ? "Gerando..." : "Gerar descrição"}
+                </Button>
+                <Button size="icon" variant="ghost" className="shrink-0" onClick={() => link && removeMessageFromStage(link.id)}>
+                  <X className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+        <AddMessagePicker
+          messages={allMessages}
+          excludeIds={stageMessages.map((m) => m.id)}
+          onAdd={(id) => addMessageToStage(id, stage.id, stageMessages.length * 10)}
+        />
+      </Card>
+    );
   };
 
   const moveMessage = async (stageId: string, msgs: any[], idx: number, dir: -1 | 1) => {
@@ -639,64 +782,60 @@ As etapas devem vir na ordem certa de uso. Sem markdown, sem texto fora do JSON.
           )}
 
           {stagesForCat.map((stage, stageIdx) => {
-            const stageMessages = allMessages
-              .filter((m) => (m.flow_links ?? []).some((l: any) => l.flow_stage_id === stage.id))
-              .slice()
-              .sort((a, b) => {
-                const la = (a.flow_links ?? []).find((l: any) => l.flow_stage_id === stage.id)?.position ?? 0;
-                const lb = (b.flow_links ?? []).find((l: any) => l.flow_stage_id === stage.id)?.position ?? 0;
-                return la - lb;
-              });
+            const forks = pathsForFork(stage.id);
             return (
-              <Card key={stage.id} className="p-3">
-                <div className="flex items-center justify-between mb-2 gap-2">
-                  <Input defaultValue={stage.name} className="h-8 font-semibold max-w-[240px]"
-                    onBlur={(e) => renameStage(stage, e.target.value)} />
-                  <div className="flex gap-1 shrink-0">
-                    <Button size="icon" variant="ghost" className="h-7 w-7" disabled={stageIdx === 0}
-                      onClick={() => moveStage(stageIdx, -1)}><ArrowUp className="h-3.5 w-3.5" /></Button>
-                    <Button size="icon" variant="ghost" className="h-7 w-7" disabled={stageIdx === stagesForCat.length - 1}
-                      onClick={() => moveStage(stageIdx, 1)}><ArrowDown className="h-3.5 w-3.5" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => removeStage(stage)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+              <div key={stage.id} className="space-y-2">
+                {renderStageCard(stage, stageIdx, stagesForCat.length, renameStage, moveStage, removeStage)}
+                <div className="flex justify-end">
+                  <Button size="sm" variant="outline" className="gap-1" onClick={() => addPath(stage)}>
+                    <Plus className="h-3.5 w-3.5" /> Adicionar caminho aqui
+                  </Button>
+                </div>
+                {forks.length > 0 && (
+                  <div className="pl-3 border-l-2 border-primary/30 ml-2 space-y-3">
+                    <p className="text-xs text-muted-foreground">O fluxo se divide em {forks.length} caminho(s) aqui.</p>
+                    <div className={`grid gap-3 ${forks.length > 1 ? "sm:grid-cols-2" : ""}`}>
+                      {forks.map((path) => {
+                        const pathStages = stagesInPath(path.id);
+                        return (
+                          <div key={path.id} className="space-y-2 border border-border rounded-lg p-3">
+                            <div className="flex items-center justify-between gap-2">
+                              <Input defaultValue={path.name} className="h-8 font-semibold max-w-[200px]"
+                                onBlur={(e) => renamePath(path, e.target.value)} />
+                              <Button size="icon" variant="ghost" onClick={() => removePath(path)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                            </div>
+                            <div className="space-y-2">
+                              {pathStages.map((s, i) => renderStageCard(
+                                s, i, pathStages.length, renamePathStage,
+                                (idx, dir) => movePathStage(path, idx, dir), removePathStage,
+                              ))}
+                            </div>
+                            <div className="flex gap-2 items-center">
+                              <Input placeholder="Nome da nova etapa" className="h-8"
+                                value={newPathStageName[path.id] || ""}
+                                onChange={(e) => setNewPathStageName((prev) => ({ ...prev, [path.id]: e.target.value }))}
+                                onKeyDown={(e) => { if (e.key === "Enter") addStageToPath(path); }} />
+                              <Button size="sm" variant="outline" className="gap-1 shrink-0" onClick={() => addStageToPath(path)}>
+                                <Plus className="h-3.5 w-3.5" /> Etapa
+                              </Button>
+                            </div>
+                            <div>
+                              <Label className="text-xs">Ao terminar, junta com:</Label>
+                              <Select value={path.merges_into_stage_id || "none"} onValueChange={(v) => setPathMerge(path, v === "none" ? null : v)}>
+                                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">Não junta — termina sozinho</SelectItem>
+                                  {stagesForCat.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-                {stageMessages.length === 0 && <p className="text-xs text-muted-foreground mb-1">Nenhuma mensagem nesta etapa ainda.</p>}
-                <div className="space-y-1">
-                  {stageMessages.map((m, mIdx) => {
-                    const link = (m.flow_links ?? []).find((l: any) => l.flow_stage_id === stage.id);
-                    return (
-                      <div key={m.id} className="flex items-center gap-2 p-2 rounded-md border border-border/60">
-                        <div className="flex flex-col shrink-0">
-                          <Button size="icon" variant="ghost" className="h-5 w-5" disabled={mIdx === 0}
-                            onClick={() => moveMessage(stage.id, stageMessages, mIdx, -1)}><ArrowUp className="h-3 w-3" /></Button>
-                          <Button size="icon" variant="ghost" className="h-5 w-5" disabled={mIdx === stageMessages.length - 1}
-                            onClick={() => moveMessage(stage.id, stageMessages, mIdx, 1)}><ArrowDown className="h-3 w-3" /></Button>
-                        </div>
-                        {m.shortcut && <Badge variant="outline" className="shrink-0">/{m.shortcut}</Badge>}
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium truncate">{m.title}</p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {m.internal_note || "sem descrição de uso ainda"}
-                            {(m.flow_links ?? []).length > 1 && <span className="text-primary"> · também em outro(s) fluxo(s)</span>}
-                          </p>
-                        </div>
-                        <Button size="sm" variant="outline" className="gap-1 shrink-0" disabled={generatingId === m.id}
-                          onClick={() => generateDescription(m)}>
-                          <Sparkles className="h-3.5 w-3.5" /> {generatingId === m.id ? "Gerando..." : "Gerar descrição"}
-                        </Button>
-                        <Button size="icon" variant="ghost" className="shrink-0" onClick={() => link && removeMessageFromStage(link.id)}>
-                          <X className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </div>
-                <AddMessagePicker
-                  messages={allMessages}
-                  excludeIds={stageMessages.map((m) => m.id)}
-                  onAdd={(id) => addMessageToStage(id, stage.id, stageMessages.length * 10)}
-                />
-              </Card>
+                )}
+              </div>
             );
           })}
         </TabsContent>
