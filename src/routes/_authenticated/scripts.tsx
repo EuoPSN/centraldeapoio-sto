@@ -62,30 +62,96 @@ interface MessageRow {
   image_ext?: string | null;
 }
 
-interface StageRow { id: string; name: string; position: number; category_id: string | null; }
+interface StageRow { id: string; name: string; position: number; category_id: string | null; path_id: string | null; }
 interface FlowCatRow { id: string; name: string; parent_id: string | null; }
+interface PathRow { id: string; name: string; category_id: string | null; branches_from_stage_id: string; merges_into_stage_id: string | null; position: number; }
 
 function FluxoAtendimento() {
   const msgFn = useServerFn(listMessages);
   const stageFn = useServerFn(listFlowStages);
+  const pathFn = useServerFn(listFlowPaths);
   const catFn = useServerFn(listCategories);
   const incUse = useServerFn(incrementMessageUseCount);
   const msgQ = useQuery({ queryKey: ["messages"], queryFn: () => msgFn({}) });
   const stageQ = useQuery({ queryKey: ["flow-stages"], queryFn: () => stageFn({}) });
+  const pathQ = useQuery({ queryKey: ["flow-paths"], queryFn: () => pathFn({}) });
   const catQ = useQuery({ queryKey: ["cats", "message"], queryFn: () => catFn({ data: { scope: "message" } }) });
 
   const rows = (msgQ.data ?? []) as unknown as MessageRow[];
   const allStages = (stageQ.data ?? []) as StageRow[];
+  const allPaths = (pathQ.data ?? []) as PathRow[];
   const parents = ((catQ.data ?? []) as FlowCatRow[]).filter((c) => !c.parent_id);
 
   const [flowCat, setFlowCat] = useState<string>("geral");
   const flowCategoryId = flowCat === "geral" ? null : flowCat;
-  const stages = allStages
-    .filter((s) => (s.category_id ?? null) === flowCategoryId)
+
+  const trunkStages = allStages
+    .filter((s) => (s.category_id ?? null) === flowCategoryId && !s.path_id)
     .slice()
     .sort((a, b) => a.position - b.position);
 
-  if (stageQ.isLoading || msgQ.isLoading || catQ.isLoading) {
+  const pathsForCat = allPaths
+    .filter((p) => (p.category_id ?? null) === flowCategoryId)
+    .slice()
+    .sort((a, b) => a.position - b.position);
+
+  const stageById = (id: string) => allStages.find((s) => s.id === id);
+
+  const messagesForStage = (stageId: string) =>
+    rows
+      .filter((m) => (m.flow_links ?? []).some((l) => l.flow_stage_id === stageId))
+      .slice()
+      .sort((a, b) => {
+        const la = (a.flow_links ?? []).find((l) => l.flow_stage_id === stageId)?.position ?? 0;
+        const lb = (b.flow_links ?? []).find((l) => l.flow_stage_id === stageId)?.position ?? 0;
+        return la - lb;
+      });
+
+  const renderStageCard = (stage: StageRow, idx: number) => {
+    const stageMessages = messagesForStage(stage.id);
+    return (
+      <AccordionItem key={stage.id} value={stage.id} className="border border-border rounded-lg px-4 bg-card">
+        <AccordionTrigger className="hover:no-underline">
+          <div className="flex items-center gap-3">
+            <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary/10 text-primary text-xs font-semibold shrink-0">{idx + 1}</span>
+            <span className="font-semibold">{stage.name}</span>
+            <span className="text-xs text-muted-foreground font-normal">{stageMessages.length} mensagem(ns)</span>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent>
+          {stageMessages.length === 0 ? (
+            <p className="text-sm text-muted-foreground pb-3">Nenhuma mensagem atribuída a esta etapa ainda.</p>
+          ) : (
+            <div className="space-y-3 pb-3">
+              {stageMessages.map((m) => (
+                <div key={m.id} className="rounded-md border border-border p-3">
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      {m.shortcut && <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-primary/10 text-primary shrink-0">/{m.shortcut}</span>}
+                      <h4 className="font-medium truncate">{m.title}</h4>
+                    </div>
+                    <CopyButton text={m.content} onCopy={() => incUse({ data: { id: m.id } })} />
+                  </div>
+                  <div className="rounded-md bg-muted/40 border border-border p-3 max-h-56 overflow-y-auto">
+                    <Markdown>{m.content}</Markdown>
+                  </div>
+                  {m.image_url && (
+                    <div className="mt-2 space-y-1.5">
+                      <img src={m.image_url} alt={m.title} className="rounded-md border border-border max-h-64 object-contain" />
+                      <DownloadImageButton url={m.image_url} filename={`${m.title}.${m.image_ext || "jpg"}`} />
+                    </div>
+                  )}
+                  {m.internal_note && <p className="text-xs text-muted-foreground italic mt-2">📝 {m.internal_note}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+        </AccordionContent>
+      </AccordionItem>
+    );
+  };
+
+  if (stageQ.isLoading || pathQ.isLoading || msgQ.isLoading || catQ.isLoading) {
     return (
       <div className="grid gap-4 sm:grid-cols-2">
         <SkeletonCard />
@@ -105,61 +171,48 @@ function FluxoAtendimento() {
         </div>
       )}
 
-      {stages.length === 0 ? (
+      {trunkStages.length === 0 ? (
         <Card className="p-10 text-center">
           <p className="text-muted-foreground">Nenhuma etapa de fluxo cadastrada ainda para "{flowCat === "geral" ? "Geral" : parents.find((c) => c.id === flowCat)?.name}".</p>
           <p className="text-xs text-muted-foreground mt-1">Configure em Painel Admin → Mensagens → aba "Fluxo de Atendimento".</p>
         </Card>
       ) : (
-        <Accordion type="multiple" defaultValue={stages.map((s) => s.id)} className="space-y-3">
-          {stages.map((stage, idx) => {
-            const stageMessages = rows
-              .filter((m) => (m.flow_links ?? []).some((l) => l.flow_stage_id === stage.id))
-              .slice()
-              .sort((a, b) => {
-                const la = (a.flow_links ?? []).find((l) => l.flow_stage_id === stage.id)?.position ?? 0;
-                const lb = (b.flow_links ?? []).find((l) => l.flow_stage_id === stage.id)?.position ?? 0;
-                return la - lb;
-              });
+        <Accordion type="multiple" defaultValue={trunkStages.map((s) => s.id)} className="space-y-3">
+          {trunkStages.map((stage, idx) => {
+            const forksHere = pathsForCat.filter((p) => p.branches_from_stage_id === stage.id);
             return (
-              <AccordionItem key={stage.id} value={stage.id} className="border border-border rounded-lg px-4 bg-card">
-                <AccordionTrigger className="hover:no-underline">
-                  <div className="flex items-center gap-3">
-                    <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary/10 text-primary text-xs font-semibold shrink-0">{idx + 1}</span>
-                    <span className="font-semibold">{stage.name}</span>
-                    <span className="text-xs text-muted-foreground font-normal">{stageMessages.length} mensagem(ns)</span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  {stageMessages.length === 0 ? (
-                    <p className="text-sm text-muted-foreground pb-3">Nenhuma mensagem atribuída a esta etapa ainda.</p>
-                  ) : (
-                    <div className="space-y-3 pb-3">
-                      {stageMessages.map((m) => (
-                        <div key={m.id} className="rounded-md border border-border p-3">
-                          <div className="flex items-start justify-between gap-3 mb-2">
-                            <div className="flex items-center gap-2 min-w-0">
-                              {m.shortcut && <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-primary/10 text-primary shrink-0">/{m.shortcut}</span>}
-                              <h4 className="font-medium truncate">{m.title}</h4>
-                            </div>
-                            <CopyButton text={m.content} onCopy={() => incUse({ data: { id: m.id } })} />
-                          </div>
-                          <div className="rounded-md bg-muted/40 border border-border p-3 max-h-56 overflow-y-auto">
-                            <Markdown>{m.content}</Markdown>
-                          </div>
-                          {m.image_url && (
-                            <div className="mt-2 space-y-1.5">
-                              <img src={m.image_url} alt={m.title} className="rounded-md border border-border max-h-64 object-contain" />
-                              <DownloadImageButton url={m.image_url} filename={`${m.title}.${m.image_ext || "jpg"}`} />
-                            </div>
-                          )}
-                          {m.internal_note && <p className="text-xs text-muted-foreground italic mt-2">📝 {m.internal_note}</p>}
-                        </div>
-                      ))}
+              <div key={stage.id} className="space-y-3">
+                {renderStageCard(stage, idx)}
+                {forksHere.length > 0 && (
+                  <div className="pl-2 border-l-2 border-primary/30 ml-3">
+                    <p className="text-xs text-muted-foreground mb-2">O fluxo se divide em {forksHere.length} caminho(s) aqui:</p>
+                    <div className={`grid gap-3 ${forksHere.length > 1 ? "sm:grid-cols-2" : ""}`}>
+                      {forksHere.map((path) => {
+                        const pathStages = allStages
+                          .filter((s) => s.path_id === path.id)
+                          .slice()
+                          .sort((a, b) => a.position - b.position);
+                        const mergeStage = path.merges_into_stage_id ? stageById(path.merges_into_stage_id) : null;
+                        return (
+                          <Card key={path.id} className="p-3">
+                            <p className="font-semibold text-sm mb-2">{path.name}</p>
+                            {pathStages.length === 0 ? (
+                              <p className="text-xs text-muted-foreground">Nenhuma etapa cadastrada neste caminho ainda.</p>
+                            ) : (
+                              <Accordion type="multiple" defaultValue={pathStages.map((s) => s.id)} className="space-y-2">
+                                {pathStages.map((s, i) => renderStageCard(s, i))}
+                              </Accordion>
+                            )}
+                            {mergeStage && (
+                              <p className="text-xs text-muted-foreground mt-2">↳ volta para: <span className="font-medium">{mergeStage.name}</span></p>
+                            )}
+                          </Card>
+                        );
+                      })}
                     </div>
-                  )}
-                </AccordionContent>
-              </AccordionItem>
+                  </div>
+                )}
+              </div>
             );
           })}
         </Accordion>
