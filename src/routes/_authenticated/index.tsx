@@ -98,19 +98,19 @@ function PromoPlansCarousel() {
       <div className="overflow-hidden rounded-xl">
         <div className="flex transition-transform duration-1000 ease-in-out" style={{ transform: `translateX(-${idx * 100}%)` }}>
           {plans.map((p) => (
-            <div key={p.id} className="w-full shrink-0 px-0.5">
+            <div key={p.id} className="w-full shrink-0 px-0.5 flex justify-center">
               <Card
-                className="p-6 border-none text-white text-center"
+                className="p-6 border-none text-white text-center rounded-2xl shadow-lg w-full max-w-[260px] aspect-square flex flex-col items-center justify-center"
                 style={{ background: p.cor_fundo_2 ? `linear-gradient(135deg, ${p.cor_fundo}, ${p.cor_fundo_2})` : p.cor_fundo }}
               >
-                <p className="font-bold uppercase tracking-wide">{p.nome}</p>
-                <div className="mt-3">
-                  <p className="text-xs opacity-90">1° Mês</p>
-                  <p className="text-xl font-semibold">{formatBRL(p.preco_primeiro_mes)}</p>
+                <p className="font-extrabold uppercase tracking-wide text-lg">{p.nome}</p>
+                <div className="mt-4">
+                  <p className="text-xs opacity-90 uppercase tracking-wide">1° Mês</p>
+                  <p className="text-2xl font-extrabold">{formatBRL(p.preco_primeiro_mes)}</p>
                 </div>
-                <div className="mt-3">
-                  <p className="text-xs opacity-90">A partir do 2° Mês</p>
-                  <p className="text-xl font-semibold">{formatBRL(p.preco_demais_meses)}</p>
+                <div className="mt-4">
+                  <p className="text-xs opacity-90 uppercase tracking-wide">A partir do 2° Mês</p>
+                  <p className="text-2xl font-extrabold">{formatBRL(p.preco_demais_meses)}</p>
                 </div>
               </Card>
             </div>
