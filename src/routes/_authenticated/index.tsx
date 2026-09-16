@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -12,6 +12,7 @@ import { listProcedimentos } from "@/lib/odontologia.functions";
 import { getRankingDetalhado } from "@/lib/gamification.functions";
 import { listClientProfilesForTraining } from "@/lib/clientprofiles.functions";
 import { listHomepageMessages } from "@/lib/homepage.functions";
+import { listPromoPlans } from "@/lib/promoplans.functions";
 import { DIFFICULTY_COLORS, DIFFICULTY_LABELS } from "@/components/SimuladorIA";
 import { MessageSquareQuote, Heart, Sparkles, Bot, GraduationCap, Lightbulb } from "lucide-react";
 
@@ -66,6 +67,67 @@ const shortcuts = [
   { title: "Treinamentos", icon: GraduationCap, route: "/treinamentos", gradient: "linear-gradient(135deg, #FBBF24, #D97706)" },
   { title: "Sugestões", icon: Lightbulb, route: "/sugestoes", gradient: "linear-gradient(135deg, #38BDF8, #6366F1)" },
 ] as const;
+
+interface PromoPlanRow {
+  id: string; nome: string; preco_primeiro_mes: number; preco_demais_meses: number;
+  cor_fundo: string; cor_fundo_2: string | null; ativo: boolean; position: number;
+}
+
+function formatBRL(v: number) {
+  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+// Carrossel de planos em promoção — avança sozinho, devagar, e para de deslizar
+// quando só há um plano ativo. Some da tela quando não há nenhum plano ativo.
+function PromoPlansCarousel() {
+  const promoFn = useServerFn(listPromoPlans);
+  const promoQ = useQuery({ queryKey: ["promo-plans"], queryFn: () => promoFn({}) });
+  const plans = ((promoQ.data ?? []) as PromoPlanRow[]).filter((p) => p.ativo).sort((a, b) => a.position - b.position);
+  const [idx, setIdx] = useState(0);
+
+  useEffect(() => {
+    if (plans.length <= 1) return;
+    const t = setInterval(() => setIdx((i) => (i + 1) % plans.length), 4500);
+    return () => clearInterval(t);
+  }, [plans.length]);
+
+  if (plans.length === 0) return null;
+
+  return (
+    <div className="mb-8">
+      <div className="overflow-hidden rounded-xl">
+        <div className="flex transition-transform duration-1000 ease-in-out" style={{ transform: `translateX(-${idx * 100}%)` }}>
+          {plans.map((p) => (
+            <div key={p.id} className="w-full shrink-0 px-0.5">
+              <Card
+                className="p-6 border-none text-white text-center"
+                style={{ background: p.cor_fundo_2 ? `linear-gradient(135deg, ${p.cor_fundo}, ${p.cor_fundo_2})` : p.cor_fundo }}
+              >
+                <p className="font-bold uppercase tracking-wide">{p.nome}</p>
+                <div className="mt-3">
+                  <p className="text-xs opacity-90">1° Mês</p>
+                  <p className="text-xl font-semibold">{formatBRL(p.preco_primeiro_mes)}</p>
+                </div>
+                <div className="mt-3">
+                  <p className="text-xs opacity-90">A partir do 2° Mês</p>
+                  <p className="text-xl font-semibold">{formatBRL(p.preco_demais_meses)}</p>
+                </div>
+              </Card>
+            </div>
+          ))}
+        </div>
+      </div>
+      {plans.length > 1 && (
+        <div className="flex justify-center gap-1.5 mt-2">
+          {plans.map((p, i) => (
+            <button key={p.id} onClick={() => setIdx(i)} aria-label={`Ver ${p.nome}`}
+              className={`h-1.5 rounded-full transition-all ${i === idx ? "w-4 bg-primary" : "w-1.5 bg-muted-foreground/30"}`} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function Home() {
   const me = useServerFn(getMe);
@@ -148,6 +210,8 @@ function Home() {
         </span>
       </Card>
 
+      <PromoPlansCarousel />
+
       <Dialog open={!!desafio} onOpenChange={(v) => !v && setDesafio(null)}>
         <DialogContent className="max-w-sm text-center">
           <DialogHeader><DialogTitle>Seu desafio de hoje</DialogTitle></DialogHeader>
@@ -171,21 +235,21 @@ function Home() {
         </DialogContent>
       </Dialog>
 
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">Cadastrados no sistema</p>
-      <Card className="p-4">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">Informações essenciais sobre a Amor Saúde</p>
+      <Card className="p-4 border-none" style={{ background: "linear-gradient(135deg, #FAFAFA, #DCEEFB)" }}>
         <table className="w-full text-sm">
           <tbody>
-            <tr className="border-b border-border">
-              <td className="py-2 text-muted-foreground">Consultas</td>
-              <td className="py-2 text-right font-medium">{pQ.data?.length ?? 0}</td>
+            <tr className="border-b border-border/60">
+              <td className="py-3 text-muted-foreground">Consultas</td>
+              <td className="py-3 text-right text-2xl font-bold text-sky-700">{pQ.data?.length ?? 0}</td>
             </tr>
-            <tr className="border-b border-border">
-              <td className="py-2 text-muted-foreground">Exames</td>
-              <td className="py-2 text-right font-medium">{eQ.data?.length ?? 0}</td>
+            <tr className="border-b border-border/60">
+              <td className="py-3 text-muted-foreground">Exames</td>
+              <td className="py-3 text-right text-2xl font-bold text-sky-700">{eQ.data?.length ?? 0}</td>
             </tr>
             <tr>
-              <td className="py-2 text-muted-foreground">Procedimentos odontológicos</td>
-              <td className="py-2 text-right font-medium">{prQ.data?.length ?? 0}</td>
+              <td className="py-3 text-muted-foreground">Procedimentos odontológicos</td>
+              <td className="py-3 text-right text-2xl font-bold text-sky-700">{prQ.data?.length ?? 0}</td>
             </tr>
           </tbody>
         </table>
