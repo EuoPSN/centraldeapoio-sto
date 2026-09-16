@@ -6,12 +6,28 @@ import { z } from "zod";
 // Etapas do Fluxo de Atendimento — separado das Categorias/Subcategorias das mensagens.
 // Cada etapa pertence a uma Categoria (tipo de atendimento) ou fica em "Geral" (category_id nulo).
 // Uma mensagem pode estar ligada a várias etapas ao mesmo tempo (via message_flow_links).
+//
+// Caminhos (flow_paths): um fluxo pode se dividir em N caminhos a partir de uma etapa
+// (branches_from_stage_id). Cada caminho tem suas próprias etapas (path_id aponta pra ele).
+// Um caminho pode voltar a se juntar numa etapa comum do tronco (merges_into_stage_id) ou
+// terminar sozinho (merges_into_stage_id nulo).
 
 export const listFlowStages = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("message_flow_stages")
+      .select("*")
+      .order("position", { ascending: true });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
+export const listFlowPaths = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("flow_paths")
       .select("*")
       .order("position", { ascending: true });
     if (error) throw new Error(error.message);
@@ -29,6 +45,7 @@ const StageInput = z.object({
   name: z.string().min(1).max(120),
   position: z.number().int().default(0),
   category_id: z.string().uuid().nullable().optional(),
+  path_id: z.string().uuid().nullable().optional(),
 });
 
 export const upsertFlowStage = createServerFn({ method: "POST" })
@@ -49,6 +66,45 @@ export const deleteFlowStage = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await admin(context);
     const { error } = await context.supabase.from("message_flow_stages").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ---- Caminhos (flow_paths) ----
+
+const PathInput = z.object({
+  id: z.string().uuid().optional(),
+  category_id: z.string().uuid().nullable().optional(),
+  name: z.string().min(1).max(120),
+  branches_from_stage_id: z.string().uuid(),
+  merges_into_stage_id: z.string().uuid().nullable().optional(),
+  position: z.number().int().default(0),
+});
+
+// Cria ou atualiza um caminho. Ao criar, "name" vira o rótulo mostrado na aba
+// do caminho (ex: "Caminho 1 — Plano prata"). branches_from_stage_id é a etapa
+// depois da qual esse caminho começa; merges_into_stage_id é opcional — se
+// preenchido, é a etapa do tronco pra onde esse caminho volta ao terminar.
+export const upsertFlowPath = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => PathInput.parse(d))
+  .handler(async ({ data, context }) => {
+    await admin(context);
+    const { data: r, error } = data.id
+      ? await context.supabase.from("flow_paths").update(data).eq("id", data.id).select().single()
+      : await context.supabase.from("flow_paths").insert(data).select().single();
+    if (error) throw new Error(error.message);
+    return r;
+  });
+
+// Exclui um caminho. As etapas que pertenciam a ele são excluídas em cascata
+// (ON DELETE CASCADE no path_id) — a UI deve confirmar isso com o usuário antes de chamar.
+export const deleteFlowPath = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await admin(context);
+    const { error } = await context.supabase.from("flow_paths").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
