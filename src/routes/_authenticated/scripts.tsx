@@ -80,10 +80,24 @@ function FluxoAtendimento() {
   const rows = (msgQ.data ?? []) as unknown as MessageRow[];
   const allStages = (stageQ.data ?? []) as StageRow[];
   const allPaths = (pathQ.data ?? []) as PathRow[];
-  const parents = ((catQ.data ?? []) as FlowCatRow[]).filter((c) => !c.parent_id);
+  const allCats = (catQ.data ?? []) as FlowCatRow[];
+  const parents = allCats.filter((c) => !c.parent_id);
+  const childrenOf = (id: string) => allCats.filter((c) => c.parent_id === id);
 
   const [flowCat, setFlowCat] = useState<string>("geral");
+  const [expandedParent, setExpandedParent] = useState<string | null>(null);
   const flowCategoryId = flowCat === "geral" ? null : flowCat;
+
+  const selectParent = (parent: FlowCatRow) => {
+    const kids = childrenOf(parent.id);
+    if (kids.length > 0) {
+      setExpandedParent(parent.id);
+      if (!kids.some((k) => k.id === flowCat)) setFlowCat(kids[0].id);
+    } else {
+      setExpandedParent(null);
+      setFlowCat(parent.id);
+    }
+  };
 
   const trunkStages = allStages
     .filter((s) => (s.category_id ?? null) === flowCategoryId && !s.path_id)
@@ -96,6 +110,7 @@ function FluxoAtendimento() {
     .sort((a, b) => a.position - b.position);
 
   const stageById = (id: string) => allStages.find((s) => s.id === id);
+  const currentScopeName = flowCat === "geral" ? "Geral" : (allCats.find((c) => c.id === flowCat)?.name ?? "Geral");
 
   const messagesForStage = (stageId: string) =>
     rows
@@ -164,16 +179,29 @@ function FluxoAtendimento() {
     <div className="space-y-4">
       {parents.length > 0 && (
         <div className="flex gap-2 flex-wrap">
-          <Button size="sm" variant={flowCat === "geral" ? "default" : "outline"} onClick={() => setFlowCat("geral")}>Geral</Button>
-          {parents.map((c) => (
-            <Button key={c.id} size="sm" variant={flowCat === c.id ? "default" : "outline"} onClick={() => setFlowCat(c.id)}>{c.name}</Button>
+          <Button size="sm" variant={flowCat === "geral" && !expandedParent ? "default" : "outline"}
+            onClick={() => { setFlowCat("geral"); setExpandedParent(null); }}>Geral</Button>
+          {parents.map((c) => {
+            const hasKids = childrenOf(c.id).length > 0;
+            const active = hasKids ? expandedParent === c.id : flowCat === c.id;
+            return (
+              <Button key={c.id} size="sm" variant={active ? "default" : "outline"} onClick={() => selectParent(c)}>{c.name}</Button>
+            );
+          })}
+        </div>
+      )}
+
+      {expandedParent && childrenOf(expandedParent).length > 0 && (
+        <div className="flex flex-wrap gap-2 pl-2 border-l-2 border-border">
+          {childrenOf(expandedParent).map((c) => (
+            <Button key={c.id} size="sm" variant={flowCat === c.id ? "secondary" : "ghost"} onClick={() => setFlowCat(c.id)}>{c.name}</Button>
           ))}
         </div>
       )}
 
       {trunkStages.length === 0 ? (
         <Card className="p-10 text-center">
-          <p className="text-muted-foreground">Nenhuma etapa de fluxo cadastrada ainda para "{flowCat === "geral" ? "Geral" : parents.find((c) => c.id === flowCat)?.name}".</p>
+          <p className="text-muted-foreground">Nenhuma etapa de fluxo cadastrada ainda para "{currentScopeName}".</p>
           <p className="text-xs text-muted-foreground mt-1">Configure em Painel Admin → Mensagens → aba "Fluxo de Atendimento".</p>
         </Card>
       ) : (
