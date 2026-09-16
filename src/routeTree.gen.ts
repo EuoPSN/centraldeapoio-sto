@@ -15,13 +15,13 @@ import { Route as PendenteRouteImport } from './routes/pendente'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAssistenteRouteImport } from './routes/_authenticated/assistente'
+import { Route as AuthenticatedBibliotecaRouteImport } from './routes/_authenticated/biblioteca'
 import { Route as AuthenticatedConhecimentoRouteImport } from './routes/_authenticated/conhecimento'
 import { Route as AuthenticatedContatosRouteImport } from './routes/_authenticated/contatos'
 import { Route as AuthenticatedCrmLeadsRouteImport } from './routes/_authenticated/crm-leads'
 import { Route as AuthenticatedCrmProspeccaoRouteImport } from './routes/_authenticated/crm-prospeccao'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedFuncionariosRouteImport } from './routes/_authenticated/funcionarios'
-import { Route as AuthenticatedImagensRouteImport } from './routes/_authenticated/imagens'
 import { Route as AuthenticatedMeusRelatoriosRouteImport } from './routes/_authenticated/meus-relatorios'
 import { Route as AuthenticatedMotorDecisaoRouteImport } from './routes/_authenticated/motor-decisao'
 import { Route as AuthenticatedPrecosRouteImport } from './routes/_authenticated/precos'
@@ -64,6 +64,11 @@ const AuthenticatedAssistenteRoute = AuthenticatedAssistenteRouteImport.update({
   path: '/assistente',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedBibliotecaRoute = AuthenticatedBibliotecaRouteImport.update({
+  id: '/biblioteca',
+  path: '/biblioteca',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedConhecimentoRoute =
   AuthenticatedConhecimentoRouteImport.update({
     id: '/conhecimento',
@@ -97,11 +102,6 @@ const AuthenticatedFuncionariosRoute =
     path: '/funcionarios',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedImagensRoute = AuthenticatedImagensRouteImport.update({
-  id: '/imagens',
-  path: '/imagens',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedMeusRelatoriosRoute =
   AuthenticatedMeusRelatoriosRouteImport.update({
     id: '/meus-relatorios',
@@ -173,13 +173,13 @@ export interface FileRoutesByFullPath {
   '/pendente': typeof PendenteRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/assistente': typeof AuthenticatedAssistenteRoute
+  '/biblioteca': typeof AuthenticatedBibliotecaRoute
   '/conhecimento': typeof AuthenticatedConhecimentoRoute
   '/contatos': typeof AuthenticatedContatosRoute
   '/crm-leads': typeof AuthenticatedCrmLeadsRoute
   '/crm-prospeccao': typeof AuthenticatedCrmProspeccaoRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/funcionarios': typeof AuthenticatedFuncionariosRoute
-  '/imagens': typeof AuthenticatedImagensRoute
   '/meus-relatorios': typeof AuthenticatedMeusRelatoriosRoute
   '/motor-decisao': typeof AuthenticatedMotorDecisaoRoute
   '/precos': typeof AuthenticatedPrecosRoute
@@ -198,13 +198,13 @@ export interface FileRoutesByTo {
   '/pendente': typeof PendenteRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/assistente': typeof AuthenticatedAssistenteRoute
+  '/biblioteca': typeof AuthenticatedBibliotecaRoute
   '/conhecimento': typeof AuthenticatedConhecimentoRoute
   '/contatos': typeof AuthenticatedContatosRoute
   '/crm-leads': typeof AuthenticatedCrmLeadsRoute
   '/crm-prospeccao': typeof AuthenticatedCrmProspeccaoRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/funcionarios': typeof AuthenticatedFuncionariosRoute
-  '/imagens': typeof AuthenticatedImagensRoute
   '/meus-relatorios': typeof AuthenticatedMeusRelatoriosRoute
   '/motor-decisao': typeof AuthenticatedMotorDecisaoRoute
   '/precos': typeof AuthenticatedPrecosRoute
@@ -226,13 +226,13 @@ export interface FileRoutesById {
   '/pendente': typeof PendenteRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/assistente': typeof AuthenticatedAssistenteRoute
+  '/_authenticated/biblioteca': typeof AuthenticatedBibliotecaRoute
   '/_authenticated/conhecimento': typeof AuthenticatedConhecimentoRoute
   '/_authenticated/contatos': typeof AuthenticatedContatosRoute
   '/_authenticated/crm-leads': typeof AuthenticatedCrmLeadsRoute
   '/_authenticated/crm-prospeccao': typeof AuthenticatedCrmProspeccaoRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/funcionarios': typeof AuthenticatedFuncionariosRoute
-  '/_authenticated/imagens': typeof AuthenticatedImagensRoute
   '/_authenticated/meus-relatorios': typeof AuthenticatedMeusRelatoriosRoute
   '/_authenticated/motor-decisao': typeof AuthenticatedMotorDecisaoRoute
   '/_authenticated/precos': typeof AuthenticatedPrecosRoute
@@ -255,13 +255,13 @@ export interface FileRouteTypes {
     | '/pendente'
     | '/admin'
     | '/assistente'
+    | '/biblioteca'
     | '/conhecimento'
     | '/contatos'
     | '/crm-leads'
     | '/crm-prospeccao'
     | '/dashboard'
     | '/funcionarios'
-    | '/imagens'
     | '/meus-relatorios'
     | '/motor-decisao'
     | '/precos'
@@ -280,13 +280,13 @@ export interface FileRouteTypes {
     | '/pendente'
     | '/admin'
     | '/assistente'
+    | '/biblioteca'
     | '/conhecimento'
     | '/contatos'
     | '/crm-leads'
     | '/crm-prospeccao'
     | '/dashboard'
     | '/funcionarios'
-    | '/imagens'
     | '/meus-relatorios'
     | '/motor-decisao'
     | '/precos'
@@ -307,13 +307,13 @@ export interface FileRouteTypes {
     | '/pendente'
     | '/_authenticated/admin'
     | '/_authenticated/assistente'
+    | '/_authenticated/biblioteca'
     | '/_authenticated/conhecimento'
     | '/_authenticated/contatos'
     | '/_authenticated/crm-leads'
     | '/_authenticated/crm-prospeccao'
     | '/_authenticated/dashboard'
     | '/_authenticated/funcionarios'
-    | '/_authenticated/imagens'
     | '/_authenticated/meus-relatorios'
     | '/_authenticated/motor-decisao'
     | '/_authenticated/precos'
@@ -381,6 +381,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAssistenteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/biblioteca': {
+      id: '/_authenticated/biblioteca'
+      path: '/biblioteca'
+      fullPath: '/biblioteca'
+      preLoaderRoute: typeof AuthenticatedBibliotecaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/conhecimento': {
       id: '/_authenticated/conhecimento'
       path: '/conhecimento'
@@ -421,13 +428,6 @@ declare module '@tanstack/react-router' {
       path: '/funcionarios'
       fullPath: '/funcionarios'
       preLoaderRoute: typeof AuthenticatedFuncionariosRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/imagens': {
-      id: '/_authenticated/imagens'
-      path: '/imagens'
-      fullPath: '/imagens'
-      preLoaderRoute: typeof AuthenticatedImagensRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/meus-relatorios': {
@@ -520,13 +520,13 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAssistenteRoute: typeof AuthenticatedAssistenteRoute
+  AuthenticatedBibliotecaRoute: typeof AuthenticatedBibliotecaRoute
   AuthenticatedConhecimentoRoute: typeof AuthenticatedConhecimentoRoute
   AuthenticatedContatosRoute: typeof AuthenticatedContatosRoute
   AuthenticatedCrmLeadsRoute: typeof AuthenticatedCrmLeadsRoute
   AuthenticatedCrmProspeccaoRoute: typeof AuthenticatedCrmProspeccaoRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFuncionariosRoute: typeof AuthenticatedFuncionariosRoute
-  AuthenticatedImagensRoute: typeof AuthenticatedImagensRoute
   AuthenticatedMeusRelatoriosRoute: typeof AuthenticatedMeusRelatoriosRoute
   AuthenticatedMotorDecisaoRoute: typeof AuthenticatedMotorDecisaoRoute
   AuthenticatedPrecosRoute: typeof AuthenticatedPrecosRoute
@@ -543,13 +543,13 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAssistenteRoute: AuthenticatedAssistenteRoute,
+  AuthenticatedBibliotecaRoute: AuthenticatedBibliotecaRoute,
   AuthenticatedConhecimentoRoute: AuthenticatedConhecimentoRoute,
   AuthenticatedContatosRoute: AuthenticatedContatosRoute,
   AuthenticatedCrmLeadsRoute: AuthenticatedCrmLeadsRoute,
   AuthenticatedCrmProspeccaoRoute: AuthenticatedCrmProspeccaoRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFuncionariosRoute: AuthenticatedFuncionariosRoute,
-  AuthenticatedImagensRoute: AuthenticatedImagensRoute,
   AuthenticatedMeusRelatoriosRoute: AuthenticatedMeusRelatoriosRoute,
   AuthenticatedMotorDecisaoRoute: AuthenticatedMotorDecisaoRoute,
   AuthenticatedPrecosRoute: AuthenticatedPrecosRoute,
