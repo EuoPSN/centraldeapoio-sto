@@ -42,6 +42,7 @@ import { AdminSectionsTab, ADMIN_GROUP_ORDER } from "@/components/admin/AdminSec
 import { ChangelogTab } from "@/components/admin/ChangelogTab";
 import { UnidadesTab } from "@/components/admin/UnidadesTab";
 import { HomepageMessagesTab } from "@/components/admin/HomepageMessagesTab";
+import { PromoPlansTab } from "@/components/admin/PromoPlansTab";
 import { ContatosTab } from "@/components/admin/ContatosTab";
 import { BibliotecaTab } from "@/components/admin/BibliotecaTab";
 import { TreinamentosTab } from "@/components/admin/TreinamentosTab";
@@ -98,6 +99,7 @@ organizacao: AdminSectionsTab,
     changelog: ChangelogTab,
     unidades: UnidadesTab,
     homemsg: HomepageMessagesTab,
+    promoplans: PromoPlansTab,
     contatos: ContatosTab,
     imagelibrary: BibliotecaTab,
     treinamentos: TreinamentosTab,
