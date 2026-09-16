@@ -267,7 +267,23 @@ Responda APENAS com um array JSON, no formato exato: [{"title":"...","content":"
 
   // ---- Fluxo de Atendimento: uma aba por categoria (tipo de atendimento) ----
   const [flowCat, setFlowCat] = useState<string>("geral");
+  const [expandedParent, setExpandedParent] = useState<string | null>(null);
   const flowCategoryId = flowCat === "geral" ? null : flowCat;
+  const selectFlowParent = (parent: Cat) => {
+    const kids = childrenOf(parent.id);
+    if (kids.length > 0) {
+      setExpandedParent(parent.id);
+      if (!kids.some((k) => k.id === flowCat)) setFlowCat(kids[0].id);
+    } else {
+      setExpandedParent(null);
+      setFlowCat(parent.id);
+    }
+    setAutoPreview(null);
+  };
+  const flowScopeName = flowCat === "geral" ? "Geral" : (cats.find((c) => c.id === flowCat)?.name ?? "Geral");
+  // Uma subcategoria é uma categoria com parent_id preenchido — usada pra escopar
+  // o organizador automático da IA e o filtro de mensagens só àquela subcategoria.
+  const flowCatIsSubcategory = !!cats.find((c) => c.id === flowCat)?.parent_id;
   const stagesForCat = stages
     .filter((s) => (s.category_id ?? null) === flowCategoryId && !s.path_id)
     .slice()
@@ -488,11 +504,16 @@ Responda APENAS com a frase da descrição, sem aspas, sem markdown, sem texto a
     const linkedIds = new Set(
       allMessages.filter((m) => (m.flow_links ?? []).some((l: any) => stagesForCat.some((s) => s.id === l.flow_stage_id))).map((m) => m.id)
     );
-    const pool = allMessages.filter((m) => (m.category_id ?? null) === flowCategoryId || linkedIds.has(m.id));
+    const pool = allMessages.filter((m) => {
+      const inScope = flowCatIsSubcategory
+        ? m.subcategory_id === flowCategoryId
+        : (m.category_id ?? null) === flowCategoryId;
+      return inScope || linkedIds.has(m.id);
+    });
     if (pool.length === 0) { toast.error("Não há mensagens nessa categoria pra organizar."); return; }
     setAutoOrganizing(true);
     try {
-      const catName = flowCat === "geral" ? "Geral" : (parents.find((c) => c.id === flowCat)?.name ?? "Geral");
+      const catName = flowScopeName;
       const listText = pool.map((m) => `${m.id} :: ${m.title} — ${(m.content || "").replace(/\s+/g, " ").slice(0, 140)}`).join("\n");
       const existingNames = stagesForCat.map((s) => s.name);
       const prompt = `Você organiza um fluxo de atendimento (sequência de mensagens de script de WhatsApp) para o tipo de atendimento "${catName}".
@@ -740,11 +761,25 @@ As etapas devem vir na ordem certa de uso. Sem markdown, sem texto fora do JSON.
           </p>
 
           <div className="flex gap-2 flex-wrap">
-            <Button size="sm" variant={flowCat === "geral" ? "default" : "outline"} onClick={() => { setFlowCat("geral"); setAutoPreview(null); }}>Geral</Button>
-            {parents.map((c) => (
-              <Button key={c.id} size="sm" variant={flowCat === c.id ? "default" : "outline"} onClick={() => { setFlowCat(c.id); setAutoPreview(null); }}>{c.name}</Button>
-            ))}
+            <Button size="sm" variant={flowCat === "geral" && !expandedParent ? "default" : "outline"}
+              onClick={() => { setFlowCat("geral"); setExpandedParent(null); setAutoPreview(null); }}>Geral</Button>
+            {parents.map((c) => {
+              const hasKids = childrenOf(c.id).length > 0;
+              const active = hasKids ? expandedParent === c.id : flowCat === c.id;
+              return (
+                <Button key={c.id} size="sm" variant={active ? "default" : "outline"} onClick={() => selectFlowParent(c)}>{c.name}</Button>
+              );
+            })}
           </div>
+
+          {expandedParent && childrenOf(expandedParent).length > 0 && (
+            <div className="flex flex-wrap gap-2 pl-2 border-l-2 border-border">
+              {childrenOf(expandedParent).map((c) => (
+                <Button key={c.id} size="sm" variant={flowCat === c.id ? "secondary" : "ghost"}
+                  onClick={() => { setFlowCat(c.id); setAutoPreview(null); }}>{c.name}</Button>
+              ))}
+            </div>
+          )}
 
           <div className="flex gap-2 max-w-xl flex-wrap items-center">
             <Input placeholder="Nome da nova etapa" value={newStageName} onChange={(e) => setNewStageName(e.target.value)}
@@ -778,7 +813,7 @@ As etapas devem vir na ordem certa de uso. Sem markdown, sem texto fora do JSON.
           )}
 
           {stagesForCat.length === 0 && !autoPreview && (
-            <p className="text-sm text-muted-foreground">Nenhuma etapa criada ainda para "{flowCat === "geral" ? "Geral" : parents.find((c) => c.id === flowCat)?.name}". Adicione manualmente acima, ou use o organizador automático.</p>
+            <p className="text-sm text-muted-foreground">Nenhuma etapa criada ainda para "{flowScopeName}". Adicione manualmente acima, ou use o organizador automático.</p>
           )}
 
           {stagesForCat.map((stage, stageIdx) => {
