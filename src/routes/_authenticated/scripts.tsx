@@ -3,7 +3,7 @@ import { useState, useMemo } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { listMessages, incrementMessageUseCount } from "@/lib/messages.functions";
-import { listFlowStages } from "@/lib/messageflow.functions";
+import { listFlowStages, listFlowPaths } from "@/lib/messageflow.functions";
 import { listCategories } from "@/lib/taxonomy.functions";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
