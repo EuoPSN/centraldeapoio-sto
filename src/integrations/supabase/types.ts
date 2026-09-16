@@ -848,6 +848,58 @@ export type Database = {
           },
         ]
       }
+      flow_paths: {
+        Row: {
+          branches_from_stage_id: string
+          category_id: string | null
+          created_at: string
+          id: string
+          merges_into_stage_id: string | null
+          name: string
+          position: number
+        }
+        Insert: {
+          branches_from_stage_id: string
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          merges_into_stage_id?: string | null
+          name: string
+          position?: number
+        }
+        Update: {
+          branches_from_stage_id?: string
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          merges_into_stage_id?: string | null
+          name?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flow_paths_branches_from_stage_id_fkey"
+            columns: ["branches_from_stage_id"]
+            isOneToOne: false
+            referencedRelation: "message_flow_stages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flow_paths_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flow_paths_merges_into_stage_id_fkey"
+            columns: ["merges_into_stage_id"]
+            isOneToOne: false
+            referencedRelation: "message_flow_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       flows: {
         Row: {
           category_id: string | null
@@ -1214,6 +1266,7 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          path_id: string | null
           position: number
         }
         Insert: {
@@ -1221,6 +1274,7 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
+          path_id?: string | null
           position?: number
         }
         Update: {
@@ -1228,6 +1282,7 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          path_id?: string | null
           position?: number
         }
         Relationships: [
@@ -1236,6 +1291,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_flow_stages_path_id_fkey"
+            columns: ["path_id"]
+            isOneToOne: false
+            referencedRelation: "flow_paths"
             referencedColumns: ["id"]
           },
         ]
