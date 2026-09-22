@@ -43,6 +43,7 @@ import { ChangelogTab } from "@/components/admin/ChangelogTab";
 import { UnidadesTab } from "@/components/admin/UnidadesTab";
 import { HomepageMessagesTab } from "@/components/admin/HomepageMessagesTab";
 import { PromoPlansTab } from "@/components/admin/PromoPlansTab";
+import { ProblemScenariosTab } from "@/components/admin/ProblemScenariosTab";
 import { ContatosTab } from "@/components/admin/ContatosTab";
 import { BibliotecaTab } from "@/components/admin/BibliotecaTab";
 import { TreinamentosTab } from "@/components/admin/TreinamentosTab";
@@ -100,6 +101,7 @@ organizacao: AdminSectionsTab,
     unidades: UnidadesTab,
     homemsg: HomepageMessagesTab,
     promoplans: PromoPlansTab,
+    problemscenarios: ProblemScenariosTab,
     contatos: ContatosTab,
     imagelibrary: BibliotecaTab,
     treinamentos: TreinamentosTab,
