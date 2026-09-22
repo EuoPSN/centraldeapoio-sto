@@ -13,9 +13,15 @@ import { problemScenarioChat, evaluateProblemScenario } from "@/lib/problemscena
 import { saveProblemSimulatorResult } from "@/lib/gamification.functions";
 import { DIFFICULTY_COLORS, DIFFICULTY_LABELS } from "@/components/SimuladorIA";
 
+export const FAIXA_ETARIA_LABELS: Record<string, string> = {
+  "20-30": "20 a 30 anos", "30-40": "30 a 40 anos", "40-60": "40 a 60 anos", "60-80": "60 a 80 anos",
+};
+
 interface Scenario {
   id: string; name: string; enredo: string; personalidade: string; difficulty: string;
   category?: { name?: string | null } | null;
+  cliente_nome?: string | null; cliente_cpf?: string | null; cliente_regiao?: string | null;
+  cliente_genero?: string | null; faixa_etaria?: string | null;
 }
 interface Message { role: "atendente" | "cliente"; content: string; }
 interface Avaliacao { nota: number; resumo: string; pontos_fortes: string[]; pontos_melhoria: string[]; erros: string[]; }
@@ -172,15 +178,38 @@ export function SimuladorProblema({ scenario, onReset }: { scenario: Scenario; o
     <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4 items-start">
       <Card className="p-4 space-y-4 sticky top-4">
         <div className="flex flex-col items-center text-center gap-2">
-          <ClienteAvatar size={80} />
+          <ClienteAvatar genero={scenario.cliente_genero ?? undefined} size={80} />
           <div>
-            <p className="font-semibold text-sm">{scenario.name}</p>
+            <p className="font-semibold text-sm">{scenario.cliente_nome || scenario.name}</p>
             <Badge className={`text-xs mt-1 ${DIFFICULTY_COLORS[scenario.difficulty]}`}>{DIFFICULTY_LABELS[scenario.difficulty]}</Badge>
           </div>
         </div>
-        {scenario.category?.name && (
-          <div className="text-xs text-center text-muted-foreground">{scenario.category.name}</div>
-        )}
+        <div className="space-y-2 text-xs border-t pt-3">
+          {scenario.cliente_cpf && (
+            <div className="flex justify-between gap-2">
+              <span className="text-muted-foreground">CPF</span>
+              <span className="font-mono font-medium">{scenario.cliente_cpf}</span>
+            </div>
+          )}
+          {scenario.cliente_regiao && (
+            <div className="flex justify-between gap-2">
+              <span className="text-muted-foreground">Região</span>
+              <span className="font-medium text-right">{scenario.cliente_regiao}</span>
+            </div>
+          )}
+          {scenario.faixa_etaria && (
+            <div className="flex justify-between gap-2">
+              <span className="text-muted-foreground">Idade</span>
+              <span className="font-medium text-right">{FAIXA_ETARIA_LABELS[scenario.faixa_etaria] ?? scenario.faixa_etaria}</span>
+            </div>
+          )}
+          {scenario.category?.name && (
+            <div className="flex justify-between gap-2">
+              <span className="text-muted-foreground">Categoria</span>
+              <span className="font-medium text-right">{scenario.category.name}</span>
+            </div>
+          )}
+        </div>
         <div className="border-t pt-3 space-y-1">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Enredo</p>
           <p className="text-xs text-muted-foreground leading-relaxed line-clamp-6 whitespace-pre-line">{scenario.enredo}</p>
