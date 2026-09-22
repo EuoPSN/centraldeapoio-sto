@@ -1,11 +1,12 @@
-import { useState, useRef, useEffect } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { listMessages } from "@/lib/messages.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Send, StopCircle, RotateCcw, BookOpen } from "lucide-react";
+import { Send, StopCircle, RotateCcw, BookOpen, MessageSquare } from "lucide-react";
 import { ClienteAvatar } from "@/components/ClienteAvatar";
 import { WhatsAppText } from "@/components/WhatsAppText";
 import { toast } from "sonner";
@@ -30,6 +31,7 @@ export function SimuladorProblema({ scenario, onReset }: { scenario: Scenario; o
   const [briefingLido, setBriefingLido] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
+  const [pendingAttendantMessages, setPendingAttendantMessages] = useState<string[]>([]);
   const [encerrado, setEncerrado] = useState(false);
   const [xpGanho, setXpGanho] = useState<number | null>(null);
   const [avaliacao, setAvaliacao] = useState<Avaliacao | null>(null);
@@ -38,6 +40,28 @@ export function SimuladorProblema({ scenario, onReset }: { scenario: Scenario; o
   const chatFn = useServerFn(problemScenarioChat);
   const evalFn = useServerFn(evaluateProblemScenario);
   const saveResultFn = useServerFn(saveProblemSimulatorResult);
+
+  // Atalhos "/palavra" (respostas rápidas cadastradas em Admin → Mensagens)
+  const shortcutsFn = useServerFn(listMessages);
+  const shortcutsQ = useQuery({ queryKey: ["messages", "shortcuts"], queryFn: () => shortcutsFn({}) });
+  const shortcutMessages = ((shortcutsQ.data ?? []) as Array<{ id: string; title: string; content: string; shortcut: string | null }>)
+    .filter((m) => !!m.shortcut);
+
+  // Só ativa a sugestão quando a caixa contém SÓ "/algo", sem espaço (igual WhatsApp Business)
+  const slashMatch = /^\/(\S*)$/.exec(input);
+  const slashQuery = slashMatch ? slashMatch[1].toLowerCase() : null;
+  const shortcutMatches = useMemo(() => {
+    if (slashQuery === null) return [];
+    return shortcutMessages.filter((m) => m.shortcut!.toLowerCase().startsWith(slashQuery)).slice(0, 6);
+  }, [slashQuery, shortcutMessages]);
+
+  const [shortcutIndex, setShortcutIndex] = useState(0);
+  useEffect(() => { setShortcutIndex(0); }, [slashQuery]);
+
+  const applyShortcut = (m: { content: string }) => {
+    setInput(m.content);
+    setShortcutIndex(0);
+  };
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -60,13 +84,20 @@ export function SimuladorProblema({ scenario, onReset }: { scenario: Scenario; o
     sendMut.mutate([]);
   };
 
+  // Enviar só adiciona a mensagem na conversa e na fila — o cliente virtual só
+  // responde quando o atendente clicar em "Aguardar resposta" (pode mandar 2-3 seguidas antes).
   const handleSend = () => {
     if (!input.trim() || encerrado) return;
-    const novaMsg: Message = { role: "atendente", content: input.trim() };
-    const novoHistorico = [...messages, novaMsg];
-    setMessages(novoHistorico);
+    const text = input.trim();
+    setMessages((prev) => [...prev, { role: "atendente", content: text }]);
+    setPendingAttendantMessages((prev) => [...prev, text]);
     setInput("");
-    sendMut.mutate(novoHistorico);
+  };
+
+  const handleAwaitResponse = () => {
+    if (pendingAttendantMessages.length === 0) return;
+    setPendingAttendantMessages([]);
+    sendMut.mutate(messages);
   };
 
   const avaliarMut = useMutation({
@@ -249,13 +280,43 @@ export function SimuladorProblema({ scenario, onReset }: { scenario: Scenario; o
           )}
         </div>
 
-        <div className="flex gap-2">
-          <Textarea value={input} onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-            placeholder="Digite sua mensagem..." rows={2} className="resize-none" disabled={encerrado} />
-          <Button onClick={handleSend} disabled={!input.trim() || encerrado || sendMut.isPending} className="gap-1 text-xs shrink-0">
-            <Send className="h-4 w-4" />
-          </Button>
+        <div className="flex flex-col gap-2">
+          {shortcutMatches.length > 0 && (
+            <div className="border border-border rounded-md bg-popover shadow-md overflow-hidden max-h-56 overflow-y-auto">
+              {shortcutMatches.map((m, i) => (
+                <button key={m.id} type="button"
+                  className={`w-full text-left px-3 py-2 text-sm flex flex-col gap-0.5 border-b border-border/50 last:border-0 ${i === shortcutIndex ? "bg-primary/10" : "hover:bg-muted/50"}`}
+                  onMouseEnter={() => setShortcutIndex(i)}
+                  onClick={() => applyShortcut(m)}>
+                  <span className="font-medium text-primary">/{m.shortcut}</span>
+                  <span className="text-xs text-muted-foreground truncate">{m.title} — {m.content}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Textarea value={input} onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (shortcutMatches.length > 0) {
+                  if (e.key === "ArrowDown") { e.preventDefault(); setShortcutIndex((i) => (i + 1) % shortcutMatches.length); return; }
+                  if (e.key === "ArrowUp") { e.preventDefault(); setShortcutIndex((i) => (i - 1 + shortcutMatches.length) % shortcutMatches.length); return; }
+                  if ((e.key === "Enter" || e.key === "Tab") && !e.shiftKey) { e.preventDefault(); applyShortcut(shortcutMatches[shortcutIndex]); return; }
+                }
+                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
+              }}
+              placeholder="Digite sua mensagem... (use / para respostas rápidas)" rows={2} className="resize-none" disabled={encerrado} />
+            <div className="flex flex-col gap-2">
+              <Button onClick={handleSend} disabled={!input.trim() || encerrado} className="gap-1 text-xs">
+                <Send className="h-4 w-4" />
+              </Button>
+              {pendingAttendantMessages.length > 0 && (
+                <Button onClick={handleAwaitResponse} disabled={sendMut.isPending || encerrado}
+                  variant="outline" className="gap-1 text-xs">
+                  <MessageSquare className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
       </Card>
     </div>
