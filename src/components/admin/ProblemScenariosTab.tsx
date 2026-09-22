@@ -15,13 +15,17 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Plus, Pencil, Trash2, Wrench, Sparkles, FlaskConical } from "lucide-react";
 import { toast } from "sonner";
 import { DIFFICULTY_LABELS } from "@/components/SimuladorIA";
+import { FAIXA_ETARIA_LABELS } from "@/components/SimuladorProblema";
 
 interface ScenarioRow {
   id: string; name: string; enredo: string; personalidade: string; solucao_esperada: string;
   difficulty: string; category_id: string | null; category?: { id: string; name: string } | null;
+  cliente_nome: string | null; cliente_cpf: string | null; cliente_regiao: string | null;
+  cliente_genero: string | null; faixa_etaria: string | null;
 }
 
 export function ProblemScenariosTab() {
@@ -38,10 +42,20 @@ export function ProblemScenariosTab() {
   const [edit, setEdit] = useState<null | {
     id?: string; category_id: string; name: string; enredo: string;
     personalidade: string; solucao_esperada: string; difficulty: string;
+    cliente_nome: string; cliente_cpf: string; cliente_regiao: string;
+    cliente_genero: string; faixa_etaria: string;
   }>(null);
 
   const upsertMut = useMutation({
-    mutationFn: () => upsert({ data: { ...edit!, category_id: edit!.category_id || null } }),
+    mutationFn: () => upsert({ data: {
+      ...edit!,
+      category_id: edit!.category_id || null,
+      cliente_nome: edit!.cliente_nome || null,
+      cliente_cpf: edit!.cliente_cpf || null,
+      cliente_regiao: edit!.cliente_regiao || null,
+      cliente_genero: edit!.cliente_genero || "masculino",
+      faixa_etaria: (edit!.faixa_etaria || null) as any,
+    } }),
     onSuccess: () => { toast.success("Salvo."); setEdit(null); qc.invalidateQueries({ queryKey: ["problem-scenarios"] }); },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
   });
@@ -92,7 +106,12 @@ Crie um cenário coerente com a categoria e a descrição dada. Responda APENAS 
       qc.invalidateQueries({ queryKey: ["problem-scenarios"] });
       setGenOpen(false);
       setGenDescricao("");
-      setEdit({ ...created, category_id: created.category_id ?? "" });
+      setEdit({
+        id: created.id, category_id: created.category_id ?? "", name: created.name, enredo: created.enredo,
+        personalidade: created.personalidade, solucao_esperada: created.solucao_esperada, difficulty: created.difficulty,
+        cliente_nome: created.cliente_nome ?? "", cliente_cpf: created.cliente_cpf ?? "", cliente_regiao: created.cliente_regiao ?? "",
+        cliente_genero: created.cliente_genero ?? "masculino", faixa_etaria: created.faixa_etaria ?? "",
+      });
       toast.success("Cenário gerado! Revise os campos — principalmente a solução esperada — antes de usar em simulação.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao gerar cenário com IA.");
@@ -117,7 +136,8 @@ Crie um cenário coerente com a categoria e a descrição dada. Responda APENAS 
     setTestResult(null);
 
     try {
-      const clientePrompt = `Você é um cliente virtual chamado ${s.name}, cliente do Cartão de Todos.
+      const clientePrompt = `Você é um cliente virtual chamado ${s.cliente_nome || s.name}, cliente do Cartão de Todos.
+${s.faixa_etaria ? `Idade aproximada: ${FAIXA_ETARIA_LABELS[s.faixa_etaria] ?? s.faixa_etaria} — leve isso em conta no jeito de falar (mais leigo/técnico, mais ou menos paciente).` : ""}
 O que aconteceu (só você sabe disso): ${s.enredo}
 Como você se comporta: ${s.personalidade || "normal, educado"}.
 A solução correta pro seu problema (NUNCA revele diretamente, só reaja quando o atendente chegar nela): ${s.solucao_esperada}.
@@ -181,6 +201,7 @@ Escreva sua próxima mensagem pro cliente (1-2 frases). Responda APENAS com o te
           <Button variant="outline" onClick={() => setGenOpen(true)} className="gap-2"><Sparkles className="h-4 w-4" /> Gerar cenário com IA</Button>
           <Button size="sm" className="gap-2" onClick={() => setEdit({
             category_id: "", name: "", enredo: "", personalidade: "", solucao_esperada: "", difficulty: "medio",
+            cliente_nome: "", cliente_cpf: "", cliente_regiao: "", cliente_genero: "masculino", faixa_etaria: "",
           })}>
             <Plus className="h-4 w-4" /> Novo cenário
           </Button>
@@ -204,6 +225,8 @@ Escreva sua próxima mensagem pro cliente (1-2 frases). Responda APENAS com o te
                   <Button size="icon" variant="ghost" onClick={() => setEdit({
                     id: s.id, category_id: s.category_id ?? "", name: s.name, enredo: s.enredo,
                     personalidade: s.personalidade, solucao_esperada: s.solucao_esperada, difficulty: s.difficulty,
+                    cliente_nome: s.cliente_nome ?? "", cliente_cpf: s.cliente_cpf ?? "", cliente_regiao: s.cliente_regiao ?? "",
+                    cliente_genero: s.cliente_genero ?? "masculino", faixa_etaria: s.faixa_etaria ?? "",
                   })}><Pencil className="h-4 w-4" /></Button>
                   <Button size="icon" variant="ghost" onClick={() => confirm(`Excluir "${s.name}"?`) && delMut.mutate(s.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                 </TableCell>
@@ -218,9 +241,19 @@ Escreva sua próxima mensagem pro cliente (1-2 frases). Responda APENAS com o te
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{edit?.id ? "Editar cenário" : "Novo cenário"}</DialogTitle></DialogHeader>
           {edit && (
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label>Nome do cliente/caso</Label><Input value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} placeholder="Ex: João, cobrança duplicada" /></div>
+            <Tabs defaultValue="geral">
+              <TabsList className="grid grid-cols-4 w-full">
+                <TabsTrigger value="geral">Geral</TabsTrigger>
+                <TabsTrigger value="personalidade">Personalidade</TabsTrigger>
+                <TabsTrigger value="dados">Dados fictícios</TabsTrigger>
+                <TabsTrigger value="caso">Caso</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="geral" className="space-y-3 pt-4">
+                <div>
+                  <Label>Nome do perfil</Label>
+                  <Input value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} placeholder="Ex: Cliente com KYC recusado" />
+                </div>
                 <div>
                   <Label>Categoria</Label>
                   <Select value={edit.category_id || "none"} onValueChange={(v) => setEdit({ ...edit, category_id: v === "none" ? "" : v })}>
@@ -231,32 +264,81 @@ Escreva sua próxima mensagem pro cliente (1-2 frases). Responda APENAS com o te
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-              <div>
-                <Label>Dificuldade</Label>
-                <Select value={edit.difficulty} onValueChange={(v) => setEdit({ ...edit, difficulty: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(DIFFICULTY_LABELS).map(([k, label]) => <SelectItem key={k} value={k}>{label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Enredo — o que aconteceu (o atendente lê isso antes de começar)</Label>
-                <Textarea rows={5} value={edit.enredo} onChange={(e) => setEdit({ ...edit, enredo: e.target.value })}
-                  placeholder="Ex: O cliente pagou a adesão do Refuturiza há 3 dias, mas o acesso à plataforma nunca chegou por e-mail. Ele já tentou de novo e continua sem acesso." />
-              </div>
-              <div>
-                <Label>Personalidade do cliente durante a conversa</Label>
-                <Input value={edit.personalidade} onChange={(e) => setEdit({ ...edit, personalidade: e.target.value })}
-                  placeholder="Ex: Educado mas impaciente, já ligou duas vezes antes" />
-              </div>
-              <div>
-                <Label>Solução esperada (fica escondida do atendente — só a IA usa pra avaliar)</Label>
-                <Textarea rows={4} value={edit.solucao_esperada} onChange={(e) => setEdit({ ...edit, solucao_esperada: e.target.value })}
-                  placeholder="Ex: Confirmar o CPF e reenviar o e-mail de acesso manualmente pelo painel do Refuturiza; se não resolver, abrir chamado pro suporte técnico do parceiro." />
-              </div>
-            </div>
+                <div>
+                  <Label>Nível de dificuldade</Label>
+                  <Select value={edit.difficulty} onValueChange={(v) => setEdit({ ...edit, difficulty: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(DIFFICULTY_LABELS).map(([k, label]) => <SelectItem key={k} value={k}>{label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="personalidade" className="space-y-3 pt-4">
+                <div>
+                  <Label>Personalidade do cliente durante a conversa</Label>
+                  <Textarea rows={3} value={edit.personalidade} onChange={(e) => setEdit({ ...edit, personalidade: e.target.value })}
+                    placeholder="Ex: Educado mas impaciente, já ligou duas vezes antes" />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="dados" className="space-y-3 pt-4">
+                <p className="text-xs text-muted-foreground">
+                  Esses dados aparecem no cartão do cliente durante a simulação e podem ser usados pela IA nas respostas.
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label>Nome completo</Label>
+                    <Input value={edit.cliente_nome} onChange={(e) => setEdit({ ...edit, cliente_nome: e.target.value })} placeholder="Ex: João Silva Santos" />
+                  </div>
+                  <div>
+                    <Label>CPF</Label>
+                    <Input value={edit.cliente_cpf} onChange={(e) => setEdit({ ...edit, cliente_cpf: e.target.value })} placeholder="Ex: 123.456.789-00" />
+                  </div>
+                  <div>
+                    <Label>Região</Label>
+                    <Input value={edit.cliente_regiao} onChange={(e) => setEdit({ ...edit, cliente_regiao: e.target.value })} placeholder="Ex: Belo Horizonte - MG" />
+                  </div>
+                  <div>
+                    <Label>Gênero do avatar</Label>
+                    <Select value={edit.cliente_genero || "masculino"} onValueChange={(v) => setEdit({ ...edit, cliente_genero: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="masculino">Masculino</SelectItem>
+                        <SelectItem value="feminino">Feminino</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="col-span-2">
+                    <Label>Idade do cliente</Label>
+                    <Select value={edit.faixa_etaria || "none"} onValueChange={(v) => setEdit({ ...edit, faixa_etaria: v === "none" ? "" : v })}>
+                      <SelectTrigger><SelectValue placeholder="Sem faixa definida" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Sem faixa definida</SelectItem>
+                        {Object.entries(FAIXA_ETARIA_LABELS).map(([k, label]) => <SelectItem key={k} value={k}>{label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Muda o "registro" do cliente na conversa — mais leigo/técnico, mais ou menos paciente — dependendo da faixa.
+                    </p>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="caso" className="space-y-3 pt-4">
+                <div>
+                  <Label>Enredo — o que aconteceu (o atendente lê isso antes de começar)</Label>
+                  <Textarea rows={5} value={edit.enredo} onChange={(e) => setEdit({ ...edit, enredo: e.target.value })}
+                    placeholder="Ex: O cliente pagou a adesão do Refuturiza há 3 dias, mas o acesso à plataforma nunca chegou por e-mail. Ele já tentou de novo e continua sem acesso." />
+                </div>
+                <div>
+                  <Label>Solução esperada (fica escondida do atendente — só a IA usa pra avaliar)</Label>
+                  <Textarea rows={4} value={edit.solucao_esperada} onChange={(e) => setEdit({ ...edit, solucao_esperada: e.target.value })}
+                    placeholder="Ex: Confirmar o CPF e reenviar o e-mail de acesso manualmente pelo painel do Refuturiza; se não resolver, abrir chamado pro suporte técnico do parceiro." />
+                </div>
+              </TabsContent>
+            </Tabs>
           )}
           <DialogFooter><Button onClick={() => upsertMut.mutate()} disabled={upsertMut.isPending}>Salvar</Button></DialogFooter>
         </DialogContent>
