@@ -48,6 +48,42 @@ export const saveSimulatorResult = createServerFn({ method: "POST" })
     return { ganho, novoXp };
   });
 
+// Mesma mecânica de saveSimulatorResult, mas pras simulações de Solução de Problemas:
+// grava com tipo='problema' e soma XP na coluna separada xp_problemas (ranking à parte).
+export const saveProblemSimulatorResult = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => d as {
+    scenario_id: string; scenario_name: string; difficulty: string;
+    nota: number; resumo: string; pontos_fortes: string[];
+    pontos_melhoria: string[]; erros: string[];
+  })
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.from("simulator_results").insert({
+      user_id: context.userId,
+      tipo: "problema",
+      scenario_id: data.scenario_id,
+      profile_name: data.scenario_name,
+      difficulty: data.difficulty,
+      nota: data.nota,
+      resumo: data.resumo,
+      pontos_fortes: data.pontos_fortes,
+      pontos_melhoria: data.pontos_melhoria,
+      erros: data.erros,
+    });
+    if (error) throw error;
+
+    const ganho = xpForDifficulty(data.difficulty, data.nota);
+    const { data: prof } = await context.supabase
+      .from("profiles")
+      .select("xp_problemas")
+      .eq("id", context.userId)
+      .single();
+    const novoXp = (prof?.xp_problemas ?? 0) + ganho;
+    await context.supabase.from("profiles").update({ xp_problemas: novoXp }).eq("id", context.userId);
+
+    return { ganho, novoXp };
+  });
+
 export const getMyGamification = createServerFn()
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -124,6 +160,36 @@ export const getRankingDetalhado = createServerFn()
     }
     return (profs ?? []).map((p: any) => ({
       ...p,
+      total: statsMap[p.id]?.total ?? 0,
+      media: statsMap[p.id]?.total
+        ? Math.round(statsMap[p.id].soma / statsMap[p.id].total)
+        : 0,
+    }));
+  });
+
+// Ranking separado pras simulações de Solução de Problemas — mesma lógica de
+// getRankingDetalhado, mas ordenando por xp_problemas e olhando só tipo='problema'.
+export const getRankingProblemas = createServerFn()
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: profs } = await context.supabase
+      .from("profiles").select("id, display_name, xp_problemas")
+      .order("xp_problemas", { ascending: false }).limit(20);
+    const ids = (profs ?? []).map((p: any) => p.id);
+    if (ids.length === 0) return [];
+    const { data: results } = await context.supabase
+      .from("simulator_results").select("user_id, nota")
+      .eq("tipo", "problema")
+      .in("user_id", ids);
+    const statsMap: Record<string, { total: number; soma: number }> = {};
+    for (const r of results ?? []) {
+      if (!statsMap[r.user_id]) statsMap[r.user_id] = { total: 0, soma: 0 };
+      statsMap[r.user_id].total++;
+      statsMap[r.user_id].soma += r.nota;
+    }
+    return (profs ?? []).map((p: any) => ({
+      ...p,
+      xp: p.xp_problemas,
       total: statsMap[p.id]?.total ?? 0,
       media: statsMap[p.id]?.total
         ? Math.round(statsMap[p.id].soma / statsMap[p.id].total)
