@@ -44,6 +44,7 @@ import { UnidadesTab } from "@/components/admin/UnidadesTab";
 import { HomepageMessagesTab } from "@/components/admin/HomepageMessagesTab";
 import { PromoPlansTab } from "@/components/admin/PromoPlansTab";
 import { ProblemScenariosTab } from "@/components/admin/ProblemScenariosTab";
+import { ClientKnowledgeTab } from "@/components/admin/ClientKnowledgeTab";
 import { ContatosTab } from "@/components/admin/ContatosTab";
 import { BibliotecaTab } from "@/components/admin/BibliotecaTab";
 import { TreinamentosTab } from "@/components/admin/TreinamentosTab";
@@ -102,6 +103,7 @@ organizacao: AdminSectionsTab,
     homemsg: HomepageMessagesTab,
     promoplans: PromoPlansTab,
     problemscenarios: ProblemScenariosTab,
+    clientknowledge: ClientKnowledgeTab,
     contatos: ContatosTab,
     imagelibrary: BibliotecaTab,
     treinamentos: TreinamentosTab,
