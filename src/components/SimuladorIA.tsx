@@ -15,6 +15,7 @@ import { simulatorChat } from "@/lib/simulator.chat.functions";
 import { saveSimulatorResult } from "@/lib/gamification.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { listClientProfileStates } from "@/lib/clientprofilestates.functions"; 
+import { getClientKnowledge } from "@/lib/chat.functions";
 import { WhatsAppText } from "@/components/WhatsAppText";
 
 
@@ -116,6 +117,12 @@ const [pendingAttendantMessages, setPendingAttendantMessages] = useState<string[
   const shortcutsQ = useQuery({ queryKey: ["messages", "shortcuts"], queryFn: () => shortcutsFn({}) });
   const shortcutMessages = ((shortcutsQ.data ?? []) as Array<{ id: string; title: string; content: string; shortcut: string | null }>)
     .filter((m) => !!m.shortcut);
+
+  // Conhecimento do Cliente: base pública compartilhada (Admin → Conhecimento do Cliente),
+  // pra o cliente virtual não inventar valor de plano e afins.
+  const clientKnowledgeFn = useServerFn(getClientKnowledge);
+  const clientKnowledgeQ = useQuery({ queryKey: ["client-knowledge"], queryFn: () => clientKnowledgeFn({}) });
+  const clientKnowledge = (clientKnowledgeQ.data as { client_knowledge?: string } | undefined)?.client_knowledge ?? "";
 
   // Só ativa a sugestão quando a caixa contém SÓ "/algo", sem espaço (igual WhatsApp Business)
   const slashMatch = /^\/(\S*)$/.exec(input);
@@ -223,6 +230,7 @@ Objeções típicas: ${profile.objections}.
 Comportamentos: ${profile.behaviors}.
 Nível de dificuldade: ${DIFFICULTY_LABELS[profile.difficulty]}.
 ${dadosBlock}
+${clientKnowledge ? `\nO que você, como cliente comum, já sabe ou já viu no site/Google sobre o Cartão de Todos (use isso com naturalidade, sem citar como "fonte"):\n${clientKnowledge}\n` : ""}
 Responda APENAS como o cliente — nunca quebre o personagem.
 Respostas curtas e naturais, como numa conversa real de WhatsApp.
 Se o atendente der uma boa resposta às suas objeções, vá cedendo gradualmente.
