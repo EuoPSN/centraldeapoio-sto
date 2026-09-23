@@ -17,6 +17,7 @@ const SCOPES = [
   { value: "suggestion", label: "Sugestões" },
   { value: "content", label: "Conteúdo" },
   { value: "client_profile", label: "Perfis de Cliente (Simulador IA)" },
+  { value: "problema", label: "Situações-Problema (Simulador)" },
   { value: "image_library", label: "Biblioteca de Imagens (pastas)" },
   { value: "pdf_library", label: "Biblioteca de PDFs (pastas)" },
 ] as const;
