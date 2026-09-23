@@ -13,8 +13,9 @@ import { getRankingDetalhado } from "@/lib/gamification.functions";
 import { listClientProfilesForTraining } from "@/lib/clientprofiles.functions";
 import { listHomepageMessages } from "@/lib/homepage.functions";
 import { listPromoPlans } from "@/lib/promoplans.functions";
+import { getMyChecklistToday } from "@/lib/checklist.functions";
 import { DIFFICULTY_COLORS, DIFFICULTY_LABELS } from "@/components/SimuladorIA";
-import { MessageSquareQuote, Heart, Sparkles, Bot, GraduationCap, Lightbulb } from "lucide-react";
+import { MessageSquareQuote, Heart, Sparkles, Bot, GraduationCap, Lightbulb, ListChecks } from "lucide-react";
 
 type HomeFonte = "padrao" | "arredondada" | "elegante" | "festiva";
 type HomeTipo = "padrao" | "data_especial" | "aniversario";
@@ -129,6 +130,40 @@ function PromoPlansCarousel() {
   );
 }
 
+// Card com o progresso do checklist diário do próprio funcionário, com atalho
+// direto pra tela /checklist.
+function ChecklistCard() {
+  const checklistFn = useServerFn(getMyChecklistToday);
+  const checklistQ = useQuery({ queryKey: ["my-checklist-today"], queryFn: () => checklistFn({}) });
+  const items = (checklistQ.data?.items ?? []) as Array<{ id: string; tipo: "binario" | "meta"; meta_padrao: number | null }>;
+  const entries = (checklistQ.data?.entries ?? []) as Array<{ item_id: string; marcado: boolean; valor: number | null }>;
+
+  if (checklistQ.isLoading || items.length === 0) return null;
+
+  const isDone = (item: { id: string; tipo: string; meta_padrao: number | null }) => {
+    const e = entries.find((en) => en.item_id === item.id);
+    if (!e) return false;
+    if (item.tipo === "meta") return (e.valor ?? 0) >= (item.meta_padrao ?? 0);
+    return !!e.marcado;
+  };
+  const doneCount = items.filter(isDone).length;
+
+  return (
+    <Card className="p-4 mb-8">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <ListChecks className="h-5 w-5 text-primary" />
+          <span className="text-sm font-medium">Check-list de hoje</span>
+        </div>
+        <span className="text-sm text-muted-foreground">{doneCount} de {items.length} feitos</span>
+      </div>
+      <Link to="/checklist">
+        <Button size="sm" variant="outline" className="w-full mt-3">Ver checklist</Button>
+      </Link>
+    </Card>
+  );
+}
+
 function Home() {
   const me = useServerFn(getMe);
   const meQ = useQuery({ queryKey: ["me"], queryFn: () => me({}) });
@@ -211,6 +246,8 @@ function Home() {
       </Card>
 
       <PromoPlansCarousel />
+
+      <ChecklistCard />
 
       <Dialog open={!!desafio} onOpenChange={(v) => !v && setDesafio(null)}>
         <DialogContent className="max-w-sm text-center">
