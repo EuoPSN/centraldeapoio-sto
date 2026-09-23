@@ -108,6 +108,15 @@ async function loadScenarioServerSide(id: string): Promise<ScenarioFull> {
   return data as ScenarioFull;
 }
 
+// Conhecimento do Cliente (Admin → Conhecimento do Cliente): base pública compartilhada
+// com o Simulador de Atendimentos, pra não inventar valor de plano e afins.
+async function loadClientKnowledge(): Promise<string> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await (supabaseAdmin as any)
+    .from("ai_settings").select("client_knowledge").eq("id", 1).single();
+  return (data?.client_knowledge ?? "").trim();
+}
+
 // A faixa etária muda o "registro" do cliente: quão técnico, paciente ou
 // desconfiado ele soa — não é só um detalhe decorativo do avatar.
 function faixaEtariaGuidance(faixa: string | null): string {
@@ -136,7 +145,10 @@ export const problemScenarioChat = createServerFn({ method: "POST" })
     z.object({ scenario_id: z.string().uuid(), history: z.array(HistoryItem) }).parse(d)
   )
   .handler(async ({ data }) => {
-    const s = await loadScenarioServerSide(data.scenario_id);
+    const [s, clientKnowledge] = await Promise.all([
+      loadScenarioServerSide(data.scenario_id),
+      loadClientKnowledge(),
+    ]);
     const isStart = data.history.length === 0;
     const nomeCliente = s.cliente_nome || s.name;
     const systemPrompt = `Você é um cliente virtual chamado ${nomeCliente}, cliente do Cartão de Todos, entrando em contato com o suporte por um problema real.
@@ -146,9 +158,9 @@ ${faixaEtariaGuidance(s.faixa_etaria)}
 O QUE ACONTECEU (só você sabe disso, o atendente ainda não): ${s.enredo}
 Como você se comporta durante a conversa: ${s.personalidade || "normal, educado"}.
 A solução correta pro seu problema, que o atendente precisa chegar (NUNCA revele isso diretamente, só reaja quando ele acertar ou errar): ${s.solucao_esperada}.
-
+${clientKnowledge ? `\nO que você, como cliente comum, já sabe ou já viu no site/Google sobre o Cartão de Todos (use com naturalidade, sem citar como "fonte"):\n${clientKnowledge}\n` : ""}
 Responda APENAS como o cliente — nunca quebre o personagem, nunca mencione que isso é uma simulação.
-Respostas curtas e naturais, estilo WhatsApp, condizentes com o seu perfil etário acima. Pode quebrar em até 3 mensagens curtas separadas por ||BREAK||.
+Respostas curtas e naturais, estilo WhatsApp. Pode quebrar em até 3 mensagens curtas separadas por ||BREAK||.
 ${isStart
   ? "Esta é a PRIMEIRA mensagem da conversa: você está entrando em contato agora, contando o que aconteceu (ainda não foi atendido)."
   : "Reaja à última mensagem do atendente: se a proposta dele bater com a solução correta, demonstre alívio/satisfação e considere o problema resolvido; se não bater, continue explicando ou insistindo no problema, sem nunca revelar a solução."}`;
@@ -172,18 +184,21 @@ export const evaluateProblemScenario = createServerFn({ method: "POST" })
     z.object({ scenario_id: z.string().uuid(), transcript: z.string() }).parse(d)
   )
   .handler(async ({ data }) => {
-    const s = await loadScenarioServerSide(data.scenario_id);
+    const [s, clientKnowledge] = await Promise.all([
+      loadScenarioServerSide(data.scenario_id),
+      loadClientKnowledge(),
+    ]);
     const evalPrompt = `Você é um avaliador especialista em atendimentos de suporte do Cartão de Todos.
 
 O QUE REALMENTE ACONTECEU COM O CLIENTE: ${s.enredo}
 PERFIL DO CLIENTE: ${faixaEtariaGuidance(s.faixa_etaria)}
 A SOLUÇÃO CORRETA pra esse caso: ${s.solucao_esperada}
-
+${clientKnowledge ? `\nInformações públicas básicas do Cartão de Todos (pra avaliar se o atendente disse algo incorreto sobre isso):\n${clientKnowledge}\n` : ""}
 Avalie a conversa abaixo entre o atendente e o cliente. Considere:
 - O atendente se apresentou e entendeu o problema corretamente?
 - Ele chegou na solução correta descrita acima (mesmo com palavras diferentes)?
 - Teve empatia e clareza — inclusive se adaptando ao perfil do cliente acima (ex: mais paciência e menos jargão técnico com um cliente idoso ou leigo)?
-- Cometeu algum erro de informação ou de processo?
+- Cometeu algum erro de informação ou de processo, inclusive sobre as informações públicas básicas acima?
 
 Responda APENAS com um JSON válido, sem texto extra, sem markdown, neste formato exato:
 {"nota": 0-100, "pontos_fortes": ["..."], "pontos_melhoria": ["..."], "erros": ["..."], "resumo": "..."}`;
