@@ -1,4 +1,3 @@
-
 import { createServerFn } from "@tanstack/react-start";
 import { isAdminUser } from "@/lib/authz";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -360,6 +359,7 @@ const SettingsInput = z.object({
   system_prompt: z.string().min(10),
   model: z.string().min(1).default("google/gemini-3-flash-preview"),
   essential_facts: z.string().optional().nullable(),
+  client_knowledge: z.string().optional().nullable(),
 });
 
 export const updateAiSettings = createServerFn({ method: "POST" })
@@ -370,10 +370,31 @@ export const updateAiSettings = createServerFn({ method: "POST" })
     if (!isAdmin) throw new Error("Apenas administradores podem editar as configurações da IA.");
     const { error } = await context.supabase
       .from("ai_settings")
-      .update({ system_prompt: data.system_prompt, model: data.model, essential_facts: data.essential_facts ?? null })
+      .update({
+        system_prompt: data.system_prompt, model: data.model,
+        essential_facts: data.essential_facts ?? null,
+        client_knowledge: data.client_knowledge ?? "",
+      })
       .eq("id", 1);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+// Conhecimento do Cliente: o básico que um cliente comum saberia (valores de plano,
+// o que é a clínica/parceria) — não é admin-only, porque os dois Simuladores (venda
+// e situação-problema) leem daqui pra dar ao cliente virtual uma base real em vez
+// de inventar valores por perfil/cenário.
+export const getClientKnowledge = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
+      .from("ai_settings")
+      .select("client_knowledge")
+      .eq("id", 1)
+      .single();
+    if (error) throw new Error(error.message);
+    return { client_knowledge: (data?.client_knowledge ?? "").trim() };
   });
 
 // ============================================================
