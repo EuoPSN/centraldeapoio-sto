@@ -46,6 +46,7 @@ import { PromoPlansTab } from "@/components/admin/PromoPlansTab";
 import { ProblemScenariosTab } from "@/components/admin/ProblemScenariosTab";
 import { ClientKnowledgeTab } from "@/components/admin/ClientKnowledgeTab";
 import { ChecklistTab } from "@/components/admin/ChecklistTab";
+import { ScriptReviewTab } from "@/components/admin/ScriptReviewTab";
 import { ContatosTab } from "@/components/admin/ContatosTab";
 import { BibliotecaTab } from "@/components/admin/BibliotecaTab";
 import { TreinamentosTab } from "@/components/admin/TreinamentosTab";
@@ -106,6 +107,7 @@ organizacao: AdminSectionsTab,
     problemscenarios: ProblemScenariosTab,
     clientknowledge: ClientKnowledgeTab,
     checklist: ChecklistTab,
+    scriptreview: ScriptReviewTab,
     contatos: ContatosTab,
     imagelibrary: BibliotecaTab,
     treinamentos: TreinamentosTab,
