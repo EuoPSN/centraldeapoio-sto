@@ -16,12 +16,13 @@ export const Route = createFileRoute("/_authenticated/simulador-ia")({
   component: Page,
   validateSearch: (search: Record<string, unknown>) => ({
     perfil: typeof search.perfil === "string" ? search.perfil : undefined,
+    modo: search.modo === "problemas" ? "problemas" as const : undefined,
   }),
 });
 
 function Page() {
-  const { perfil } = Route.useSearch();
-  const [modo, setModo] = useState<"atendimentos" | "problemas">("atendimentos");
+  const { perfil, modo: modoInicial } = Route.useSearch();
+  const [modo, setModo] = useState<"atendimentos" | "problemas">(modoInicial === "problemas" ? "problemas" : "atendimentos");
 
   return (
     <div className="p-6 lg:p-10 max-w-7xl mx-auto">
