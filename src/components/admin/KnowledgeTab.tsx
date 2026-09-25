@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -39,25 +39,50 @@ interface EditState {
   file_name: string | null;
 }
 
+const SEM_PRODUTO = "__sem_produto__";
+
 export function KnowledgeTab() {
+  const catFn = useServerFn(listCategories);
+  const productsQ = useQuery({ queryKey: ["cats", "knowledge_product"], queryFn: () => catFn({ data: { scope: "knowledge_product" } }) });
+  const products = (productsQ.data ?? []) as { id: string; name: string }[];
+
+  const [product, setProduct] = useState<string>("");
+  useEffect(() => {
+    if (!product && products.length > 0) setProduct(products[0].id);
+  }, [products, product]);
+
   const [tab, setTab] = useState<KnowledgeKind>("regra");
+  const productId = product === SEM_PRODUTO ? null : (product || null);
+
   return (
-    <Tabs value={tab} onValueChange={(v) => setTab(v as KnowledgeKind)}>
-      <TabsList className="flex-wrap h-auto">
+    <div className="space-y-4">
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Produto</p>
+        <Tabs value={product} onValueChange={setProduct}>
+          <TabsList className="flex-wrap h-auto">
+            {products.map((p) => <TabsTrigger key={p.id} value={p.id}>{p.name}</TabsTrigger>)}
+            <TabsTrigger value={SEM_PRODUTO}>Sem produto definido</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
+      <Tabs value={tab} onValueChange={(v) => setTab(v as KnowledgeKind)}>
+        <TabsList className="flex-wrap h-auto">
+          {KNOWLEDGE_KINDS.map((k) => (
+            <TabsTrigger key={k} value={k}>{KIND_LABELS[k]}</TabsTrigger>
+          ))}
+        </TabsList>
         {KNOWLEDGE_KINDS.map((k) => (
-          <TabsTrigger key={k} value={k}>{KIND_LABELS[k]}</TabsTrigger>
+          <TabsContent key={k} value={k} className="mt-4">
+            <KindAdmin kind={k} productId={productId} />
+          </TabsContent>
         ))}
-      </TabsList>
-      {KNOWLEDGE_KINDS.map((k) => (
-        <TabsContent key={k} value={k} className="mt-4">
-          <KindAdmin kind={k} />
-        </TabsContent>
-      ))}
-    </Tabs>
+      </Tabs>
+    </div>
   );
 }
 
-function KindAdmin({ kind }: { kind: KnowledgeKind }) {
+function KindAdmin({ kind, productId }: { kind: KnowledgeKind; productId: string | null }) {
   const listFn = useServerFn(listKnowledge);
   const upsertFn = useServerFn(upsertKnowledge);
   const delFn = useServerFn(deleteKnowledge);
@@ -65,13 +90,13 @@ function KindAdmin({ kind }: { kind: KnowledgeKind }) {
   const qc = useQueryClient();
 
   const q = useQuery({ queryKey: ["admin-knowledge", kind], queryFn: () => listFn({ data: { kind } }) });
-  const catQ = useQuery({ queryKey: ["categories", "content"], queryFn: () => catFn({ data: { scope: "content" } }) });
+  const catQ = useQuery({ queryKey: ["cats", "knowledge_product"], queryFn: () => catFn({ data: { scope: "knowledge_product" } }) });
 
   const [edit, setEdit] = useState<EditState | null>(null);
   const [uploading, setUploading] = useState(false);
 
   const empty = (): EditState => ({
-    kind, category_id: null, title: "", summary: "", content: "", tags: "",
+    kind, category_id: productId, title: "", summary: "", content: "", tags: "",
     external_url: "", file_url: null, file_mime: null, file_name: null,
   });
 
@@ -121,10 +146,11 @@ function KindAdmin({ kind }: { kind: KnowledgeKind }) {
     }
   };
 
-  const rows = (q.data ?? []) as unknown as Array<{
+  const allRows = (q.data ?? []) as unknown as Array<{
     id: string; title: string; tags: string[]; file_name: string | null;
-    category: { name: string } | null;
+    category_id: string | null; category: { name: string } | null;
   }>;
+  const rows = allRows.filter((r) => (productId === null ? !r.category_id : r.category_id === productId));
 
   const acceptedTypes = useMemo(() => {
     if (kind === "treinamento") return "video/*,application/pdf,image/*,.pptx,.ppt";
