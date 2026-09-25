@@ -150,7 +150,12 @@ function KindAdmin({ kind, productId }: { kind: KnowledgeKind; productId: string
     id: string; title: string; tags: string[]; file_name: string | null;
     category_id: string | null; category: { name: string } | null;
   }>;
-  const rows = allRows.filter((r) => (productId === null ? !r.category_id : r.category_id === productId));
+  const productIds = new Set((catQ.data ?? []).map((c: { id: string }) => c.id));
+  const rows = allRows.filter((r) =>
+    productId === null
+      ? !r.category_id || !productIds.has(r.category_id)
+      : r.category_id === productId
+  );
 
   const acceptedTypes = useMemo(() => {
     if (kind === "treinamento") return "video/*,application/pdf,image/*,.pptx,.ppt";
