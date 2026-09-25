@@ -230,6 +230,8 @@ function Home() {
         ))}
       </section>
 
+      <ChecklistCard />
+
       <Card className="p-5 mb-8 flex items-center justify-between gap-3 bg-primary/5 border-primary/20">
         <div>
           <p className="font-medium">Vamos testar seu atendimento no simulador?</p>
@@ -237,6 +239,16 @@ function Home() {
         </div>
         <Button onClick={sortearDesafio} disabled={(profilesQ.data ?? []).length === 0} className="shrink-0">Testar agora</Button>
       </Card>
+
+      <Link to="/simulador-ia" search={{ modo: "problemas" }}>
+        <Card className="p-5 mb-8 flex items-center justify-between gap-3 hover:bg-muted/40 transition-colors">
+          <div>
+            <p className="font-medium">Treinar Solução de Problemas</p>
+            <p className="text-sm text-muted-foreground mt-0.5">Cenários de cancelamento, KYC e outras situações reais de suporte.</p>
+          </div>
+          <Button variant="outline" className="shrink-0">Ver cenários</Button>
+        </Card>
+      </Link>
 
       <Card className="p-4 mb-8 flex items-center justify-between">
         <span className="text-sm text-muted-foreground">Seu ranking do mês</span>
@@ -246,8 +258,6 @@ function Home() {
       </Card>
 
       <PromoPlansCarousel />
-
-      <ChecklistCard />
 
       <Dialog open={!!desafio} onOpenChange={(v) => !v && setDesafio(null)}>
         <DialogContent className="max-w-sm text-center">
