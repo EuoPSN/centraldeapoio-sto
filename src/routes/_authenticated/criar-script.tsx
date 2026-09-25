@@ -5,6 +5,7 @@ import { useState } from "react";
 import { listMyDrafts, upsertMyDraft, deleteMyDraft } from "@/lib/messagedrafts.functions";
 import { listCategories } from "@/lib/taxonomy.functions";
 import { simulatorChat } from "@/lib/simulator.chat.functions";
+import { generateScriptFromKnowledge } from "@/lib/scriptgen.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,6 +71,7 @@ function CriarScriptPage() {
 
   // ---- Gerar com IA ----
   const genAI = useServerFn(simulatorChat);
+  const genFromKnowledge = useServerFn(generateScriptFromKnowledge);
   const [genDesc, setGenDesc] = useState("");
   const [genLoading, setGenLoading] = useState(false);
   const [genItems, setGenItems] = useState<Array<{ title: string; content: string; internal_note: string }>>([]);
@@ -78,15 +80,7 @@ function CriarScriptPage() {
     if (!genDesc.trim()) return;
     setGenLoading(true);
     try {
-      const prompt = `Você escreve mensagens de script de atendimento ao cliente via WhatsApp, para o Cartão de Todos (cartão de descontos em saúde).
-
-O texto abaixo é uma descrição livre do que a pessoa precisa. Crie um ou mais scripts de mensagem prontos pra copiar e enviar ao cliente.
-Cada item deve ter:
-- "title": título curto (poucas palavras) pra identificar o script.
-- "content": o texto da mensagem em si, pronto pra uso real (pode usar *negrito* estilo WhatsApp).
-- "internal_note": uma frase curta dizendo quando usar essa mensagem.
-Responda APENAS com um array JSON, no formato exato: [{"title":"...","content":"...","internal_note":"..."}]. Sem markdown, sem texto fora do JSON.`;
-      const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: genDesc }], model: "google/gemini-2.5-flash" } });
+      const { content } = await genFromKnowledge({ data: { descricao: genDesc } });
       const clean = content.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
       const items = (Array.isArray(parsed) ? parsed : [])
