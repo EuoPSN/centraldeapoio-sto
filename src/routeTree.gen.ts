@@ -16,8 +16,10 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAssistenteRouteImport } from './routes/_authenticated/assistente'
 import { Route as AuthenticatedBibliotecaRouteImport } from './routes/_authenticated/biblioteca'
+import { Route as AuthenticatedChecklistRouteImport } from './routes/_authenticated/checklist'
 import { Route as AuthenticatedConhecimentoRouteImport } from './routes/_authenticated/conhecimento'
 import { Route as AuthenticatedContatosRouteImport } from './routes/_authenticated/contatos'
+import { Route as AuthenticatedCriarScriptRouteImport } from './routes/_authenticated/criar-script'
 import { Route as AuthenticatedCrmLeadsRouteImport } from './routes/_authenticated/crm-leads'
 import { Route as AuthenticatedCrmProspeccaoRouteImport } from './routes/_authenticated/crm-prospeccao'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -69,6 +71,11 @@ const AuthenticatedBibliotecaRoute = AuthenticatedBibliotecaRouteImport.update({
   path: '/biblioteca',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedChecklistRoute = AuthenticatedChecklistRouteImport.update({
+  id: '/checklist',
+  path: '/checklist',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedConhecimentoRoute =
   AuthenticatedConhecimentoRouteImport.update({
     id: '/conhecimento',
@@ -80,6 +87,12 @@ const AuthenticatedContatosRoute = AuthenticatedContatosRouteImport.update({
   path: '/contatos',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCriarScriptRoute =
+  AuthenticatedCriarScriptRouteImport.update({
+    id: '/criar-script',
+    path: '/criar-script',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedCrmLeadsRoute = AuthenticatedCrmLeadsRouteImport.update({
   id: '/crm-leads',
   path: '/crm-leads',
@@ -174,8 +187,10 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/assistente': typeof AuthenticatedAssistenteRoute
   '/biblioteca': typeof AuthenticatedBibliotecaRoute
+  '/checklist': typeof AuthenticatedChecklistRoute
   '/conhecimento': typeof AuthenticatedConhecimentoRoute
   '/contatos': typeof AuthenticatedContatosRoute
+  '/criar-script': typeof AuthenticatedCriarScriptRoute
   '/crm-leads': typeof AuthenticatedCrmLeadsRoute
   '/crm-prospeccao': typeof AuthenticatedCrmProspeccaoRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -199,8 +214,10 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/assistente': typeof AuthenticatedAssistenteRoute
   '/biblioteca': typeof AuthenticatedBibliotecaRoute
+  '/checklist': typeof AuthenticatedChecklistRoute
   '/conhecimento': typeof AuthenticatedConhecimentoRoute
   '/contatos': typeof AuthenticatedContatosRoute
+  '/criar-script': typeof AuthenticatedCriarScriptRoute
   '/crm-leads': typeof AuthenticatedCrmLeadsRoute
   '/crm-prospeccao': typeof AuthenticatedCrmProspeccaoRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -227,8 +244,10 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/assistente': typeof AuthenticatedAssistenteRoute
   '/_authenticated/biblioteca': typeof AuthenticatedBibliotecaRoute
+  '/_authenticated/checklist': typeof AuthenticatedChecklistRoute
   '/_authenticated/conhecimento': typeof AuthenticatedConhecimentoRoute
   '/_authenticated/contatos': typeof AuthenticatedContatosRoute
+  '/_authenticated/criar-script': typeof AuthenticatedCriarScriptRoute
   '/_authenticated/crm-leads': typeof AuthenticatedCrmLeadsRoute
   '/_authenticated/crm-prospeccao': typeof AuthenticatedCrmProspeccaoRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -256,8 +275,10 @@ export interface FileRouteTypes {
     | '/admin'
     | '/assistente'
     | '/biblioteca'
+    | '/checklist'
     | '/conhecimento'
     | '/contatos'
+    | '/criar-script'
     | '/crm-leads'
     | '/crm-prospeccao'
     | '/dashboard'
@@ -281,8 +302,10 @@ export interface FileRouteTypes {
     | '/admin'
     | '/assistente'
     | '/biblioteca'
+    | '/checklist'
     | '/conhecimento'
     | '/contatos'
+    | '/criar-script'
     | '/crm-leads'
     | '/crm-prospeccao'
     | '/dashboard'
@@ -308,8 +331,10 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/assistente'
     | '/_authenticated/biblioteca'
+    | '/_authenticated/checklist'
     | '/_authenticated/conhecimento'
     | '/_authenticated/contatos'
+    | '/_authenticated/criar-script'
     | '/_authenticated/crm-leads'
     | '/_authenticated/crm-prospeccao'
     | '/_authenticated/dashboard'
@@ -388,6 +413,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBibliotecaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/checklist': {
+      id: '/_authenticated/checklist'
+      path: '/checklist'
+      fullPath: '/checklist'
+      preLoaderRoute: typeof AuthenticatedChecklistRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/conhecimento': {
       id: '/_authenticated/conhecimento'
       path: '/conhecimento'
@@ -400,6 +432,13 @@ declare module '@tanstack/react-router' {
       path: '/contatos'
       fullPath: '/contatos'
       preLoaderRoute: typeof AuthenticatedContatosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/criar-script': {
+      id: '/_authenticated/criar-script'
+      path: '/criar-script'
+      fullPath: '/criar-script'
+      preLoaderRoute: typeof AuthenticatedCriarScriptRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/crm-leads': {
@@ -521,8 +560,10 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAssistenteRoute: typeof AuthenticatedAssistenteRoute
   AuthenticatedBibliotecaRoute: typeof AuthenticatedBibliotecaRoute
+  AuthenticatedChecklistRoute: typeof AuthenticatedChecklistRoute
   AuthenticatedConhecimentoRoute: typeof AuthenticatedConhecimentoRoute
   AuthenticatedContatosRoute: typeof AuthenticatedContatosRoute
+  AuthenticatedCriarScriptRoute: typeof AuthenticatedCriarScriptRoute
   AuthenticatedCrmLeadsRoute: typeof AuthenticatedCrmLeadsRoute
   AuthenticatedCrmProspeccaoRoute: typeof AuthenticatedCrmProspeccaoRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -544,8 +585,10 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAssistenteRoute: AuthenticatedAssistenteRoute,
   AuthenticatedBibliotecaRoute: AuthenticatedBibliotecaRoute,
+  AuthenticatedChecklistRoute: AuthenticatedChecklistRoute,
   AuthenticatedConhecimentoRoute: AuthenticatedConhecimentoRoute,
   AuthenticatedContatosRoute: AuthenticatedContatosRoute,
+  AuthenticatedCriarScriptRoute: AuthenticatedCriarScriptRoute,
   AuthenticatedCrmLeadsRoute: AuthenticatedCrmLeadsRoute,
   AuthenticatedCrmProspeccaoRoute: AuthenticatedCrmProspeccaoRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
