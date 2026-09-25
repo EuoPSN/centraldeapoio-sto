@@ -78,7 +78,7 @@ function buildMessageContent(m: { content: string; attachments?: unknown }): str
   return parts;
 }
 
-type RagMatch = {
+export type RagMatch = {
   id: string;
   source_type: string;
   source_id: string;
@@ -138,7 +138,7 @@ function scoreLexicalMatch(match: RagMatch, terms: string[]) {
   }, 0);
 }
 
-async function fetchLexicalMatches(supabaseAdmin: { from: (table: string) => any }, question: string): Promise<RagMatch[]> {
+export async function fetchLexicalMatches(supabaseAdmin: { from: (table: string) => any }, question: string): Promise<RagMatch[]> {
   const terms = getSearchTerms(question);
   if (terms.length === 0) return [];
 
@@ -169,7 +169,7 @@ async function fetchLexicalMatches(supabaseAdmin: { from: (table: string) => any
     .slice(0, 8);
 }
 
-function combineRagMatches(vectorMatches: RagMatch[], lexicalMatches: RagMatch[]) {
+export function combineRagMatches(vectorMatches: RagMatch[], lexicalMatches: RagMatch[]) {
   const byId = new Map<string, RagMatch>();
   for (const match of [...lexicalMatches, ...vectorMatches]) {
     const current = byId.get(match.id);
