@@ -82,6 +82,7 @@ export type Database = {
       }
       ai_settings: {
         Row: {
+          client_knowledge: string
           essential_facts: string | null
           id: number
           model: string
@@ -89,6 +90,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          client_knowledge?: string
           essential_facts?: string | null
           id?: number
           model?: string
@@ -96,6 +98,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          client_knowledge?: string
           essential_facts?: string | null
           id?: number
           model?: string
@@ -278,6 +281,80 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      checklist_entries: {
+        Row: {
+          created_at: string
+          dia: string
+          id: string
+          item_id: string
+          marcado: boolean
+          updated_at: string
+          user_id: string
+          valor: number | null
+        }
+        Insert: {
+          created_at?: string
+          dia: string
+          id?: string
+          item_id: string
+          marcado?: boolean
+          updated_at?: string
+          user_id: string
+          valor?: number | null
+        }
+        Update: {
+          created_at?: string
+          dia?: string
+          id?: string
+          item_id?: string
+          marcado?: boolean
+          updated_at?: string
+          user_id?: string
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_entries_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_items: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          meta_padrao: number | null
+          position: number
+          tipo: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          meta_padrao?: number | null
+          position?: number
+          tipo?: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          meta_padrao?: number | null
+          position?: number
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       client_profile_states: {
         Row: {
@@ -1221,6 +1298,79 @@ export type Database = {
         }
         Relationships: []
       }
+      message_drafts: {
+        Row: {
+          category_id: string | null
+          conteudo: string
+          created_at: string
+          criado_por: string
+          id: string
+          message_id: string | null
+          nota_interna: string | null
+          nota_revisao: string | null
+          revisado_em: string | null
+          revisado_por: string | null
+          status: string
+          subcategory_id: string | null
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          conteudo: string
+          created_at?: string
+          criado_por: string
+          id?: string
+          message_id?: string | null
+          nota_interna?: string | null
+          nota_revisao?: string | null
+          revisado_em?: string | null
+          revisado_por?: string | null
+          status?: string
+          subcategory_id?: string | null
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          conteudo?: string
+          created_at?: string
+          criado_por?: string
+          id?: string
+          message_id?: string | null
+          nota_interna?: string | null
+          nota_revisao?: string | null
+          revisado_em?: string | null
+          revisado_por?: string | null
+          status?: string
+          subcategory_id?: string | null
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_drafts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_drafts_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_drafts_subcategory_id_fkey"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_flow_links: {
         Row: {
           created_at: string
@@ -1517,6 +1667,65 @@ export type Database = {
         }
         Relationships: []
       }
+      problem_scenarios: {
+        Row: {
+          category_id: string | null
+          cliente_cpf: string | null
+          cliente_genero: string
+          cliente_nome: string | null
+          cliente_regiao: string | null
+          created_at: string
+          difficulty: string
+          enredo: string
+          faixa_etaria: string | null
+          id: string
+          name: string
+          personalidade: string
+          solucao_esperada: string
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          cliente_cpf?: string | null
+          cliente_genero?: string
+          cliente_nome?: string | null
+          cliente_regiao?: string | null
+          created_at?: string
+          difficulty?: string
+          enredo: string
+          faixa_etaria?: string | null
+          id?: string
+          name: string
+          personalidade?: string
+          solucao_esperada: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          cliente_cpf?: string | null
+          cliente_genero?: string
+          cliente_nome?: string | null
+          cliente_regiao?: string | null
+          created_at?: string
+          difficulty?: string
+          enredo?: string
+          faixa_etaria?: string | null
+          id?: string
+          name?: string
+          personalidade?: string
+          solucao_esperada?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_scenarios_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       procedimento_unidades: {
         Row: {
           procedimento_id: string
@@ -1594,6 +1803,7 @@ export type Database = {
           perfis_maturidade: string[] | null
           updated_at: string
           xp: number
+          xp_problemas: number
         }
         Insert: {
           cargo?: string | null
@@ -1608,6 +1818,7 @@ export type Database = {
           perfis_maturidade?: string[] | null
           updated_at?: string
           xp?: number
+          xp_problemas?: number
         }
         Update: {
           cargo?: string | null
@@ -1622,6 +1833,46 @@ export type Database = {
           perfis_maturidade?: string[] | null
           updated_at?: string
           xp?: number
+          xp_problemas?: number
+        }
+        Relationships: []
+      }
+      promo_plans: {
+        Row: {
+          ativo: boolean
+          cor_fundo: string
+          cor_fundo_2: string | null
+          created_at: string
+          id: string
+          nome: string
+          position: number
+          preco_demais_meses: number
+          preco_primeiro_mes: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          cor_fundo?: string
+          cor_fundo_2?: string | null
+          created_at?: string
+          id?: string
+          nome: string
+          position?: number
+          preco_demais_meses: number
+          preco_primeiro_mes: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          cor_fundo?: string
+          cor_fundo_2?: string | null
+          created_at?: string
+          id?: string
+          nome?: string
+          position?: number
+          preco_demais_meses?: number
+          preco_primeiro_mes?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1894,6 +2145,8 @@ export type Database = {
           profile_id: string | null
           profile_name: string
           resumo: string | null
+          scenario_id: string | null
+          tipo: string
           user_id: string
         }
         Insert: {
@@ -1907,6 +2160,8 @@ export type Database = {
           profile_id?: string | null
           profile_name: string
           resumo?: string | null
+          scenario_id?: string | null
+          tipo?: string
           user_id: string
         }
         Update: {
@@ -1920,9 +2175,18 @@ export type Database = {
           profile_id?: string | null
           profile_name?: string
           resumo?: string | null
+          scenario_id?: string | null
+          tipo?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "simulator_results_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "problem_scenarios"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "simulator_results_user_id_fkey"
             columns: ["user_id"]

@@ -14,7 +14,7 @@ import { Bot, GraduationCap, Wrench } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/simulador-ia")({
   component: Page,
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): { perfil?: string; modo?: "problemas" } => ({
     perfil: typeof search.perfil === "string" ? search.perfil : undefined,
     modo: search.modo === "problemas" ? "problemas" as const : undefined,
   }),
