@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
-import { Card } from "@/components/ui/card";
+import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -12,10 +11,11 @@ import { listProcedimentos } from "@/lib/odontologia.functions";
 import { getRankingDetalhado } from "@/lib/gamification.functions";
 import { listClientProfilesForTraining } from "@/lib/clientprofiles.functions";
 import { listHomepageMessages } from "@/lib/homepage.functions";
-import { listPromoPlans } from "@/lib/promoplans.functions";
 import { getMyChecklistToday } from "@/lib/checklist.functions";
 import { DIFFICULTY_COLORS, DIFFICULTY_LABELS } from "@/components/SimuladorIA";
-import { MessageSquareQuote, Heart, Sparkles, Bot, GraduationCap, Lightbulb, ListChecks } from "lucide-react";
+import { MessageSquareQuote, Sparkles, Bot, GraduationCap, Lightbulb, ListChecks, Search, ChevronRight, Trophy, LifeBuoy, Tag } from "lucide-react";
+import { Panel, PanelRow } from "@/components/Panel";
+import { PromoPlansPanel } from "@/components/PromoPlansPanel";
 
 type HomeFonte = "padrao" | "arredondada" | "elegante" | "festiva";
 type HomeTipo = "padrao" | "data_especial" | "aniversario";
@@ -60,79 +60,24 @@ export const Route = createFileRoute("/_authenticated/")({
   component: Home,
 });
 
-const shortcuts = [
-  { title: "Scripts", icon: MessageSquareQuote, route: "/scripts", gradient: "linear-gradient(135deg, #22D3EE, #0EA5E9)" },
-  { title: "Amor Saúde", icon: Heart, route: "/precos", gradient: "linear-gradient(135deg, #FB7185, #E11D48)" },
-  { title: "Simulador IA", icon: Sparkles, route: "/simulador-ia", gradient: "linear-gradient(135deg, #A78BFA, #7C3AED)" },
-  { title: "MarcIAna", icon: Bot, route: "/assistente", gradient: "linear-gradient(135deg, #34D399, #059669)" },
-  { title: "Treinamentos", icon: GraduationCap, route: "/treinamentos", gradient: "linear-gradient(135deg, #FBBF24, #D97706)" },
-  { title: "Sugestões", icon: Lightbulb, route: "/sugestoes", gradient: "linear-gradient(135deg, #38BDF8, #6366F1)" },
+// As duas tarefas do atendimento em andamento ficam no topo.
+const workShortcuts = [
+  { title: "Mensagens do fluxo", hint: "Copiar a mensagem da etapa", icon: MessageSquareQuote, route: "/scripts" },
+  { title: "Tabela de preços", hint: "Consultas, exames e odontologia", icon: Tag, route: "/precos" },
 ] as const;
 
-interface PromoPlanRow {
-  id: string; nome: string; preco_primeiro_mes: number; preco_demais_meses: number;
-  cor_fundo: string; cor_fundo_2: string | null; ativo: boolean; position: number;
-}
+// Treino e equipe: acessíveis, mas sem competir com o trabalho.
+const trainingShortcuts = [
+  { title: "Simulador IA", icon: Sparkles, route: "/simulador-ia" },
+  { title: "MarcIAna", icon: Bot, route: "/assistente" },
+  { title: "Treinamentos", icon: GraduationCap, route: "/treinamentos" },
+  { title: "Sugestões", icon: Lightbulb, route: "/sugestoes" },
+] as const;
 
-function formatBRL(v: number) {
-  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
 
-// Carrossel de planos em promoção — avança sozinho, devagar, e para de deslizar
-// quando só há um plano ativo. Some da tela quando não há nenhum plano ativo.
-function PromoPlansCarousel() {
-  const promoFn = useServerFn(listPromoPlans);
-  const promoQ = useQuery({ queryKey: ["promo-plans"], queryFn: () => promoFn({}) });
-  const plans = ((promoQ.data ?? []) as PromoPlanRow[]).filter((p) => p.ativo).sort((a, b) => a.position - b.position);
-  const [idx, setIdx] = useState(0);
-
-  useEffect(() => {
-    if (plans.length <= 1) return;
-    const t = setInterval(() => setIdx((i) => (i + 1) % plans.length), 4500);
-    return () => clearInterval(t);
-  }, [plans.length]);
-
-  if (plans.length === 0) return null;
-
-  return (
-    <div className="mb-8">
-      <div className="overflow-hidden rounded-xl">
-        <div className="flex transition-transform duration-1000 ease-in-out" style={{ transform: `translateX(-${idx * 100}%)` }}>
-          {plans.map((p) => (
-            <div key={p.id} className="w-full shrink-0 px-0.5 flex justify-center">
-              <Card
-                className="p-6 border-none text-white text-center rounded-2xl shadow-lg w-full max-w-[260px] aspect-square flex flex-col items-center justify-center"
-                style={{ background: p.cor_fundo_2 ? `linear-gradient(135deg, ${p.cor_fundo}, ${p.cor_fundo_2})` : p.cor_fundo }}
-              >
-                <p className="font-extrabold uppercase tracking-wide text-lg">{p.nome}</p>
-                <div className="mt-4">
-                  <p className="text-xs opacity-90 uppercase tracking-wide">1° Mês</p>
-                  <p className="text-2xl font-extrabold">{formatBRL(p.preco_primeiro_mes)}</p>
-                </div>
-                <div className="mt-4">
-                  <p className="text-xs opacity-90 uppercase tracking-wide">A partir do 2° Mês</p>
-                  <p className="text-2xl font-extrabold">{formatBRL(p.preco_demais_meses)}</p>
-                </div>
-              </Card>
-            </div>
-          ))}
-        </div>
-      </div>
-      {plans.length > 1 && (
-        <div className="flex justify-center gap-1.5 mt-2">
-          {plans.map((p, i) => (
-            <button key={p.id} onClick={() => setIdx(i)} aria-label={`Ver ${p.nome}`}
-              className={`h-1.5 rounded-full transition-all ${i === idx ? "w-4 bg-primary" : "w-1.5 bg-muted-foreground/30"}`} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Card com o progresso do checklist diário do próprio funcionário, com atalho
+// Linha com o progresso do checklist diário do próprio funcionário, com atalho
 // direto pra tela /checklist.
-function ChecklistCard() {
+function ChecklistRow() {
   const checklistFn = useServerFn(getMyChecklistToday);
   const checklistQ = useQuery({ queryKey: ["my-checklist-today"], queryFn: () => checklistFn({}) });
   const items = (checklistQ.data?.items ?? []) as Array<{ id: string; tipo: "binario" | "meta"; meta_padrao: number | null }>;
@@ -149,18 +94,30 @@ function ChecklistCard() {
   const doneCount = items.filter(isDone).length;
 
   return (
-    <Card className="p-4 mb-8">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <ListChecks className="h-5 w-5 text-primary" />
-          <span className="text-sm font-medium">Check-list de hoje</span>
-        </div>
-        <span className="text-sm text-muted-foreground">{doneCount} de {items.length} feitos</span>
-      </div>
-      <Link to="/checklist">
-        <Button size="sm" variant="outline" className="w-full mt-3">Ver checklist</Button>
-      </Link>
-    </Card>
+    <LinkRow to="/checklist" icon={ListChecks} title="Check-list de hoje">
+      <span className="text-sm tabular-nums text-muted-foreground">{doneCount} de {items.length} feitos</span>
+    </LinkRow>
+  );
+}
+
+// Linha clicável de um Panel, com seta à direita.
+function LinkRow({ to, search, icon: Icon, title, hint, children }: {
+  to: string; search?: Record<string, string>; icon: typeof ListChecks; title: string; hint?: string; children?: ReactNode;
+}) {
+  return (
+    <Link
+      to={to}
+      search={search as never}
+      className="flex items-center gap-3 border-t border-[#eef1ef] px-4 py-3 transition-colors hover:bg-accent/60 focus-visible:bg-accent focus-visible:outline-none"
+    >
+      <Icon className="h-4 w-4 shrink-0 text-primary" />
+      <span className="min-w-0 flex-1">
+        <span className="block font-medium">{title}</span>
+        {hint && <span className="block text-[12.5px] text-muted-foreground">{hint}</span>}
+      </span>
+      {children}
+      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+    </Link>
   );
 }
 
@@ -184,7 +141,7 @@ function Home() {
   const ranking = (rankingQ.data ?? []) as { id: string }[];
   const minhaPosicao = ranking.findIndex((r) => r.id === meQ.data?.userId);
 
-  // ---- Card "Vamos testar seu atendimento?" ----
+  // ---- "Treinar no simulador": sorteia um perfil de cliente ----
   const profilesFn = useServerFn(listClientProfilesForTraining);
   const profilesQ = useQuery({ queryKey: ["client_profiles", "training"], queryFn: () => profilesFn() });
   const [desafio, setDesafio] = useState<any>(null);
@@ -195,69 +152,104 @@ function Home() {
     setDesafio(profiles[Math.floor(Math.random() * profiles.length)]);
   };
 
+  const nome = (meQ.data as any)?.profile?.display_name || (meQ.data as any)?.email?.split("@")[0] || "";
+  const openSearch = () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true, metaKey: true }));
+
   return (
-    <div className="p-6 lg:p-10 max-w-4xl mx-auto">
-      <p className="text-sm text-muted-foreground mb-1">
-        Olá, {(meQ.data as any)?.profile?.display_name || (meQ.data as any)?.email?.split("@")[0] || ""} 👋
-      </p>
-      <Card
-        className="p-6 mb-8 border-none"
-        style={{
-          background: heroMessage
-            ? (heroMessage.cor_fundo_2 ? `linear-gradient(135deg, ${heroMessage.cor_fundo}, ${heroMessage.cor_fundo_2})` : heroMessage.cor_fundo)
-            : "hsl(var(--muted))",
-          fontFamily: heroMessage ? HOME_FONT_FAMILY[heroMessage.fonte] : undefined,
-        }}
-      >
-        <h1 className="text-2xl font-semibold">{heroMessage?.titulo ?? "Tudo o que você precisa, num só lugar"}</h1>
-        <p className="text-muted-foreground mt-1">
-          {heroMessage?.subtitulo ?? "Scripts, simulados e informações de atendimento pra sua equipe."}
-        </p>
-      </Card>
-
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">Atalhos</p>
-      <section className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
-        {shortcuts.map((s) => (
-          <Link key={s.route} to={s.route}>
-            <Card
-              className="p-4 h-full flex items-center gap-3 border-none text-white shadow-[0_2px_6px_rgba(0,0,0,0.15),inset_0_1px_0_rgba(255,255,255,0.3)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.35)] hover:-translate-y-0.5 transition-all"
-              style={{ background: s.gradient }}
-            >
-              <s.icon className="h-5 w-5 shrink-0" />
-              <span className="font-medium text-sm">{s.title}</span>
-            </Card>
-          </Link>
-        ))}
-      </section>
-
-      <ChecklistCard />
-
-      <Card className="p-5 mb-8 flex items-center justify-between gap-3 bg-primary/5 border-primary/20">
-        <div>
-          <p className="font-medium">Vamos testar seu atendimento no simulador?</p>
-          <p className="text-sm text-muted-foreground mt-0.5">A IA sorteia um cliente pra você treinar agora.</p>
+    <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-5 sm:px-5 lg:py-7">
+      <div>
+        <h1 className="text-xl font-semibold tracking-tight">{nome ? `Olá, ${nome}` : "Olá"}</h1>
+        {/* Mensagem do dia: cores e fonte escolhidas pelo admin */}
+        <div
+          className="mt-3 rounded-[14px] border border-border px-5 py-4"
+          style={{
+            background: heroMessage
+              ? (heroMessage.cor_fundo_2 ? `linear-gradient(135deg, ${heroMessage.cor_fundo}, ${heroMessage.cor_fundo_2})` : heroMessage.cor_fundo)
+              : "var(--color-card)",
+            fontFamily: heroMessage ? HOME_FONT_FAMILY[heroMessage.fonte] : undefined,
+          }}
+        >
+          <h2 className="text-lg font-semibold leading-snug [text-wrap:balance]">{heroMessage?.titulo ?? "Tudo o que você precisa, num só lugar"}</h2>
+          <p className="mt-0.5 text-sm opacity-80">
+            {heroMessage?.subtitulo ?? "Mensagens, preços e informações de atendimento para a equipe."}
+          </p>
         </div>
-        <Button onClick={sortearDesafio} disabled={(profilesQ.data ?? []).length === 0} className="shrink-0">Testar agora</Button>
-      </Card>
+      </div>
 
-      <Link to="/simulador-ia" search={{ modo: "problemas" }}>
-        <Card className="p-5 mb-8 flex items-center justify-between gap-3 hover:bg-muted/40 transition-colors">
-          <div>
-            <p className="font-medium">Treinar Solução de Problemas</p>
-            <p className="text-sm text-muted-foreground mt-0.5">Cenários de cancelamento, KYC e outras situações reais de suporte.</p>
-          </div>
-          <Button variant="outline" className="shrink-0">Ver cenários</Button>
-        </Card>
-      </Link>
+      <Panel title="Atendimento">
+        {workShortcuts.map((s) => (
+          <LinkRow key={s.route} to={s.route} icon={s.icon} title={s.title} hint={s.hint} />
+        ))}
+        <button
+          type="button"
+          onClick={openSearch}
+          className="flex w-full items-center gap-3 border-t border-[#eef1ef] px-4 py-3 text-left transition-colors hover:bg-accent/60 focus-visible:bg-accent focus-visible:outline-none"
+        >
+          <Search className="h-4 w-4 shrink-0 text-primary" />
+          <span className="min-w-0 flex-1">
+            <span className="block font-medium">Buscar qualquer coisa</span>
+            <span className="block text-[12.5px] text-muted-foreground">Especialidade, exame, mensagem, unidade</span>
+          </span>
+          <kbd className="rounded-md border border-border bg-background px-1.5 py-0.5 font-sans text-[11px] font-medium text-muted-foreground">Ctrl K</kbd>
+        </button>
+      </Panel>
 
-      <Card className="p-4 mb-8 flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">Seu ranking do mês</span>
-        <span className="text-lg font-semibold">
-          {minhaPosicao >= 0 ? `${minhaPosicao + 1}º lugar` : "Simule pra entrar no ranking"}
-        </span>
-      </Card>
+      <PromoPlansPanel />
 
-      <PromoPlansCarousel />
+      <div className="grid items-start gap-4 md:grid-cols-2">
+        <Panel title="Seu dia">
+          <ChecklistRow />
+          <LinkRow to="/ranking" icon={Trophy} title="Ranking do mês">
+            <span className="text-sm font-semibold tabular-nums">
+              {minhaPosicao >= 0 ? `${minhaPosicao + 1}º lugar` : <span className="font-normal text-muted-foreground">Simule para entrar</span>}
+            </span>
+          </LinkRow>
+          <PanelRow className="py-3">
+            <Sparkles className="h-4 w-4 shrink-0 text-primary" />
+            <span className="min-w-0 flex-1">
+              <span className="block font-medium">Treinar no simulador</span>
+              <span className="block text-[12.5px] text-muted-foreground">A IA sorteia um cliente para você.</span>
+            </span>
+            <Button size="sm" variant="outline" onClick={sortearDesafio} disabled={(profilesQ.data ?? []).length === 0} className="font-semibold text-primary">
+              Testar agora
+            </Button>
+          </PanelRow>
+          <LinkRow to="/simulador-ia" search={{ modo: "problemas" }} icon={LifeBuoy} title="Solução de problemas" hint="Cancelamento, KYC e outros casos reais" />
+        </Panel>
+
+        <Panel title="Na tabela da Amor Saúde">
+          {[
+            { label: "Consultas", n: pQ.data?.length },
+            { label: "Exames", n: eQ.data?.length },
+            { label: "Procedimentos odontológicos", n: prQ.data?.length },
+          ].map((r) => (
+            <Link
+              key={r.label}
+              to="/precos"
+              className="flex items-center gap-3 border-t border-[#eef1ef] px-4 py-3 transition-colors hover:bg-accent/60 focus-visible:bg-accent focus-visible:outline-none"
+            >
+              <span className="flex-1">{r.label}</span>
+              <span className="text-base font-semibold tabular-nums">{r.n ?? "–"}</span>
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+            </Link>
+          ))}
+        </Panel>
+      </div>
+
+      <Panel title="Treino e equipe">
+        <div className="grid grid-cols-2 sm:grid-cols-4">
+          {trainingShortcuts.map((s) => (
+            <Link
+              key={s.route}
+              to={s.route}
+              className="flex items-center gap-2.5 border-t border-[#eef1ef] px-4 py-3 text-sm font-medium transition-colors hover:bg-accent/60 focus-visible:bg-accent focus-visible:outline-none sm:border-l sm:first:border-l-0"
+            >
+              <s.icon className="h-4 w-4 shrink-0 text-primary" />
+              {s.title}
+            </Link>
+          ))}
+        </div>
+      </Panel>
 
       <Dialog open={!!desafio} onOpenChange={(v) => !v && setDesafio(null)}>
         <DialogContent className="max-w-sm text-center">
@@ -282,25 +274,6 @@ function Home() {
         </DialogContent>
       </Dialog>
 
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">Informações essenciais sobre a Amor Saúde</p>
-      <Card className="p-4 border-none" style={{ background: "linear-gradient(135deg, #FAFAFA, #DCEEFB)" }}>
-        <table className="w-full text-sm">
-          <tbody>
-            <tr className="border-b border-border/60">
-              <td className="py-3 text-muted-foreground">Consultas</td>
-              <td className="py-3 text-right text-2xl font-bold text-sky-700">{pQ.data?.length ?? 0}</td>
-            </tr>
-            <tr className="border-b border-border/60">
-              <td className="py-3 text-muted-foreground">Exames</td>
-              <td className="py-3 text-right text-2xl font-bold text-sky-700">{eQ.data?.length ?? 0}</td>
-            </tr>
-            <tr>
-              <td className="py-3 text-muted-foreground">Procedimentos odontológicos</td>
-              <td className="py-3 text-right text-2xl font-bold text-sky-700">{prQ.data?.length ?? 0}</td>
-            </tr>
-          </tbody>
-        </table>
-      </Card>
     </div>
   );
 }

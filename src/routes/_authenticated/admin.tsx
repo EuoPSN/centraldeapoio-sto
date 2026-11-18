@@ -25,7 +25,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Database, LayoutDashboard, Pencil, Plus, RefreshCw, Settings, Sparkles, Trash2, UserPlus, Users, ShieldCheck } from "lucide-react";
+import { BadgeInfo, Database, LayoutDashboard, Pencil, Plus, RefreshCw, Settings, Sparkles, Trash2, UserPlus, Users, ShieldCheck } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { simulatorChat } from "@/lib/simulator.chat.functions";
 import { PricingTab } from "@/components/admin/PricingTab";
@@ -121,12 +121,10 @@ organizacao: AdminSectionsTab,
     );
 
   return (
-    <div className="p-6 lg:p-10 max-w-7xl mx-auto">
-      <header className="mb-6">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Settings className="h-7 w-7 text-primary" /> Painel Administrativo
-        </h1>
-        <p className="text-muted-foreground mt-1">Gestão de conteúdo, usuários e IA.</p>
+    <div className="mx-auto w-full max-w-7xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7">
+      <header className="mb-5">
+        <h1 className="text-xl font-semibold tracking-tight">Painel Administrativo</h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">Gestão de conteúdo, usuários e IA.</p>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6 items-start">
@@ -145,10 +143,12 @@ organizacao: AdminSectionsTab,
                 <p className="px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">{group}</p>
                 <div className="space-y-0.5">
                   {list.map((s) => {
-                    const Icon = getIcon(s.icon);
+                    // "Aparência" virou só "Identidade" no redesign (temas voltam numa atualização futura).
+                    const isIdent = s.tab_key === "appearance";
+                    const Icon = isIdent ? BadgeInfo : getIcon(s.icon);
                     return (
                       <button key={s.tab_key} onClick={() => setActive(s.tab_key)} className={navButtonClass(s.tab_key)}>
-                        <Icon className="h-4 w-4" /> {s.label}
+                        <Icon className="h-4 w-4" /> {isIdent ? "Identidade" : s.label}
                       </button>
                     );
                   })}

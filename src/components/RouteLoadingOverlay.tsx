@@ -22,10 +22,10 @@ export function RouteLoadingOverlay() {
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/60 backdrop-blur-sm">
-      <div className="flex items-center gap-3 rounded-lg bg-primary text-primary-foreground px-6 py-4 shadow-lg">
-        <Loader2 className="h-5 w-5 animate-spin" />
-        <span className="font-medium">Aguarde, carregando...</span>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/70">
+      <div role="status" className="flex items-center gap-2.5 rounded-xl border border-border bg-card px-5 py-3.5 text-sm">
+        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+        <span className="font-medium">Carregando…</span>
       </div>
     </div>
   );

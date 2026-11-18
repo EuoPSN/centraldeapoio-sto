@@ -16,12 +16,12 @@ interface Entry { id: string; title: string; summary: string; published: boolean
 interface KnowledgeRow { id: string; kind: KnowledgeKind; title: string; summary: string | null; content: string; }
 
 const KIND_META: Record<KnowledgeKind, { label: string; icon: typeof Shield; color: string }> = {
-  regra:           { label: "Regras",           icon: Shield,        color: "text-rose-600" },
-  procedimento:    { label: "Procedimentos",    icon: ListChecks,    color: "text-blue-600" },
-  artigo:          { label: "Artigos",          icon: FileText,      color: "text-emerald-600" },
-  conversa_modelo: { label: "Conversas Modelo", icon: MessagesSquare,color: "text-amber-600" },
-  documento:       { label: "Documentos",       icon: Paperclip,     color: "text-purple-600" },
-  treinamento:     { label: "Treinamentos",     icon: GraduationCap, color: "text-indigo-600" },
+  regra:           { label: "Regras",           icon: Shield,        color: "text-primary" },
+  procedimento:    { label: "Procedimentos",    icon: ListChecks,    color: "text-primary" },
+  artigo:          { label: "Artigos",          icon: FileText,      color: "text-primary" },
+  conversa_modelo: { label: "Conversas Modelo", icon: MessagesSquare,color: "text-primary" },
+  documento:       { label: "Documentos",       icon: Paperclip,     color: "text-primary" },
+  treinamento:     { label: "Treinamentos",     icon: GraduationCap, color: "text-primary" },
 };
 
 export function ChangelogWidget() {

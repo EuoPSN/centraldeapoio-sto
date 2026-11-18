@@ -64,7 +64,7 @@ function Page() {
 
   if (!selectedMotor) {
     return (
-      <div className="p-6 lg:p-10 max-w-4xl mx-auto space-y-6">
+      <div className="mx-auto w-full max-w-4xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7 space-y-6">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Zap className="h-6 w-6 text-primary" /> Motor de Decisão
@@ -96,7 +96,7 @@ function Page() {
   }
 
   return (
-    <div className="p-6 lg:p-10 max-w-3xl mx-auto space-y-4">
+    <div className="mx-auto w-full max-w-3xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7 space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold flex items-center gap-2">

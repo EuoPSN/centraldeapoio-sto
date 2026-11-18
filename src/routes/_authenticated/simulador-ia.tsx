@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Pill } from "@/components/Pill";
 import { useState, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
@@ -10,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { SimuladorIA, DIFFICULTY_COLORS, DIFFICULTY_LABELS } from "@/components/SimuladorIA";
 import { SimuladorProblema } from "@/components/SimuladorProblema";
 import { Badge } from "@/components/ui/badge";
-import { Bot, GraduationCap, Wrench } from "lucide-react";
+import { GraduationCap, Wrench } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/simulador-ia")({
   component: Page,
@@ -25,23 +26,21 @@ function Page() {
   const [modo, setModo] = useState<"atendimentos" | "problemas">(modoInicial === "problemas" ? "problemas" : "atendimentos");
 
   return (
-    <div className="p-6 lg:p-10 max-w-7xl mx-auto">
-      <header className="mb-6">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Bot className="h-7 w-7 text-primary" /> Simulador IA
-        </h1>
-        <p className="text-muted-foreground mt-1">
+    <div className="mx-auto w-full max-w-7xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7">
+      <header className="mb-5">
+        <h1 className="text-xl font-semibold tracking-tight">Simulador IA</h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">
           Treine o atendimento conversando com clientes virtuais gerados por IA.
         </p>
       </header>
 
       <div className="flex gap-2 mb-6">
-        <Button variant={modo === "atendimentos" ? "default" : "outline"} onClick={() => setModo("atendimentos")} className="gap-2">
+        <Pill active={modo === "atendimentos"} onClick={() => setModo("atendimentos")} className="gap-2">
           <GraduationCap className="h-4 w-4" /> Atendimentos
-        </Button>
-        <Button variant={modo === "problemas" ? "default" : "outline"} onClick={() => setModo("problemas")} className="gap-2">
+        </Pill>
+        <Pill active={modo === "problemas"} onClick={() => setModo("problemas")} className="gap-2">
           <Wrench className="h-4 w-4" /> Solução de Problemas
-        </Button>
+        </Pill>
       </div>
 
       {modo === "atendimentos" ? <AtendimentosTab perfilInicial={perfil} /> : <ProblemasTab />}
@@ -92,15 +91,15 @@ function AtendimentosTab({ perfilInicial }: { perfilInicial?: string }) {
             </h3>
             {categorias.length > 0 && (
               <div className="flex flex-wrap gap-1 px-2 mb-2">
-                <Button size="sm" variant={activeCategoria === "todos" ? "default" : "outline"}
+                <Pill active={activeCategoria === "todos"}
                   onClick={() => setActiveCategoria("todos")} className="h-7 text-xs">
                   Todas
-                </Button>
+                </Pill>
                 {categorias.map((c) => (
-                  <Button key={c.id} size="sm" variant={activeCategoria === c.id ? "default" : "outline"}
+                  <Pill key={c.id} active={activeCategoria === c.id}
                     onClick={() => setActiveCategoria(c.id)} className="h-7 text-xs">
                     {c.name}
-                  </Button>
+                  </Pill>
                 ))}
               </div>
             )}
@@ -178,15 +177,15 @@ function ProblemasTab() {
             </h3>
             {categorias.length > 0 && (
               <div className="flex flex-wrap gap-1 px-2 mb-2">
-                <Button size="sm" variant={activeCategoria === "todos" ? "default" : "outline"}
+                <Pill active={activeCategoria === "todos"}
                   onClick={() => setActiveCategoria("todos")} className="h-7 text-xs">
                   Todas
-                </Button>
+                </Pill>
                 {categorias.map((c) => (
-                  <Button key={c.id} size="sm" variant={activeCategoria === c.id ? "default" : "outline"}
+                  <Pill key={c.id} active={activeCategoria === c.id}
                     onClick={() => setActiveCategoria(c.id)} className="h-7 text-xs">
                     {c.name}
-                  </Button>
+                  </Pill>
                 ))}
               </div>
             )}

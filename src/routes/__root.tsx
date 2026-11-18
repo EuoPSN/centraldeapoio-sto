@@ -13,14 +13,14 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { ThemeProvider } from "@/components/ThemeProvider";
+import { AppSettingsEffects } from "@/components/AppSettingsEffects";
 import { RouteLoadingOverlay } from "@/components/RouteLoadingOverlay";
 
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-primary">404</h1>
+        <h1 className="text-5xl font-bold tracking-tight text-primary">404</h1>
         <h2 className="mt-4 text-xl font-semibold">Página não encontrada</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           O endereço que você acessou não existe ou foi movido.
@@ -101,7 +101,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: appCss },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
+        // Numeral condensado da etiqueta de preço (o resto usa a fonte do sistema)
+        href: "https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&display=swap",
       },
       {
         rel: "stylesheet",
@@ -146,11 +147,10 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <Outlet />
-        <RouteLoadingOverlay />
-        <Toaster richColors closeButton position="top-right" />
-      </ThemeProvider>
+      <AppSettingsEffects />
+      <Outlet />
+      <RouteLoadingOverlay />
+      <Toaster richColors closeButton position="top-right" />
     </QueryClientProvider>
   );
 }

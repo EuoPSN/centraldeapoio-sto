@@ -123,7 +123,11 @@ export function GlobalSearch() {
     <CommandDialog open={open} onOpenChange={setOpen}>
       <CommandInput placeholder="Buscar em scripts, conhecimento, preços, perfis, unidades..." />
       <CommandList>
-        <CommandEmpty>Nenhum resultado.</CommandEmpty>
+        <CommandEmpty>
+          {[messages, knowledge, pricing, unidades, exames, procedimentos].some((q) => q.isLoading)
+            ? "Carregando conteúdo…"
+            : "Nenhum resultado. Tente outra palavra."}
+        </CommandEmpty>
         {groups.map(({ key, heading, limit }) => {
           const list = items[key];
           if (list.length === 0) return null;

@@ -1,4 +1,5 @@
 import { useServerFn } from "@tanstack/react-start";
+import { Pill } from "@/components/Pill";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { listMessages, upsertMessage, deleteMessage } from "@/lib/messages.functions";
@@ -606,14 +607,14 @@ As etapas devem vir na ordem certa de uso. Sem markdown, sem texto fora do JSON.
                     </SelectContent>
                   </Select>
                 )}
-                <Button
-                  size="sm"
-                  variant={onlyNoSub ? "default" : "outline"}
+                <Pill
+                 
+                  active={onlyNoSub}
                   className="shrink-0"
                   onClick={() => setOnlyNoSub((v) => !v)}
                 >
                   Sem subcategoria ({noSubCount})
-                </Button>
+                </Pill>
               </div>
 
               {selectedIds.size > 0 && (
@@ -750,13 +751,13 @@ As etapas devem vir na ordem certa de uso. Sem markdown, sem texto fora do JSON.
           </p>
 
           <div className="flex gap-2 flex-wrap">
-            <Button size="sm" variant={flowCat === "geral" && !expandedParent ? "default" : "outline"}
-              onClick={() => { setFlowCat("geral"); setExpandedParent(null); setAutoPreview(null); }}>Geral</Button>
+            <Pill active={flowCat === "geral" && !expandedParent}
+              onClick={() => { setFlowCat("geral"); setExpandedParent(null); setAutoPreview(null); }}>Geral</Pill>
             {parents.map((c) => {
               const hasKids = childrenOf(c.id).length > 0;
               const active = hasKids ? expandedParent === c.id : flowCat === c.id;
               return (
-                <Button key={c.id} size="sm" variant={active ? "default" : "outline"} onClick={() => selectFlowParent(c)}>{c.name}</Button>
+                <Pill key={c.id} active={active} onClick={() => selectFlowParent(c)}>{c.name}</Pill>
               );
             })}
           </div>
@@ -764,8 +765,8 @@ As etapas devem vir na ordem certa de uso. Sem markdown, sem texto fora do JSON.
           {expandedParent && childrenOf(expandedParent).length > 0 && (
             <div className="flex flex-wrap gap-2 pl-2 border-l-2 border-border">
               {childrenOf(expandedParent).map((c) => (
-                <Button key={c.id} size="sm" variant={flowCat === c.id ? "secondary" : "ghost"}
-                  onClick={() => { setFlowCat(c.id); setAutoPreview(null); }}>{c.name}</Button>
+                <Pill key={c.id} active={flowCat === c.id}
+                  onClick={() => { setFlowCat(c.id); setAutoPreview(null); }}>{c.name}</Pill>
               ))}
             </div>
           )}

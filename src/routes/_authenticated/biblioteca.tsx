@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Pill } from "@/components/Pill";
 import { useState, useMemo, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
@@ -40,12 +41,10 @@ function useReloadKeyOnTabReturn() {
 
 function Page() {
   return (
-    <div className="p-6 lg:p-10 max-w-7xl mx-auto">
-      <header className="mb-6">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <ImageIcon className="h-7 w-7 text-primary" /> Imagens
-        </h1>
-        <p className="text-muted-foreground mt-1">Biblioteca de imagens e PDFs pra uso no atendimento (exames, especialidades, planos...).</p>
+    <div className="mx-auto w-full max-w-7xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7">
+      <header className="mb-5">
+        <h1 className="text-xl font-semibold tracking-tight">Imagens</h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">Biblioteca de imagens e PDFs pra uso no atendimento (exames, especialidades, planos...).</p>
       </header>
 
       <Tabs defaultValue="imagens">
@@ -93,9 +92,9 @@ function ImagensSubPage() {
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4">
-        <Button size="sm" variant={activeFolder === "todas" ? "default" : "outline"} onClick={() => setActiveFolder("todas")}>Todas as pastas</Button>
+        <Pill active={activeFolder === "todas"} onClick={() => setActiveFolder("todas")}>Todas as pastas</Pill>
         {folders.map(([id, name]) => (
-          <Button key={id} size="sm" variant={activeFolder === id ? "default" : "outline"} onClick={() => setActiveFolder(id)}>{name}</Button>
+          <Pill key={id} active={activeFolder === id} onClick={() => setActiveFolder(id)}>{name}</Pill>
         ))}
       </div>
 
@@ -168,9 +167,9 @@ function PdfsSubPage() {
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4">
-        <Button size="sm" variant={activeFolder === "todas" ? "default" : "outline"} onClick={() => setActiveFolder("todas")}>Todas as pastas</Button>
+        <Pill active={activeFolder === "todas"} onClick={() => setActiveFolder("todas")}>Todas as pastas</Pill>
         {folders.map(([id, name]) => (
-          <Button key={id} size="sm" variant={activeFolder === id ? "default" : "outline"} onClick={() => setActiveFolder(id)}>{name}</Button>
+          <Pill key={id} active={activeFolder === id} onClick={() => setActiveFolder(id)}>{name}</Pill>
         ))}
       </div>
 

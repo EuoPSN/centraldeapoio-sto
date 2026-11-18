@@ -7,11 +7,12 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { useTheme } from "@/hooks/useTheme";
-import { THEMES, type ThemePreset } from "@/lib/themes";
-import { Check } from "lucide-react";
+import { Palette } from "lucide-react";
+
+// Temas de cores: removidos no redesign de 18/11/2026; voltam numa atualização
+// futura. As cores e o active_theme continuam salvos em app_settings (o
+// formulário reenvia os valores atuais sem mudança), mas não alteram o visual.
 
 
 interface Settings {
@@ -43,7 +44,7 @@ export function AppearanceTab() {
       active_theme: form!.active_theme,
     } }),
     onSuccess: () => {
-      toast.success("Aparência atualizada. Recarregue para ver as cores.");
+      toast.success("Identidade atualizada.");
       qc.invalidateQueries({ queryKey: ["app-settings"] });
       qc.invalidateQueries({ queryKey: ["app-settings-admin"] });
     },
@@ -54,14 +55,15 @@ export function AppearanceTab() {
 
   return (
     <div className="space-y-6">
-      <ThemeGallery
-        form={form}
-        onSaved={() => {
-          qc.invalidateQueries({ queryKey: ["app-settings"] });
-          qc.invalidateQueries({ queryKey: ["app-settings-admin"] });
-        }}
-        onLocalChange={(id) => setForm({ ...form, active_theme: id })}
-      />
+      <div className="flex items-start gap-3 rounded-xl border border-border bg-card p-4">
+        <Palette className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+        <div>
+          <p className="text-sm font-medium">Temas de cores voltam numa atualização futura</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Nesta versão a Central usa um visual único para todos. As cores salvas antes continuam guardadas, mas não mudam a aparência.
+          </p>
+        </div>
+      </div>
 
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
@@ -74,125 +76,10 @@ export function AppearanceTab() {
         <div><Label>URL da imagem de capa</Label><Input value={form.cover_url ?? ""} onChange={(e) => setForm({ ...form, cover_url: e.target.value || null })} /></div>
       </Card>
 
-      <Card className="p-5 space-y-3">
-        <h3 className="font-semibold">Tema & Cores</h3>
-        <div>
-          <Label>Tema ativo</Label>
-          <Select value={form.active_theme} onValueChange={(v) => setForm({ ...form, active_theme: v })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="corporate">Corporativo</SelectItem>
-              <SelectItem value="light">Claro</SelectItem>
-              <SelectItem value="dark">Escuro</SelectItem>
-              <SelectItem value="custom">Personalizado</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <ColorField label="Primária" value={form.primary_color} onChange={(v) => setForm({ ...form, primary_color: v })} />
-          <ColorField label="Secundária" value={form.secondary_color} onChange={(v) => setForm({ ...form, secondary_color: v })} />
-          <ColorField label="Destaque" value={form.accent_color} onChange={(v) => setForm({ ...form, accent_color: v })} />
-          <ColorField label="Fundo" value={form.background_color} onChange={(v) => setForm({ ...form, background_color: v })} />
-        </div>
-        <p className="text-xs text-muted-foreground">Use formato hex (#00A19A). Para tema "Personalizado" as cores acima sobrescrevem o padrão.</p>
-      </Card>
-
       <div className="lg:col-span-2 flex justify-end">
-        <Button onClick={() => mut.mutate()} disabled={mut.isPending}>Salvar aparência</Button>
+        <Button onClick={() => mut.mutate()} disabled={mut.isPending}>Salvar identidade</Button>
       </div>
     </div>
-    </div>
-  );
-}
-
-
-function ThemeGallery({ form, onSaved, onLocalChange }: {
-  form: Settings;
-  onSaved: () => void;
-  onLocalChange: (id: string) => void;
-}) {
-  const { themeId, setTheme } = useTheme();
-  const update = useServerFn(updateAppSettings);
-
-  const save = useMutation({
-    mutationFn: (id: string) => update({ data: {
-      platform_name: form.platform_name, tagline: form.tagline,
-      logo_url: form.logo_url, favicon_url: form.favicon_url, cover_url: form.cover_url,
-      primary_color: form.primary_color, secondary_color: form.secondary_color,
-      accent_color: form.accent_color, background_color: form.background_color,
-      active_theme: id,
-    } }),
-    onSuccess: () => { toast.success("Tema aplicado para todos os usuários."); onSaved(); },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao salvar tema"),
-  });
-
-  const activeId = form.active_theme && THEMES.some((t) => t.id === form.active_theme)
-    ? form.active_theme
-    : themeId;
-
-  const apply = (theme: ThemePreset) => {
-    setTheme(theme.id);
-    onLocalChange(theme.id);
-    save.mutate(theme.id);
-  };
-
-  return (
-    <Card className="p-5 space-y-4">
-      <div>
-        <h3 className="font-semibold">Temas de cores</h3>
-        <p className="text-sm text-muted-foreground">Escolha uma paleta pronta. O tema selecionado vale para todos os usuários.</p>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-        {THEMES.map((theme) => {
-          const isActive = theme.id === activeId;
-          return (
-            <div
-              key={theme.id}
-              className={`rounded-xl border p-4 space-y-3 transition-all duration-200 ${isActive ? "border-primary ring-2 ring-primary/30 bg-primary/5" : "border-border"}`}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="font-medium">{theme.name}</p>
-                  <p className="text-xs text-muted-foreground">{theme.description}</p>
-                </div>
-                {isActive && <Check className="h-4 w-4 text-primary shrink-0" />}
-              </div>
-              <div className="flex gap-2">
-                {[theme.primary, theme.accent, theme.sidebar].map((c, i) => (
-                  <span
-                    key={i}
-                    className="h-7 w-7 rounded-full border shadow-sm"
-                    style={{ backgroundColor: `hsl(${c})` }}
-                  />
-                ))}
-              </div>
-              <Button
-                variant={isActive ? "secondary" : "default"}
-                size="sm"
-                className="w-full"
-                disabled={save.isPending}
-                onClick={() => apply(theme)}
-              >
-                {isActive ? "Tema ativo" : "Aplicar"}
-              </Button>
-            </div>
-          );
-        })}
-      </div>
-    </Card>
-  );
-}
-
-
-
-function ColorField({ label, value, onChange }: { label: string; value: string | null; onChange: (v: string | null) => void }) {
-  return (
-    <div>
-      <Label>{label}</Label>
-      <div className="flex gap-2">
-        <input type="color" value={value ?? "#00A19A"} onChange={(e) => onChange(e.target.value)} className="h-9 w-12 rounded border" />
-        <Input value={value ?? ""} placeholder="auto" onChange={(e) => onChange(e.target.value || null)} className="flex-1" />
-      </div>
     </div>
   );
 }

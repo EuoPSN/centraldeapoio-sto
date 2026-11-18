@@ -1,4 +1,5 @@
 import { useServerFn } from "@tanstack/react-start";
+import { Pill } from "@/components/Pill";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { listImageLibrary, upsertImageLibraryItem, deleteImageLibraryItem } from "@/lib/imagelibrary.functions";
@@ -87,9 +88,9 @@ export function ImageLibraryTab() {
         </div>
 
         <div className="flex gap-2 flex-wrap p-4 pb-0">
-          <Button size="sm" variant={activeFolder === "todas" ? "default" : "outline"} onClick={() => setActiveFolder("todas")}>Todas</Button>
+          <Pill active={activeFolder === "todas"} onClick={() => setActiveFolder("todas")}>Todas</Pill>
           {folders.map((f) => (
-            <Button key={f.id} size="sm" variant={activeFolder === f.id ? "default" : "outline"} onClick={() => setActiveFolder(f.id)}>{f.name}</Button>
+            <Pill key={f.id} active={activeFolder === f.id} onClick={() => setActiveFolder(f.id)}>{f.name}</Pill>
           ))}
           {folders.length === 0 && (
             <p className="text-xs text-muted-foreground self-center">Nenhuma pasta ainda — crie em Admin → Categorias → escopo "Biblioteca de Imagens".</p>

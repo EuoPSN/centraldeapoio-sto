@@ -78,7 +78,7 @@ function Page() {
   }), { leads_entrados: 0, qualificados: 0, vendas_fechadas: 0, sem_interesse: 0, nao_responde: 0, desqualificados: 0 });
 
   return (
-    <div className="space-y-6 p-6 lg:p-10 max-w-5xl mx-auto">
+    <div className="space-y-6 mx-auto w-full max-w-5xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold">Controle de Leads</h1>

@@ -46,10 +46,10 @@ export function ContentList({ title, subtitle, items, loading }: {
   }, [filtered]);
 
   return (
-    <div className="p-6 lg:p-10 max-w-6xl mx-auto">
-      <header className="mb-6">
-        <h1 className="text-3xl font-bold">{title}</h1>
-        <p className="text-muted-foreground mt-1">{subtitle}</p>
+    <div className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7">
+      <header className="mb-5">
+        <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>
       </header>
 
       <div className="relative mb-6 max-w-md">
