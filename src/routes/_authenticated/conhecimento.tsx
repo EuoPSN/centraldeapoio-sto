@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Pill } from "@/components/Pill";
 import { useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
@@ -11,19 +12,19 @@ import { Button } from "@/components/ui/button";
 import { Markdown } from "@/components/Markdown";
 import { SkeletonCard } from "@/components/ui/skeleton-card";
 import {
-  BookOpen, Search, Shield, ListChecks, FileText, MessagesSquare, Paperclip, GraduationCap,
+  Search, Shield, ListChecks, FileText, MessagesSquare, Paperclip, GraduationCap,
   Download, ExternalLink,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/conhecimento")({ component: Page });
 
 const KIND_META: Record<KnowledgeKind, { label: string; icon: typeof Shield; color: string }> = {
-  regra:           { label: "Regras",           icon: Shield,        color: "text-rose-600" },
-  procedimento:    { label: "Procedimentos",    icon: ListChecks,    color: "text-blue-600" },
-  artigo:          { label: "Artigos",          icon: FileText,      color: "text-emerald-600" },
-  conversa_modelo: { label: "Conversas Modelo", icon: MessagesSquare,color: "text-amber-600" },
-  documento:       { label: "Documentos",       icon: Paperclip,     color: "text-purple-600" },
-  treinamento:     { label: "Treinamentos",     icon: GraduationCap, color: "text-indigo-600" },
+  regra:           { label: "Regras",           icon: Shield,        color: "text-primary" },
+  procedimento:    { label: "Procedimentos",    icon: ListChecks,    color: "text-primary" },
+  artigo:          { label: "Artigos",          icon: FileText,      color: "text-primary" },
+  conversa_modelo: { label: "Conversas Modelo", icon: MessagesSquare,color: "text-primary" },
+  documento:       { label: "Documentos",       icon: Paperclip,     color: "text-primary" },
+  treinamento:     { label: "Treinamentos",     icon: GraduationCap, color: "text-primary" },
 };
 
 function Page() {
@@ -33,12 +34,10 @@ function Page() {
     return (KNOWLEDGE_KINDS as readonly string[]).includes(h) ? h : "regra";
   });
   return (
-    <div className="p-6 lg:p-10 max-w-7xl mx-auto">
-      <header className="mb-6">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <BookOpen className="h-7 w-7 text-primary" /> Base de Conhecimento IA
-        </h1>
-        <p className="text-muted-foreground mt-1">
+    <div className="mx-auto w-full max-w-7xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7">
+      <header className="mb-5">
+        <h1 className="text-xl font-semibold tracking-tight">Base de Conhecimento IA</h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">
           Tudo que está aqui alimenta as respostas da Assistente. Organizado por tipo para facilitar a consulta.
         </p>
       </header>
@@ -50,7 +49,7 @@ function Page() {
             const Icon = m.icon;
             return (
               <TabsTrigger key={k} value={k} className="gap-1.5">
-                <Icon className={`h-3.5 w-3.5 ${m.color}`} /> {m.label}
+                <Icon className="h-3.5 w-3.5" /> {m.label}
               </TabsTrigger>
             );
           })}
@@ -117,13 +116,13 @@ function KindList({ kind }: { kind: KnowledgeKind }) {
 
       {categories.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-4">
-          <Button size="sm" variant={activeCat === "todos" ? "default" : "outline"} onClick={() => setActiveCat("todos")}>
+          <Pill active={activeCat === "todos"} onClick={() => setActiveCat("todos")}>
             Todas
-          </Button>
+          </Pill>
           {categories.map(([id, name]) => (
-            <Button key={id} size="sm" variant={activeCat === id ? "default" : "outline"} onClick={() => setActiveCat(id)}>
+            <Pill key={id} active={activeCat === id} onClick={() => setActiveCat(id)}>
               {name}
-            </Button>
+            </Pill>
           ))}
         </div>
       )}

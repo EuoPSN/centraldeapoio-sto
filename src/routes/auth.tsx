@@ -83,7 +83,7 @@ function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-secondary/40 to-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
           <AppLogo size="xl" />
@@ -92,7 +92,7 @@ function AuthPage() {
           </p>
         </div>
 
-        <Card className="p-6 shadow-[var(--shadow-elevated)]">
+        <Card className="p-6">
           <Tabs value={mode} onValueChange={(v) => setMode(v as "signin" | "signup")}>
             <TabsList className="grid w-full grid-cols-2 mb-4">
               <TabsTrigger value="signin">Entrar</TabsTrigger>

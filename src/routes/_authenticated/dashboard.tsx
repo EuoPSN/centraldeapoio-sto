@@ -62,7 +62,7 @@ function DashboardPage() {
   const d = q.data as any;
 
   return (
-    <div className="space-y-6 p-6 lg:p-10 max-w-6xl mx-auto">
+    <div className="space-y-6 mx-auto w-full max-w-6xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <BarChart2 className="h-6 w-6 text-primary" /> Dashboard Operacional

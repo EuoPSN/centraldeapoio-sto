@@ -172,7 +172,7 @@ function Page() {
   };
 
   return (
-    <div className="space-y-6 p-6 lg:p-10 max-w-4xl mx-auto">
+    <div className="space-y-6 mx-auto w-full max-w-4xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">

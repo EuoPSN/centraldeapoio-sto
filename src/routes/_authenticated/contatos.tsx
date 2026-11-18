@@ -36,21 +36,21 @@ function formatarParaCopiar(r: ContatoRow) {
 
 function ContatoCard({ r }: { r: ContatoRow }) {
   return (
-    <Card className="p-5">
-      <div className="flex items-start justify-between gap-2 mb-3">
-        <h3 className="font-semibold text-lg">{r.nome_regiao}</h3>
+    <Card className="px-4 py-3">
+      <div className="mb-2 flex items-start justify-between gap-3">
+        <h3 className="pt-1.5 text-[15px] font-semibold leading-snug">{r.nome_regiao}</h3>
         <CopyButton text={formatarParaCopiar(r)} />
       </div>
-      <div className="space-y-2 text-base">
+      <div className="space-y-1.5 text-sm">
         {(r.endereco || r.numero) && (
           <p className="flex items-start gap-2">
-            <MapPin className="h-4 w-4 shrink-0 mt-1 text-primary" />
+            <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
             <span><span className="font-medium">Endereço:</span> {[r.endereco, r.numero ? `nº ${r.numero}` : null].filter(Boolean).join(", ")}</span>
           </p>
         )}
         {r.ponto_referencia && (
           <p className="flex items-start gap-2">
-            <Landmark className="h-4 w-4 shrink-0 mt-1 text-primary" />
+            <Landmark className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
             <span><span className="font-medium">Ponto de referência:</span> {r.ponto_referencia}</span>
           </p>
         )}
@@ -72,12 +72,12 @@ function ListaComDestaque({ items }: { items: ContatoRow[] }) {
 
   return (
     <Tabs value={modo} onValueChange={(v) => setModo(v as "principais" | "outras")}>
-      <TabsList className="mb-4">
+      <TabsList className="mb-3 ml-1 border-l border-border pl-3">
         <TabsTrigger value="principais">Principais ({principais.length})</TabsTrigger>
         <TabsTrigger value="outras">Outras regiões ({outras.length})</TabsTrigger>
       </TabsList>
       <TabsContent value={modo}>
-        {visiveis.length === 0 && <Card className="p-10 text-center"><p className="text-muted-foreground">Nada cadastrado aqui ainda.</p></Card>}
+        {visiveis.length === 0 && <Card className="px-5 py-8 text-center"><p className="text-sm text-muted-foreground">Nada cadastrado aqui ainda.</p></Card>}
         <div className="grid gap-3 sm:grid-cols-2">
           {visiveis.map((r) => <ContatoCard key={r.id} r={r} />)}
         </div>
@@ -92,19 +92,17 @@ function Page() {
   const rows = (q.data ?? []) as ContatoRow[];
 
   return (
-    <div className="p-6 lg:p-10 max-w-4xl mx-auto">
-      <header className="mb-6">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Phone className="h-7 w-7 text-primary" /> Contatos e Endereços
-        </h1>
-        <p className="text-muted-foreground mt-1">Endereços e telefones daqui e de outras regiões.</p>
+    <div className="mx-auto w-full max-w-4xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7">
+      <header className="mb-5">
+        <h1 className="text-xl font-semibold tracking-tight">Contatos e Endereços</h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">Endereços e telefones daqui e de outras regiões.</p>
       </header>
 
       {q.isLoading && <div className="grid gap-4 sm:grid-cols-2"><SkeletonCard /><SkeletonCard /></div>}
 
       {!q.isLoading && (
         <Tabs defaultValue="cartao_de_todos">
-          <TabsList className="mb-6">
+          <TabsList className="mb-3">
             {TIPOS.map((t) => <TabsTrigger key={t.value} value={t.value}>{t.label}</TabsTrigger>)}
           </TabsList>
           {TIPOS.map((t) => {
@@ -115,7 +113,7 @@ function Page() {
                   <ListaComDestaque items={items} />
                 ) : (
                   <>
-                    {items.length === 0 && <Card className="p-10 text-center"><p className="text-muted-foreground">Nenhum endereço cadastrado ainda.</p></Card>}
+                    {items.length === 0 && <Card className="px-5 py-8 text-center"><p className="text-sm text-muted-foreground">Nenhum endereço cadastrado ainda.</p></Card>}
                     <div className="grid gap-3 sm:grid-cols-2">
                       {items.map((r) => <ContatoCard key={r.id} r={r} />)}
                     </div>

@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PenLine, Copy, Trash2, Pencil, Sparkles } from "lucide-react";
+import { Copy, Trash2, Pencil, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/criar-script")({
@@ -110,12 +110,10 @@ function CriarScriptPage() {
   };
 
   return (
-    <div className="p-6 lg:p-10 max-w-2xl mx-auto space-y-8">
+    <div className="mx-auto w-full max-w-2xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7 space-y-8">
       <header>
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <PenLine className="h-7 w-7 text-primary" /> Criar Script
-        </h1>
-        <p className="text-muted-foreground mt-1">
+        <h1 className="text-xl font-semibold tracking-tight">Criar Script</h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">
           Escreva uma mensagem nova e mande pra análise. Um admin revisa antes de ela virar um script oficial —
           enquanto isso, ela fica só aqui, mas você já pode copiar e usar.
         </p>

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { GraduationCap, FileText, ClipboardList, Check, X, Loader2 } from "lucide-react";
+import { FileText, ClipboardList, Check, X, Loader2 } from "lucide-react";
 import { SkeletonCard } from "@/components/ui/skeleton-card";
 import { toast } from "sonner";
 
@@ -54,12 +54,10 @@ function Page() {
   const loading = modQ.isLoading || quizQ.isLoading;
 
   return (
-    <div className="p-6 lg:p-10 max-w-4xl mx-auto">
-      <header className="mb-6">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <GraduationCap className="h-7 w-7 text-primary" /> Treinamentos
-        </h1>
-        <p className="text-muted-foreground mt-1">Currículo de treinamento e simulados da equipe.</p>
+    <div className="mx-auto w-full max-w-4xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7">
+      <header className="mb-5">
+        <h1 className="text-xl font-semibold tracking-tight">Treinamentos</h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">Currículo de treinamento e simulados da equipe.</p>
       </header>
 
       {loading && <div className="grid gap-4 sm:grid-cols-2"><SkeletonCard /><SkeletonCard /></div>}

@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Lightbulb, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { SkeletonCard } from "@/components/ui/skeleton-card";
 
@@ -53,13 +53,11 @@ function Page() {
   });
 
   return (
-    <div className="p-6 lg:p-10 max-w-5xl mx-auto">
+    <div className="mx-auto w-full max-w-5xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7">
       <header className="mb-6 flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Lightbulb className="h-7 w-7 text-primary" /> Central de Sugestões
-          </h1>
-          <p className="text-muted-foreground mt-1">Envie dúvidas, sugestões, novos scripts e melhorias.</p>
+          <h1 className="text-xl font-semibold tracking-tight">Central de Sugestões</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">Envie dúvidas, sugestões, novos scripts e melhorias.</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>

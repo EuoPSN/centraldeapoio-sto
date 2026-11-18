@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ListChecks, CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/checklist")({
   component: ChecklistPage,
@@ -62,12 +62,10 @@ function ChecklistPage() {
   const doneCount = items.filter(isDone).length;
 
   return (
-    <div className="p-6 lg:p-10 max-w-2xl mx-auto">
-      <header className="mb-6">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <ListChecks className="h-7 w-7 text-primary" /> Check-list Diário
-        </h1>
-        <p className="text-muted-foreground mt-1">
+    <div className="mx-auto w-full max-w-2xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7">
+      <header className="mb-5">
+        <h1 className="text-xl font-semibold tracking-tight">Check-list Diário</h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">
           {doneCount} de {items.length} feitos hoje. Marque conforme for concluindo ao longo do dia.
         </p>
       </header>
