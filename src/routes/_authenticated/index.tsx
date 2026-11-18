@@ -158,10 +158,10 @@ function Home() {
   return (
     <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-5 sm:px-5 lg:py-7">
       <div>
-        <p className="text-sm text-muted-foreground">{nome ? `Olá, ${nome}` : "Olá"}</p>
+        <h1 className="text-xl font-semibold tracking-tight">{nome ? `Olá, ${nome}` : "Olá"}</h1>
         {/* Mensagem do dia: cores e fonte escolhidas pelo admin */}
         <div
-          className="mt-2 rounded-[14px] border border-border px-5 py-4"
+          className="mt-3 rounded-[14px] border border-border px-5 py-4"
           style={{
             background: heroMessage
               ? (heroMessage.cor_fundo_2 ? `linear-gradient(135deg, ${heroMessage.cor_fundo}, ${heroMessage.cor_fundo_2})` : heroMessage.cor_fundo)
@@ -169,7 +169,7 @@ function Home() {
             fontFamily: heroMessage ? HOME_FONT_FAMILY[heroMessage.fonte] : undefined,
           }}
         >
-          <h1 className="text-lg font-semibold leading-snug [text-wrap:balance]">{heroMessage?.titulo ?? "Tudo o que você precisa, num só lugar"}</h1>
+          <h2 className="text-lg font-semibold leading-snug [text-wrap:balance]">{heroMessage?.titulo ?? "Tudo o que você precisa, num só lugar"}</h2>
           <p className="mt-0.5 text-sm opacity-80">
             {heroMessage?.subtitulo ?? "Mensagens, preços e informações de atendimento para a equipe."}
           </p>

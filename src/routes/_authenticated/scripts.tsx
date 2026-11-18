@@ -212,6 +212,14 @@ function FluxoAtendimento() {
     return () => obs.disconnect();
   }, [trunkKey]);
 
+  // Mantém a pílula ativa visível quando a trilha não cabe numa linha.
+  const trailRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!activeStage || !trailRef.current) return;
+    const el = trailRef.current.querySelector<HTMLElement>(`[data-trail="${activeStage}"]`);
+    el?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [activeStage]);
+
   const goToStage = (id: string) => {
     setActiveStage(id);
     document.getElementById(`etapa-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -260,10 +268,12 @@ function FluxoAtendimento() {
             aria-label="Etapas do atendimento"
             className="sticky top-(--topbar-h) z-20 -mx-4 mb-4 border-b border-border bg-background px-4 py-2.5 sm:-mx-5 sm:px-5"
           >
-            <div className="flex flex-wrap gap-1.5">
+            <div ref={trailRef} className="flex gap-1 overflow-x-auto [scrollbar-width:none]">
               {trunkStages.map((stage, idx) => (
                 <Pill
                   key={stage.id}
+                  data-trail={stage.id}
+                  className="px-3"
                   tone="brand"
                   active={activeStage === stage.id}
                   aria-current={activeStage === stage.id ? "step" : undefined}

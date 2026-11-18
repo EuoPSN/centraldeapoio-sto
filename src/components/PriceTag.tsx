@@ -30,12 +30,11 @@ export function PriceTag({ value, promo = false, size = "md", className }: Price
     return <span className={cn("text-sm text-muted-foreground", className)}>Sem preço</span>;
   }
   return (
-    <span
-      className={cn("price-tag", size === "sm" && "price-tag-sm", promo && "price-tag-promo", className)}
-      aria-label={`R$ ${num}`}
-    >
+    <span className={cn("price-tag", size === "sm" && "price-tag-sm", promo && "price-tag-promo", className)}>
       <span aria-hidden className={cn("mt-px font-bold", size === "sm" ? "text-[9px]" : "text-[11px]")}>R$</span>
-      <span aria-hidden>{num}</span>
+      <span className="sr-only">R$ </span>
+      <span>{num}</span>
+      {promo && <span className="sr-only"> (promoção)</span>}
     </span>
   );
 }

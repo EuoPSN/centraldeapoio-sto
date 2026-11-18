@@ -25,7 +25,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Database, LayoutDashboard, Pencil, Plus, RefreshCw, Settings, Sparkles, Trash2, UserPlus, Users, ShieldCheck } from "lucide-react";
+import { BadgeInfo, Database, LayoutDashboard, Pencil, Plus, RefreshCw, Settings, Sparkles, Trash2, UserPlus, Users, ShieldCheck } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { simulatorChat } from "@/lib/simulator.chat.functions";
 import { PricingTab } from "@/components/admin/PricingTab";
@@ -143,10 +143,12 @@ organizacao: AdminSectionsTab,
                 <p className="px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">{group}</p>
                 <div className="space-y-0.5">
                   {list.map((s) => {
-                    const Icon = getIcon(s.icon);
+                    // "Aparência" virou só "Identidade" no redesign (temas voltam numa atualização futura).
+                    const isIdent = s.tab_key === "appearance";
+                    const Icon = isIdent ? BadgeInfo : getIcon(s.icon);
                     return (
                       <button key={s.tab_key} onClick={() => setActive(s.tab_key)} className={navButtonClass(s.tab_key)}>
-                        <Icon className="h-4 w-4" /> {s.label}
+                        <Icon className="h-4 w-4" /> {isIdent ? "Identidade" : s.label}
                       </button>
                     );
                   })}

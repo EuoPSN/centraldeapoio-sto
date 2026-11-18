@@ -179,7 +179,7 @@ function ConsultasPublico() {
       <FilterInput value={filter} onChange={setFilter} placeholder="Buscar especialidade…" />
 
       {categories.length > 1 && (
-        <PillRow className="mb-3" role="group" aria-label="Categoria">
+        <PillRow className="mb-3 ml-1 border-l border-border pl-3" role="group" aria-label="Categoria">
           <Pill active={activeCat === "todos"} onClick={() => setActiveCat("todos")}>Todas</Pill>
           {categories.map((c) => (
             <Pill key={c} active={activeCat === c} onClick={() => setActiveCat(c)}>{c}</Pill>
@@ -235,7 +235,7 @@ function ConsultasPublico() {
                     <div className="min-w-0 flex-1">
                       {label}
                       {!multi && v.notes && <p className="text-[12.5px] text-muted-foreground">{v.notes}</p>}
-                      <p className="mt-0.5 text-xs text-muted-foreground">
+                      <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
                         Particular {fmt(v.particular_price)}
                         {eco && eco.valor > 0 && <> · economia de {fmt(eco.valor)} ({eco.pct}%)</>}
                       </p>
