@@ -245,7 +245,7 @@
   }
   & pre code { background: transparent; padding: 0; color: inherit; }
   & blockquote {
-    border-left: 3px solid var(--color-primary);
+    border-left: 2px solid var(--color-input);
     padding-left: 1rem;
     color: var(--color-muted-foreground);
     margin: 0.75em 0;
