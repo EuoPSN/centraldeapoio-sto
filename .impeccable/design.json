@@ -1,0 +1,331 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-18T18:37:29.815191+00:00",
+  "title": "Design System: Central de Apoio",
+  "extensions": {
+    "colorMeta": {
+      "cdt-green": {
+        "role": "primary",
+        "displayName": "Verde CDT Profundo",
+        "tonalRamp": [
+          "#06341f",
+          "#084a31",
+          "#0b6b45",
+          "#2f8a63",
+          "#5aa683",
+          "#8cc3a8",
+          "#c0dfcf",
+          "#e7f1eb"
+        ]
+      },
+      "cdt-green-foreground": {
+        "role": "primary",
+        "displayName": "Branco sobre Verde"
+      },
+      "cdt-green-muted": {
+        "role": "primary",
+        "displayName": "Verde Névoa"
+      },
+      "green-wash": {
+        "role": "primary",
+        "displayName": "Lavagem Verde"
+      },
+      "gondola-yellow": {
+        "role": "secondary",
+        "displayName": "Amarelo Gôndola",
+        "tonalRamp": [
+          "#4d3f00",
+          "#806a00",
+          "#b39400",
+          "#e6bf00",
+          "#ffd400",
+          "#ffe04d",
+          "#ffeb8c",
+          "#fff6cc"
+        ]
+      },
+      "promo-red": {
+        "role": "secondary",
+        "displayName": "Vermelho Promoção",
+        "tonalRamp": [
+          "#4a0c09",
+          "#7a140e",
+          "#ad1c14",
+          "#e1251b",
+          "#ea5a52",
+          "#f18c86",
+          "#f7bdb9",
+          "#fdeceb"
+        ]
+      },
+      "page-mist": {
+        "role": "neutral",
+        "displayName": "Névoa da Página"
+      },
+      "surface-white": {
+        "role": "neutral",
+        "displayName": "Branco Superfície"
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Grafite",
+        "tonalRamp": [
+          "#1c221f",
+          "#3a443f",
+          "#5c6862",
+          "#7f8a84",
+          "#a3aca7",
+          "#c9d1cc",
+          "#e1e6e2",
+          "#f4f6f4"
+        ]
+      },
+      "ink-soft": {
+        "role": "neutral",
+        "displayName": "Grafite Suave"
+      },
+      "muted-text": {
+        "role": "neutral",
+        "displayName": "Texto Calmo"
+      },
+      "quiet-fill": {
+        "role": "neutral",
+        "displayName": "Preenchimento Quieto"
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Fio"
+      },
+      "input-stroke": {
+        "role": "neutral",
+        "displayName": "Contorno de Campo"
+      },
+      "state-danger": {
+        "role": "state",
+        "displayName": "Perigo"
+      },
+      "state-success": {
+        "role": "state",
+        "displayName": "Sucesso"
+      },
+      "state-warning": {
+        "role": "state",
+        "displayName": "Aviso"
+      }
+    },
+    "typographyMeta": {
+      "price": {
+        "displayName": "Preço",
+        "purpose": "Numeral da etiqueta de gôndola; exclusivo dela."
+      },
+      "price-sm": {
+        "displayName": "Preço compacto",
+        "purpose": "Etiqueta de gôndola compacta."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Título de página, um por tela."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Nome do item numa linha de painel."
+      },
+      "message": {
+        "displayName": "Mensagem",
+        "purpose": "Corpo das mensagens copiadas para o WhatsApp."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Descrições e texto auxiliar."
+      },
+      "nav": {
+        "displayName": "Nav",
+        "purpose": "Abas da barra superior."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Título de painel em caixa alta."
+      }
+    },
+    "shadows": [
+      {
+        "name": "overlay",
+        "value": "0 8px 24px -6px oklch(0.25 0.03 160 / 0.18), 0 2px 6px -2px oklch(0.25 0.03 160 / 0.10)",
+        "purpose": "Só para camadas flutuantes: menus, popovers, diálogos, toasts."
+      }
+    ],
+    "motion": [
+      {
+        "name": "page-fade-in",
+        "value": "200ms ease-out; opacity 0→1, translateY 6px→0",
+        "purpose": "Entrada de cada página; desligada pela preferência de movimento reduzido."
+      },
+      {
+        "name": "state-transition",
+        "value": "150ms colors",
+        "purpose": "Hover e estado de botões, pílulas e linhas."
+      },
+      {
+        "name": "copy-confirm",
+        "value": "1500ms",
+        "purpose": "Tempo do estado \"Copiado\" no botão Copiar."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px",
+        "note": "menu lateral vira gaveta abaixo disso"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "sidebar-open",
+        "value": "1280px",
+        "note": "menu lateral abre expandido a partir daqui"
+      },
+      {
+        "name": "2xl",
+        "value": "1536px"
+      }
+    ],
+    "layout": {
+      "topbarHeight": "6.25rem",
+      "sidebarWidth": "16rem",
+      "sidebarWidthIcon": "3rem",
+      "halfScreenRange": "640px–960px"
+    }
+  },
+  "components": [
+    {
+      "name": "Etiqueta de Gôndola",
+      "kind": "custom",
+      "refersTo": "price-tag",
+      "description": "O único elemento chamativo: preço normal em amarelo, promoção em vermelho.",
+      "html": "<span class=\"ds-price-tag\"><span class=\"ds-price-cur\">R$</span>35,00</span> <span class=\"ds-price-tag ds-price-promo\"><span class=\"ds-price-cur\">R$</span>29,90</span>",
+      "css": ".ds-price-tag { display: inline-flex; align-items: flex-start; justify-content: flex-end; gap: 2px; min-width: 100px; padding: 4px 10px 3px 18px; background: var(--tag, #ffd400); color: var(--tag-foreground, #1c221f); clip-path: polygon(10px 0, 100% 0, 100% 100%, 10px 100%, 0 50%); font-family: \"Barlow Condensed\", \"Arial Narrow\", system-ui, sans-serif; font-weight: 800; font-size: 24px; line-height: 1; font-variant-numeric: tabular-nums lining-nums; white-space: nowrap; } .ds-price-promo { background: var(--tag-promo, #e1251b); color: var(--tag-promo-foreground, #fff); } .ds-price-cur { font-size: 11px; font-weight: 700; margin-top: 1px; }"
+    },
+    {
+      "name": "Botão Primário",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Ação principal da tela.",
+      "html": "<button class=\"ds-btn-primary\">Salvar</button>",
+      "css": ".ds-btn-primary { height: 36px; padding: 8px 16px; border: none; border-radius: 8px; background: var(--primary, #0b6b45); color: var(--primary-foreground, #fff); font-family: system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: background-color 150ms; } .ds-btn-primary:hover { background: color-mix(in srgb, var(--primary, #0b6b45) 90%, transparent); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 1px #fff, 0 0 0 3px var(--ring, #0b6b45); }"
+    },
+    {
+      "name": "Botão Copiar",
+      "kind": "button",
+      "refersTo": "copy-button",
+      "description": "Largura fixa, sempre à direita; vira \"Copiado\" sem mudar de tamanho.",
+      "html": "<button class=\"ds-btn-copy\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"8\" y=\"8\" width=\"14\" height=\"14\" rx=\"2\"/><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"/></svg><span>Copiar</span></button> <button class=\"ds-btn-copy is-copied\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg><span>Copiado</span></button> <button class=\"ds-btn-copy-icon\" aria-label=\"Copiar\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"8\" y=\"8\" width=\"14\" height=\"14\" rx=\"2\"/><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"/></svg></button>",
+      "css": ".ds-btn-copy { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; min-width: 100px; padding: 0 12px; border: 1px solid var(--input, #d6ddd8); border-radius: 8px; background: var(--card, #fff); color: var(--primary, #0b6b45); font-family: system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: background-color 150ms, border-color 150ms; } .ds-btn-copy:hover, .ds-btn-copy-icon:hover { background: var(--accent, #e7f1eb); border-color: #c6d3cb; } .ds-btn-copy.is-copied { border-color: var(--primary, #0b6b45); background: var(--accent, #e7f1eb); } .ds-btn-copy:focus-visible, .ds-btn-copy-icon:focus-visible { outline: none; box-shadow: 0 0 0 1px #fff, 0 0 0 3px var(--ring, #0b6b45); } .ds-btn-copy-icon { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: 1px solid var(--input, #d6ddd8); border-radius: 10px; background: var(--card, #fff); color: var(--primary, #0b6b45); cursor: pointer; }"
+    },
+    {
+      "name": "Botão Contorno",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Ações secundárias dentro de painéis.",
+      "html": "<button class=\"ds-btn-outline\">Testar agora</button>",
+      "css": ".ds-btn-outline { height: 32px; padding: 0 12px; border: 1px solid var(--input, #d6ddd8); border-radius: 8px; background: var(--card, #fff); color: var(--foreground, #1c221f); font-family: system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: background-color 150ms; } .ds-btn-outline:hover { background: var(--accent, #e7f1eb); color: var(--accent-foreground, #0b6b45); border-color: #c6d3cb; } .ds-btn-outline:focus-visible { outline: none; box-shadow: 0 0 0 1px #fff, 0 0 0 3px var(--ring, #0b6b45); }"
+    },
+    {
+      "name": "Pílulas",
+      "kind": "chip",
+      "refersTo": "pill",
+      "description": "Filtros e seções; ativa em grafite (ink) ou verde (trilha de etapas).",
+      "html": "<div class=\"ds-pill-row\"><button class=\"ds-pill is-ink\">Consultas</button><button class=\"ds-pill\">Exames</button><button class=\"ds-pill\">Odontologia</button><button class=\"ds-pill is-brand\">Etapa 2</button></div>",
+      "css": ".ds-pill-row { display: flex; flex-wrap: wrap; gap: 6px; } .ds-pill { height: 32px; padding: 0 14px; border: 1px solid var(--border, #e1e6e2); border-radius: 9999px; background: var(--card, #fff); color: var(--foreground, #1c221f); font-family: system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: background-color 150ms; } .ds-pill:hover { background: var(--accent, #e7f1eb); } .ds-pill:focus-visible { outline: none; box-shadow: 0 0 0 1px #fff, 0 0 0 3px var(--ring, #0b6b45); } .ds-pill.is-ink { background: var(--foreground, #1c221f); border-color: var(--foreground, #1c221f); color: var(--background, #f4f6f4); } .ds-pill.is-brand { background: var(--primary, #0b6b45); border-color: var(--primary, #0b6b45); color: #fff; }"
+    },
+    {
+      "name": "Painel com linhas",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Caixa branca de fio fino, título em caixa alta, linhas com valor e ação à direita.",
+      "html": "<section class=\"ds-panel\"><h2 class=\"ds-panel-title\">Consultas</h2><div class=\"ds-panel-row\"><div class=\"ds-row-main\"><p class=\"ds-row-title\">Clínico geral</p><p class=\"ds-row-sub\">Particular R$ 120,00 · economia de R$ 90,00</p></div><span class=\"ds-tag\">R$ 30,00</span><button class=\"ds-copy-ic\" aria-label=\"Copiar\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"8\" y=\"8\" width=\"14\" height=\"14\" rx=\"2\"/><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"/></svg></button></div><div class=\"ds-panel-row\"><div class=\"ds-row-main\"><p class=\"ds-row-title\">Pediatria</p><p class=\"ds-row-sub\">Até 12 anos</p></div><span class=\"ds-tag\">R$ 35,00</span><button class=\"ds-copy-ic\" aria-label=\"Copiar\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"8\" y=\"8\" width=\"14\" height=\"14\" rx=\"2\"/><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"/></svg></button></div></section>",
+      "css": ".ds-panel { max-width: 560px; overflow: hidden; border: 1px solid var(--border, #e1e6e2); border-radius: 14px; background: var(--card, #fff); font-family: system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif; color: var(--foreground, #1c221f); } .ds-panel-title { margin: 0; padding: 12px 16px 8px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted-foreground, #5c6862); } .ds-panel-row { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-top: 1px solid #eef1ef; } .ds-row-main { flex: 1; min-width: 0; } .ds-row-title { margin: 0; font-size: 16px; font-weight: 600; } .ds-row-sub { margin: 0; font-size: 12.5px; color: var(--muted-foreground, #5c6862); } .ds-tag { min-width: 100px; padding: 4px 10px 3px 18px; text-align: right; background: var(--tag, #ffd400); clip-path: polygon(10px 0, 100% 0, 100% 100%, 10px 100%, 0 50%); font-family: \"Barlow Condensed\", \"Arial Narrow\", system-ui, sans-serif; font-weight: 800; font-size: 22px; line-height: 1; } .ds-copy-ic { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: 1px solid var(--input, #d6ddd8); border-radius: 10px; background: #fff; color: var(--primary, #0b6b45); cursor: pointer; } .ds-copy-ic:hover { background: var(--accent, #e7f1eb); }"
+    },
+    {
+      "name": "Campo de texto",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Busca e formulários.",
+      "html": "<input class=\"ds-input\" placeholder=\"Buscar especialidade…\" />",
+      "css": ".ds-input { width: 100%; max-width: 420px; height: 36px; padding: 4px 12px; border: 1px solid var(--input, #d6ddd8); border-radius: 8px; background: var(--card, #fff); color: var(--foreground, #1c221f); font-family: system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif; font-size: 14px; transition: box-shadow 150ms; } .ds-input::placeholder { color: var(--muted-foreground, #5c6862); } .ds-input:focus-visible { outline: none; box-shadow: 0 0 0 1px var(--ring, #0b6b45); }"
+    },
+    {
+      "name": "Barra superior",
+      "kind": "nav",
+      "refersTo": "topbar",
+      "description": "Barra verde com logo, busca Ctrl K e abas principais; aba ativa encaixa na página.",
+      "html": "<header class=\"ds-topbar\"><div class=\"ds-topbar-row\"><span class=\"ds-logo-plate\">Cartão de TODOS</span><button class=\"ds-search\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"m21 21-4.3-4.3\"/></svg><span class=\"ds-search-ph\">Buscar especialidade, exame, mensagem…</span><kbd>Ctrl K</kbd></button></div><nav class=\"ds-tabs\"><a class=\"ds-tab\" href=\"#\">Mensagens</a><a class=\"ds-tab is-active\" href=\"#\">Preços</a><a class=\"ds-tab\" href=\"#\">Regras</a><a class=\"ds-tab\" href=\"#\">Unidades</a><a class=\"ds-tab\" href=\"#\">Treino</a></nav></header>",
+      "css": ".ds-topbar { height: 100px; background: var(--brand, #0b6b45); color: #fff; font-family: system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif; } .ds-topbar-row { display: flex; align-items: center; gap: 12px; height: 56px; padding: 0 16px; } .ds-logo-plate { padding: 4px 8px; border-radius: 10px; background: #fff; color: var(--brand, #0b6b45); font-size: 12px; font-weight: 700; } .ds-search { display: flex; flex: 1; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border: none; border-radius: 10px; background: rgba(255,255,255,0.14); color: var(--brand-muted, #d5ebdf); font: inherit; font-size: 13.5px; text-align: left; cursor: pointer; transition: background-color 150ms; } .ds-search:hover { background: rgba(255,255,255,0.2); } .ds-search:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(255,255,255,0.7); } .ds-search-ph { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; } .ds-search kbd { padding: 2px 6px; border: 1px solid rgba(255,255,255,0.25); border-radius: 6px; color: #fff; font: inherit; font-size: 11px; } .ds-tabs { display: flex; align-items: flex-end; gap: 2px; height: 44px; padding: 0 16px; } .ds-tab { padding: 10px 14px; border-radius: 10px 10px 0 0; color: var(--brand-muted, #d5ebdf); font-size: 13.5px; font-weight: 600; text-decoration: none; transition: background-color 150ms; } .ds-tab:hover { background: rgba(255,255,255,0.1); color: #fff; } .ds-tab.is-active { background: var(--background, #f4f6f4); color: var(--primary, #0b6b45); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "A Bancada e a Etiqueta",
+    "overview": "**Creative North Star: \"A Bancada e a Etiqueta\"**\n\nA Central é uma bancada de trabalho: fundo claro levemente esverdeado, superfícies brancas com fio fino, tipografia do sistema e nada que dispute a atenção do atendente enquanto ele conversa com o cliente no WhatsApp. O verde CDT profundo marca onde você está (barra superior, aba atual, item ativo do menu, ação principal) e só isso. Sobre essa bancada quieta existe um único objeto que grita: a etiqueta de preço de gôndola, amarela para o preço normal e vermelha para promoção, com ponta recortada e numeral condensado pesado.\n\nA densidade é de ferramenta, não de vitrine. Telas em coluna única até ~960px, linhas de painel compactas, valor e ação sempre alinhados à direita. A régua de acabamento é a de apps de banco: limpo, direto, cor forte da marca usada com parcimônia. Profundidade vem de tom (fundo cinza-verde contra branco) e de fio, não de sombra.",
+    "keyCharacteristics": [
+      "Fundo `page-mist` com painéis brancos de borda `hairline`; sem sombra em repouso.",
+      "Verde CDT sólido como marcador de lugar e de ação principal.",
+      "Etiqueta de gôndola como único elemento chamativo, sempre com o numeral Barlow Condensed.",
+      "Copiar sempre no canto superior direito ou na coluna da direita, com largura fixa.",
+      "Pensado para meia tela (640–960px) ao lado do WhatsApp Web."
+    ],
+    "rules": [
+      {
+        "name": "A Regra da Única Voz Alta",
+        "body": "Amarelo e vermelho de etiqueta existem só dentro da etiqueta de preço. Se um amarelo ou vermelho aparece fora dela, está errado.",
+        "section": "colors"
+      },
+      {
+        "name": "A Regra do Verde que Marca Lugar",
+        "body": "O verde sólido diz \"você está aqui\" ou \"esta é a ação\". Não pinte cabeçalhos, cartões ou ícones decorativos de verde sólido.",
+        "section": "colors"
+      },
+      {
+        "name": "A Regra do Estado com Significado",
+        "body": "Cor de estado só quando há um estado real a comunicar.",
+        "section": "colors"
+      },
+      {
+        "name": "A Regra do Numeral de Gôndola",
+        "body": "Barlow Condensed é exclusiva da etiqueta de preço. Nenhum título, número de contagem ou destaque usa essa fonte.",
+        "section": "typography"
+      },
+      {
+        "name": "A Regra da Meia Tela",
+        "body": "Todo layout precisa funcionar entre 640px e 960px de largura útil. Projete primeiro para essa faixa; tela cheia é bônus.",
+        "section": "layout"
+      },
+      {
+        "name": "A Regra do Chão Plano",
+        "body": "Nada que está no fluxo da página tem sombra. Se não flutua, não tem sombra.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** deixar a etiqueta de gôndola como o único elemento chamativo da tela: amarela para preço normal, vermelha só para promoção.",
+      "**Do** usar cor de estado (perigo, sucesso, aviso) só onde ela significa algo.",
+      "**Do** colocar o botão Copiar sempre no canto superior direito do cartão ou alinhado à direita da linha, com largura fixa e confirmação \"Copiado\" no próprio botão.",
+      "**Do** testar todo layout entre 640px e 960px de largura, com o menu lateral recolhido em ícones.",
+      "**Do** separar conteúdo com painéis brancos de fio fino sobre o fundo `page-mist`.",
+      "**Do** usar o verde CDT sólido para marcar lugar (aba atual, item ativo) e a ação principal.",
+      "**Do** filtrar com pílulas em tom \"ink\"; reservar o tom \"brand\" à trilha de etapas."
+    ],
+    "donts": [
+      "**Don't** criar blocos ou atalhos com gradiente nem sombras decorativas em painéis, cartões e botões.",
+      "**Don't** usar amarelo ou vermelho de etiqueta fora da etiqueta de preço.",
+      "**Don't** usar Barlow Condensed fora do numeral de preço.",
+      "**Don't** pintar cabeçalhos ou cartões inteiros de verde sólido.",
+      "**Don't** mover o Copiar para a esquerda, para o rodapé do cartão ou mudar sua largura ao copiar.",
+      "**Don't** criar layouts que só funcionam em tela cheia ou que exigem rolagem horizontal na meia tela."
+    ]
+  }
+}
