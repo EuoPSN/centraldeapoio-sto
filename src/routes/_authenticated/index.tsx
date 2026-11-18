@@ -11,13 +11,11 @@ import { listProcedimentos } from "@/lib/odontologia.functions";
 import { getRankingDetalhado } from "@/lib/gamification.functions";
 import { listClientProfilesForTraining } from "@/lib/clientprofiles.functions";
 import { listHomepageMessages } from "@/lib/homepage.functions";
-import { listPromoPlans } from "@/lib/promoplans.functions";
 import { getMyChecklistToday } from "@/lib/checklist.functions";
 import { DIFFICULTY_COLORS, DIFFICULTY_LABELS } from "@/components/SimuladorIA";
 import { MessageSquareQuote, Sparkles, Bot, GraduationCap, Lightbulb, ListChecks, Search, ChevronRight, Trophy, LifeBuoy, Tag } from "lucide-react";
 import { Panel, PanelRow } from "@/components/Panel";
-import { PriceTag } from "@/components/PriceTag";
-import { CopyButton } from "@/components/CopyButton";
+import { PromoPlansPanel } from "@/components/PromoPlansPanel";
 
 type HomeFonte = "padrao" | "arredondada" | "elegante" | "festiva";
 type HomeTipo = "padrao" | "data_especial" | "aniversario";
@@ -76,43 +74,6 @@ const trainingShortcuts = [
   { title: "Sugestões", icon: Lightbulb, route: "/sugestoes" },
 ] as const;
 
-interface PromoPlanRow {
-  id: string; nome: string; preco_primeiro_mes: number; preco_demais_meses: number;
-  cor_fundo: string; cor_fundo_2: string | null; ativo: boolean; position: number;
-}
-
-function formatBRL(v: number) {
-  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
-
-// Planos em promoção com a etiqueta vermelha. Some da tela quando não há
-// nenhum plano ativo.
-function PromoPlansPanel() {
-  const promoFn = useServerFn(listPromoPlans);
-  const promoQ = useQuery({ queryKey: ["promo-plans"], queryFn: () => promoFn({}) });
-  const plans = ((promoQ.data ?? []) as PromoPlanRow[]).filter((p) => p.ativo).sort((a, b) => a.position - b.position);
-
-  if (plans.length === 0) return null;
-
-  return (
-    <Panel title="Planos em promoção">
-      {plans.map((p) => (
-        <PanelRow key={p.id}>
-          <div className="min-w-0 flex-1">
-            <p className="font-semibold">{p.nome}</p>
-            <p className="text-[12.5px] text-muted-foreground">1º mês · depois {formatBRL(p.preco_demais_meses)}</p>
-          </div>
-          <PriceTag value={p.preco_primeiro_mes} promo />
-          <CopyButton
-            size="icon"
-            label={`Copiar preço do ${p.nome}`}
-            text={`${p.nome}: ${formatBRL(p.preco_primeiro_mes)} no 1º mês. A partir do 2º mês, ${formatBRL(p.preco_demais_meses)}.`}
-          />
-        </PanelRow>
-      ))}
-    </Panel>
-  );
-}
 
 // Linha com o progresso do checklist diário do próprio funcionário, com atalho
 // direto pra tela /checklist.

@@ -1,18 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { listMessages, incrementMessageUseCount } from "@/lib/messages.functions";
 import { listFlowStages, listFlowPaths } from "@/lib/messageflow.functions";
 import { listCategories } from "@/lib/taxonomy.functions";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/CopyButton";
 import { DownloadImageButton } from "@/components/DownloadImageButton";
 import { Markdown } from "@/components/Markdown";
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import { Search, MessageSquareQuote, ListOrdered, Library } from "lucide-react";
+import { Search, StickyNote, GitFork, CornerDownRight } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
+import { Pill, PillRow } from "@/components/Pill";
 import { SkeletonCard } from "@/components/ui/skeleton-card";
 
 export const Route = createFileRoute("/_authenticated/scripts")({
@@ -20,26 +19,20 @@ export const Route = createFileRoute("/_authenticated/scripts")({
 });
 
 function Page() {
-  const [mode, setMode] = useState<"biblioteca" | "fluxo">("biblioteca");
+  // O Fluxo de Atendimento abre primeiro: copiar a mensagem da etapa é a tarefa principal.
+  const [mode, setMode] = useState<"biblioteca" | "fluxo">("fluxo");
   return (
-    <div className="p-6 lg:p-10 max-w-7xl mx-auto">
-      <header className="mb-6">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <MessageSquareQuote className="h-7 w-7 text-primary" /> Atendimento
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          {mode === "biblioteca" ? "Biblioteca de mensagens prontas para o atendimento." : "A ordem das mensagens dentro de um atendimento, etapa por etapa."}
-        </p>
-      </header>
-
-      <div className="flex gap-2 mb-6">
-        <Button size="sm" variant={mode === "biblioteca" ? "default" : "outline"} className="gap-2" onClick={() => setMode("biblioteca")}>
-          <Library className="h-4 w-4" /> Biblioteca
-        </Button>
-        <Button size="sm" variant={mode === "fluxo" ? "default" : "outline"} className="gap-2" onClick={() => setMode("fluxo")}>
-          <ListOrdered className="h-4 w-4" /> Fluxo de Atendimento
-        </Button>
-      </div>
+    <div className="mx-auto w-full max-w-4xl px-4 py-5 sm:px-5 lg:py-7">
+      <PageHeader
+        title="Mensagens"
+        description={mode === "biblioteca" ? "Todas as mensagens prontas, com busca e filtros." : "A ordem das mensagens no atendimento, etapa por etapa."}
+        actions={
+          <PillRow role="group" aria-label="Modo de visualização">
+            <Pill active={mode === "fluxo"} onClick={() => setMode("fluxo")}>Fluxo de Atendimento</Pill>
+            <Pill active={mode === "biblioteca"} onClick={() => setMode("biblioteca")}>Biblioteca</Pill>
+          </PillRow>
+        }
+      />
 
       {mode === "biblioteca" ? <Biblioteca /> : <FluxoAtendimento />}
     </div>
@@ -65,6 +58,46 @@ interface MessageRow {
 interface StageRow { id: string; name: string; position: number; category_id: string | null; path_id: string | null; }
 interface FlowCatRow { id: string; name: string; parent_id: string | null; }
 interface PathRow { id: string; name: string; category_id: string | null; branches_from_stage_id: string; merges_into_stage_id: string | null; position: number; }
+
+// Cartão de mensagem: título e atalho à esquerda, Copiar sempre no canto
+// superior direito, texto logo abaixo. Mesmo desenho no Fluxo e na Biblioteca.
+function MessageCard({ m, onCopy, showCategory = false }: { m: MessageRow; onCopy: () => void; showCategory?: boolean }) {
+  return (
+    <article className="rounded-xl border border-border bg-card px-4 py-3">
+      <div className="flex items-start gap-3">
+        <div className="min-w-0 flex-1 pt-1">
+          {showCategory && m.category && (
+            <p className="mb-0.5 text-xs text-muted-foreground">
+              {m.category.name}{m.subcategory ? ` · ${m.subcategory.name}` : ""}
+            </p>
+          )}
+          <h3 className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13.5px] font-semibold leading-snug">
+            <span className="min-w-0">{m.title}</span>
+            {m.shortcut && (
+              <span className="rounded bg-accent px-1.5 py-px font-mono text-[11px] font-medium text-primary" title="Atalho no WhatsApp Business">/{m.shortcut}</span>
+            )}
+          </h3>
+        </div>
+        <CopyButton text={m.content} onCopy={onCopy} />
+      </div>
+      <div className="mt-1.5 max-h-72 overflow-y-auto text-[14.5px] leading-relaxed [&_.prose-cdt]:leading-relaxed [&_.prose-cdt_p:last-child]:mb-0">
+        <Markdown>{m.content}</Markdown>
+      </div>
+      {m.image_url && (
+        <div className="mt-2 flex flex-col items-start gap-2">
+          <img src={m.image_url} alt={m.title} className="max-h-56 rounded-lg border border-border object-contain" />
+          <DownloadImageButton url={m.image_url} filename={`${m.title}.${m.image_ext || "jpg"}`} />
+        </div>
+      )}
+      {m.internal_note && (
+        <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-muted px-2.5 py-1.5 text-xs text-muted-foreground">
+          <StickyNote className="mt-px h-3.5 w-3.5 shrink-0" />
+          <span><span className="font-medium text-foreground">Nota interna:</span> {m.internal_note}</span>
+        </p>
+      )}
+    </article>
+  );
+}
 
 function FluxoAtendimento() {
   const msgFn = useServerFn(listMessages);
@@ -122,48 +155,66 @@ function FluxoAtendimento() {
         return la - lb;
       });
 
-  const renderStageCard = (stage: StageRow, idx: number) => {
+  const renderStage = (stage: StageRow, idx: number, anchor = true) => {
     const stageMessages = messagesForStage(stage.id);
     return (
-      <AccordionItem key={stage.id} value={stage.id} className="border border-border rounded-lg px-4 bg-card">
-        <AccordionTrigger className="hover:no-underline">
-          <div className="flex items-center gap-3">
-            <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary/10 text-primary text-xs font-semibold shrink-0">{idx + 1}</span>
-            <span className="font-semibold">{stage.name}</span>
-            <span className="text-xs text-muted-foreground font-normal">{stageMessages.length} mensagem(ns)</span>
+      <section
+        key={stage.id}
+        id={anchor ? `etapa-${stage.id}` : undefined}
+        data-stage={anchor ? stage.id : undefined}
+        className="scroll-mt-[calc(var(--topbar-h)+4.5rem)]"
+      >
+        <h2 className="mb-2 flex items-baseline gap-2 text-[15px] font-semibold">
+          <span className="tabular-nums text-primary">{idx + 1}</span>
+          <span>{stage.name}</span>
+          <span className="text-xs font-normal text-muted-foreground">
+            {stageMessages.length} {stageMessages.length === 1 ? "mensagem" : "mensagens"}
+          </span>
+        </h2>
+        {stageMessages.length === 0 ? (
+          <p className="rounded-xl border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">
+            Nenhuma mensagem nesta etapa ainda.
+          </p>
+        ) : (
+          <div className="space-y-2.5">
+            {stageMessages.map((m) => (
+              <MessageCard key={m.id} m={m} onCopy={() => incUse({ data: { id: m.id } })} />
+            ))}
           </div>
-        </AccordionTrigger>
-        <AccordionContent>
-          {stageMessages.length === 0 ? (
-            <p className="text-sm text-muted-foreground pb-3">Nenhuma mensagem atribuída a esta etapa ainda.</p>
-          ) : (
-            <div className="space-y-3 pb-3">
-              {stageMessages.map((m) => (
-                <div key={m.id} className="rounded-md border border-border p-3">
-                  <div className="flex items-start justify-between gap-3 mb-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      {m.shortcut && <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-primary/10 text-primary shrink-0">/{m.shortcut}</span>}
-                      <h4 className="font-medium truncate">{m.title}</h4>
-                    </div>
-                    <CopyButton text={m.content} onCopy={() => incUse({ data: { id: m.id } })} />
-                  </div>
-                  <div className="rounded-md bg-muted/40 border border-border p-3 max-h-56 overflow-y-auto">
-                    <Markdown>{m.content}</Markdown>
-                  </div>
-                  {m.image_url && (
-                    <div className="mt-2 space-y-1.5">
-                      <img src={m.image_url} alt={m.title} className="rounded-md border border-border max-h-64 object-contain" />
-                      <DownloadImageButton url={m.image_url} filename={`${m.title}.${m.image_ext || "jpg"}`} />
-                    </div>
-                  )}
-                  {m.internal_note && <p className="text-xs text-muted-foreground italic mt-2">📝 {m.internal_note}</p>}
-                </div>
-              ))}
-            </div>
-          )}
-        </AccordionContent>
-      </AccordionItem>
+        )}
+      </section>
     );
+  };
+
+  // Trilha de etapas: destaca a etapa visível e rola até ela ao clicar.
+  const [activeStage, setActiveStage] = useState<string | null>(null);
+  const trunkKey = trunkStages.map((s) => s.id).join(",");
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  useEffect(() => {
+    if (!trunkKey) return;
+    setActiveStage(trunkKey.split(",")[0]);
+    const visible = new Map<string, number>();
+    observerRef.current?.disconnect();
+    const obs = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          const id = (e.target as HTMLElement).dataset.stage!;
+          if (e.isIntersecting) visible.set(id, e.boundingClientRect.top);
+          else visible.delete(id);
+        }
+        const first = [...visible.entries()].sort((a, b) => a[1] - b[1])[0];
+        if (first) setActiveStage(first[0]);
+      },
+      { rootMargin: "-170px 0px -55% 0px" },
+    );
+    observerRef.current = obs;
+    document.querySelectorAll<HTMLElement>("[data-stage]").forEach((el) => obs.observe(el));
+    return () => obs.disconnect();
+  }, [trunkKey]);
+
+  const goToStage = (id: string) => {
+    setActiveStage(id);
+    document.getElementById(`etapa-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   if (stageQ.isLoading || pathQ.isLoading || msgQ.isLoading || catQ.isLoading) {
@@ -176,74 +227,97 @@ function FluxoAtendimento() {
   }
 
   return (
-    <div className="space-y-4">
+    <div>
       {parents.length > 0 && (
-        <div className="flex gap-2 flex-wrap">
-          <Button size="sm" variant={flowCat === "geral" && !expandedParent ? "default" : "outline"}
-            onClick={() => { setFlowCat("geral"); setExpandedParent(null); }}>Geral</Button>
+        <PillRow className="mb-2" role="group" aria-label="Tipo de atendimento">
+          <Pill active={flowCat === "geral" && !expandedParent} onClick={() => { setFlowCat("geral"); setExpandedParent(null); }}>Geral</Pill>
           {parents.map((c) => {
             const hasKids = childrenOf(c.id).length > 0;
             const active = hasKids ? expandedParent === c.id : flowCat === c.id;
             return (
-              <Button key={c.id} size="sm" variant={active ? "default" : "outline"} onClick={() => selectParent(c)}>{c.name}</Button>
+              <Pill key={c.id} active={active} onClick={() => selectParent(c)}>{c.name}</Pill>
             );
           })}
-        </div>
+        </PillRow>
       )}
 
       {expandedParent && childrenOf(expandedParent).length > 0 && (
-        <div className="flex flex-wrap gap-2 pl-2 border-l-2 border-border">
+        <PillRow className="mb-2 ml-1 border-l border-border pl-3" role="group" aria-label="Subtipo">
           {childrenOf(expandedParent).map((c) => (
-            <Button key={c.id} size="sm" variant={flowCat === c.id ? "secondary" : "ghost"} onClick={() => setFlowCat(c.id)}>{c.name}</Button>
+            <Pill key={c.id} active={flowCat === c.id} onClick={() => setFlowCat(c.id)}>{c.name}</Pill>
           ))}
-        </div>
+        </PillRow>
       )}
 
       {trunkStages.length === 0 ? (
-        <Card className="p-10 text-center">
-          <p className="text-muted-foreground">Nenhuma etapa de fluxo cadastrada ainda para "{currentScopeName}".</p>
-          <p className="text-xs text-muted-foreground mt-1">Configure em Painel Admin → Mensagens → aba "Fluxo de Atendimento".</p>
-        </Card>
+        <div className="mt-4 rounded-xl border border-border bg-card px-5 py-8 text-center">
+          <p className="font-medium">Nenhuma etapa cadastrada para "{currentScopeName}".</p>
+          <p className="mt-1 text-sm text-muted-foreground">Configure em Painel Admin → Mensagens → aba "Fluxo de Atendimento".</p>
+        </div>
       ) : (
-        <Accordion type="multiple" defaultValue={trunkStages.map((s) => s.id)} className="space-y-3">
-          {trunkStages.map((stage, idx) => {
-            const forksHere = pathsForCat.filter((p) => p.branches_from_stage_id === stage.id);
-            return (
-              <div key={stage.id} className="space-y-3">
-                {renderStageCard(stage, idx)}
-                {forksHere.length > 0 && (
-                  <div className="pl-2 border-l-2 border-primary/30 ml-3">
-                    <p className="text-xs text-muted-foreground mb-2">O fluxo se divide em {forksHere.length} caminho(s) aqui:</p>
-                    <div className={`grid gap-3 ${forksHere.length > 1 ? "sm:grid-cols-2" : ""}`}>
-                      {forksHere.map((path) => {
-                        const pathStages = allStages
-                          .filter((s) => s.path_id === path.id)
-                          .slice()
-                          .sort((a, b) => a.position - b.position);
-                        const mergeStage = path.merges_into_stage_id ? stageById(path.merges_into_stage_id) : null;
-                        return (
-                          <Card key={path.id} className="p-3">
-                            <p className="font-semibold text-sm mb-2">{path.name}</p>
-                            {pathStages.length === 0 ? (
-                              <p className="text-xs text-muted-foreground">Nenhuma etapa cadastrada neste caminho ainda.</p>
-                            ) : (
-                              <Accordion type="multiple" defaultValue={pathStages.map((s) => s.id)} className="space-y-2">
-                                {pathStages.map((s, i) => renderStageCard(s, i))}
-                              </Accordion>
-                            )}
-                            {mergeStage && (
-                              <p className="text-xs text-muted-foreground mt-2">↳ volta para: <span className="font-medium">{mergeStage.name}</span></p>
-                            )}
-                          </Card>
-                        );
-                      })}
+        <>
+          <nav
+            aria-label="Etapas do atendimento"
+            className="sticky top-(--topbar-h) z-20 -mx-4 mb-4 border-b border-border bg-background px-4 py-2.5 sm:-mx-5 sm:px-5"
+          >
+            <div className="flex flex-wrap gap-1.5">
+              {trunkStages.map((stage, idx) => (
+                <Pill
+                  key={stage.id}
+                  tone="brand"
+                  active={activeStage === stage.id}
+                  aria-current={activeStage === stage.id ? "step" : undefined}
+                  onClick={() => goToStage(stage.id)}
+                >
+                  <span className="tabular-nums">{idx + 1}</span> {stage.name}
+                </Pill>
+              ))}
+            </div>
+          </nav>
+
+          <div className="space-y-7">
+            {trunkStages.map((stage, idx) => {
+              const forksHere = pathsForCat.filter((p) => p.branches_from_stage_id === stage.id);
+              return (
+                <div key={stage.id} className="space-y-4">
+                  {renderStage(stage, idx)}
+                  {forksHere.length > 0 && (
+                    <div className="rounded-xl border border-border bg-[#fafbfa] p-3 sm:p-4">
+                      <p className="mb-3 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                        <GitFork className="h-3.5 w-3.5" />
+                        O fluxo se divide em {forksHere.length} {forksHere.length === 1 ? "caminho" : "caminhos"} aqui
+                      </p>
+                      <div className={`grid gap-4 ${forksHere.length > 1 ? "xl:grid-cols-2" : ""}`}>
+                        {forksHere.map((path) => {
+                          const pathStages = allStages
+                            .filter((s) => s.path_id === path.id)
+                            .slice()
+                            .sort((a, b) => a.position - b.position);
+                          const mergeStage = path.merges_into_stage_id ? stageById(path.merges_into_stage_id) : null;
+                          return (
+                            <div key={path.id} className="min-w-0">
+                              <p className="mb-2 text-sm font-semibold">{path.name}</p>
+                              {pathStages.length === 0 ? (
+                                <p className="text-xs text-muted-foreground">Nenhuma etapa cadastrada neste caminho ainda.</p>
+                              ) : (
+                                <div className="space-y-4">{pathStages.map((s, i) => renderStage(s, i, false))}</div>
+                              )}
+                              {mergeStage && (
+                                <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
+                                  <CornerDownRight className="h-3.5 w-3.5" /> Volta para: <span className="font-medium text-foreground">{mergeStage.name}</span>
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </Accordion>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );
@@ -321,86 +395,61 @@ function Biblioteca() {  const fn = useServerFn(listMessages);
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input className="pl-9" placeholder="Buscar por título, conteúdo, tag, categoria..."
-            value={filter} onChange={(e) => setFilter(e.target.value)} />
-        </div>
+      <div className="relative mb-3">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input className="h-10 pl-9" placeholder="Buscar por título, conteúdo, tag ou categoria…"
+          value={filter} onChange={(e) => setFilter(e.target.value)} />
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-3">
-        <Button size="sm" variant={activeCat === "todos" ? "default" : "outline"} onClick={() => { setActiveCat("todos"); setActiveSub("todos"); }}>
-          Todas categorias
-        </Button>
+      <PillRow className="mb-2" role="group" aria-label="Categoria">
+        <Pill active={activeCat === "todos"} onClick={() => { setActiveCat("todos"); setActiveSub("todos"); }}>
+          Todas
+        </Pill>
         {categories.map(([id, name]) => (
-          <Button key={id} size="sm" variant={activeCat === id ? "default" : "outline"}
-            onClick={() => { setActiveCat(id); setActiveSub("todos"); }}>
+          <Pill key={id} active={activeCat === id} onClick={() => { setActiveCat(id); setActiveSub("todos"); }}>
             {name}
-          </Button>
+          </Pill>
         ))}
-      </div>
+      </PillRow>
 
       {subcategories.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-4 pl-2 border-l-2 border-border">
-          <Button size="sm" variant={activeSub === "todos" ? "secondary" : "ghost"} onClick={() => setActiveSub("todos")}>
-            Todas subcategorias
-          </Button>
+        <PillRow className="mb-2 ml-1 border-l border-border pl-3" role="group" aria-label="Subcategoria">
+          <Pill active={activeSub === "todos"} onClick={() => setActiveSub("todos")}>Todas</Pill>
           {subcategories.map(([id, name]) => (
-            <Button key={id} size="sm" variant={activeSub === id ? "secondary" : "ghost"} onClick={() => setActiveSub(id)}>
-              {name}
-            </Button>
+            <Pill key={id} active={activeSub === id} onClick={() => setActiveSub(id)}>{name}</Pill>
           ))}
-        </div>
+        </PillRow>
       )}
 
-      <p className="text-xs text-muted-foreground mb-3">{filtered.length} mensagem(ns)</p>
+      <p className="mb-3 mt-3 text-xs text-muted-foreground">
+        {filtered.length} {filtered.length === 1 ? "mensagem" : "mensagens"}
+      </p>
 
       {q.isLoading && (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3">
           <SkeletonCard />
           <SkeletonCard />
         </div>
       )}
       {!q.isLoading && filtered.length === 0 && (
-        <Card className="p-10 text-center">
-          <p className="text-muted-foreground">Nenhuma mensagem encontrada.</p>
-          <p className="text-xs text-muted-foreground mt-1">Cadastre no Painel Admin → Mensagens.</p>
-        </Card>
+        <div className="rounded-xl border border-border bg-card px-5 py-8 text-center">
+          <p className="font-medium">Nenhuma mensagem encontrada.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Tente outra palavra ou limpe os filtros. Novas mensagens são cadastradas no Painel Admin → Mensagens.</p>
+        </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-2.5 2xl:grid-cols-2">
         {filtered.map((m) => (
-          <Card key={m.id} className="p-4 flex flex-col gap-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                {m.category && (
-                  <p className="text-xs uppercase tracking-wide text-primary font-medium">
-                    {m.category.name}{m.subcategory ? ` · ${m.subcategory.name}` : ""}
-                  </p>
-                )}
-                <h3 className="font-semibold mt-0.5">{m.title}</h3>
-              </div>
-<CopyButton text={m.content} onCopy={() => incUse({ data: { id: m.id } })} />
-            </div>
-            <div className="rounded-md bg-muted/40 border border-border p-3 max-h-64 overflow-y-auto">
-              <Markdown>{m.content}</Markdown>
-            </div>
-            {m.image_url && (
-              <div className="space-y-1.5">
-                <img src={m.image_url} alt={m.title} className="rounded-md border border-border max-h-56 object-contain" />
-                <DownloadImageButton url={m.image_url} filename={`${m.title}.${m.image_ext || "jpg"}`} />
-              </div>
-            )}
+          <div key={m.id} className="flex flex-col gap-1.5">
+            <MessageCard m={m} showCategory onCopy={() => incUse({ data: { id: m.id } })} />
             {m.tags?.length > 0 && (
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1 px-1">
                 {m.tags.map((t) => (
-                  <span key={t} className="text-[10px] px-1.5 py-0.5 bg-muted rounded">#{t}</span>
+                  <span key={t} className="text-[11px] text-muted-foreground">#{t}</span>
                 ))}
               </div>
             )}
-            {m.internal_note && <p className="text-xs text-muted-foreground italic">📝 {m.internal_note}</p>}
-          </Card>
+          </div>
         ))}
       </div>
     </div>
