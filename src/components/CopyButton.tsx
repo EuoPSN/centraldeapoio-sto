@@ -12,6 +12,11 @@ interface CopyButtonProps {
   onCopy?: () => void;
 }
 
+/**
+ * Botão Copiar: uma das duas ações principais da Central.
+ * Largura fixa para ficar sempre alinhado na mesma coluna, com
+ * confirmação visível ("Copiado") sem deslocar o layout.
+ */
 export function CopyButton({
   text,
   label = "Copiar",
@@ -21,12 +26,20 @@ export function CopyButton({
   onCopy,
 }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
+  const isIcon = size === "icon";
   return (
     <Button
       type="button"
       variant={variant}
       size={size}
-      className={cn("gap-1.5", className)}
+      aria-label={isIcon ? (copied ? "Copiado" : label) : undefined}
+      title={isIcon ? label : undefined}
+      className={cn(
+        "shrink-0 gap-1.5",
+        isIcon ? "h-9 w-9 rounded-[10px] text-primary" : "min-w-[6.25rem] font-semibold text-primary",
+        copied && "border-primary bg-accent text-primary",
+        className,
+      )}
       onClick={async (e) => {
         e.stopPropagation();
         await navigator.clipboard.writeText(text);
@@ -35,8 +48,8 @@ export function CopyButton({
         setTimeout(() => setCopied(false), 1500);
       }}
     >
-      {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-      {size !== "icon" && <span>{copied ? "Copiado!" : label}</span>}
+      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+      {!isIcon && <span aria-live="polite">{copied ? "Copiado" : label}</span>}
     </Button>
   );
 }

@@ -5,13 +5,20 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ============================================================
- * Cartão de Todos — Design System
- * Corporativo, limpo, profissional.
- * Paleta institucional: verde teal (primário) + verde lima (acento)
+ * Central de Apoio — sistema visual (redesign de 18/11/2026)
+ * Software de trabalho limpo: fundo claro, superfícies brancas com
+ * borda fina, verde CDT profundo no topo e no item ativo, fonte de
+ * sistema. O único elemento chamativo é a etiqueta de preço de
+ * gôndola (.price-tag). Documentado em DESIGN.md.
+ *
+ * Temas de cores: o seletor foi removido nesta fase e volta numa
+ * atualização futura. Até lá, as cores abaixo valem para todos e o
+ * active_theme salvo no banco não altera nada.
  * ============================================================ */
 
 @theme inline {
-  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-price: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -27,7 +34,6 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
-  --color-primary-glow: var(--primary-glow);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
@@ -43,6 +49,13 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-muted: var(--brand-muted);
+  --color-tag: var(--tag);
+  --color-tag-foreground: var(--tag-foreground);
+  --color-tag-promo: var(--tag-promo);
+  --color-tag-promo-foreground: var(--tag-promo-foreground);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -52,103 +65,62 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  --shadow-card: 0 1px 2px 0 oklch(0.2 0.04 200 / 0.04), 0 1px 3px 0 oklch(0.2 0.04 200 / 0.06);
-  --shadow-elevated: 0 4px 12px -2px oklch(0.2 0.04 200 / 0.08), 0 2px 4px -1px oklch(0.2 0.04 200 / 0.04);
-  --shadow-brand: 0 10px 30px -8px oklch(0.62 0.13 175 / 0.32);
+  /* Sombra só para o que flutua de verdade (menus, diálogos, toasts). */
+  --shadow-overlay: 0 8px 24px -6px oklch(0.25 0.03 160 / 0.18), 0 2px 6px -2px oklch(0.25 0.03 160 / 0.10);
 }
 
 :root {
   --radius: 0.625rem;
+  --topbar-h: 6.25rem;
 
-  /* ===== Variáveis de tema customizáveis (valores padrão = verde Cartão de Todos) ===== */
-  --theme-primary: 177 100% 32%;              /* verde teal #00A19A */
-  --theme-primary-foreground: 0 0% 100%;
-  --theme-accent: 89 72% 48%;                 /* verde lima #7ED321 */
-  --theme-accent-foreground: 140 40% 15%;
-  --theme-sidebar-bg: 0 0% 100%;
-  --theme-sidebar-text: 220 15% 30%;
+  /* Fundo cinza-esverdeado muito claro; superfícies brancas */
+  --background: #f4f6f4;
+  --foreground: #1c221f;
+  --card: #ffffff;
+  --card-foreground: #1c221f;
+  --popover: #ffffff;
+  --popover-foreground: #1c221f;
 
-  /* Fundos / superfícies */
-  --background: oklch(0.985 0.005 200);          /* #F5F7FA cinza muito claro */
-  --foreground: oklch(0.22 0.03 240);            /* #2D3748 cinza escuro */
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.22 0.03 240);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.22 0.03 240);
+  /* Verde CDT profundo: barra superior, item ativo, ação principal */
+  --brand: #0b6b45;
+  --brand-foreground: #ffffff;
+  --brand-muted: #d5ebdf;           /* texto secundário sobre o verde */
+  --primary: #0b6b45;
+  --primary-foreground: #ffffff;
 
-  /* Verde teal institucional (#00A19A aprox) */
-  --primary: hsl(var(--theme-primary));
-  --primary-foreground: hsl(var(--theme-primary-foreground));
-  --primary-glow: hsl(var(--theme-primary) / 0.75);
+  --secondary: #eef1ef;
+  --secondary-foreground: #1c221f;
+  --muted: #eef1ef;
+  --muted-foreground: #5c6862;
+  --accent: #e7f1eb;                /* hover e seleção leve */
+  --accent-foreground: #0b6b45;
 
-  /* Verde lima vibrante (#7ED321 aprox) */
-  --accent: hsl(var(--theme-accent));
-  --accent-foreground: hsl(var(--theme-accent-foreground));
+  /* Cor de estado só onde significa algo */
+  --destructive: #c62a1f;
+  --destructive-foreground: #ffffff;
+  --success: #12804f;
+  --success-foreground: #ffffff;
+  --warning: #9a5b00;
+  --warning-foreground: #ffffff;
 
-  --secondary: oklch(0.965 0.01 200);
-  --secondary-foreground: oklch(0.28 0.03 240);
+  --border: #e1e6e2;
+  --input: #d6ddd8;
+  --ring: #0b6b45;
 
-  --muted: oklch(0.96 0.008 220);
-  --muted-foreground: oklch(0.5 0.02 240);
+  /* Etiqueta de gôndola */
+  --tag: #ffd400;
+  --tag-foreground: #1c221f;
+  --tag-promo: #e1251b;
+  --tag-promo-foreground: #ffffff;
 
-  --destructive: oklch(0.58 0.22 27);
-  --destructive-foreground: oklch(1 0 0);
-
-  --success: oklch(0.65 0.16 155);
-  --success-foreground: oklch(1 0 0);
-
-  --warning: oklch(0.75 0.16 75);
-  --warning-foreground: oklch(0.25 0.05 75);
-
-  --border: oklch(0.92 0.008 220);
-  --input: oklch(0.92 0.008 220);
-  --ring: hsl(var(--theme-primary));
-
-  /* Sidebar — controlada pelas variáveis de tema */
-  --sidebar: hsl(var(--theme-sidebar-bg));
-  --sidebar-foreground: hsl(var(--theme-sidebar-text));
-  --sidebar-primary: hsl(var(--theme-primary));
-  --sidebar-primary-foreground: hsl(var(--theme-primary-foreground));
-  --sidebar-accent: hsl(var(--theme-primary) / 0.12);
-  --sidebar-accent-foreground: hsl(var(--theme-primary));
-  --sidebar-border: hsl(var(--theme-sidebar-text) / 0.15);
-  --sidebar-ring: hsl(var(--theme-primary));
-}
-
-
-.dark {
-  --background: oklch(0.18 0.02 230);
-  --foreground: oklch(0.96 0.005 200);
-  --card: oklch(0.22 0.025 230);
-  --card-foreground: oklch(0.96 0.005 200);
-  --popover: oklch(0.22 0.025 230);
-  --popover-foreground: oklch(0.96 0.005 200);
-  --primary: oklch(0.7 0.14 178);
-  --primary-foreground: oklch(0.15 0.02 230);
-  --primary-glow: oklch(0.78 0.14 175);
-  --accent: oklch(0.78 0.2 130);
-  --accent-foreground: oklch(0.18 0.05 140);
-  --secondary: oklch(0.28 0.03 230);
-  --secondary-foreground: oklch(0.96 0.005 200);
-  --muted: oklch(0.26 0.025 230);
-  --muted-foreground: oklch(0.7 0.02 220);
-  --destructive: oklch(0.65 0.22 27);
-  --destructive-foreground: oklch(1 0 0);
-  --success: oklch(0.7 0.16 155);
-  --success-foreground: oklch(0.15 0.05 140);
-  --warning: oklch(0.78 0.16 75);
-  --warning-foreground: oklch(0.18 0.05 75);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.7 0.14 178);
-  --sidebar: oklch(0.2 0.025 230);
-  --sidebar-foreground: oklch(0.95 0.005 200);
-  --sidebar-primary: oklch(0.7 0.14 178);
-  --sidebar-primary-foreground: oklch(0.15 0.02 230);
-  --sidebar-accent: oklch(0.28 0.04 178);
-  --sidebar-accent-foreground: oklch(0.95 0.005 200);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.7 0.14 178);
+  --sidebar: #ffffff;
+  --sidebar-foreground: #3a443f;
+  --sidebar-primary: #0b6b45;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e7f1eb;
+  --sidebar-accent-foreground: #0b6b45;
+  --sidebar-border: #e1e6e2;
+  --sidebar-ring: #0b6b45;
 }
 
 @layer base {
@@ -164,6 +136,50 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
+  ::selection {
+    background: #bfe3cf;
+    color: #0a3d28;
+  }
+  :focus-visible {
+    outline-color: var(--color-ring);
+  }
+  * {
+    scrollbar-color: #c9d1cc transparent;
+  }
+}
+
+/* ============================================================
+ * Etiqueta de gôndola: o único elemento chamativo da Central.
+ * Amarela para preço normal; vermelha (.is-promo) para promoção.
+ * Ponta recortada à esquerda e numeral condensado pesado.
+ * ============================================================ */
+@utility price-tag {
+  display: inline-flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 0.125rem;
+  min-width: 6.25rem;
+  padding: 0.25rem 0.625rem 0.1875rem 1.125rem;
+  background: var(--color-tag);
+  color: var(--color-tag-foreground);
+  clip-path: polygon(0.625rem 0, 100% 0, 100% 100%, 0.625rem 100%, 0 50%);
+  font-family: var(--font-price);
+  font-weight: 800;
+  font-size: 1.5rem;
+  line-height: 1;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums lining-nums;
+  white-space: nowrap;
+}
+@utility price-tag-sm {
+  min-width: 4.75rem;
+  padding: 0.1875rem 0.5rem 0.125rem 0.875rem;
+  clip-path: polygon(0.5rem 0, 100% 0, 100% 100%, 0.5rem 100%, 0 50%);
+  font-size: 1.125rem;
+}
+@utility price-tag-promo {
+  background: var(--color-tag-promo);
+  color: var(--color-tag-promo-foreground);
 }
 
 /* Transição suave entre páginas */
@@ -208,7 +224,7 @@
   & ul { list-style: disc; }
   & ol { list-style: decimal; }
   & strong { font-weight: 600; color: var(--color-foreground); }
-  & a { color: var(--color-primary); text-decoration: underline; }
+  & a { color: var(--color-primary); text-decoration: underline; text-underline-offset: 2px; }
   & code {
     background: var(--color-muted);
     padding: 0.125rem 0.35rem;
@@ -217,8 +233,8 @@
     font-family: ui-monospace, "SF Mono", Menlo, monospace;
   }
   & pre {
-    background: oklch(0.2 0.03 230);
-    color: oklch(0.95 0.005 200);
+    background: #1c221f;
+    color: #eef1ef;
     padding: 1rem;
     border-radius: 0.5rem;
     overflow-x: auto;

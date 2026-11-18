@@ -8,7 +8,7 @@ interface SkeletonCardProps {
 export function SkeletonCard({ className, lines = 3 }: SkeletonCardProps) {
   return (
     <div
-      className={cn("rounded-xl border bg-card p-6 shadow animate-pulse", className)}
+      className={cn("rounded-xl border bg-card p-6 animate-pulse", className)}
       aria-hidden="true"
     >
       <div className="h-5 w-1/3 rounded bg-muted" />
