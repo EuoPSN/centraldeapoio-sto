@@ -158,7 +158,8 @@ function WelcomeBand({
       <Orbits />
 
       <div className="relative flex flex-col gap-7 px-6 py-8 sm:px-10 sm:py-10 min-[900px]:flex-row min-[900px]:items-center min-[900px]:justify-between min-[900px]:gap-10 min-[900px]:pl-12 min-[900px]:pr-12">
-        <div className="min-w-0 flex-1">
+        {/* Coluna de texto com largura máxima: quebra linha antes do bloco do check-list. */}
+        <div className="min-w-0 flex-1 min-[900px]:max-w-[640px]">
           <p className="text-xs font-light uppercase tracking-[0.22em]" style={{ color: BAND.muted }}>
             {hojePorExtenso()}
           </p>
@@ -181,10 +182,10 @@ function WelcomeBand({
             <SkeletonBar className="mt-3 h-4 w-80 max-w-full bg-white/10" />
           ) : (
             mensagem && (
-              <p className="mt-3 max-w-[70ch] text-[15px] font-light leading-6" style={{ color: BAND.quote }}>
+              <p className="mt-3 text-[15px] font-light leading-6 [overflow-wrap:anywhere]" style={{ color: BAND.quote }}>
                 “{mensagem.titulo}”
                 {mensagem.subtitulo && (
-                  <span className="ml-2 whitespace-nowrap text-[13px] font-medium uppercase tracking-[0.06em]" style={{ color: BAND.gold }}>
+                  <span className="ml-2 text-[13px] font-medium uppercase tracking-[0.06em]" style={{ color: BAND.gold }}>
                     {mensagem.subtitulo}
                   </span>
                 )}
@@ -263,7 +264,7 @@ function ChecklistBlock({ loading, done, total, completo }: { loading: boolean; 
       className="block w-full shrink-0 rounded-xl border border-white/[0.08] bg-white/[0.035] px-5 pb-5 pt-[18px] transition-colors hover:border-white/15 hover:bg-white/[0.05] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D4AF37] min-[900px]:w-[300px]"
     >
       <p className="text-xs font-semibold uppercase tracking-[0.12em]" style={{ color: BAND.quote }}>Check-list de hoje</p>
-      <div className="mt-2 flex h-9 items-baseline gap-2">
+      <div className="mt-2 flex h-9 items-baseline gap-1.5">
         {loading ? (
           <SkeletonBar className="mt-2 h-6 w-28 bg-white/10" />
         ) : completo ? (
@@ -271,7 +272,7 @@ function ChecklistBlock({ loading, done, total, completo }: { loading: boolean; 
         ) : (
           <>
             <span className="text-[28px] font-normal leading-9 tabular-nums" style={{ color: BAND.ink }}>{done}</span>
-            <span className="text-[15px]" style={{ color: BAND.quote }}>de {total} {total === 1 ? "item" : "itens"}</span>
+            <span className="text-[15px] leading-9" style={{ color: BAND.quote }}>de {total} {total === 1 ? "item" : "itens"}</span>
           </>
         )}
       </div>
