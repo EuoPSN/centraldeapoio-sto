@@ -37,13 +37,20 @@ export const saveSimulatorResult = createServerFn({ method: "POST" })
     if (error) throw error;
 
     const ganho = xpForDifficulty(data.difficulty, data.nota);
-    const { data: prof } = await context.supabase
+    // XP é gravado com a service role: o usuário não pode alterar xp no próprio
+    // perfil (trigger profiles_guard_protected_columns).
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: prof } = await supabaseAdmin
       .from("profiles")
       .select("xp")
       .eq("id", context.userId)
       .single();
     const novoXp = (prof?.xp ?? 0) + ganho;
-    await context.supabase.from("profiles").update({ xp: novoXp }).eq("id", context.userId);
+    const { error: xpError } = await supabaseAdmin
+      .from("profiles")
+      .update({ xp: novoXp })
+      .eq("id", context.userId);
+    if (xpError) throw xpError;
 
     return { ganho, novoXp };
   });
@@ -73,13 +80,20 @@ export const saveProblemSimulatorResult = createServerFn({ method: "POST" })
     if (error) throw error;
 
     const ganho = xpForDifficulty(data.difficulty, data.nota);
-    const { data: prof } = await context.supabase
+    // XP é gravado com a service role: o usuário não pode alterar xp_problemas no próprio
+    // perfil (trigger profiles_guard_protected_columns).
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: prof } = await supabaseAdmin
       .from("profiles")
       .select("xp_problemas")
       .eq("id", context.userId)
       .single();
     const novoXp = (prof?.xp_problemas ?? 0) + ganho;
-    await context.supabase.from("profiles").update({ xp_problemas: novoXp }).eq("id", context.userId);
+    const { error: xpError } = await supabaseAdmin
+      .from("profiles")
+      .update({ xp_problemas: novoXp })
+      .eq("id", context.userId);
+    if (xpError) throw xpError;
 
     return { ganho, novoXp };
   });
