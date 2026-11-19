@@ -303,3 +303,67 @@ html.theme-transition *::after {
     margin: 0.75em 0;
   }
 }
+
+/* ============================================================
+ * MarcIAna · olho orbital (src/components/marciana/MarcianaEye.tsx)
+ * Animações fiéis a docs/redesign-omnia/marciana-animacoes.html.
+ * ============================================================ */
+.marciana-eye * { transform-box: view-box; transform-origin: 50px 50px; }
+.marciana-eye__moon { opacity: 0; }
+
+/* idle: pisca devagar a cada ~5s */
+.marciana-eye--idle .marciana-eye__eye { animation: marciana-blink 5s infinite; }
+@keyframes marciana-blink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(.08); }
+}
+
+/* thinking: pupila dilata + ponto orbita o anel */
+.marciana-eye--thinking .marciana-eye__pupil { animation: marciana-dilate 1.6s ease-in-out infinite; }
+@keyframes marciana-dilate {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.9); }
+}
+.marciana-eye--thinking .marciana-eye__moon { opacity: 1; animation: marciana-orbit 1.6s linear infinite; }
+@keyframes marciana-orbit { to { transform: rotate(360deg); } }
+
+/* writing: pupila vai de um lado ao outro enquanto a resposta aparece */
+.marciana-eye--writing .marciana-eye__iris { animation: marciana-read 1.4s ease-in-out infinite; }
+@keyframes marciana-read {
+  0%, 100% { transform: translateX(-6px); }
+  50% { transform: translateX(6px); }
+}
+
+/* done: uma piscada + pupila volta ao normal (toca uma vez) */
+.marciana-eye--done .marciana-eye__eye { animation: marciana-blink-once 2.4s 1; }
+.marciana-eye--done .marciana-eye__pupil { animation: marciana-shrink 2.4s 1; }
+@keyframes marciana-blink-once {
+  0%, 10%, 30%, 100% { transform: scaleY(1); }
+  18% { transform: scaleY(.08); }
+}
+@keyframes marciana-shrink {
+  0%, 30% { transform: scale(1.9); }
+  50%, 100% { transform: scale(1); }
+}
+
+/* miss: semicerra e olha para baixo (sem resposta na base) */
+.marciana-eye--miss .marciana-eye__eye { animation: marciana-squint 2.6s ease-in-out infinite; }
+.marciana-eye--miss .marciana-eye__iris { animation: marciana-down 2.6s ease-in-out infinite; }
+@keyframes marciana-squint {
+  0%, 100% { transform: scaleY(1); }
+  40%, 70% { transform: scaleY(.55); }
+}
+@keyframes marciana-down {
+  0%, 100% { transform: translateY(0); }
+  40%, 70% { transform: translateY(3px); }
+}
+
+/* listening: transição suave para o deslocamento da pupila (via JS, segue o mouse) */
+.marciana-eye--listening .marciana-eye__iris { transition: transform .25s ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  .marciana-eye, .marciana-eye * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

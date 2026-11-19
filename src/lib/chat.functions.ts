@@ -17,7 +17,25 @@ export const listConversations = createServerFn({ method: "GET" })
       .eq("user_id", context.userId)
       .order("updated_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return data ?? [];
+    const convs = data ?? [];
+
+    // Busca do histórico filtra por título E pelo texto das mensagens — junta
+    // um resumo do conteúdo de cada conversa pra filtrar no cliente sem outra
+    // viagem ao servidor a cada tecla digitada.
+    const ids = convs.map((c) => c.id);
+    const searchTextByConv = new Map<string, string>();
+    if (ids.length > 0) {
+      const { data: msgs } = await context.supabase
+        .from("chat_messages")
+        .select("conversation_id,content")
+        .in("conversation_id", ids);
+      for (const m of msgs ?? []) {
+        const prev = searchTextByConv.get(m.conversation_id) ?? "";
+        searchTextByConv.set(m.conversation_id, `${prev} ${m.content}`.slice(0, 4000));
+      }
+    }
+
+    return convs.map((c) => ({ ...c, search_text: searchTextByConv.get(c.id) ?? "" }));
   });
 
 export const createConversation = createServerFn({ method: "POST" })
@@ -52,7 +70,7 @@ export const getMessages = createServerFn({ method: "POST" })
     // RLS já restringe ao dono (ou admin)
     const { data: msgs, error } = await context.supabase
       .from("chat_messages")
-      .select("id,role,content,attachments,created_at")
+      .select("id,role,content,attachments,sources,cliente_mensagem,sem_base,created_at")
       .eq("conversation_id", data.conversationId)
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
@@ -280,8 +298,9 @@ const { data: settings } = await supabaseAdmin
         .map((m) => ({ title: m.title, source_type: m.source_type }));
     }
 
+    const semBase = !foundAny && !essentialFacts && data.images.length === 0;
     let reply: string;
-    if (!foundAny && !essentialFacts && data.images.length === 0) {
+    if (semBase) {
       reply = "Não encontrei essa informação na base de conhecimento. Peça para um administrador cadastrar esse conteúdo em **Conhecimento → Base de Conhecimento IA** e tente novamente.";
     } else {
         const augmentedSystem = `${systemPrompt}
@@ -310,18 +329,17 @@ REGRAS:
       });
     }
 
-    // Anexa fontes ao corpo da resposta (renderizadas pelo markdown)
-    const finalContent = foundAny && sources.length > 0
-      ? `${reply}\n\n---\n**Fontes consultadas:**\n${sources.map((s) => `- *${s.source_type}* — ${s.title}`).join("\n")}`
-      : reply;
-
-    // 7) Salva resposta
+    // 7) Salva resposta — fontes vão na própria coluna (não mais concatenadas
+    // no texto); mensagens antigas continuam lidas pelo formato concatenado
+    // no cliente (ver SOURCES_MARKER em assistente.tsx).
     const { data: assistantMsg, error: aErr } = await context.supabase
       .from("chat_messages")
       .insert({
         conversation_id: data.conversationId,
         role: "assistant",
-        content: finalContent,
+        content: reply,
+        sources: foundAny && sources.length > 0 ? sources : null,
+        sem_base: semBase,
       })
       .select()
       .single();
@@ -337,6 +355,83 @@ REGRAS:
     await context.supabase.from("chat_conversations").update(updates).eq("id", data.conversationId);
 
     return { assistantMessage: assistantMsg };
+  });
+
+// Mesmo marcador usado antes de "sources" existir como coluna — mensagens
+// antigas trazem as fontes concatenadas nesse formato dentro de "content".
+const LEGACY_SOURCES_MARKER = "\n\n---\n**Fontes consultadas:**\n";
+function stripLegacySources(content: string): string {
+  const idx = content.indexOf(LEGACY_SOURCES_MARKER);
+  return idx === -1 ? content : content.slice(0, idx);
+}
+
+// ============================================================
+// "Mensagem para o cliente": reescreve a resposta da MarcIAna como uma
+// mensagem curta de WhatsApp, gerada sob demanda e salva junto da mensagem.
+// ============================================================
+export const generateClientMessage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ messageId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: msg, error: msgErr } = await context.supabase
+      .from("chat_messages")
+      .select("id,role,content,conversation_id")
+      .eq("id", data.messageId)
+      .single();
+    if (msgErr || !msg) throw new Error("Mensagem não encontrada");
+    if (msg.role !== "assistant") throw new Error("Só é possível gerar mensagem para o cliente a partir de uma resposta da MarcIAna");
+
+    const { data: conv, error: convErr } = await context.supabase
+      .from("chat_conversations")
+      .select("id,user_id")
+      .eq("id", msg.conversation_id)
+      .single();
+    if (convErr || !conv) throw new Error("Conversa não encontrada");
+    if (conv.user_id !== context.userId) {
+      const isAdmin = await isAdminUser(context.supabase, context.userId);
+      if (!isAdmin) throw new Error("Sem permissão");
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: settings } = await supabaseAdmin
+      .from("ai_settings")
+      .select("model")
+      .eq("id", 1)
+      .single();
+    const model = settings?.model ?? MARCIANA_CHAT_MODEL;
+
+    const respostaBase = stripLegacySources(msg.content);
+    const prompt = `Reescreva a resposta abaixo (dada a um atendente do Cartão de TODOS) como uma mensagem curta para enviar ao CLIENTE pelo WhatsApp.
+
+Regras obrigatórias:
+- Tom acolhedor, no estilo da marca Cartão de TODOS.
+- No máximo 3 frases.
+- Pode usar no máximo 1 emoji.
+- Termine com uma pergunta que avance a conversa com o cliente.
+- Sem jargão interno (não fale como se fosse para outro atendente).
+- NUNCA diga "não é plano de saúde".
+- Não invente valores, prazos ou condições que não estejam no texto abaixo.
+
+Resposta original (para o atendente):
+"""
+${respostaBase}
+"""
+
+Responda apenas com a mensagem para o cliente, sem introdução, sem aspas, sem markdown.`;
+
+    const clienteMensagem = (await chatCompletion({
+      model,
+      temperature: 0.4,
+      messages: [{ role: "system", content: prompt }, { role: "user", content: "Gere a mensagem." }],
+    })).trim();
+
+    const { error: updErr } = await context.supabase
+      .from("chat_messages")
+      .update({ cliente_mensagem: clienteMensagem })
+      .eq("id", data.messageId);
+    if (updErr) throw new Error(updErr.message);
+
+    return { cliente_mensagem: clienteMensagem };
   });
 
 // ============================================================
