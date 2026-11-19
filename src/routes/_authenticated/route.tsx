@@ -9,7 +9,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { getMe } from "@/lib/content.functions";
 import { touchLastSeen } from "@/lib/dashboard.functions";
 import { Search } from "lucide-react";
-import { AppLogo } from "@/components/AppLogo";
+import { OmniaLockup } from "@/components/OmniaLogo";
 import { listNavItems } from "@/lib/settings.functions";
 import { cn } from "@/lib/utils";
 import { useEffect } from "react";
@@ -78,7 +78,7 @@ function AppLayout() {
             className="h-9 w-9 shrink-0 text-brand-foreground hover:bg-white/12 hover:text-brand-foreground"
           />
           <Link to="/" aria-label="Início" className="flex shrink-0 items-center rounded-lg bg-white px-2 py-1">
-            <AppLogo size="sm" className="!h-6" />
+            <OmniaLockup symbolSize={24} />
           </Link>
           <button
             type="button"

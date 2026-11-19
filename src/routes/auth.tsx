@@ -7,14 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AppLogo } from "@/components/AppLogo";
+import { OmniaLockup } from "@/components/OmniaLogo";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Entrar — Central CDT" },
-      { name: "description", content: "Acesse a central interna do Cartão de Todos." },
+      { title: "Entrar — OMNIA Apoio" },
+      { name: "description", content: "Acesse a OMNIA Apoio." },
     ],
   }),
   component: AuthPage,
@@ -86,9 +86,9 @@ function AuthPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
-          <AppLogo size="xl" />
+          <OmniaLockup symbolSize={40} />
           <p className="mt-4 text-sm text-muted-foreground text-center">
-            Central interna de conhecimento e atendimento
+            Scripts, preços e a MarcIAna num só lugar
           </p>
         </div>
 
@@ -150,7 +150,7 @@ function AuthPage() {
         </Card>
 
         <p className="mt-6 text-xs text-center text-muted-foreground">
-          Uso interno — Cartão de Todos
+          Uso interno — equipe de Venda Interna
         </p>
       </div>
     </div>

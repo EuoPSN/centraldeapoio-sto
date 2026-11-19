@@ -13,7 +13,6 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { AppSettingsEffects } from "@/components/AppSettingsEffects";
 import { RouteLoadingOverlay } from "@/components/RouteLoadingOverlay";
 
 function NotFoundComponent() {
@@ -81,17 +80,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Central CDT — Cartão de Todos" },
+      { title: "OMNIA Apoio" },
       {
         name: "description",
         content:
-          "Central de conhecimento, scripts de atendimento e Assistente IA do Cartão de Todos.",
+          "OMNIA Apoio: scripts, preços e a MarcIAna para a equipe de Venda Interna.",
       },
-      { property: "og:title", content: "Central CDT — Cartão de Todos" },
-      { name: "twitter:title", content: "Central CDT — Cartão de Todos" },
-      { name: "description", content: "Cartão de Todos Connect is an internal employee portal for knowledge, support, and real-time AI assistance." },
-      { property: "og:description", content: "Cartão de Todos Connect is an internal employee portal for knowledge, support, and real-time AI assistance." },
-      { name: "twitter:description", content: "Cartão de Todos Connect is an internal employee portal for knowledge, support, and real-time AI assistance." },
+      { property: "og:title", content: "OMNIA Apoio" },
+      { name: "twitter:title", content: "OMNIA Apoio" },
+      { name: "description", content: "OMNIA Apoio: scripts, preços e a MarcIAna para a equipe de Venda Interna." },
+      { property: "og:description", content: "OMNIA Apoio: scripts, preços e a MarcIAna para a equipe de Venda Interna." },
+      { name: "twitter:description", content: "OMNIA Apoio: scripts, preços e a MarcIAna para a equipe de Venda Interna." },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/46f60b4a-ed72-4672-98df-d3b31dca7bd8/id-preview-d33fb85a--4b742393-3645-4ee4-ac37-09246ab18a0f.lovable.app-1782407255174.png" },
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/46f60b4a-ed72-4672-98df-d3b31dca7bd8/id-preview-d33fb85a--4b742393-3645-4ee4-ac37-09246ab18a0f.lovable.app-1782407255174.png" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -147,7 +146,6 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AppSettingsEffects />
       <Outlet />
       <RouteLoadingOverlay />
       <Toaster richColors closeButton position="top-right" />

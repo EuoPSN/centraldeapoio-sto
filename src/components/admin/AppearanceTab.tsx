@@ -10,9 +10,10 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Palette } from "lucide-react";
 
-// Temas de cores: removidos no redesign de 18/11/2026; voltam numa atualização
-// futura. As cores e o active_theme continuam salvos em app_settings (o
-// formulário reenvia os valores atuais sem mudança), mas não alteram o visual.
+// Identidade OMNIA Apoio: o nome da aba do navegador e o favicon são fixos
+// (src/routes/__root.tsx). Os campos abaixo continuam salvos em app_settings,
+// mas não alteram o visual. Temas coloridos podem voltar numa atualização
+// futura; o active_theme salvo no banco não muda mais as cores.
 
 
 interface Settings {
@@ -58,9 +59,9 @@ export function AppearanceTab() {
       <div className="flex items-start gap-3 rounded-xl border border-border bg-card p-4">
         <Palette className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
         <div>
-          <p className="text-sm font-medium">Temas de cores voltam numa atualização futura</p>
+          <p className="text-sm font-medium">A identidade agora é a OMNIA Apoio</p>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            Nesta versão a Central usa um visual único para todos. As cores salvas antes continuam guardadas, mas não mudam a aparência.
+            Nome, ícone e cores seguem a marca OMNIA, com tema claro ou escuro escolhido por cada pessoa. Os campos abaixo ficam guardados, mas não mudam a aparência. Temas coloridos podem voltar numa atualização futura.
           </p>
         </div>
       </div>
