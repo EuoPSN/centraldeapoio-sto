@@ -1,6 +1,8 @@
 // Lovable AI Gateway helper — server-only.
 // Centraliza chamadas para chat completions e embeddings.
 
+import { EMBEDDING_MODEL } from "@/lib/ai-models";
+
 const GATEWAY_BASE = "https://ai.gateway.lovable.dev/v1";
 
 function requireKey() {
@@ -112,7 +114,7 @@ export async function generateEmbeddings(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "openai/text-embedding-3-small",
+        model: EMBEDDING_MODEL,
         input: texts,
         dimensions: 1536,
       }),

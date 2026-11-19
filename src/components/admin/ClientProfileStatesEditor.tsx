@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Badge } from "@/components/ui/badge";
 import { ArrowDown, ArrowUp, ImagePlus, Pencil, Plus, Trash2, X, Sparkles, MapPin } from "lucide-react";
 import { toast } from "sonner";
+import { SCENARIO_GENERATION_MODEL } from "@/lib/ai-models";
 
 interface JourneyState {
   id: string;
@@ -268,7 +269,7 @@ Regras obrigatórias:
 Responda APENAS com JSON válido, sem markdown e sem texto fora do JSON, neste formato exato:
 {"estados": [{"name": "...", "example_lines": "...", "advance_criteria": "...", "sendsDocument": false}]}`;
 
-      const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: "Gere a jornada." }], model: "google/gemini-2.5-flash" } });
+      const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: "Gere a jornada." }], model: SCENARIO_GENERATION_MODEL } });
       const clean = content.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
       const estados = Array.isArray(parsed.estados) ? parsed.estados : [];

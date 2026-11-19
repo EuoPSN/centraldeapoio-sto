@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Sparkles, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { ADMIN_ASSISTANT_MODEL } from "@/lib/ai-models";
 
 interface Entry { id: string; title: string; summary: string; published: boolean; created_at: string; }
 type DraftItem = { title: string; summary: string; selected: boolean };
@@ -40,7 +41,7 @@ Cada item deve ter:
 - "title": título curto e chamativo (até 8 palavras)
 - "summary": resumo em 1 ou 2 frases, tom animado mas profissional, explicando o que mudou e por que é bom pro usuário.
 Responda APENAS com um array JSON, no formato exato: [{"title":"...","summary":"..."}]. Sem markdown, sem texto fora do JSON.`;
-      const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: notes }], model: "google/gemini-2.5-flash" } });
+      const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: notes }], model: ADMIN_ASSISTANT_MODEL } });
       const clean = content.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
       const items: DraftItem[] = (Array.isArray(parsed) ? parsed : [])

@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { listClientProfileStates } from "@/lib/clientprofilestates.functions"; 
 import { getClientKnowledge } from "@/lib/chat.functions";
 import { WhatsAppText } from "@/components/WhatsAppText";
+import { SIMULATOR_CLIENT_MODEL, SIMULATOR_EVALUATION_MODEL } from "@/lib/ai-models";
 
 
 interface Profile {
@@ -277,7 +278,7 @@ const sendMut = useMutation({
       ...history,
       { role: "user", content: text }
     ];
-    const { content } = await sendAI({ data: { messages: payload, model: "google/gemini-2.5-flash" } });
+    const { content } = await sendAI({ data: { messages: payload, model: SIMULATOR_CLIENT_MODEL } });
     return content;
   },
   onSuccess: async (result) => {
@@ -356,7 +357,7 @@ O JSON deve ter exatamente estes campos:
       { role: "system", content: evalPrompt },
       { role: "user", content: conversa }
     ];
-    const { content } = await avaliarAI({ data: { messages: payload, model: "google/gemini-2.5-flash" } });
+    const { content } = await avaliarAI({ data: { messages: payload, model: SIMULATOR_EVALUATION_MODEL } });
     return content;
   },
   onSuccess: async (result) => {

@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { chatCompletion } from "@/lib/ai-gateway.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { SIMULATOR_CLIENT_MODEL } from "@/lib/ai-models";
 
 export const simulatorChat = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -17,7 +18,7 @@ export const simulatorChat = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }) => {
     const reply = await chatCompletion({
-      model: data.model ?? "google/gemini-2.5-flash",
+      model: data.model ?? SIMULATOR_CLIENT_MODEL,
       messages: data.messages,
       temperature: 0.7,
     });

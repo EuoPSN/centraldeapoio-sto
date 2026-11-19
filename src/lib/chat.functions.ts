@@ -3,6 +3,7 @@ import { isAdminUser } from "@/lib/authz";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { chatCompletion, generateEmbedding } from "./ai-gateway.server";
 import { z } from "zod";
+import { ADMIN_ASSISTANT_MODEL, MARCIANA_CHAT_MODEL } from "@/lib/ai-models";
 
 // ============================================================
 // Listar / criar / deletar conversas
@@ -229,7 +230,7 @@ const { data: settings } = await supabaseAdmin
       .eq("id", 1)
       .single();
     const systemPrompt = settings?.system_prompt ?? "Você é um assistente do Cartão de Todos.";
-    const model = settings?.model ?? "google/gemini-3-flash-preview";
+    const model = settings?.model ?? MARCIANA_CHAT_MODEL;
     const essentialFacts = (settings?.essential_facts ?? "").trim();
 
     // 5) RAG híbrido: busca textual primeiro (não consome IA) + embedding semântico como complemento.
@@ -357,7 +358,7 @@ export const getAiSettings = createServerFn({ method: "GET" })
 
 const SettingsInput = z.object({
   system_prompt: z.string().min(10),
-  model: z.string().min(1).default("google/gemini-3-flash-preview"),
+  model: z.string().min(1).default(MARCIANA_CHAT_MODEL),
   essential_facts: z.string().optional().nullable(),
   client_knowledge: z.string().optional().nullable(),
 });
@@ -439,7 +440,7 @@ ${partes.join("\n")}
 Responda apenas com a lista de fatos essenciais (e eventuais conflitos), sem introdução, sem título, sem markdown de cabeçalho.`;
 
     const content = await chatCompletion({
-      model: "google/gemini-2.5-flash",
+      model: ADMIN_ASSISTANT_MODEL,
       temperature: 0.1,
       messages: [{ role: "system", content: prompt }, { role: "user", content: "Gere a lista." }],
     });

@@ -3,6 +3,7 @@ import { isAdminUser } from "@/lib/authz";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { chatCompletion } from "@/lib/ai-gateway.server";
 import { z } from "zod";
+import { QUIZ_GRADING_MODEL } from "@/lib/ai-models";
 
 async function admin(ctx: { supabase: unknown; userId: string }) {
   const s = ctx.supabase as { rpc: (n: string, p: unknown) => Promise<{ data: boolean | null }> };
@@ -169,7 +170,7 @@ Resposta esperada: ${question.resposta_esperada ?? "(não definida)"}
 Resposta do atendente: ${resp.resposta_dada}
 
 Responda APENAS com um JSON no formato exato: {"correta": true ou false, "feedback": "uma frase curta explicando o motivo"}. Sem markdown, sem texto fora do JSON.`;
-          const raw = await chatCompletion({ model: "google/gemini-2.5-flash", temperature: 0.2, messages: [{ role: "user", content: prompt }] });
+          const raw = await chatCompletion({ model: QUIZ_GRADING_MODEL, temperature: 0.2, messages: [{ role: "user", content: prompt }] });
           const clean = raw.replace(/```json|```/g, "").trim();
           const parsed = JSON.parse(clean);
           resultados.push({ question_id: resp.question_id, resposta_dada: resp.resposta_dada, correta: !!parsed.correta, feedback: parsed.feedback });
