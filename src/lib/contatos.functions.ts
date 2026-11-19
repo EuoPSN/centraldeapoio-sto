@@ -37,6 +37,17 @@ const ContatoInput = z.object({
   // Clínicas Amor Saúde: região e link do Google Maps (opcionais; ausentes não sobrescrevem).
   regiao: z.string().max(80).nullable().optional(),
   maps_url: z.string().max(500).nullable().optional(),
+  // Unidades CDT: bairro/cidade, horário e cidades/bairros próximos também atendidos.
+  bairro: z.string().max(120).nullable().optional(),
+  cidade: z.string().max(120).nullable().optional(),
+  horario: z.string().max(300).nullable().optional(),
+  atende_tambem: z.array(z.string().min(1).max(80)).optional(),
+  // Suporte e setores: subtítulo, quando indicar, WhatsApp, e-mail e site.
+  subtitulo: z.string().max(140).nullable().optional(),
+  quando_indicar: z.string().nullable().optional(),
+  whatsapp: z.string().max(60).nullable().optional(),
+  email: z.string().max(200).nullable().optional(),
+  site: z.string().max(300).nullable().optional(),
   position: z.number().int().default(0),
 });
 
@@ -78,6 +89,16 @@ export const deleteContato = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await admin(context);
     const { error } = await context.supabase.from(TABLE).delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Cada cópia feita em Contatos e Endereços soma 1 no contato ("Mais procurados", futuro). */
+export const registerContatoUse = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.rpc("increment_contato_use", { contato_id: data.id });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
