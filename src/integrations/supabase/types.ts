@@ -109,7 +109,6 @@ export type Database = {
       }
       app_settings: {
         Row: {
-          avaliacao_odonto_valor: number | null
           accent_color: string | null
           active_theme: string
           background_color: string | null
@@ -124,7 +123,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          avaliacao_odonto_valor?: number | null
           accent_color?: string | null
           active_theme?: string
           background_color?: string | null
@@ -139,7 +137,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          avaliacao_odonto_valor?: number | null
           accent_color?: string | null
           active_theme?: string
           background_color?: string | null
@@ -253,27 +250,36 @@ export type Database = {
       chat_messages: {
         Row: {
           attachments: Json
+          cliente_mensagem: string | null
           content: string
           conversation_id: string
           created_at: string
           id: string
           role: string
+          sem_base: boolean
+          sources: Json | null
         }
         Insert: {
           attachments?: Json
+          cliente_mensagem?: string | null
           content: string
           conversation_id: string
           created_at?: string
           id?: string
           role: string
+          sem_base?: boolean
+          sources?: Json | null
         }
         Update: {
           attachments?: Json
+          cliente_mensagem?: string | null
           content?: string
           conversation_id?: string
           created_at?: string
           id?: string
           role?: string
+          sem_base?: boolean
+          sources?: Json | null
         }
         Relationships: [
           {
@@ -512,19 +518,6 @@ export type Database = {
       }
       contatos_enderecos: {
         Row: {
-          bairro: string | null
-          cidade: string | null
-          horario: string | null
-          atende_tambem: string[]
-          subtitulo: string | null
-          quando_indicar: string | null
-          whatsapp: string | null
-          email: string | null
-          site: string | null
-          updated_at: string
-          use_count: number
-          regiao: string | null
-          maps_url: string | null
           contato1: string | null
           contato2: string | null
           contato3: string | null
@@ -539,19 +532,6 @@ export type Database = {
           tipo: string
         }
         Insert: {
-          bairro?: string | null
-          cidade?: string | null
-          horario?: string | null
-          atende_tambem?: string[]
-          subtitulo?: string | null
-          quando_indicar?: string | null
-          whatsapp?: string | null
-          email?: string | null
-          site?: string | null
-          updated_at?: string
-          use_count?: number
-          regiao?: string | null
-          maps_url?: string | null
           contato1?: string | null
           contato2?: string | null
           contato3?: string | null
@@ -566,19 +546,6 @@ export type Database = {
           tipo: string
         }
         Update: {
-          bairro?: string | null
-          cidade?: string | null
-          horario?: string | null
-          atende_tambem?: string[]
-          subtitulo?: string | null
-          quando_indicar?: string | null
-          whatsapp?: string | null
-          email?: string | null
-          site?: string | null
-          updated_at?: string
-          use_count?: number
-          regiao?: string | null
-          maps_url?: string | null
           contato1?: string | null
           contato2?: string | null
           contato3?: string | null
@@ -768,36 +735,6 @@ export type Database = {
           },
         ]
       }
-      exame_clinicas: {
-        Row: {
-          clinica_id: string
-          exame_id: string
-        }
-        Insert: {
-          clinica_id: string
-          exame_id: string
-        }
-        Update: {
-          clinica_id?: string
-          exame_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "exame_clinicas_clinica_id_fkey"
-            columns: ["clinica_id"]
-            isOneToOne: false
-            referencedRelation: "contatos_enderecos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "exame_clinicas_exame_id_fkey"
-            columns: ["exame_id"]
-            isOneToOne: false
-            referencedRelation: "exames"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       exame_unidades: {
         Row: {
           exame_id: string
@@ -830,9 +767,6 @@ export type Database = {
       }
       exames: {
         Row: {
-          media_referencia: number | null
-          preparo_itens: string[]
-          use_count: number
           categoria: string | null
           created_at: string
           descricao: string | null
@@ -846,9 +780,6 @@ export type Database = {
           tipo: string
         }
         Insert: {
-          media_referencia?: number | null
-          preparo_itens?: string[]
-          use_count?: number
           categoria?: string | null
           created_at?: string
           descricao?: string | null
@@ -862,9 +793,6 @@ export type Database = {
           tipo?: string
         }
         Update: {
-          media_referencia?: number | null
-          preparo_itens?: string[]
-          use_count?: number
           categoria?: string | null
           created_at?: string
           descricao?: string | null
@@ -1379,6 +1307,87 @@ export type Database = {
         }
         Relationships: []
       }
+      marciana_feedback: {
+        Row: {
+          comentario: string | null
+          conversation_id: string
+          created_at: string
+          id: string
+          message_id: string
+          motivos: string[]
+          resolvido_em: string | null
+          tipo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comentario?: string | null
+          conversation_id: string
+          created_at?: string
+          id?: string
+          message_id: string
+          motivos?: string[]
+          resolvido_em?: string | null
+          tipo: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comentario?: string | null
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          message_id?: string
+          motivos?: string[]
+          resolvido_em?: string | null
+          tipo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marciana_feedback_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marciana_feedback_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marciana_sugestoes: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          ordem: number
+          texto: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          ordem?: number
+          texto: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          ordem?: number
+          texto?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       message_drafts: {
         Row: {
           category_id: string | null
@@ -1676,36 +1685,6 @@ export type Database = {
           },
         ]
       }
-      pricing_item_clinicas: {
-        Row: {
-          clinica_id: string
-          pricing_item_id: string
-        }
-        Insert: {
-          clinica_id: string
-          pricing_item_id: string
-        }
-        Update: {
-          clinica_id?: string
-          pricing_item_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pricing_item_clinicas_clinica_id_fkey"
-            columns: ["clinica_id"]
-            isOneToOne: false
-            referencedRelation: "contatos_enderecos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pricing_item_clinicas_pricing_item_id_fkey"
-            columns: ["pricing_item_id"]
-            isOneToOne: false
-            referencedRelation: "pricing_items"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       pricing_item_unidades: {
         Row: {
           destaque: boolean
@@ -1741,12 +1720,6 @@ export type Database = {
       }
       pricing_items: {
         Row: {
-          area: string | null
-          para_quem: string | null
-          como_agendar: string | null
-          clinicas_ref_antiga: string | null
-          clinicas_pendente: boolean
-          use_count: number
           cartao_price: number | null
           category: string
           created_at: string
@@ -1759,12 +1732,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          area?: string | null
-          para_quem?: string | null
-          como_agendar?: string | null
-          clinicas_ref_antiga?: string | null
-          clinicas_pendente?: boolean
-          use_count?: number
           cartao_price?: number | null
           category?: string
           created_at?: string
@@ -1777,12 +1744,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          area?: string | null
-          para_quem?: string | null
-          como_agendar?: string | null
-          clinicas_ref_antiga?: string | null
-          clinicas_pendente?: boolean
-          use_count?: number
           cartao_price?: number | null
           category?: string
           created_at?: string
@@ -1855,36 +1816,6 @@ export type Database = {
           },
         ]
       }
-      procedimento_clinicas: {
-        Row: {
-          clinica_id: string
-          procedimento_id: string
-        }
-        Insert: {
-          clinica_id: string
-          procedimento_id: string
-        }
-        Update: {
-          clinica_id?: string
-          procedimento_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "procedimento_clinicas_clinica_id_fkey"
-            columns: ["clinica_id"]
-            isOneToOne: false
-            referencedRelation: "contatos_enderecos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "procedimento_clinicas_procedimento_id_fkey"
-            columns: ["procedimento_id"]
-            isOneToOne: false
-            referencedRelation: "procedimentos_odontologicos"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       procedimento_unidades: {
         Row: {
           procedimento_id: string
@@ -1917,7 +1848,6 @@ export type Database = {
       }
       procedimentos_odontologicos: {
         Row: {
-          use_count: number
           categoria: string | null
           created_at: string
           cuidados_pos: string | null
@@ -1928,7 +1858,6 @@ export type Database = {
           position: number
         }
         Insert: {
-          use_count?: number
           categoria?: string | null
           created_at?: string
           cuidados_pos?: string | null
@@ -1939,7 +1868,6 @@ export type Database = {
           position?: number
         }
         Update: {
-          use_count?: number
           categoria?: string | null
           created_at?: string
           cuidados_pos?: string | null
@@ -2610,14 +2538,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      increment_contato_use: {
-        Args: { contato_id: string }
-        Returns: undefined
-      }
-      increment_amor_saude_use: {
-        Args: { item_id: string; item_tipo: string }
-        Returns: undefined
-      }
       increment_message_use_count: {
         Args: { msg_id: string }
         Returns: undefined
