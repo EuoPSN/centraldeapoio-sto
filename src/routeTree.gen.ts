@@ -29,13 +29,16 @@ import { Route as AuthenticatedMotorDecisaoRouteImport } from './routes/_authent
 import { Route as AuthenticatedPrecosRouteImport } from './routes/_authenticated/precos'
 import { Route as AuthenticatedProblemasRouteImport } from './routes/_authenticated/problemas'
 import { Route as AuthenticatedRankingRouteImport } from './routes/_authenticated/ranking'
-import { Route as AuthenticatedScriptsRouteImport } from './routes/_authenticated/scripts'
 import { Route as AuthenticatedSimuladorIaRouteImport } from './routes/_authenticated/simulador-ia'
 import { Route as AuthenticatedSugestoesRouteImport } from './routes/_authenticated/sugestoes'
 import { Route as AuthenticatedTreinamentosRouteImport } from './routes/_authenticated/treinamentos'
 import { Route as AuthenticatedTutoriaisRouteImport } from './routes/_authenticated/tutoriais'
+import { Route as AuthenticatedScriptsIndexRouteImport } from './routes/_authenticated/scripts.index'
+import { Route as AuthenticatedScriptsBibliotecaRouteImport } from './routes/_authenticated/scripts.biblioteca'
 import { Route as ApiPublicKnowledgeFileRouteImport } from './routes/api/public/knowledge-file'
 import { Route as ApiPublicMessageImageRouteImport } from './routes/api/public/message-image'
+import { Route as AuthenticatedScriptsFluxoIndexRouteImport } from './routes/_authenticated/scripts.fluxo.index'
+import { Route as AuthenticatedScriptsFluxoFluxoRouteImport } from './routes/_authenticated/scripts.fluxo.$fluxo'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -142,11 +145,6 @@ const AuthenticatedRankingRoute = AuthenticatedRankingRouteImport.update({
   path: '/ranking',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedScriptsRoute = AuthenticatedScriptsRouteImport.update({
-  id: '/scripts',
-  path: '/scripts',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedSimuladorIaRoute =
   AuthenticatedSimuladorIaRouteImport.update({
     id: '/simulador-ia',
@@ -169,6 +167,18 @@ const AuthenticatedTutoriaisRoute = AuthenticatedTutoriaisRouteImport.update({
   path: '/tutoriais',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedScriptsIndexRoute =
+  AuthenticatedScriptsIndexRouteImport.update({
+    id: '/scripts/',
+    path: '/scripts/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedScriptsBibliotecaRoute =
+  AuthenticatedScriptsBibliotecaRouteImport.update({
+    id: '/scripts/biblioteca',
+    path: '/scripts/biblioteca',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicKnowledgeFileRoute = ApiPublicKnowledgeFileRouteImport.update({
   id: '/api/public/knowledge-file',
   path: '/api/public/knowledge-file',
@@ -179,6 +189,18 @@ const ApiPublicMessageImageRoute = ApiPublicMessageImageRouteImport.update({
   path: '/api/public/message-image',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedScriptsFluxoIndexRoute =
+  AuthenticatedScriptsFluxoIndexRouteImport.update({
+    id: '/scripts/fluxo/',
+    path: '/scripts/fluxo/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedScriptsFluxoFluxoRoute =
+  AuthenticatedScriptsFluxoFluxoRouteImport.update({
+    id: '/scripts/fluxo/$fluxo',
+    path: '/scripts/fluxo/$fluxo',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -200,13 +222,16 @@ export interface FileRoutesByFullPath {
   '/precos': typeof AuthenticatedPrecosRoute
   '/problemas': typeof AuthenticatedProblemasRoute
   '/ranking': typeof AuthenticatedRankingRoute
-  '/scripts': typeof AuthenticatedScriptsRoute
   '/simulador-ia': typeof AuthenticatedSimuladorIaRoute
   '/sugestoes': typeof AuthenticatedSugestoesRoute
   '/treinamentos': typeof AuthenticatedTreinamentosRoute
   '/tutoriais': typeof AuthenticatedTutoriaisRoute
+  '/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
   '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
   '/api/public/message-image': typeof ApiPublicMessageImageRoute
+  '/scripts/': typeof AuthenticatedScriptsIndexRoute
+  '/scripts/fluxo/$fluxo': typeof AuthenticatedScriptsFluxoFluxoRoute
+  '/scripts/fluxo/': typeof AuthenticatedScriptsFluxoIndexRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -227,14 +252,17 @@ export interface FileRoutesByTo {
   '/precos': typeof AuthenticatedPrecosRoute
   '/problemas': typeof AuthenticatedProblemasRoute
   '/ranking': typeof AuthenticatedRankingRoute
-  '/scripts': typeof AuthenticatedScriptsRoute
   '/simulador-ia': typeof AuthenticatedSimuladorIaRoute
   '/sugestoes': typeof AuthenticatedSugestoesRoute
   '/treinamentos': typeof AuthenticatedTreinamentosRoute
   '/tutoriais': typeof AuthenticatedTutoriaisRoute
   '/': typeof AuthenticatedIndexRoute
+  '/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
   '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
   '/api/public/message-image': typeof ApiPublicMessageImageRoute
+  '/scripts': typeof AuthenticatedScriptsIndexRoute
+  '/scripts/fluxo/$fluxo': typeof AuthenticatedScriptsFluxoFluxoRoute
+  '/scripts/fluxo': typeof AuthenticatedScriptsFluxoIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -257,14 +285,17 @@ export interface FileRoutesById {
   '/_authenticated/precos': typeof AuthenticatedPrecosRoute
   '/_authenticated/problemas': typeof AuthenticatedProblemasRoute
   '/_authenticated/ranking': typeof AuthenticatedRankingRoute
-  '/_authenticated/scripts': typeof AuthenticatedScriptsRoute
   '/_authenticated/simulador-ia': typeof AuthenticatedSimuladorIaRoute
   '/_authenticated/sugestoes': typeof AuthenticatedSugestoesRoute
   '/_authenticated/treinamentos': typeof AuthenticatedTreinamentosRoute
   '/_authenticated/tutoriais': typeof AuthenticatedTutoriaisRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
   '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
   '/api/public/message-image': typeof ApiPublicMessageImageRoute
+  '/_authenticated/scripts/': typeof AuthenticatedScriptsIndexRoute
+  '/_authenticated/scripts/fluxo/$fluxo': typeof AuthenticatedScriptsFluxoFluxoRoute
+  '/_authenticated/scripts/fluxo/': typeof AuthenticatedScriptsFluxoIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -288,13 +319,16 @@ export interface FileRouteTypes {
     | '/precos'
     | '/problemas'
     | '/ranking'
-    | '/scripts'
     | '/simulador-ia'
     | '/sugestoes'
     | '/treinamentos'
     | '/tutoriais'
+    | '/scripts/biblioteca'
     | '/api/public/knowledge-file'
     | '/api/public/message-image'
+    | '/scripts/'
+    | '/scripts/fluxo/$fluxo'
+    | '/scripts/fluxo/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -315,14 +349,17 @@ export interface FileRouteTypes {
     | '/precos'
     | '/problemas'
     | '/ranking'
-    | '/scripts'
     | '/simulador-ia'
     | '/sugestoes'
     | '/treinamentos'
     | '/tutoriais'
     | '/'
+    | '/scripts/biblioteca'
     | '/api/public/knowledge-file'
     | '/api/public/message-image'
+    | '/scripts'
+    | '/scripts/fluxo/$fluxo'
+    | '/scripts/fluxo'
   id:
     | '__root__'
     | '/_authenticated'
@@ -344,14 +381,17 @@ export interface FileRouteTypes {
     | '/_authenticated/precos'
     | '/_authenticated/problemas'
     | '/_authenticated/ranking'
-    | '/_authenticated/scripts'
     | '/_authenticated/simulador-ia'
     | '/_authenticated/sugestoes'
     | '/_authenticated/treinamentos'
     | '/_authenticated/tutoriais'
     | '/_authenticated/'
+    | '/_authenticated/scripts/biblioteca'
     | '/api/public/knowledge-file'
     | '/api/public/message-image'
+    | '/_authenticated/scripts/'
+    | '/_authenticated/scripts/fluxo/$fluxo'
+    | '/_authenticated/scripts/fluxo/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -504,13 +544,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRankingRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/scripts': {
-      id: '/_authenticated/scripts'
-      path: '/scripts'
-      fullPath: '/scripts'
-      preLoaderRoute: typeof AuthenticatedScriptsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/simulador-ia': {
       id: '/_authenticated/simulador-ia'
       path: '/simulador-ia'
@@ -539,6 +572,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTutoriaisRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/scripts/': {
+      id: '/_authenticated/scripts/'
+      path: '/scripts'
+      fullPath: '/scripts/'
+      preLoaderRoute: typeof AuthenticatedScriptsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/scripts/biblioteca': {
+      id: '/_authenticated/scripts/biblioteca'
+      path: '/scripts/biblioteca'
+      fullPath: '/scripts/biblioteca'
+      preLoaderRoute: typeof AuthenticatedScriptsBibliotecaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/knowledge-file': {
       id: '/api/public/knowledge-file'
       path: '/api/public/knowledge-file'
@@ -552,6 +599,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/public/message-image'
       preLoaderRoute: typeof ApiPublicMessageImageRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/scripts/fluxo/': {
+      id: '/_authenticated/scripts/fluxo/'
+      path: '/scripts/fluxo'
+      fullPath: '/scripts/fluxo/'
+      preLoaderRoute: typeof AuthenticatedScriptsFluxoIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/scripts/fluxo/$fluxo': {
+      id: '/_authenticated/scripts/fluxo/$fluxo'
+      path: '/scripts/fluxo/$fluxo'
+      fullPath: '/scripts/fluxo/$fluxo'
+      preLoaderRoute: typeof AuthenticatedScriptsFluxoFluxoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
@@ -573,12 +634,15 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPrecosRoute: typeof AuthenticatedPrecosRoute
   AuthenticatedProblemasRoute: typeof AuthenticatedProblemasRoute
   AuthenticatedRankingRoute: typeof AuthenticatedRankingRoute
-  AuthenticatedScriptsRoute: typeof AuthenticatedScriptsRoute
   AuthenticatedSimuladorIaRoute: typeof AuthenticatedSimuladorIaRoute
   AuthenticatedSugestoesRoute: typeof AuthenticatedSugestoesRoute
   AuthenticatedTreinamentosRoute: typeof AuthenticatedTreinamentosRoute
   AuthenticatedTutoriaisRoute: typeof AuthenticatedTutoriaisRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedScriptsBibliotecaRoute: typeof AuthenticatedScriptsBibliotecaRoute
+  AuthenticatedScriptsIndexRoute: typeof AuthenticatedScriptsIndexRoute
+  AuthenticatedScriptsFluxoFluxoRoute: typeof AuthenticatedScriptsFluxoFluxoRoute
+  AuthenticatedScriptsFluxoIndexRoute: typeof AuthenticatedScriptsFluxoIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -598,12 +662,15 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPrecosRoute: AuthenticatedPrecosRoute,
   AuthenticatedProblemasRoute: AuthenticatedProblemasRoute,
   AuthenticatedRankingRoute: AuthenticatedRankingRoute,
-  AuthenticatedScriptsRoute: AuthenticatedScriptsRoute,
   AuthenticatedSimuladorIaRoute: AuthenticatedSimuladorIaRoute,
   AuthenticatedSugestoesRoute: AuthenticatedSugestoesRoute,
   AuthenticatedTreinamentosRoute: AuthenticatedTreinamentosRoute,
   AuthenticatedTutoriaisRoute: AuthenticatedTutoriaisRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedScriptsBibliotecaRoute: AuthenticatedScriptsBibliotecaRoute,
+  AuthenticatedScriptsIndexRoute: AuthenticatedScriptsIndexRoute,
+  AuthenticatedScriptsFluxoFluxoRoute: AuthenticatedScriptsFluxoFluxoRoute,
+  AuthenticatedScriptsFluxoIndexRoute: AuthenticatedScriptsFluxoIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
