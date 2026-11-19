@@ -15,6 +15,7 @@ import {
 import { reindexAll, getIndexStats } from "@/lib/embeddings.functions";
 import { seedInitialData } from "@/lib/seed.functions";
 import { getAiSettings, updateAiSettings, generateEssentialFactsDraft } from "@/lib/chat.functions";
+import { MarcianaSugestoesSection } from "@/components/admin/MarcianaSugestoesSection";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -722,6 +723,8 @@ const saveSettingsMut = useMutation({
           Lembre-se de clicar em "Salvar configurações" no final da página para aplicar as mudanças.
         </p>
       </Card>
+
+      <MarcianaSugestoesSection />
 
       <Card className="p-5 space-y-4">
         <div>
