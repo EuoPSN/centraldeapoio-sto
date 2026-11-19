@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Moon, Sun, Monitor } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -27,8 +27,13 @@ export function useOmniaTheme() {
 async function saveToProfile(pref: ThemePreference) {
   // Função criada pela migração 20261119120000_profile_theme_preference.sql.
   // Se a migração ainda não rodou, a escolha fica só neste navegador.
-  const rpc = supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<{ error: unknown }>;
-  await rpc("set_theme_preference", { pref }).catch(() => undefined);
+  // (A função ainda não está nos tipos gerados do Supabase, daí o cast.)
+  const client = supabase as unknown as { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ error: unknown }> };
+  try {
+    await client.rpc("set_theme_preference", { pref });
+  } catch {
+    /* sem rede ou sem a migração: fica o cache local */
+  }
 }
 
 /**
@@ -130,6 +135,7 @@ export function ThemeToggle({ className }: { className?: string }) {
 /** Pergunta do primeiro acesso. "Seguir o sistema" vem marcado. */
 function FirstThemeDialog({ open, onChoose }: { open: boolean; onChoose: (p: ThemePreference) => void }) {
   const [choice, setChoice] = useState<ThemePreference>("system");
+  const continueRef = useRef<HTMLButtonElement>(null);
   const sys = typeof window === "undefined" ? "light" : systemTheme();
   const shown: ResolvedTheme = choice === "system" ? sys : choice;
 
@@ -165,7 +171,11 @@ function FirstThemeDialog({ open, onChoose }: { open: boolean; onChoose: (p: The
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onChoose(choice); }}>
-      <DialogContent className="max-w-md">
+      <DialogContent
+        className="max-w-md"
+        // Foco inicial no "Continuar", para nenhum cartão parecer escolhido sem estar.
+        onOpenAutoFocus={(e) => { e.preventDefault(); continueRef.current?.focus(); }}
+      >
         <DialogHeader>
           <DialogTitle>Como você prefere ver a OMNIA Apoio?</DialogTitle>
           <DialogDescription>Dá para trocar depois no botão sol/lua do topo.</DialogDescription>
@@ -184,7 +194,7 @@ function FirstThemeDialog({ open, onChoose }: { open: boolean; onChoose: (p: The
           <Monitor className="h-4 w-4 text-ink-muted" strokeWidth={1.5} />
           Seguir o sistema ({sys === "dark" ? "escuro" : "claro"} agora)
         </label>
-        <Button onClick={() => onChoose(choice)} className="w-full">Continuar</Button>
+        <Button ref={continueRef} onClick={() => onChoose(choice)} className="w-full">Continuar</Button>
       </DialogContent>
     </Dialog>
   );
