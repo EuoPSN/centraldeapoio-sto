@@ -22,11 +22,19 @@ import { listProcedimentos } from "@/lib/odontologia.functions";
 import { listChangelog } from "@/lib/changelog.functions";
 import {
   BookOpen, DollarSign, GraduationCap, MessageSquareQuote, Wrench,
-  Users, Tag, UserCog, MapPin, FlaskConical, Stethoscope, Star,
+  Users, Tag, UserCog, MapPin, FlaskConical, Stethoscope, Star, Bot,
 } from "lucide-react";
+
+/** Evento para abrir a busca global já com um texto (ex.: campo central da Início). */
+export const OPEN_SEARCH_EVENT = "omnia:open-search";
+
+export function openGlobalSearch(query = "") {
+  window.dispatchEvent(new CustomEvent<{ query: string }>(OPEN_SEARCH_EVENT, { detail: { query } }));
+}
 
 export function GlobalSearch() {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -36,9 +44,23 @@ export function GlobalSearch() {
         setOpen((o) => !o);
       }
     };
+    const openWith = (e: Event) => {
+      const q = (e as CustomEvent<{ query?: string }>).detail?.query ?? "";
+      setQuery(q);
+      setOpen(true);
+    };
     window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    window.addEventListener(OPEN_SEARCH_EVENT, openWith);
+    return () => {
+      window.removeEventListener("keydown", handler);
+      window.removeEventListener(OPEN_SEARCH_EVENT, openWith);
+    };
   }, []);
+
+  // Fechou: a próxima abertura começa limpa.
+  useEffect(() => {
+    if (!open) setQuery("");
+  }, [open]);
 
   const lcProb = useServerFn(listContent);
   const lcTut = useServerFn(listContent);
@@ -104,6 +126,13 @@ export function GlobalSearch() {
     navigate({ to: path });
   };
 
+  const askMarciana = () => {
+    const pergunta = query.trim();
+    if (!pergunta) return;
+    setOpen(false);
+    navigate({ to: "/assistente", search: { pergunta } });
+  };
+
   const groups: { key: keyof typeof items; heading: string; limit: number }[] = [
     { key: "messages", heading: "Scripts / Mensagens", limit: 8 },
     { key: "knowledge", heading: "Base de Conhecimento", limit: 6 },
@@ -121,7 +150,11 @@ export function GlobalSearch() {
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder="Buscar em scripts, conhecimento, preços, perfis, unidades..." />
+      <CommandInput
+        value={query}
+        onValueChange={setQuery}
+        placeholder="Buscar em scripts, conhecimento, preços, perfis, unidades..."
+      />
       <CommandList>
         <CommandEmpty>
           {[messages, knowledge, pricing, unidades, exames, procedimentos].some((q) => q.isLoading)
@@ -145,6 +178,16 @@ export function GlobalSearch() {
             </CommandGroup>
           );
         })}
+        {query.trim() && (
+          <CommandGroup heading="MarcIAna" forceMount>
+            <CommandItem forceMount value="__perguntar-marciana" onSelect={askMarciana}>
+              <Bot className="h-4 w-4 text-gold-text" />
+              <span className="min-w-0 truncate">
+                Perguntar à MarcIAna: <span className="font-medium">“{query.trim()}”</span>
+              </span>
+            </CommandItem>
+          </CommandGroup>
+        )}
       </CommandList>
     </CommandDialog>
   );

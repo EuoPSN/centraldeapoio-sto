@@ -56,6 +56,9 @@ import { cn } from "@/lib/utils";
 import { MARCIANA_CHAT_MODEL } from "@/lib/ai-models";
 
 export const Route = createFileRoute("/_authenticated/admin")({
+  // ?aba=<tab_key> abre direto numa aba (ex.: links de Pendências da Início).
+  validateSearch: (s: Record<string, unknown>): { aba?: string } =>
+    typeof s.aba === "string" && s.aba ? { aba: s.aba } : {},
   beforeLoad: async () => {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) throw redirect({ to: "/auth" });
@@ -78,7 +81,11 @@ function AdminPage() {
     group_name: string; position: number; visible: boolean;
   }[];
 
-  const [active, setActive] = useState("overview");
+  const { aba } = Route.useSearch();
+  const [active, setActive] = useState(aba ?? "overview");
+  useEffect(() => {
+    if (aba) setActive(aba);
+  }, [aba]);
 
   const visibleSections = sections.filter((s) => s.visible);
   const grouped = visibleSections.reduce<Record<string, typeof visibleSections>>((acc, s) => {

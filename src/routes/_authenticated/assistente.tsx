@@ -27,6 +27,10 @@ function MarcIAnaAvatar({ className }: { className?: string }) {
 
 
 export const Route = createFileRoute("/_authenticated/assistente")({
+  // ?pergunta=... vem da busca global ("Perguntar à MarcIAna"): abre uma conversa
+  // nova já enviando essa pergunta.
+  validateSearch: (s: Record<string, unknown>): { pergunta?: string } =>
+    typeof s.pergunta === "string" && s.pergunta.trim() ? { pergunta: s.pergunta.trim() } : {},
   component: Page,
 });
 
@@ -38,6 +42,9 @@ function Page() {
   const send = useServerFn(sendMessage);
   const del = useServerFn(deleteConversation);
 
+  const { pergunta } = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const perguntaFeita = useRef<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [input, setInput] = useState("");
 const [pendingImages, setPendingImages] = useState<{ url: string; name: string }[]>([]);
@@ -98,10 +105,11 @@ const removePendingImage = (index: number) => {
   });
 
   useEffect(() => {
+    if (pergunta || perguntaFeita.current) return;
     if (!activeId && convs.data && convs.data.length > 0) {
       setActiveId(convs.data[0].id);
     }
-  }, [convs.data, activeId]);
+  }, [convs.data, activeId, pergunta]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -118,21 +126,33 @@ const removePendingImage = (index: number) => {
   });
 
   const sendMut = useMutation({
-  mutationFn: async (payload: { text: string; images: string[] }) => {
-    let id = activeId;
+  mutationFn: async (payload: { text: string; images: string[]; newConversation?: boolean }) => {
+    let id = payload.newConversation ? null : activeId;
     if (!id) {
       const c = await create({});
       id = c.id;
       setActiveId(id);
+      qc.invalidateQueries({ queryKey: ["chat-list"] });
     }
-    return send({ data: { conversationId: id, message: payload.text, images: payload.images } });
+    await send({ data: { conversationId: id, message: payload.text, images: payload.images } });
+    return id;
   },
-  onSuccess: () => {
-    qc.invalidateQueries({ queryKey: ["chat", activeId] });
+  onSuccess: (id) => {
+    qc.invalidateQueries({ queryKey: ["chat", id] });
     qc.invalidateQueries({ queryKey: ["chat-list"] });
   },
   onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao enviar"),
 });
+
+  // Pergunta vinda da busca global: conversa nova, envio imediato, e a URL volta
+  // a /assistente para um recarregar não repetir a pergunta.
+  useEffect(() => {
+    if (!pergunta || perguntaFeita.current === pergunta) return;
+    perguntaFeita.current = pergunta;
+    navigate({ search: {}, replace: true });
+    sendMut.mutate({ text: pergunta, images: [], newConversation: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pergunta]);
 
   const delMut = useMutation({
     mutationFn: (id: string) => del({ data: { conversationId: id } }),
@@ -191,7 +211,7 @@ const removePendingImage = (index: number) => {
 
       <div className="flex-1 flex flex-col min-w-0">
         <div ref={scrollRef} className="flex-1 overflow-y-auto">
-          {!activeId || (active.data?.length ?? 0) === 0 ? (
+          {(!activeId || (active.data?.length ?? 0) === 0) && !sendMut.isPending ? (
             <div className="h-full flex items-center justify-center p-8">
               <div className="text-center max-w-md">
                 <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center">
@@ -227,6 +247,9 @@ const removePendingImage = (index: number) => {
               {active.data?.map((m) => (
                 <MessageBubble key={m.id} role={m.role as "user" | "assistant" | "system"} content={m.content} attachments={(m as any).attachments ?? []} />
               ))}
+              {sendMut.isPending && sendMut.variables?.text && (
+                <MessageBubble role="user" content={sendMut.variables.text} attachments={[]} />
+              )}
               {sendMut.isPending && (
                 <MessageBubble role="assistant" content="_Pensando..._" />
               )}

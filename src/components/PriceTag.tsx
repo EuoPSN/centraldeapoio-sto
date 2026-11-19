@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 
 interface PriceTagProps {
   value: number | string | null | undefined;
-  /** Vermelha: preço de promoção. */
+  /** Preço de promoção: mesmo texto, em gold-text. */
   promo?: boolean;
   size?: "md" | "sm";
   className?: string;
@@ -21,8 +21,9 @@ export function formatPriceNumber(v: number | string | null | undefined) {
 }
 
 /**
- * Etiqueta de preço de gôndola: o único elemento chamativo da Central.
- * Amarela por padrão; vermelha quando `promo`.
+ * Preço em texto normal da marca (Montserrat, numerais tabulares).
+ * A etiqueta de gôndola do redesign anterior saiu; cada página de preço
+ * ganha seu próprio tratamento quando for redesenhada.
  */
 export function PriceTag({ value, promo = false, size = "md", className }: PriceTagProps) {
   const num = formatPriceNumber(value);
@@ -30,10 +31,15 @@ export function PriceTag({ value, promo = false, size = "md", className }: Price
     return <span className={cn("text-sm text-muted-foreground", className)}>Sem preço</span>;
   }
   return (
-    <span className={cn("price-tag", size === "sm" && "price-tag-sm", promo && "price-tag-promo", className)}>
-      <span aria-hidden className={cn("mt-px font-bold", size === "sm" ? "text-[9px]" : "text-[11px]")}>R$</span>
-      <span className="sr-only">R$ </span>
-      <span>{num}</span>
+    <span
+      className={cn(
+        "whitespace-nowrap font-semibold tabular-nums",
+        size === "sm" ? "text-sm" : "text-base",
+        promo ? "text-gold-text" : "text-foreground",
+        className,
+      )}
+    >
+      R$ {num}
       {promo && <span className="sr-only"> (promoção)</span>}
     </span>
   );
