@@ -1,49 +1,77 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Pill } from "@/components/Pill";
-import { useState, useEffect } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useState, useEffect, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { listClientProfilesForTraining } from "@/lib/clientprofiles.functions";
 import { listProblemScenariosForTraining } from "@/lib/problemscenarios.functions";
 import { listCategories } from "@/lib/taxonomy.functions";
+import { getMyProfileStats } from "@/lib/gamification.functions";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { SimuladorIA, DIFFICULTY_COLORS, DIFFICULTY_LABELS } from "@/components/SimuladorIA";
+import { SimuladorIA } from "@/components/SimuladorIA";
 import { SimuladorProblema } from "@/components/SimuladorProblema";
-import { Badge } from "@/components/ui/badge";
-import { GraduationCap, Wrench } from "lucide-react";
+import { SimuladorListScreen } from "@/components/simulador/ClientListScreen";
+import { MinhasSimulacoesTab } from "@/components/simulador/MinhasSimulacoesTab";
+import { cn } from "@/lib/utils";
+
+type Aba = "atendimentos" | "problemas" | "minhas";
 
 export const Route = createFileRoute("/_authenticated/simulador-ia")({
   component: Page,
-  validateSearch: (search: Record<string, unknown>): { perfil?: string; modo?: "problemas" } => ({
-    perfil: typeof search.perfil === "string" ? search.perfil : undefined,
-    modo: search.modo === "problemas" ? "problemas" as const : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { perfil?: string; aba?: Aba } => {
+    const aba = search.aba === "problemas" || search.aba === "minhas" || search.aba === "atendimentos"
+      ? (search.aba as Aba)
+      : search.modo === "problemas" ? "problemas" as const : undefined;
+    return {
+      perfil: typeof search.perfil === "string" ? search.perfil : undefined,
+      aba,
+    };
+  },
 });
 
+function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button onClick={onClick}
+      className={cn(
+        "pb-2.5 px-0.5 text-sm font-medium border-b-2 -mb-px transition-colors",
+        active ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
+      )}>
+      {children}
+    </button>
+  );
+}
+
 function Page() {
-  const { perfil, modo: modoInicial } = Route.useSearch();
-  const [modo, setModo] = useState<"atendimentos" | "problemas">(modoInicial === "problemas" ? "problemas" : "atendimentos");
+  const { perfil, aba: abaInicial } = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
+  const [aba, setAba] = useState<Aba>(abaInicial ?? "atendimentos");
+
+  useEffect(() => {
+    if (abaInicial) setAba(abaInicial);
+  }, [abaInicial]);
+
+  const trocarAba = (nova: Aba) => {
+    setAba(nova);
+    navigate({ search: (prev) => ({ ...prev, aba: nova }) });
+  };
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7">
-      <header className="mb-5">
+      <header className="mb-4">
         <h1 className="text-2xl font-medium">Simulador IA</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
-          Treine o atendimento conversando com clientes virtuais gerados por IA.
+          Treine com clientes virtuais antes de falar com os reais.
         </p>
       </header>
 
-      <div className="flex gap-2 mb-6">
-        <Pill active={modo === "atendimentos"} onClick={() => setModo("atendimentos")} className="gap-2">
-          <GraduationCap className="h-4 w-4" /> Atendimentos
-        </Pill>
-        <Pill active={modo === "problemas"} onClick={() => setModo("problemas")} className="gap-2">
-          <Wrench className="h-4 w-4" /> Solução de Problemas
-        </Pill>
+      <div className="flex gap-6 border-b mb-6">
+        <TabButton active={aba === "atendimentos"} onClick={() => trocarAba("atendimentos")}>Atendimentos</TabButton>
+        <TabButton active={aba === "problemas"} onClick={() => trocarAba("problemas")}>Solução de problemas</TabButton>
+        <TabButton active={aba === "minhas"} onClick={() => trocarAba("minhas")}>Minhas simulações</TabButton>
       </div>
 
-      {modo === "atendimentos" ? <AtendimentosTab perfilInicial={perfil} /> : <ProblemasTab />}
+      {aba === "atendimentos" && <AtendimentosTab perfilInicial={perfil} />}
+      {aba === "problemas" && <ProblemasTab />}
+      {aba === "minhas" && <MinhasSimulacoesTab />}
     </div>
   );
 }
@@ -58,6 +86,10 @@ function AtendimentosTab({ perfilInicial }: { perfilInicial?: string }) {
     queryFn: () => listProfilesFn(),
   });
   const profiles = (profilesQ.data ?? []) as any[];
+
+  const statsFn = useServerFn(getMyProfileStats);
+  const statsQ = useQuery({ queryKey: ["my-profile-stats"], queryFn: () => statsFn() });
+  const stats = (statsQ.data as any)?.porPerfil ?? {};
 
   // Se a página abriu com ?perfil=<id> (ex: vindo do card "Vamos testar?" da tela inicial),
   // seleciona esse perfil automaticamente assim que a lista carregar.
@@ -75,73 +107,28 @@ function AtendimentosTab({ perfilInicial }: { perfilInicial?: string }) {
     queryFn: () => listCatFn({ data: { scope: "client_profile" } }),
   });
   const categorias = (catsQ.data ?? []) as { id: string; name: string }[];
-  const [activeCategoria, setActiveCategoria] = useState<string>("todos");
 
-  const profilesFiltrados = activeCategoria === "todos"
-    ? profiles
-    : profiles.filter((p: any) => p.category_id === activeCategoria);
+  if (selectedProfile) {
+    return <SimuladorIA profile={selectedProfile} onReset={() => setSelectedProfile(null)} />;
+  }
+
+  if (profiles.length === 0) {
+    return (
+      <Card className="p-10 text-center text-muted-foreground">
+        Nenhum perfil cadastrado. Vá em Admin → Perfis de Cliente.
+      </Card>
+    );
+  }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4">
-      {!selectedProfile ? (
-        <>
-          <Card className="p-3 h-fit">
-            <h3 className="font-semibold mb-2 px-2 text-sm flex items-center gap-2">
-              <GraduationCap className="h-4 w-4 text-gold-text" /> Perfis de Cliente
-            </h3>
-            {categorias.length > 0 && (
-              <div className="flex flex-wrap gap-1 px-2 mb-2">
-                <Pill active={activeCategoria === "todos"}
-                  onClick={() => setActiveCategoria("todos")} className="h-7 text-xs">
-                  Todas
-                </Pill>
-                {categorias.map((c) => (
-                  <Pill key={c.id} active={activeCategoria === c.id}
-                    onClick={() => setActiveCategoria(c.id)} className="h-7 text-xs">
-                    {c.name}
-                  </Pill>
-                ))}
-              </div>
-            )}
-            {profiles.length === 0 && (
-              <p className="text-xs text-muted-foreground p-2">
-                Nenhum perfil cadastrado. Vá em Admin → Perfis de Cliente.
-              </p>
-            )}
-            {profiles.length > 0 && profilesFiltrados.length === 0 && (
-              <p className="text-xs text-muted-foreground p-2">
-                Nenhum perfil nessa subcategoria ainda.
-              </p>
-            )}
-            <div className="space-y-1">
-              {profilesFiltrados.map((p: any) => (
-                <button key={p.id} onClick={() => setSelectedProfile(p)}
-                  className="w-full text-left text-sm px-3 py-2 rounded-md hover:bg-muted transition">
-                  <span className="flex items-center gap-2 flex-wrap">
-                    <span>{p.name}</span>
-                    {p.difficulty && DIFFICULTY_LABELS[p.difficulty] && (
-                      <Badge className={`text-[10px] ${DIFFICULTY_COLORS[p.difficulty]}`}>
-                        {DIFFICULTY_LABELS[p.difficulty]}
-                      </Badge>
-                    )}
-                  </span>
-                  {p.category?.name && (
-                    <span className="block text-[10px] text-muted-foreground">{p.category.name}</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </Card>
-          <Card className="p-10 text-center text-muted-foreground">
-            Selecione um perfil de cliente para iniciar a simulação com IA.
-          </Card>
-        </>
-      ) : (
-        <div className="lg:col-span-2">
-          <SimuladorIA profile={selectedProfile} onReset={() => setSelectedProfile(null)} />
-        </div>
-      )}
-    </div>
+    <SimuladorListScreen
+      titulo="Simulador IA"
+      subtitulo="Nenhum perfil cadastrado."
+      items={profiles}
+      categorias={categorias}
+      stats={stats}
+      onSelect={setSelectedProfile}
+    />
   );
 }
 
@@ -155,78 +142,38 @@ function ProblemasTab() {
   });
   const scenarios = (scenariosQ.data ?? []) as any[];
 
+  const statsFn = useServerFn(getMyProfileStats);
+  const statsQ = useQuery({ queryKey: ["my-profile-stats"], queryFn: () => statsFn() });
+  const stats = (statsQ.data as any)?.porCenario ?? {};
+
   const listCatFn = useServerFn(listCategories);
   const catsQ = useQuery({
     queryKey: ["cats", "problema"],
     queryFn: () => listCatFn({ data: { scope: "problema" } }),
   });
   const categorias = (catsQ.data ?? []) as { id: string; name: string }[];
-  const [activeCategoria, setActiveCategoria] = useState<string>("todos");
 
-  const scenariosFiltrados = activeCategoria === "todos"
-    ? scenarios
-    : scenarios.filter((s: any) => s.category_id === activeCategoria);
+  if (selectedScenario) {
+    return <SimuladorProblema scenario={selectedScenario} onReset={() => setSelectedScenario(null)} />;
+  }
+
+  if (scenarios.length === 0) {
+    return (
+      <Card className="p-10 text-center text-muted-foreground">
+        Nenhum cenário cadastrado. Vá em Admin → Situações-Problema.
+      </Card>
+    );
+  }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4">
-      {!selectedScenario ? (
-        <>
-          <Card className="p-3 h-fit">
-            <h3 className="font-semibold mb-2 px-2 text-sm flex items-center gap-2">
-              <Wrench className="h-4 w-4 text-gold-text" /> Situações-Problema
-            </h3>
-            {categorias.length > 0 && (
-              <div className="flex flex-wrap gap-1 px-2 mb-2">
-                <Pill active={activeCategoria === "todos"}
-                  onClick={() => setActiveCategoria("todos")} className="h-7 text-xs">
-                  Todas
-                </Pill>
-                {categorias.map((c) => (
-                  <Pill key={c.id} active={activeCategoria === c.id}
-                    onClick={() => setActiveCategoria(c.id)} className="h-7 text-xs">
-                    {c.name}
-                  </Pill>
-                ))}
-              </div>
-            )}
-            {scenarios.length === 0 && (
-              <p className="text-xs text-muted-foreground p-2">
-                Nenhum cenário cadastrado. Vá em Admin → Situações-Problema.
-              </p>
-            )}
-            {scenarios.length > 0 && scenariosFiltrados.length === 0 && (
-              <p className="text-xs text-muted-foreground p-2">
-                Nenhum cenário nessa categoria ainda.
-              </p>
-            )}
-            <div className="space-y-1">
-              {scenariosFiltrados.map((s: any) => (
-                <button key={s.id} onClick={() => setSelectedScenario(s)}
-                  className="w-full text-left text-sm px-3 py-2 rounded-md hover:bg-muted transition">
-                  <span className="flex items-center gap-2 flex-wrap">
-                    <span>{s.name}</span>
-                    {s.difficulty && DIFFICULTY_LABELS[s.difficulty] && (
-                      <Badge className={`text-[10px] ${DIFFICULTY_COLORS[s.difficulty]}`}>
-                        {DIFFICULTY_LABELS[s.difficulty]}
-                      </Badge>
-                    )}
-                  </span>
-                  {s.category?.name && (
-                    <span className="block text-[10px] text-muted-foreground">{s.category.name}</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </Card>
-          <Card className="p-10 text-center text-muted-foreground">
-            Selecione uma situação-problema para começar.
-          </Card>
-        </>
-      ) : (
-        <div className="lg:col-span-2">
-          <SimuladorProblema scenario={selectedScenario} onReset={() => setSelectedScenario(null)} />
-        </div>
-      )}
-    </div>
+    <SimuladorListScreen
+      titulo="Situações-Problema"
+      subtitulo="Nenhum cenário cadastrado."
+      items={scenarios}
+      categorias={categorias}
+      stats={stats}
+      onSelect={setSelectedScenario}
+      mostrarTreineHoje={false}
+    />
   );
 }
