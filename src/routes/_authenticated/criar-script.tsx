@@ -112,7 +112,7 @@ function CriarScriptPage() {
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7 space-y-8">
       <header>
-        <h1 className="text-xl font-semibold tracking-tight">Criar Script</h1>
+        <h1 className="text-2xl font-medium">Criar Script</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
           Escreva uma mensagem nova e mande pra análise. Um admin revisa antes de ela virar um script oficial —
           enquanto isso, ela fica só aqui, mas você já pode copiar e usar.

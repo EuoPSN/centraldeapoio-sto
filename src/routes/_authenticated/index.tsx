@@ -158,7 +158,7 @@ function Home() {
   return (
     <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-5 sm:px-5 lg:py-7">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">{nome ? `Olá, ${nome}` : "Olá"}</h1>
+        <h1 className="text-2xl font-medium">{nome ? `Olá, ${nome}` : "Olá"}</h1>
         {/* Mensagem do dia: cores e fonte escolhidas pelo admin */}
         <div
           className="mt-3 rounded-2xl border border-border px-5 py-4"

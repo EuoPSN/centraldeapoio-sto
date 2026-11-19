@@ -56,7 +56,7 @@ function Page() {
     <div className="mx-auto w-full max-w-5xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7">
       <header className="mb-6 flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Central de Sugestões</h1>
+          <h1 className="text-2xl font-medium">Central de Sugestões</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">Envie dúvidas, sugestões, novos scripts e melhorias.</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>

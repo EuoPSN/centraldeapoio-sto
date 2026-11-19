@@ -56,7 +56,7 @@ function Page() {
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7">
       <header className="mb-5">
-        <h1 className="text-xl font-semibold tracking-tight">Treinamentos</h1>
+        <h1 className="text-2xl font-medium">Treinamentos</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">Currículo de treinamento e simulados da equipe.</p>
       </header>
 

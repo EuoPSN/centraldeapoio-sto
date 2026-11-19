@@ -64,7 +64,7 @@ function ChecklistPage() {
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7">
       <header className="mb-5">
-        <h1 className="text-xl font-semibold tracking-tight">Check-list Diário</h1>
+        <h1 className="text-2xl font-medium">Check-list Diário</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
           {doneCount} de {items.length} feitos hoje. Marque conforme for concluindo ao longo do dia.
         </p>

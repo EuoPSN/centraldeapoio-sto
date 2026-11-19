@@ -97,11 +97,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
     ],
      links: [
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: appCss },
       {
         rel: "stylesheet",
-        // Numeral condensado da etiqueta de preço (o resto usa a fonte do sistema)
-        href: "https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&display=swap",
+        // OMNIA: Cinzel (nome, saudação e títulos institucionais, sempre em
+        // caixa alta) e Montserrat (todo o resto). Barlow Condensed fica só
+        // no numeral da etiqueta de preço.
+        href: "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Montserrat:wght@300;400;500;600&family=Barlow+Condensed:wght@700;800&display=swap",
       },
       {
         rel: "stylesheet",
