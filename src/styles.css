@@ -5,15 +5,13 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ============================================================
- * Central de Apoio — sistema visual (redesign de 18/11/2026)
- * Software de trabalho limpo: fundo claro, superfícies brancas com
- * borda fina, verde CDT profundo no topo e no item ativo, fonte de
- * sistema. O único elemento chamativo é a etiqueta de preço de
- * gôndola (.price-tag). Documentado em DESIGN.md.
- *
- * Temas de cores: o seletor foi removido nesta fase e volta numa
- * atualização futura. Até lá, as cores abaixo valem para todos e o
- * active_theme salvo no banco não altera nada.
+ * OMNIA Apoio — base visual (identidade OMNIA, 19/11/2026)
+ * Tema claro e escuro: o escuro vale quando <html> tem a classe .dark
+ * (escolha salva por usuário; ver src/components/ThemeController.tsx).
+ * Dourado é a cor principal; nunca texto branco sobre dourado e nunca
+ * dourado como texto pequeno no tema claro (use gold-text).
+ * Temas coloridos podem voltar numa atualização futura; o active_theme
+ * salvo no banco não altera estas cores.
  * ============================================================ */
 
 @theme inline {
@@ -49,6 +47,16 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-gold: var(--gold);
+  --color-gold-text: var(--gold-text);
+  --color-on-gold: var(--on-gold);
+  --color-nebula: var(--nebula);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
   --color-brand-muted: var(--brand-muted);
@@ -69,58 +77,94 @@
   --shadow-overlay: 0 8px 24px -6px oklch(0.25 0.03 160 / 0.18), 0 2px 6px -2px oklch(0.25 0.03 160 / 0.10);
 }
 
+/* Tokens OMNIA. Os nomes do shadcn (background, primary, border…)
+ * apontam para eles. */
 :root {
-  --radius: 0.625rem;
-  --topbar-h: 6.25rem;
+  --radius: 0.5rem;                 /* 8px: botões e cards */
+  --topbar-h: 3.75rem;
 
-  /* Fundo cinza-esverdeado muito claro; superfícies brancas */
-  --background: #f4f6f4;
-  --foreground: #1c221f;
-  --card: #ffffff;
-  --card-foreground: #1c221f;
-  --popover: #ffffff;
-  --popover-foreground: #1c221f;
+  --surface: #ffffff;
+  --surface-2: #f2f0eb;
+  --sidebar-bg: #faf9f6;
+  --ink: #0b0b0b;
+  --ink-muted: #5c564c;
+  --gold: #b58a35;
+  --gold-text: #8a6623;
+  --on-gold: #0b0b0b;
+  --nebula: #5a2d91;
+  --line: #e4e0d6;
+  --line-strong: #8c8578;
 
-  /* Verde CDT profundo: barra superior, item ativo, ação principal */
-  --brand: #0b6b45;
-  --brand-foreground: #ffffff;
-  --brand-muted: #d5ebdf;           /* texto secundário sobre o verde */
-  --primary: #0b6b45;
-  --primary-foreground: #ffffff;
+  --background: var(--surface);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--gold);
+  --primary-foreground: var(--on-gold);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--ink);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--ink-muted);
+  --accent: var(--surface-2);       /* hover e seleção leve */
+  --accent-foreground: var(--ink);
+  --border: var(--line);
+  --input: var(--line-strong);
+  --ring: var(--gold);
 
-  --secondary: #eef1ef;
-  --secondary-foreground: #1c221f;
-  --muted: #eef1ef;
-  --muted-foreground: #5c6862;
-  --accent: #e7f1eb;                /* hover e seleção leve */
-  --accent-foreground: #0b6b45;
-
-  /* Cor de estado só onde significa algo */
-  --destructive: #c62a1f;
+  /* Cores de estado: só onde significam algo */
+  --destructive: #b42318;
   --destructive-foreground: #ffffff;
-  --success: #12804f;
+  --success: #1e7a4c;
   --success-foreground: #ffffff;
   --warning: #9a5b00;
   --warning-foreground: #ffffff;
 
-  --border: #e1e6e2;
-  --input: #d6ddd8;
-  --ring: #0b6b45;
-
-  /* Etiqueta de gôndola */
+  /* Etiqueta de preço (redesign anterior; as páginas serão revistas depois) */
   --tag: #ffd400;
   --tag-foreground: #1c221f;
   --tag-promo: #e1251b;
   --tag-promo-foreground: #ffffff;
 
-  --sidebar: #ffffff;
-  --sidebar-foreground: #3a443f;
-  --sidebar-primary: #0b6b45;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e7f1eb;
-  --sidebar-accent-foreground: #0b6b45;
-  --sidebar-border: #e1e6e2;
-  --sidebar-ring: #0b6b45;
+  /* Legado do topo verde; o novo topo (§5) não usa mais. */
+  --brand: var(--ink);
+  --brand-foreground: var(--surface);
+  --brand-muted: var(--ink-muted);
+
+  --sidebar: var(--sidebar-bg);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--gold);
+  --sidebar-primary-foreground: var(--on-gold);
+  --sidebar-accent: var(--surface-2);
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--gold);
+
+  color-scheme: light;
+}
+
+.dark {
+  --surface: #0b0b0b;
+  --surface-2: #17131f;
+  --sidebar-bg: #111014;
+  --ink: #f5f5f0;
+  --ink-muted: #b8b2a6;
+  --gold: #d4af37;
+  --gold-text: #d4af37;
+  --on-gold: #0b0b0b;
+  --nebula: #a98bdb;
+  --line: #2a2433;
+  --line-strong: #6e6680;
+
+  --destructive: #f97066;
+  --destructive-foreground: #0b0b0b;
+  --success: #4cc38a;
+  --success-foreground: #0b0b0b;
+  --warning: #e0a43a;
+  --warning-foreground: #0b0b0b;
+
+  color-scheme: dark;
 }
 
 @layer base {
@@ -137,14 +181,14 @@
     -webkit-font-smoothing: antialiased;
   }
   ::selection {
-    background: #bfe3cf;
-    color: #0a3d28;
+    background: color-mix(in srgb, var(--gold) 30%, transparent);
+    color: var(--ink);
   }
   :focus-visible {
     outline-color: var(--color-ring);
   }
   * {
-    scrollbar-color: #c9d1cc transparent;
+    scrollbar-color: var(--line-strong) transparent;
   }
 }
 
@@ -233,8 +277,8 @@
     font-family: ui-monospace, "SF Mono", Menlo, monospace;
   }
   & pre {
-    background: #1c221f;
-    color: #eef1ef;
+    background: var(--surface-2);
+    color: var(--ink);
     padding: 1rem;
     border-radius: 0.5rem;
     overflow-x: auto;

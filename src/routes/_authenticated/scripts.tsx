@@ -292,7 +292,7 @@ function FluxoAtendimento() {
                 <div key={stage.id} className="space-y-4">
                   {renderStage(stage, idx)}
                   {forksHere.length > 0 && (
-                    <div className="rounded-xl border border-border bg-[#fafbfa] p-3 sm:p-4">
+                    <div className="rounded-xl border border-border bg-muted/40 p-3 sm:p-4">
                       <p className="mb-3 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                         <GitFork className="h-3.5 w-3.5" />
                         O fluxo se divide em {forksHere.length} {forksHere.length === 1 ? "caminho" : "caminhos"} aqui

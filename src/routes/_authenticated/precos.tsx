@@ -251,7 +251,7 @@ function ConsultasPublico() {
                 return priceRow(variants[0], <>{nameLine}{descLine}</>);
               }
               return (
-                <div key={specialty} className="border-t border-[#eef1ef] pb-1.5">
+                <div key={specialty} className="border-t border-border pb-1.5">
                   <div className="px-4 pt-2.5">{nameLine}{descLine}</div>
                   {variants.map((v) => priceRow(v, <p className="text-sm">{v.notes || "Variação"}</p>))}
                 </div>
