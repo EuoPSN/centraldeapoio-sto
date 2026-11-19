@@ -16,6 +16,7 @@ import { reindexAll, getIndexStats } from "@/lib/embeddings.functions";
 import { seedInitialData } from "@/lib/seed.functions";
 import { getAiSettings, updateAiSettings, generateEssentialFactsDraft } from "@/lib/chat.functions";
 import { MarcianaSugestoesSection } from "@/components/admin/MarcianaSugestoesSection";
+import { MarcianaFeedbackSection } from "@/components/admin/MarcianaFeedbackSection";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -725,6 +726,8 @@ const saveSettingsMut = useMutation({
       </Card>
 
       <MarcianaSugestoesSection />
+
+      <MarcianaFeedbackSection />
 
       <Card className="p-5 space-y-4">
         <div>
