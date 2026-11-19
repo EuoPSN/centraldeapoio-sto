@@ -258,6 +258,22 @@
   color: var(--color-tag-promo-foreground);
 }
 
+/* Troca de tema: cores mudam em 250ms (só durante a troca). */
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition-property: background-color, border-color, color, fill, stroke !important;
+  transition-duration: 250ms !important;
+  transition-timing-function: ease-out !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  html.theme-transition,
+  html.theme-transition * {
+    transition: none !important;
+  }
+}
+
 /* Transição suave entre páginas */
 @keyframes page-fade-in {
   from {

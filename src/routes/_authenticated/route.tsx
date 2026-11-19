@@ -12,6 +12,7 @@ import { Search } from "lucide-react";
 import { OmniaLockup } from "@/components/OmniaLogo";
 import { listNavItems } from "@/lib/settings.functions";
 import { cn } from "@/lib/utils";
+import { ThemeController, ThemeToggle } from "@/components/ThemeController";
 import { useEffect } from "react";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -70,6 +71,7 @@ function AppLayout() {
   const startOpen = typeof window !== "undefined" && window.innerWidth >= 1280;
 
   return (
+    <ThemeController profilePreference={data ? ((data.profile as { theme_preference?: string | null } | null)?.theme_preference ?? null) : undefined}>
     <SidebarProvider defaultOpen={startOpen} className="flex-col">
       <header className="sticky top-0 z-40 h-(--topbar-h) bg-brand text-brand-foreground">
         <div className="flex h-14 items-center gap-2 px-3 sm:gap-3 sm:px-4">
@@ -91,6 +93,7 @@ function AppLayout() {
               Ctrl K
             </kbd>
           </button>
+          <ThemeToggle />
         </div>
         <nav aria-label="Telas principais" className="flex h-11 items-end gap-0.5 overflow-x-auto px-3 sm:px-4 [scrollbar-width:none]">
           {tabs.map((t) => {
@@ -123,5 +126,6 @@ function AppLayout() {
       <GlobalSearch />
       <ChangelogWidget />
     </SidebarProvider>
+    </ThemeController>
   );
 }
