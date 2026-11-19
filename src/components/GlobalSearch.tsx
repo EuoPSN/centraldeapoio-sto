@@ -23,7 +23,7 @@ import { listChangelog } from "@/lib/changelog.functions";
 import { listContatos } from "@/lib/contatos.functions";
 import {
   BookOpen, DollarSign, GraduationCap, MessageSquareQuote, Wrench,
-  Users, Tag, UserCog, MapPin, FlaskConical, Stethoscope, Star, Bot, Hospital,
+  Users, Tag, UserCog, MapPin, FlaskConical, Stethoscope, Star, Bot, Hospital, Building2, LifeBuoy,
 } from "lucide-react";
 
 /** Evento para abrir a busca global já com um texto (ex.: campo central da Início). */
@@ -114,6 +114,7 @@ export function GlobalSearch() {
   type ProcedimentoSearchRow = { id: string; nome: string; categoria: string | null };
   type ChangelogSearchRow = { id: string; title: string; summary: string; published: boolean };
   type ClinicaSearchRow = { id: string; tipo: string; nome_regiao: string; regiao?: string | null; endereco: string | null };
+  type ContatoSearchRow = { id: string; tipo: string; nome_regiao: string; bairro?: string | null; cidade?: string | null; subtitulo?: string | null };
 
   const items = useMemo(() => ({
     // Abre a mensagem direto na Biblioteca, já selecionada.
@@ -133,6 +134,8 @@ export function GlobalSearch() {
     // Amor Saúde: abre o item direto na subpágina certa.
     pricing: ((pricing.data ?? []) as PricingSearchRow[]).map((r) => ({ id: r.id, title: r.specialty, preview: `Consulta${r.cartao_price != null ? ` · R$ ${Number(r.cartao_price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })} no Cartão` : ""}`, icon: DollarSign, route: "/amor-saude/consultas", search: { item: r.id } })),
     clinicas: ((contatos.data ?? []) as ClinicaSearchRow[]).filter((r) => r.tipo === "clinica_amor_saude").map((r) => ({ id: r.id, title: r.nome_regiao, preview: [r.regiao, r.endereco].filter(Boolean).join(" · ") || "Clínica Amor Saúde", icon: Hospital, route: "/amor-saude/clinicas", search: { item: r.id } })),
+    unidadesCdt: ((contatos.data ?? []) as ContatoSearchRow[]).filter((r) => r.tipo === "cartao_de_todos").map((r) => ({ id: r.id, title: r.nome_regiao, preview: [r.bairro, r.cidade].filter(Boolean).join(" · ") || "Unidade Cartão de TODOS", icon: Building2, route: "/contatos", search: { item: r.id } })),
+    suporte: ((contatos.data ?? []) as ContatoSearchRow[]).filter((r) => r.tipo === "outros").map((r) => ({ id: r.id, title: r.nome_regiao, preview: r.subtitulo || "Suporte e setores", icon: LifeBuoy, route: "/contatos", search: { item: r.id } })),
     problems: ((prob.data ?? []) as ContentSearchRow[]).map((r) => ({ id: r.id, title: r.title, preview: r.content.slice(0, 80), icon: Wrench, route: "/problemas" })),
     tutorials: ((tut.data ?? []) as ContentSearchRow[]).map((r) => ({ id: r.id, title: r.title, preview: r.content.slice(0, 80), icon: GraduationCap, route: "/tutoriais" })),
     profiles: ((profiles.data ?? []) as ProfileSearchRow[]).map((r) => ({ id: r.id, title: r.name, preview: r.category?.name ? `${r.category.name} · dificuldade ${r.difficulty}` : `Dificuldade ${r.difficulty}`, icon: Users, route: "/simulador-ia" })),
@@ -168,6 +171,8 @@ export function GlobalSearch() {
     { key: "clinicas", heading: "Amor Saúde · Clínicas", limit: 6 },
     { key: "profiles", heading: "Perfis de Cliente", limit: 6 },
     { key: "unidades", heading: "Unidades", limit: 6 },
+    { key: "unidadesCdt", heading: "Contatos · Unidades CDT", limit: 6 },
+    { key: "suporte", heading: "Contatos · Suporte e setores", limit: 6 },
     { key: "categories", heading: "Categorias", limit: 6 },
     { key: "metas", heading: "Funcionários", limit: 6 },
     { key: "changelog", heading: "Novidades", limit: 6 },
