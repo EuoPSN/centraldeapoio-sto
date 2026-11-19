@@ -3,9 +3,10 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  BookMarked, Bot, ChevronDown, ChevronUp, GraduationCap, Headset, Home, LayoutGrid, LifeBuoy, LogOut,
+  BookMarked, ChevronDown, ChevronUp, GraduationCap, Headset, Home, LayoutGrid, LifeBuoy, LogOut,
   PenLine, Search, Settings,
 } from "lucide-react";
+import { MarcianaEyeIcon } from "@/components/marciana/MarcianaEye";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, useSidebar } from "@/components/ui/sidebar";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger,
@@ -38,7 +39,7 @@ const GROUPS: GroupDef[] = [
       { route: "/biblioteca", label: "Biblioteca", aliases: ["/imagens"] },
     ],
   },
-  { key: "inteligencia", label: "Inteligência", icon: Bot, pages: [{ route: "/assistente", label: "MarcIAna" }] },
+  { key: "inteligencia", label: "Inteligência", icon: MarcianaEyeIcon, pages: [{ route: "/assistente", label: "MarcIAna" }] },
   {
     key: "treino", label: "Treino e evolução", icon: GraduationCap,
     pages: [
