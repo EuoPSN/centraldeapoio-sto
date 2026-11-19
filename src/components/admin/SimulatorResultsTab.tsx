@@ -1,7 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { listAllSimulatorResults, deleteSimulatorResult } from "@/lib/admin-results.functions";
+import { getAiSettings, updateAiSettings } from "@/lib/chat.functions";
+import { MARCIANA_CHAT_MODEL } from "@/lib/ai-models";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -12,7 +14,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Eye, Download, Trash2 } from "lucide-react";
+import { Search, Eye, Download, Trash2, Target } from "lucide-react";
 import { toast } from "sonner";
 
 
@@ -45,6 +47,34 @@ export function SimulatorResultsTab() {
   const [dataFim, setDataFim] = useState("");
   const [selected, setSelected] = useState<any>(null);
   const [toDelete, setToDelete] = useState<any>(null);
+
+  // "Nota de referência do simulador": meta exibida no gráfico de evolução
+  // de Minhas simulações (vazio = sem linha de meta).
+  const getSettings = useServerFn(getAiSettings);
+  const updateSettings = useServerFn(updateAiSettings);
+  const settingsQ = useQuery({ queryKey: ["ai-settings"], queryFn: () => getSettings({}) });
+  const [notaReferencia, setNotaReferencia] = useState("");
+  useEffect(() => {
+    if (settingsQ.data) {
+      const v = (settingsQ.data as any).simulador_nota_referencia;
+      setNotaReferencia(v === null || v === undefined ? "" : String(v));
+    }
+  }, [settingsQ.data]);
+  const saveNotaMut = useMutation({
+    mutationFn: () => {
+      const s = settingsQ.data as any;
+      const parsed = notaReferencia.trim() === "" ? null : Math.max(0, Math.min(100, Number(notaReferencia)));
+      return updateSettings({ data: {
+        system_prompt: s?.system_prompt ?? "",
+        model: s?.model ?? MARCIANA_CHAT_MODEL,
+        essential_facts: s?.essential_facts ?? "",
+        client_knowledge: s?.client_knowledge ?? "",
+        simulador_nota_referencia: parsed,
+      } });
+    },
+    onSuccess: () => { toast.success("Salvo."); qc.invalidateQueries({ queryKey: ["ai-settings"] }); },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao salvar."),
+  });
 
   const delMut = useMutation({
     mutationFn: (id: string) => delFn({ data: { id } }),
@@ -130,6 +160,24 @@ export function SimulatorResultsTab() {
           <Download className="h-4 w-4" /> Exportar Excel
         </Button>
       </div>
+
+      <Card className="p-4">
+        <div className="flex items-end gap-3 flex-wrap">
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground flex items-center gap-1">
+              <Target className="h-3 w-3" /> Nota de referência do simulador
+            </Label>
+            <Input type="number" min={0} max={100} className="w-32" value={notaReferencia}
+              placeholder="70" onChange={(e) => setNotaReferencia(e.target.value)} />
+          </div>
+          <Button size="sm" onClick={() => saveNotaMut.mutate()} disabled={saveNotaMut.isPending}>
+            {saveNotaMut.isPending ? "Salvando..." : "Salvar"}
+          </Button>
+          <p className="text-xs text-muted-foreground max-w-md">
+            Linha de meta no gráfico de evolução de "Minhas simulações". Deixe em branco para não mostrar nenhuma linha.
+          </p>
+        </div>
+      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="relative">

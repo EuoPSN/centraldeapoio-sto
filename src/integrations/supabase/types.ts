@@ -86,6 +86,7 @@ export type Database = {
           essential_facts: string | null
           id: number
           model: string
+          simulador_nota_referencia: number | null
           system_prompt: string
           updated_at: string
         }
@@ -94,6 +95,7 @@ export type Database = {
           essential_facts?: string | null
           id?: number
           model?: string
+          simulador_nota_referencia?: number | null
           system_prompt: string
           updated_at?: string
         }
@@ -102,6 +104,7 @@ export type Database = {
           essential_facts?: string | null
           id?: number
           model?: string
+          simulador_nota_referencia?: number | null
           system_prompt?: string
           updated_at?: string
         }
@@ -440,6 +443,7 @@ export type Database = {
           cliente_cpf: string | null
           cliente_genero: string | null
           cliente_nome: string | null
+          cliente_origem_lead: string | null
           cliente_regiao: string | null
           cliente_telefone: string | null
           created_at: string
@@ -465,6 +469,7 @@ export type Database = {
           cliente_cpf?: string | null
           cliente_genero?: string | null
           cliente_nome?: string | null
+          cliente_origem_lead?: string | null
           cliente_regiao?: string | null
           cliente_telefone?: string | null
           created_at?: string
@@ -490,6 +495,7 @@ export type Database = {
           cliente_cpf?: string | null
           cliente_genero?: string | null
           cliente_nome?: string | null
+          cliente_origem_lead?: string | null
           cliente_regiao?: string | null
           cliente_telefone?: string | null
           created_at?: string
@@ -2385,14 +2391,17 @@ export type Database = {
           difficulty: string
           erros: string[]
           id: string
+          mensagem_fraca: string | null
           nota: number
           pontos_fortes: string[]
           pontos_melhoria: string[]
           profile_id: string | null
           profile_name: string
+          reescrita: string | null
           resumo: string | null
           scenario_id: string | null
           tipo: string
+          trechos: Json | null
           user_id: string
         }
         Insert: {
@@ -2400,14 +2409,17 @@ export type Database = {
           difficulty: string
           erros?: string[]
           id?: string
+          mensagem_fraca?: string | null
           nota: number
           pontos_fortes?: string[]
           pontos_melhoria?: string[]
           profile_id?: string | null
           profile_name: string
+          reescrita?: string | null
           resumo?: string | null
           scenario_id?: string | null
           tipo?: string
+          trechos?: Json | null
           user_id: string
         }
         Update: {
@@ -2415,14 +2427,17 @@ export type Database = {
           difficulty?: string
           erros?: string[]
           id?: string
+          mensagem_fraca?: string | null
           nota?: number
           pontos_fortes?: string[]
           pontos_melhoria?: string[]
           profile_id?: string | null
           profile_name?: string
+          reescrita?: string | null
           resumo?: string | null
           scenario_id?: string | null
           tipo?: string
+          trechos?: Json | null
           user_id?: string
         }
         Relationships: [

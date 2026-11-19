@@ -36,7 +36,7 @@ const DIFFICULTY_COLORS: Record<string, string> = {
 
 const EMPTY = {
   name: "", category_id: "", personality: "", difficulty: "medio", objectives: "", objections: "", behaviors: "",
-  cliente_nome: "", cliente_cpf: "", cliente_regiao: "", cliente_genero: "masculino", cliente_telefone: "",
+  cliente_nome: "", cliente_cpf: "", cliente_regiao: "", cliente_genero: "masculino", cliente_telefone: "", cliente_origem_lead: "",
   endereco_rua: "", endereco_numero: "", endereco_complemento: "", endereco_bairro: "", endereco_cidade: "", endereco_estado: "", endereco_cep: "",
   dependentes: [] as { nome: string; cpf: string; nascimento: string; situacao: string }[],
 };
@@ -478,6 +478,12 @@ const openEdit = (p: any) => { setForm({ ...p, category_id: p.category_id ?? "",
                   <Input value={form.cliente_regiao ?? ""}
                     onChange={e => set("cliente_regiao", e.target.value)}
                     placeholder="Ex: Belo Horizonte - MG" />
+                </div>
+                <div>
+                  <Label>Origem do lead</Label>
+                  <Input value={form.cliente_origem_lead ?? ""}
+                    onChange={e => set("cliente_origem_lead", e.target.value)}
+                    placeholder="Ex: Anúncio no Instagram" />
                 </div>
 <div>
                   <Label>Gênero do avatar</Label>

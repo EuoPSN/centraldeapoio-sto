@@ -31,7 +31,7 @@ export const listClientProfilesForTraining = createServerFn({ method: "GET" })
     const { data, error } = await (supabaseAdmin as any)
       .from("client_profiles")
       .select(`id, name, personality, difficulty, objectives, objections, behaviors,
-        cliente_nome, cliente_cpf, cliente_regiao, cliente_genero, cliente_telefone,
+        cliente_nome, cliente_cpf, cliente_regiao, cliente_genero, cliente_telefone, cliente_origem_lead,
         endereco_rua, endereco_numero, endereco_complemento, endereco_bairro, endereco_cidade, endereco_estado, endereco_cep,
         dependentes, category_id, category:categories(id,name,slug), created_at`)
       .order("created_at", { ascending: false });
@@ -66,6 +66,7 @@ const ClientProfileInput = z.object({
   cliente_regiao: z.string().optional().nullable(),
   cliente_genero: z.string().optional().nullable(),
   cliente_telefone: z.string().optional().nullable(),
+  cliente_origem_lead: z.string().optional().nullable(),
   endereco_rua: z.string().optional().nullable(),
   endereco_numero: z.string().optional().nullable(),
   endereco_complemento: z.string().optional().nullable(),
@@ -96,6 +97,7 @@ const row = {
       cliente_regiao: data.cliente_regiao ?? null,
       cliente_genero: data.cliente_genero ?? "masculino",
       cliente_telefone: data.cliente_telefone ?? null,
+      cliente_origem_lead: data.cliente_origem_lead ?? null,
       endereco_rua: data.endereco_rua ?? null,
       endereco_numero: data.endereco_numero ?? null,
       endereco_complemento: data.endereco_complemento ?? null,

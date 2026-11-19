@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Json } from "@/integrations/supabase/types";
 
 const xpForDifficulty = (difficulty: string, nota: number) => {
   const base: Record<string, number> = { facil: 10, medio: 20, dificil: 35, especialista: 50 };
@@ -21,6 +22,7 @@ export const saveSimulatorResult = createServerFn({ method: "POST" })
     profile_id: string; profile_name: string; difficulty: string;
     nota: number; resumo: string; pontos_fortes: string[];
     pontos_melhoria: string[]; erros: string[];
+    trechos?: Json; mensagem_fraca?: string | null; reescrita?: string | null;
   })
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("simulator_results").insert({
@@ -33,6 +35,9 @@ export const saveSimulatorResult = createServerFn({ method: "POST" })
       pontos_fortes: data.pontos_fortes,
       pontos_melhoria: data.pontos_melhoria,
       erros: data.erros,
+      trechos: data.trechos ?? null,
+      mensagem_fraca: data.mensagem_fraca ?? null,
+      reescrita: data.reescrita ?? null,
     });
     if (error) throw error;
 
@@ -52,7 +57,12 @@ export const saveSimulatorResult = createServerFn({ method: "POST" })
       .eq("id", context.userId);
     if (xpError) throw xpError;
 
-    return { ganho, novoXp };
+    const { data: historico } = await context.supabase
+      .from("simulator_results").select("nota")
+      .eq("user_id", context.userId).eq("profile_id", data.profile_id).eq("tipo", "atendimento");
+    const melhorNotaPerfil = Math.max(data.nota, ...((historico ?? []).map((r: any) => r.nota)));
+
+    return { ganho, novoXp, melhorNotaPerfil };
   });
 
 // Mesma mecânica de saveSimulatorResult, mas pras simulações de Solução de Problemas:
@@ -63,6 +73,7 @@ export const saveProblemSimulatorResult = createServerFn({ method: "POST" })
     scenario_id: string; scenario_name: string; difficulty: string;
     nota: number; resumo: string; pontos_fortes: string[];
     pontos_melhoria: string[]; erros: string[];
+    trechos?: Json; mensagem_fraca?: string | null; reescrita?: string | null;
   })
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("simulator_results").insert({
@@ -76,6 +87,9 @@ export const saveProblemSimulatorResult = createServerFn({ method: "POST" })
       pontos_fortes: data.pontos_fortes,
       pontos_melhoria: data.pontos_melhoria,
       erros: data.erros,
+      trechos: data.trechos ?? null,
+      mensagem_fraca: data.mensagem_fraca ?? null,
+      reescrita: data.reescrita ?? null,
     });
     if (error) throw error;
 
@@ -95,7 +109,12 @@ export const saveProblemSimulatorResult = createServerFn({ method: "POST" })
       .eq("id", context.userId);
     if (xpError) throw xpError;
 
-    return { ganho, novoXp };
+    const { data: historico } = await context.supabase
+      .from("simulator_results").select("nota")
+      .eq("user_id", context.userId).eq("scenario_id", data.scenario_id).eq("tipo", "problema");
+    const melhorNotaPerfil = Math.max(data.nota, ...((historico ?? []).map((r: any) => r.nota)));
+
+    return { ganho, novoXp, melhorNotaPerfil };
   });
 
 export const getMyGamification = createServerFn()
@@ -126,17 +145,22 @@ export const getRanking = createServerFn()
     return data ?? [];
   });
 
-// New function: getMyHistory
-export const getMyHistory = createServerFn()
+// "Minhas simulações": indicadores, histórico e evolução, filtrados por tipo
+// (Atendimentos ou Solução de problemas). A linha de meta do gráfico vem da
+// configuração "Nota de referência do simulador" (Admin → Atendimentos).
+export const getMyHistory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d: unknown) => d as { tipo?: "atendimento" | "problema" } | undefined)
+  .handler(async ({ data, context }) => {
+    const tipo = data?.tipo ?? "atendimento";
     const { data: prof } = await context.supabase
       .from("profiles").select("xp, display_name").eq("id", context.userId).single();
     const { data: results } = await context.supabase
       .from("simulator_results").select("*")
       .eq("user_id", context.userId)
+      .eq("tipo", tipo)
       .order("created_at", { ascending: false })
-      .limit(50);
+      .limit(200);
     const all = results ?? [];
     const total = all.length;
     const media = total > 0 ? Math.round(all.reduce((s: number, r: any) => s + r.nota, 0) / total) : 0;
@@ -146,12 +170,41 @@ export const getMyHistory = createServerFn()
           acc[r.profile_name] = (acc[r.profile_name] ?? 0) + 1; return acc;
         }, {})).sort((a, b) => b[1] - a[1])[0]?.[0] ?? ""
       : "";
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: settings } = await supabaseAdmin
+      .from("ai_settings").select("simulador_nota_referencia").eq("id", 1).single();
+
     return {
       xp: prof?.xp ?? 0,
       display_name: prof?.display_name,
       total, media, melhor, maisUsado,
-      results: all
+      results: all,
+      evolucao: all.slice(0, 10).slice().reverse().map((r: any) => ({ nota: r.nota, created_at: r.created_at })),
+      metaNota: settings?.simulador_nota_referencia ?? null,
     };
+  });
+
+// Melhor nota + quantidade de treinos por perfil/cenário do usuário atual —
+// usado na lista de escolha do cliente ("Sua melhor nota") e em "Treine este hoje".
+export const getMyProfileStats = createServerFn()
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: results } = await context.supabase
+      .from("simulator_results")
+      .select("profile_id, scenario_id, nota, tipo")
+      .eq("user_id", context.userId);
+    const porPerfil: Record<string, { melhor: number; total: number }> = {};
+    const porCenario: Record<string, { melhor: number; total: number }> = {};
+    for (const r of (results ?? []) as any[]) {
+      const alvo = r.tipo === "problema" ? porCenario : porPerfil;
+      const chave = r.tipo === "problema" ? r.scenario_id : r.profile_id;
+      if (!chave) continue;
+      if (!alvo[chave]) alvo[chave] = { melhor: 0, total: 0 };
+      alvo[chave].total++;
+      if (r.nota > alvo[chave].melhor) alvo[chave].melhor = r.nota;
+    }
+    return { porPerfil, porCenario };
   });
 
 // New function: getRankingDetalhado

@@ -33,6 +33,7 @@ export function ClientKnowledgeTab() {
         model: s?.model ?? MARCIANA_CHAT_MODEL,
         essential_facts: s?.essential_facts ?? "",
         client_knowledge: content,
+        simulador_nota_referencia: s?.simulador_nota_referencia ?? null,
       } });
     },
     onSuccess: () => { toast.success("Salvo."); qc.invalidateQueries({ queryKey: ["ai-settings"] }); },
