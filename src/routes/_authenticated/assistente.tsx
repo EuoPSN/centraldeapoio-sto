@@ -434,7 +434,7 @@ function Page() {
           <>
             <div ref={scrollRef} className="flex-1 overflow-y-auto">
               <div className="max-w-[780px] mx-auto px-4 py-6 space-y-6">
-                {active.data?.map((m: ChatMsg) => (
+                {active.data?.map((m) => (
                   <MessageBubble
                     key={m.id}
                     msg={m as ChatMsg}

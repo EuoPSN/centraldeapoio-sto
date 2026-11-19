@@ -111,6 +111,7 @@ export type Database = {
         Row: {
           accent_color: string | null
           active_theme: string
+          avaliacao_odonto_valor: number | null
           background_color: string | null
           cover_url: string | null
           favicon_url: string | null
@@ -125,6 +126,7 @@ export type Database = {
         Insert: {
           accent_color?: string | null
           active_theme?: string
+          avaliacao_odonto_valor?: number | null
           background_color?: string | null
           cover_url?: string | null
           favicon_url?: string | null
@@ -139,6 +141,7 @@ export type Database = {
         Update: {
           accent_color?: string | null
           active_theme?: string
+          avaliacao_odonto_valor?: number | null
           background_color?: string | null
           cover_url?: string | null
           favicon_url?: string | null
@@ -518,46 +521,82 @@ export type Database = {
       }
       contatos_enderecos: {
         Row: {
+          atende_tambem: string[]
+          bairro: string | null
+          cidade: string | null
           contato1: string | null
           contato2: string | null
           contato3: string | null
           created_at: string
           destaque: boolean
+          email: string | null
           endereco: string | null
+          horario: string | null
           id: string
+          maps_url: string | null
           nome_regiao: string
           numero: string | null
           ponto_referencia: string | null
           position: number
+          quando_indicar: string | null
+          regiao: string | null
+          site: string | null
+          subtitulo: string | null
           tipo: string
+          use_count: number
+          whatsapp: string | null
         }
         Insert: {
+          atende_tambem?: string[]
+          bairro?: string | null
+          cidade?: string | null
           contato1?: string | null
           contato2?: string | null
           contato3?: string | null
           created_at?: string
           destaque?: boolean
+          email?: string | null
           endereco?: string | null
+          horario?: string | null
           id?: string
+          maps_url?: string | null
           nome_regiao: string
           numero?: string | null
           ponto_referencia?: string | null
           position?: number
+          quando_indicar?: string | null
+          regiao?: string | null
+          site?: string | null
+          subtitulo?: string | null
           tipo: string
+          use_count?: number
+          whatsapp?: string | null
         }
         Update: {
+          atende_tambem?: string[]
+          bairro?: string | null
+          cidade?: string | null
           contato1?: string | null
           contato2?: string | null
           contato3?: string | null
           created_at?: string
           destaque?: boolean
+          email?: string | null
           endereco?: string | null
+          horario?: string | null
           id?: string
+          maps_url?: string | null
           nome_regiao?: string
           numero?: string | null
           ponto_referencia?: string | null
           position?: number
+          quando_indicar?: string | null
+          regiao?: string | null
+          site?: string | null
+          subtitulo?: string | null
           tipo?: string
+          use_count?: number
+          whatsapp?: string | null
         }
         Relationships: []
       }
@@ -735,6 +774,36 @@ export type Database = {
           },
         ]
       }
+      exame_clinicas: {
+        Row: {
+          clinica_id: string
+          exame_id: string
+        }
+        Insert: {
+          clinica_id: string
+          exame_id: string
+        }
+        Update: {
+          clinica_id?: string
+          exame_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exame_clinicas_clinica_id_fkey"
+            columns: ["clinica_id"]
+            isOneToOne: false
+            referencedRelation: "contatos_enderecos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exame_clinicas_exame_id_fkey"
+            columns: ["exame_id"]
+            isOneToOne: false
+            referencedRelation: "exames"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exame_unidades: {
         Row: {
           exame_id: string
@@ -773,11 +842,14 @@ export type Database = {
           id: string
           jejum: boolean
           material: string | null
+          media_referencia: number | null
           nome: string
           observacoes: string | null
           position: number
           preparo: string | null
+          preparo_itens: string[]
           tipo: string
+          use_count: number
         }
         Insert: {
           categoria?: string | null
@@ -786,11 +858,14 @@ export type Database = {
           id?: string
           jejum?: boolean
           material?: string | null
+          media_referencia?: number | null
           nome: string
           observacoes?: string | null
           position?: number
           preparo?: string | null
+          preparo_itens?: string[]
           tipo?: string
+          use_count?: number
         }
         Update: {
           categoria?: string | null
@@ -799,11 +874,14 @@ export type Database = {
           id?: string
           jejum?: boolean
           material?: string | null
+          media_referencia?: number | null
           nome?: string
           observacoes?: string | null
           position?: number
           preparo?: string | null
+          preparo_itens?: string[]
           tipo?: string
+          use_count?: number
         }
         Relationships: []
       }
@@ -1685,6 +1763,36 @@ export type Database = {
           },
         ]
       }
+      pricing_item_clinicas: {
+        Row: {
+          clinica_id: string
+          pricing_item_id: string
+        }
+        Insert: {
+          clinica_id: string
+          pricing_item_id: string
+        }
+        Update: {
+          clinica_id?: string
+          pricing_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_item_clinicas_clinica_id_fkey"
+            columns: ["clinica_id"]
+            isOneToOne: false
+            referencedRelation: "contatos_enderecos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pricing_item_clinicas_pricing_item_id_fkey"
+            columns: ["pricing_item_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pricing_item_unidades: {
         Row: {
           destaque: boolean
@@ -1720,40 +1828,55 @@ export type Database = {
       }
       pricing_items: {
         Row: {
+          area: string | null
           cartao_price: number | null
           category: string
+          clinicas_pendente: boolean
+          como_agendar: string | null
           created_at: string
           description: string | null
           id: string
           notes: string | null
+          para_quem: string | null
           particular_price: number | null
           position: number
           specialty: string
           updated_at: string
+          use_count: number
         }
         Insert: {
+          area?: string | null
           cartao_price?: number | null
           category?: string
+          clinicas_pendente?: boolean
+          como_agendar?: string | null
           created_at?: string
           description?: string | null
           id?: string
           notes?: string | null
+          para_quem?: string | null
           particular_price?: number | null
           position?: number
           specialty: string
           updated_at?: string
+          use_count?: number
         }
         Update: {
+          area?: string | null
           cartao_price?: number | null
           category?: string
+          clinicas_pendente?: boolean
+          como_agendar?: string | null
           created_at?: string
           description?: string | null
           id?: string
           notes?: string | null
+          para_quem?: string | null
           particular_price?: number | null
           position?: number
           specialty?: string
           updated_at?: string
+          use_count?: number
         }
         Relationships: []
       }
@@ -1816,6 +1939,36 @@ export type Database = {
           },
         ]
       }
+      procedimento_clinicas: {
+        Row: {
+          clinica_id: string
+          procedimento_id: string
+        }
+        Insert: {
+          clinica_id: string
+          procedimento_id: string
+        }
+        Update: {
+          clinica_id?: string
+          procedimento_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "procedimento_clinicas_clinica_id_fkey"
+            columns: ["clinica_id"]
+            isOneToOne: false
+            referencedRelation: "contatos_enderecos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "procedimento_clinicas_procedimento_id_fkey"
+            columns: ["procedimento_id"]
+            isOneToOne: false
+            referencedRelation: "procedimentos_odontologicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       procedimento_unidades: {
         Row: {
           procedimento_id: string
@@ -1856,6 +2009,7 @@ export type Database = {
           nome: string
           observacoes: string | null
           position: number
+          use_count: number
         }
         Insert: {
           categoria?: string | null
@@ -1866,6 +2020,7 @@ export type Database = {
           nome: string
           observacoes?: string | null
           position?: number
+          use_count?: number
         }
         Update: {
           categoria?: string | null
@@ -1876,6 +2031,7 @@ export type Database = {
           nome?: string
           observacoes?: string | null
           position?: number
+          use_count?: number
         }
         Relationships: []
       }
@@ -2538,6 +2694,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      increment_amor_saude_use: {
+        Args: { item_id: string; item_tipo: string }
+        Returns: undefined
+      }
+      increment_contato_use: {
+        Args: { contato_id: string }
+        Returns: undefined
+      }
       increment_message_use_count: {
         Args: { msg_id: string }
         Returns: undefined
