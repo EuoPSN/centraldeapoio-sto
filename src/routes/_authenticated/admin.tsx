@@ -649,6 +649,8 @@ const saveSettingsMut = useMutation({
           system_prompt: finalPrompt,
           model,
           essential_facts: essentialFacts,
+          client_knowledge: (sSettings.data as any)?.client_knowledge ?? "",
+          simulador_nota_referencia: (sSettings.data as any)?.simulador_nota_referencia ?? null,
         },
       });
     },

@@ -456,6 +456,7 @@ const SettingsInput = z.object({
   model: z.string().min(1).default(MARCIANA_CHAT_MODEL),
   essential_facts: z.string().optional().nullable(),
   client_knowledge: z.string().optional().nullable(),
+  simulador_nota_referencia: z.number().int().min(0).max(100).optional().nullable(),
 });
 
 export const updateAiSettings = createServerFn({ method: "POST" })
@@ -470,6 +471,7 @@ export const updateAiSettings = createServerFn({ method: "POST" })
         system_prompt: data.system_prompt, model: data.model,
         essential_facts: data.essential_facts ?? null,
         client_knowledge: data.client_knowledge ?? "",
+        simulador_nota_referencia: data.simulador_nota_referencia ?? null,
       })
       .eq("id", 1);
     if (error) throw new Error(error.message);
