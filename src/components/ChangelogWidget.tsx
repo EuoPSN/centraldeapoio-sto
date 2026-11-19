@@ -16,12 +16,12 @@ interface Entry { id: string; title: string; summary: string; published: boolean
 interface KnowledgeRow { id: string; kind: KnowledgeKind; title: string; summary: string | null; content: string; }
 
 const KIND_META: Record<KnowledgeKind, { label: string; icon: typeof Shield; color: string }> = {
-  regra:           { label: "Regras",           icon: Shield,        color: "text-primary" },
-  procedimento:    { label: "Procedimentos",    icon: ListChecks,    color: "text-primary" },
-  artigo:          { label: "Artigos",          icon: FileText,      color: "text-primary" },
-  conversa_modelo: { label: "Conversas Modelo", icon: MessagesSquare,color: "text-primary" },
-  documento:       { label: "Documentos",       icon: Paperclip,     color: "text-primary" },
-  treinamento:     { label: "Treinamentos",     icon: GraduationCap, color: "text-primary" },
+  regra:           { label: "Regras",           icon: Shield,        color: "text-gold-text" },
+  procedimento:    { label: "Procedimentos",    icon: ListChecks,    color: "text-gold-text" },
+  artigo:          { label: "Artigos",          icon: FileText,      color: "text-gold-text" },
+  conversa_modelo: { label: "Conversas Modelo", icon: MessagesSquare,color: "text-gold-text" },
+  documento:       { label: "Documentos",       icon: Paperclip,     color: "text-gold-text" },
+  treinamento:     { label: "Treinamentos",     icon: GraduationCap, color: "text-gold-text" },
 };
 
 export function ChangelogWidget() {
@@ -87,14 +87,14 @@ export function ChangelogWidget() {
         <div className="flex border-b border-border shrink-0">
           <button
             className={cn("flex-1 text-sm font-medium py-2.5 border-b-2 transition-colors",
-              mode === "novidades" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}
+              mode === "novidades" ? "border-primary text-gold-text" : "border-transparent text-muted-foreground hover:text-foreground")}
             onClick={() => setMode("novidades")}
           >
             Novidades
           </button>
           <button
             className={cn("flex-1 text-sm font-medium py-2.5 border-b-2 transition-colors",
-              mode === "ajuda" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}
+              mode === "ajuda" ? "border-primary text-gold-text" : "border-transparent text-muted-foreground hover:text-foreground")}
             onClick={() => setMode("ajuda")}
           >
             Central de Ajuda

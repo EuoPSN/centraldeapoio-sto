@@ -176,7 +176,7 @@ function Page() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <BarChart2 className="h-6 w-6 text-primary" /> Meus Relatórios
+            <BarChart2 className="h-6 w-6 text-gold-text" /> Meus Relatórios
           </h1>
           <p className="text-muted-foreground text-sm">Preencha seu resultado diário por canal.</p>
         </div>
@@ -248,9 +248,9 @@ function Page() {
                   </tr>
                 ))}
                 <tr className="bg-primary/5 font-semibold text-sm">
-                  <td className="p-3 text-primary">Total</td>
-                  <td className="p-3 text-center text-primary">{totais.tentativas}</td>
-                  <td className="p-3 text-center text-primary">{totais.oportunidades}</td>
+                  <td className="p-3 text-gold-text">Total</td>
+                  <td className="p-3 text-center text-gold-text">{totais.tentativas}</td>
+                  <td className="p-3 text-center text-gold-text">{totais.oportunidades}</td>
                   <td className="p-3 text-center text-emerald-600">{totais.vendas}</td>
                   <td className="p-3"></td>
                 </tr>

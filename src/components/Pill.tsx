@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 interface PillProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   active?: boolean;
-  /** "brand" usa o verde no ativo (trilha de etapas); "ink" usa o grafite (filtros). */
+  /** "brand" usa o dourado no ativo (trilha de etapas); "ink" usa o grafite (filtros). */
   tone?: "ink" | "brand";
 }
 
@@ -15,7 +15,7 @@ export const Pill = React.forwardRef<HTMLButtonElement, PillProps>(
       type={type}
       aria-pressed={active}
       className={cn(
-        "inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 text-[13px] font-medium transition-colors",
+        "inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3.5 text-[13px] font-medium transition-colors",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
         "disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-3.5",
         active

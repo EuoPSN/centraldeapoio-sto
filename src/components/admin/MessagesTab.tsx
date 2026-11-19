@@ -418,7 +418,7 @@ export function MessagesTab() {
                   <p className="text-sm font-medium truncate">{m.title}</p>
                   <p className="text-xs text-muted-foreground truncate">
                     {m.internal_note || "sem descrição de uso ainda"}
-                    {(m.flow_links ?? []).length > 1 && <span className="text-primary"> · também em outro(s) fluxo(s)</span>}
+                    {(m.flow_links ?? []).length > 1 && <span className="text-gold-text"> · também em outro(s) fluxo(s)</span>}
                   </p>
                 </div>
                 <Button size="sm" variant="outline" className="gap-1 shrink-0" disabled={generatingId === m.id}

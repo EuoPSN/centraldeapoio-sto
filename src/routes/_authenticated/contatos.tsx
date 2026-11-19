@@ -44,19 +44,19 @@ function ContatoCard({ r }: { r: ContatoRow }) {
       <div className="space-y-1.5 text-sm">
         {(r.endereco || r.numero) && (
           <p className="flex items-start gap-2">
-            <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
+            <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-gold-text" />
             <span><span className="font-medium">Endereço:</span> {[r.endereco, r.numero ? `nº ${r.numero}` : null].filter(Boolean).join(", ")}</span>
           </p>
         )}
         {r.ponto_referencia && (
           <p className="flex items-start gap-2">
-            <Landmark className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
+            <Landmark className="h-4 w-4 shrink-0 mt-0.5 text-gold-text" />
             <span><span className="font-medium">Ponto de referência:</span> {r.ponto_referencia}</span>
           </p>
         )}
         {[r.contato1, r.contato2, r.contato3].filter(Boolean).map((c, i) => (
           <p key={i} className="flex items-center gap-2">
-            <Phone className="h-4 w-4 shrink-0 text-primary" /> {c}
+            <Phone className="h-4 w-4 shrink-0 text-gold-text" /> {c}
           </p>
         ))}
       </div>
@@ -94,7 +94,7 @@ function Page() {
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7">
       <header className="mb-5">
-        <h1 className="text-xl font-semibold tracking-tight">Contatos e Endereços</h1>
+        <h1 className="text-2xl font-medium">Contatos e Endereços</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">Endereços e telefones daqui e de outras regiões.</p>
       </header>
 

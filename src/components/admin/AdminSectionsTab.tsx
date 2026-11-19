@@ -56,7 +56,7 @@ export function AdminSectionsTab() {
   return (
     <Card className="overflow-hidden">
       <div className="flex items-center gap-2 p-4 border-b border-border">
-        <Layers className="h-4 w-4 text-primary" />
+        <Layers className="h-4 w-4 text-gold-text" />
         <h3 className="font-semibold">Organização das abas do Painel Admin</h3>
       </div>
       <p className="px-4 pt-3 text-sm text-muted-foreground">
@@ -75,7 +75,7 @@ export function AdminSectionsTab() {
                   return (
                     <div key={it.id} className="flex items-center justify-between gap-3 p-2 rounded-md hover:bg-muted/40">
                       <div className="flex items-center gap-3 min-w-0">
-                        <Icon className="h-4 w-4 text-primary shrink-0" />
+                        <Icon className="h-4 w-4 text-gold-text shrink-0" />
                         <div className="min-w-0">
                           <div className="font-medium text-sm truncate">{it.label}</div>
                           {!it.visible && <Badge variant="secondary" className="text-[10px] mt-0.5">oculto na barra lateral</Badge>}

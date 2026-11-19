@@ -118,13 +118,13 @@ organizacao: AdminSectionsTab,
   const navButtonClass = (key: string) =>
     cn(
       "flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-left transition-colors",
-      active === key ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+      active === key ? "bg-primary/10 text-gold-text" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
     );
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7">
       <header className="mb-5">
-        <h1 className="text-xl font-semibold tracking-tight">Painel Administrativo</h1>
+        <h1 className="text-2xl font-medium">Painel Administrativo</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">Gestão de conteúdo, usuários e IA.</p>
       </header>
 
@@ -201,7 +201,7 @@ const cards = [
         {cards.map((c) => (
           <Card key={c.label} className="p-4">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">{c.label}</p>
-            <p className="text-2xl font-bold text-primary mt-1">{c.value}</p>
+            <p className="text-2xl font-bold text-gold-text mt-1">{c.value}</p>
           </Card>
         ))}
       </div>
@@ -209,7 +209,7 @@ const cards = [
       <Card className="p-5">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h3 className="font-semibold flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> Importar dados iniciais</h3>
+            <h3 className="font-semibold flex items-center gap-2"><Sparkles className="h-4 w-4 text-gold-text" /> Importar dados iniciais</h3>
             <p className="text-sm text-muted-foreground mt-1">
               Carrega scripts, conhecimento, problemas, tutoriais e tabela de preços a partir do material base (Cartão de Todos). Só insere se as tabelas estiverem vazias.
             </p>
@@ -296,7 +296,7 @@ function UsersTab() {
   return (
     <Card className="overflow-hidden">
       <div className="flex justify-between items-center p-4 border-b border-border">
-        <h3 className="font-semibold flex items-center gap-2"><Users className="h-4 w-4 text-primary" /> Usuários ({usersQ.data?.length ?? 0})</h3>
+        <h3 className="font-semibold flex items-center gap-2"><Users className="h-4 w-4 text-gold-text" /> Usuários ({usersQ.data?.length ?? 0})</h3>
         <Dialog open={openNew} onOpenChange={setOpenNew}>
           <DialogTrigger asChild>
             <Button size="sm" className="gap-2"><UserPlus className="h-4 w-4" /> Novo usuário</Button>
@@ -655,7 +655,7 @@ const saveSettingsMut = useMutation({
       <Card className="p-5">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h3 className="font-semibold flex items-center gap-2"><Database className="h-4 w-4 text-primary" /> Base vetorial (RAG)</h3>
+            <h3 className="font-semibold flex items-center gap-2"><Database className="h-4 w-4 text-gold-text" /> Base vetorial (RAG)</h3>
             <p className="text-sm text-muted-foreground mt-1">
               Reindexa scripts, conhecimento, problemas, tutoriais e preços gerando embeddings semânticos. Execute após adicionar ou alterar conteúdo.
             </p>
@@ -664,7 +664,7 @@ const saveSettingsMut = useMutation({
                 Reindexação pausada por limite temporário da IA. Aguarde alguns minutos e clique novamente para continuar sem apagar o progresso.
               </p>
             ) : null}
-            <p className="text-sm mt-2">Total atual: <strong className="text-primary">{sQ.data?.totalChunks ?? 0}</strong> chunks indexados.</p>
+            <p className="text-sm mt-2">Total atual: <strong className="text-gold-text">{sQ.data?.totalChunks ?? 0}</strong> chunks indexados.</p>
           </div>
           <div className="flex items-center gap-2">
             <Button onClick={() => mut.mutate()} disabled={mut.isPending} className="gap-2">
@@ -687,7 +687,7 @@ const saveSettingsMut = useMutation({
       </Card>
 
       <Card className="p-5">
-        <h3 className="font-semibold flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> Modelo da IA</h3>
+        <h3 className="font-semibold flex items-center gap-2"><Sparkles className="h-4 w-4 text-gold-text" /> Modelo da IA</h3>
         <p className="text-sm text-muted-foreground mt-1">
           O assistente usa <code className="text-xs bg-muted px-1 py-0.5 rounded">{MARCIANA_CHAT_MODEL}</code> via Lovable AI Gateway, com busca híbrida na base interna. Embeddings em 1536 dimensões compatíveis com <code className="text-xs bg-muted px-1 py-0.5 rounded">text-embedding-3-small</code>.
         </p>
@@ -696,7 +696,7 @@ const saveSettingsMut = useMutation({
 <Card className="p-5 space-y-3">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h3 className="font-semibold flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-primary" /> Fatos Essenciais</h3>
+            <h3 className="font-semibold flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-gold-text" /> Fatos Essenciais</h3>
             <p className="text-sm text-muted-foreground mt-1">
               Fatos de alto risco (mensalidade, taxa de adesão, fidelidade, formas de pagamento...) que a MarcIAna SEMPRE usa como fonte confiável, mesmo sem busca — evita que conteúdo antigo ou duplicado na base a confunda. Sempre revise antes de salvar.
             </p>
@@ -719,7 +719,7 @@ const saveSettingsMut = useMutation({
       <Card className="p-5 space-y-4">
         <div>
           <h3 className="font-semibold flex items-center gap-2">
-            <Settings className="h-4 w-4 text-primary" /> Configurações de Prompt & IA
+            <Settings className="h-4 w-4 text-gold-text" /> Configurações de Prompt & IA
           </h3>
           <p className="text-sm text-muted-foreground mt-1">
             Personalize o nome da assistente, o modelo de linguagem e as diretrizes principais do system prompt.

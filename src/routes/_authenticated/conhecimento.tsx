@@ -19,12 +19,12 @@ import {
 export const Route = createFileRoute("/_authenticated/conhecimento")({ component: Page });
 
 const KIND_META: Record<KnowledgeKind, { label: string; icon: typeof Shield; color: string }> = {
-  regra:           { label: "Regras",           icon: Shield,        color: "text-primary" },
-  procedimento:    { label: "Procedimentos",    icon: ListChecks,    color: "text-primary" },
-  artigo:          { label: "Artigos",          icon: FileText,      color: "text-primary" },
-  conversa_modelo: { label: "Conversas Modelo", icon: MessagesSquare,color: "text-primary" },
-  documento:       { label: "Documentos",       icon: Paperclip,     color: "text-primary" },
-  treinamento:     { label: "Treinamentos",     icon: GraduationCap, color: "text-primary" },
+  regra:           { label: "Regras",           icon: Shield,        color: "text-gold-text" },
+  procedimento:    { label: "Procedimentos",    icon: ListChecks,    color: "text-gold-text" },
+  artigo:          { label: "Artigos",          icon: FileText,      color: "text-gold-text" },
+  conversa_modelo: { label: "Conversas Modelo", icon: MessagesSquare,color: "text-gold-text" },
+  documento:       { label: "Documentos",       icon: Paperclip,     color: "text-gold-text" },
+  treinamento:     { label: "Treinamentos",     icon: GraduationCap, color: "text-gold-text" },
 };
 
 function Page() {
@@ -36,7 +36,7 @@ function Page() {
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7">
       <header className="mb-5">
-        <h1 className="text-xl font-semibold tracking-tight">Base de Conhecimento IA</h1>
+        <h1 className="text-2xl font-medium">Base de Conhecimento IA</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
           Tudo que está aqui alimenta as respostas da Assistente. Organizado por tipo para facilitar a consulta.
         </p>
@@ -170,7 +170,7 @@ function EntryCard({ entry }: { entry: Entry }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           {entry.category && (
-            <p className="text-xs uppercase tracking-wide text-primary font-medium">{entry.category.name}</p>
+            <p className="text-xs uppercase tracking-wide text-gold-text font-medium">{entry.category.name}</p>
           )}
           <h3 className="font-semibold mt-0.5">{entry.title}</h3>
           {entry.summary && <p className="text-xs text-muted-foreground mt-1">{entry.summary}</p>}
@@ -194,7 +194,7 @@ function EntryCard({ entry }: { entry: Entry }) {
 
       {entry.external_url && (
         <a href={entry.external_url} target="_blank" rel="noreferrer"
-          className="text-xs flex items-center gap-1 text-primary hover:underline">
+          className="text-xs flex items-center gap-1 text-gold-text hover:underline">
           <ExternalLink className="h-3 w-3" /> {entry.external_url}
         </a>
       )}

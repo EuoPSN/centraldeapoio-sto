@@ -56,7 +56,7 @@ function Page() {
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7">
       <header className="mb-5">
-        <h1 className="text-xl font-semibold tracking-tight">Treinamentos</h1>
+        <h1 className="text-2xl font-medium">Treinamentos</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">Currículo de treinamento e simulados da equipe.</p>
       </header>
 
@@ -71,7 +71,7 @@ function Page() {
           return (
             <Card key={m.id} className="p-5">
               <div className="flex items-start gap-3 mb-3">
-                <span className="flex items-center justify-center h-7 w-7 rounded-full bg-primary/10 text-primary text-sm font-semibold shrink-0">{idx + 1}</span>
+                <span className="flex items-center justify-center h-7 w-7 rounded-full bg-primary/10 text-gold-text text-sm font-semibold shrink-0">{idx + 1}</span>
                 <div className="min-w-0">
                   <h2 className="font-semibold text-lg">{m.titulo}</h2>
                   {m.descricao && <p className="text-sm text-muted-foreground mt-0.5">{m.descricao}</p>}
@@ -82,7 +82,7 @@ function Page() {
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-xs font-medium text-muted-foreground flex items-center gap-1"><FileText className="h-3.5 w-3.5" /> {m.pdf_name || "Material do módulo"}</span>
-                    <a href={m.pdf_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">Abrir em nova aba</a>
+                    <a href={m.pdf_url} target="_blank" rel="noopener noreferrer" className="text-xs text-gold-text hover:underline">Abrir em nova aba</a>
                   </div>
                   <iframe
                     key={`${m.id}-${pdfReloadKey}`}

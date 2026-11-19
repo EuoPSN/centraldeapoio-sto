@@ -28,7 +28,7 @@ function Page() {
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7">
       <header className="mb-5">
-        <h1 className="text-xl font-semibold tracking-tight">Simulador IA</h1>
+        <h1 className="text-2xl font-medium">Simulador IA</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
           Treine o atendimento conversando com clientes virtuais gerados por IA.
         </p>
@@ -87,7 +87,7 @@ function AtendimentosTab({ perfilInicial }: { perfilInicial?: string }) {
         <>
           <Card className="p-3 h-fit">
             <h3 className="font-semibold mb-2 px-2 text-sm flex items-center gap-2">
-              <GraduationCap className="h-4 w-4 text-primary" /> Perfis de Cliente
+              <GraduationCap className="h-4 w-4 text-gold-text" /> Perfis de Cliente
             </h3>
             {categorias.length > 0 && (
               <div className="flex flex-wrap gap-1 px-2 mb-2">
@@ -173,7 +173,7 @@ function ProblemasTab() {
         <>
           <Card className="p-3 h-fit">
             <h3 className="font-semibold mb-2 px-2 text-sm flex items-center gap-2">
-              <Wrench className="h-4 w-4 text-primary" /> Situações-Problema
+              <Wrench className="h-4 w-4 text-gold-text" /> Situações-Problema
             </h3>
             {categorias.length > 0 && (
               <div className="flex flex-wrap gap-1 px-2 mb-2">

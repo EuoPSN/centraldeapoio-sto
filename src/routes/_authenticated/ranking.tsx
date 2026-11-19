@@ -106,7 +106,7 @@ function RankingPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Trophy className="h-6 w-6 text-primary" /> Ranking & Evolução
+            <Trophy className="h-6 w-6 text-gold-text" /> Ranking & Evolução
           </h1>
           <p className="text-muted-foreground text-sm">Acompanhe seu desempenho e o dos seus colegas.</p>
         </div>
@@ -151,7 +151,7 @@ function RankingPage() {
               </div>
             </div>
             {filtroAtivo && (
-              <p className="text-xs text-primary mt-2 font-medium">
+              <p className="text-xs text-gold-text mt-2 font-medium">
                 Exibindo: {dataInicio && `de ${new Date(dataInicio).toLocaleDateString("pt-BR")}`} {dataFim && `até ${new Date(dataFim).toLocaleDateString("pt-BR")}`} — ranked por média de notas
               </p>
             )}
@@ -205,7 +205,7 @@ function RankingPage() {
                       </p>
                     </div>
                   </div>
-                  <span className="text-sm font-semibold text-primary">
+                  <span className="text-sm font-semibold text-gold-text">
                     {filtroAtivo ? `Média ${u.media}` : `${u.xp ?? 0} XP`}
                   </span>
                 </div>
@@ -224,16 +224,16 @@ function RankingPage() {
                 <p className="text-lg font-semibold">{my.display_name ?? "Você"}</p>
                 <Badge className="mt-1">{myLevel?.label}</Badge>
               </div>
-              <p className="text-3xl font-bold text-primary">{my.xp} XP</p>
+              <p className="text-3xl font-bold text-gold-text">{my.xp} XP</p>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div className="text-center p-3 bg-background rounded-lg border">
-                <Target className="h-4 w-4 text-primary mx-auto mb-1" />
+                <Target className="h-4 w-4 text-gold-text mx-auto mb-1" />
                 <p className="text-xl font-bold">{my.total}</p>
                 <p className="text-xs text-muted-foreground">Simulações</p>
               </div>
               <div className="text-center p-3 bg-background rounded-lg border">
-                <TrendingUp className="h-4 w-4 text-primary mx-auto mb-1" />
+                <TrendingUp className="h-4 w-4 text-gold-text mx-auto mb-1" />
                 <p className={`text-xl font-bold ${notaCor(my.media)}`}>{my.media}</p>
                 <p className="text-xs text-muted-foreground">Média geral</p>
               </div>
@@ -243,7 +243,7 @@ function RankingPage() {
                 <p className="text-xs text-muted-foreground">Melhor nota</p>
               </div>
               <div className="text-center p-3 bg-background rounded-lg border">
-                <Trophy className="h-4 w-4 text-primary mx-auto mb-1" />
+                <Trophy className="h-4 w-4 text-gold-text mx-auto mb-1" />
                 <p className="text-sm font-bold truncate">{my.maisUsado || "—"}</p>
                 <p className="text-xs text-muted-foreground">Mais treinado</p>
               </div>

@@ -65,7 +65,7 @@ export function ScriptReviewTab() {
   return (
     <Card className="overflow-hidden">
       <div className="flex justify-between items-center p-4 border-b border-border flex-wrap gap-3">
-        <h3 className="font-semibold flex items-center gap-2"><ListChecks className="h-4 w-4 text-primary" /> Análise de Scripts</h3>
+        <h3 className="font-semibold flex items-center gap-2"><ListChecks className="h-4 w-4 text-gold-text" /> Análise de Scripts</h3>
         <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
           <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
           <SelectContent>

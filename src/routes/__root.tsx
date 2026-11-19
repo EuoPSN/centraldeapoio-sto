@@ -13,14 +13,14 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { AppSettingsEffects } from "@/components/AppSettingsEffects";
 import { RouteLoadingOverlay } from "@/components/RouteLoadingOverlay";
+import { THEME_BOOT_SCRIPT } from "@/lib/theme";
 
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-5xl font-bold tracking-tight text-primary">404</h1>
+        <h1 className="text-5xl font-bold tracking-tight text-gold-text">404</h1>
         <h2 className="mt-4 text-xl font-semibold">Página não encontrada</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           O endereço que você acessou não existe ou foi movido.
@@ -81,34 +81,40 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Central CDT — Cartão de Todos" },
+      { title: "OMNIA Apoio" },
       {
         name: "description",
         content:
-          "Central de conhecimento, scripts de atendimento e Assistente IA do Cartão de Todos.",
+          "OMNIA Apoio: scripts, preços e a MarcIAna para a equipe de Venda Interna.",
       },
-      { property: "og:title", content: "Central CDT — Cartão de Todos" },
-      { name: "twitter:title", content: "Central CDT — Cartão de Todos" },
-      { name: "description", content: "Cartão de Todos Connect is an internal employee portal for knowledge, support, and real-time AI assistance." },
-      { property: "og:description", content: "Cartão de Todos Connect is an internal employee portal for knowledge, support, and real-time AI assistance." },
-      { name: "twitter:description", content: "Cartão de Todos Connect is an internal employee portal for knowledge, support, and real-time AI assistance." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/46f60b4a-ed72-4672-98df-d3b31dca7bd8/id-preview-d33fb85a--4b742393-3645-4ee4-ac37-09246ab18a0f.lovable.app-1782407255174.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/46f60b4a-ed72-4672-98df-d3b31dca7bd8/id-preview-d33fb85a--4b742393-3645-4ee4-ac37-09246ab18a0f.lovable.app-1782407255174.png" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:title", content: "OMNIA Apoio" },
+      { name: "twitter:title", content: "OMNIA Apoio" },
+      { property: "og:description", content: "OMNIA Apoio: scripts, preços e a MarcIAna para a equipe de Venda Interna." },
+      { name: "twitter:description", content: "OMNIA Apoio: scripts, preços e a MarcIAna para a equipe de Venda Interna." },
+      { name: "twitter:card", content: "summary" },
       { property: "og:type", content: "website" },
+      { name: "theme-color", content: "#0B0B0B" },
     ],
      links: [
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: appCss },
       {
         rel: "stylesheet",
-        // Numeral condensado da etiqueta de preço (o resto usa a fonte do sistema)
-        href: "https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&display=swap",
+        // OMNIA: Cinzel (nome, saudação e títulos institucionais, sempre em
+        // caixa alta) e Montserrat (todo o resto). Barlow Condensed fica só
+        // no numeral da etiqueta de preço.
+        href: "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Montserrat:wght@300;400;500;600&family=Barlow+Condensed:wght@700;800&display=swap",
       },
       {
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&family=Playfair+Display:wght@600;700&family=Fredoka:wght@500;700&display=swap",
       },
-      { rel: "icon", type: "image/png", href: "/favicon.png" },
+      // Favicon OMNIA: SVG com PNG 32px de reserva; ícone da tela inicial e manifest.
+      { rel: "icon", type: "image/svg+xml", href: "/omnia-favicon.svg" },
+      { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-32.png" },
+      { rel: "apple-touch-icon", sizes: "180x180", href: "/favicon-180.png" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
     ],
 
   }),
@@ -120,8 +126,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
       <head>
+        {/* Aplica o tema claro/escuro antes da primeira pintura (sem piscar). */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
         <HeadContent />
       </head>
       <body>
@@ -147,7 +155,6 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AppSettingsEffects />
       <Outlet />
       <RouteLoadingOverlay />
       <Toaster richColors closeButton position="top-right" />

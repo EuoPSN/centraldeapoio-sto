@@ -44,7 +44,7 @@ export function UnidadesTab() {
   return (
     <Card className="overflow-hidden">
       <div className="flex justify-between items-center p-4 border-b border-border">
-        <h3 className="font-semibold flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" /> Unidades ({unidades.length})</h3>
+        <h3 className="font-semibold flex items-center gap-2"><MapPin className="h-4 w-4 text-gold-text" /> Unidades ({unidades.length})</h3>
         <Button size="sm" className="gap-2" onClick={() => setEdit({ nome: "", endereco: "", cidade: "", estado: "" })}>
           <Plus className="h-4 w-4" /> Nova unidade
         </Button>

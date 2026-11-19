@@ -48,7 +48,7 @@ export function ContentList({ title, subtitle, items, loading }: {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7">
       <header className="mb-5">
-        <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
+        <h1 className="text-2xl font-medium">{title}</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>
       </header>
 
@@ -78,7 +78,7 @@ export function ContentList({ title, subtitle, items, loading }: {
       <div className="space-y-6">
         {grouped.map(([category, list]) => (
           <section key={category}>
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-primary mb-2">{category}</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-gold-text mb-2">{category}</h2>
             <Card className="divide-y divide-border">
               <Accordion type="multiple">
                 {list.map((item) => (
@@ -100,7 +100,7 @@ export function ContentList({ title, subtitle, items, loading }: {
                       )}
                       {item.link_externo && (
                         <div className="mt-3">
-                          <a href={item.link_externo} target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                          <a href={item.link_externo} target="_blank" rel="noopener noreferrer" className="text-gold-text underline">
                             {item.link_label || "Acessar link"}
                           </a>
                         </div>

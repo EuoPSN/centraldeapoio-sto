@@ -74,7 +74,7 @@ function MessageCard({ m, onCopy, showCategory = false }: { m: MessageRow; onCop
           <h3 className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13.5px] font-semibold leading-snug">
             <span className="min-w-0">{m.title}</span>
             {m.shortcut && (
-              <span className="rounded bg-accent px-1.5 py-px font-mono text-[11px] font-medium text-primary" title="Atalho no WhatsApp Business">/{m.shortcut}</span>
+              <span className="rounded bg-accent px-1.5 py-px font-mono text-[11px] font-medium text-gold-text" title="Atalho no WhatsApp Business">/{m.shortcut}</span>
             )}
           </h3>
         </div>
@@ -165,7 +165,7 @@ function FluxoAtendimento() {
         className="scroll-mt-[calc(var(--topbar-h)+4.5rem)]"
       >
         <h2 className="mb-2 flex items-baseline gap-2 text-[15px] font-semibold">
-          <span className="tabular-nums text-primary">{idx + 1}</span>
+          <span className="tabular-nums text-gold-text">{idx + 1}</span>
           <span>{stage.name}</span>
           <span className="text-xs font-normal text-muted-foreground">
             {stageMessages.length} {stageMessages.length === 1 ? "mensagem" : "mensagens"}
@@ -292,7 +292,7 @@ function FluxoAtendimento() {
                 <div key={stage.id} className="space-y-4">
                   {renderStage(stage, idx)}
                   {forksHere.length > 0 && (
-                    <div className="rounded-xl border border-border bg-[#fafbfa] p-3 sm:p-4">
+                    <div className="rounded-xl border border-border bg-muted/40 p-3 sm:p-4">
                       <p className="mb-3 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                         <GitFork className="h-3.5 w-3.5" />
                         O fluxo se divide em {forksHere.length} {forksHere.length === 1 ? "caminho" : "caminhos"} aqui

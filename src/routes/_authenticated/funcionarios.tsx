@@ -145,7 +145,7 @@ function Page() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Users className="h-6 w-6 text-primary" /> Painel Inteligente de Funcionários
+            <Users className="h-6 w-6 text-gold-text" /> Painel Inteligente de Funcionários
           </h1>
           <p className="text-muted-foreground text-sm">Metas, maturidade e desenvolvimento individual.</p>
         </div>
@@ -206,7 +206,7 @@ function Page() {
         <Card className="p-5 border-primary/30 bg-primary/5 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold flex items-center gap-2">
-              <Brain className="h-4 w-4 text-primary" /> Análise — {selectedUser.display_name ?? selectedUser.email}
+              <Brain className="h-4 w-4 text-gold-text" /> Análise — {selectedUser.display_name ?? selectedUser.email}
             </h2>
             <div className="flex gap-2">
               <Button size="sm" variant="outline" onClick={gerarAnalise} disabled={gerando} className="gap-2">
@@ -275,7 +275,7 @@ function Page() {
               <ul className="space-y-1">
                 {analise.recomendacoes.split(";").filter((r: string) => r.trim()).map((r: string, i: number) => (
                   <li key={i} className="text-sm flex gap-2">
-                    <span className="text-primary font-bold flex-shrink-0">•</span>
+                    <span className="text-gold-text font-bold flex-shrink-0">•</span>
                     {r.trim()}
                   </li>
                 ))}

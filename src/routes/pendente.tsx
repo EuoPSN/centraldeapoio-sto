@@ -3,12 +3,12 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { AppLogo } from "@/components/AppLogo";
+import { OmniaLockup } from "@/components/OmniaLogo";
 import { Loader2, Clock } from "lucide-react";
 
 export const Route = createFileRoute("/pendente")({
   head: () => ({
-    meta: [{ title: "Aguardando aprovação — Central CDT" }],
+    meta: [{ title: "Aguardando aprovação — OMNIA Apoio" }],
   }),
   component: PendentePage,
 });
@@ -45,11 +45,11 @@ function PendentePage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-muted/30">
       <Card className="p-8 max-w-md w-full text-center space-y-4">
-        <AppLogo size="lg" className="mx-auto" />
-        <Clock className="h-10 w-10 text-primary mx-auto" />
+        <OmniaLockup className="mx-auto w-fit" symbolSize={40} />
+        <Clock className="h-10 w-10 text-gold-text mx-auto" />
         <h1 className="text-xl font-semibold">Sua conta está aguardando aprovação</h1>
         <p className="text-sm text-muted-foreground">
-          Um administrador precisa liberar seu acesso antes de você poder entrar na Central CDT.
+          Um administrador precisa liberar seu acesso antes de você poder entrar na OMNIA Apoio.
           Assim que for aprovado, você já pode acessar normalmente.
         </p>
         <div className="flex flex-col gap-2 pt-2">
