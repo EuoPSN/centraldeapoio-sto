@@ -34,6 +34,11 @@ import { Route as AuthenticatedSimuladorIaRouteImport } from './routes/_authenti
 import { Route as AuthenticatedSugestoesRouteImport } from './routes/_authenticated/sugestoes'
 import { Route as AuthenticatedTreinamentosRouteImport } from './routes/_authenticated/treinamentos'
 import { Route as AuthenticatedTutoriaisRouteImport } from './routes/_authenticated/tutoriais'
+import { Route as AuthenticatedAjudaIndexRouteImport } from './routes/_authenticated/ajuda.index'
+import { Route as AuthenticatedAjudaNovidadesRouteImport } from './routes/_authenticated/ajuda.novidades'
+import { Route as AuthenticatedAjudaProblemasRouteImport } from './routes/_authenticated/ajuda.problemas'
+import { Route as AuthenticatedAjudaProcedimentosRouteImport } from './routes/_authenticated/ajuda.procedimentos'
+import { Route as AuthenticatedAjudaSugestoesRouteImport } from './routes/_authenticated/ajuda.sugestoes'
 import { Route as AuthenticatedAmorSaudeIndexRouteImport } from './routes/_authenticated/amor-saude.index'
 import { Route as AuthenticatedAmorSaudeClinicasRouteImport } from './routes/_authenticated/amor-saude.clinicas'
 import { Route as AuthenticatedAmorSaudeConsultasRouteImport } from './routes/_authenticated/amor-saude.consultas'
@@ -178,6 +183,35 @@ const AuthenticatedTutoriaisRoute = AuthenticatedTutoriaisRouteImport.update({
   path: '/tutoriais',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAjudaIndexRoute = AuthenticatedAjudaIndexRouteImport.update({
+  id: '/ajuda/',
+  path: '/ajuda/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAjudaNovidadesRoute =
+  AuthenticatedAjudaNovidadesRouteImport.update({
+    id: '/ajuda/novidades',
+    path: '/ajuda/novidades',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAjudaProblemasRoute =
+  AuthenticatedAjudaProblemasRouteImport.update({
+    id: '/ajuda/problemas',
+    path: '/ajuda/problemas',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAjudaProcedimentosRoute =
+  AuthenticatedAjudaProcedimentosRouteImport.update({
+    id: '/ajuda/procedimentos',
+    path: '/ajuda/procedimentos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAjudaSugestoesRoute =
+  AuthenticatedAjudaSugestoesRouteImport.update({
+    id: '/ajuda/sugestoes',
+    path: '/ajuda/sugestoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAmorSaudeIndexRoute =
   AuthenticatedAmorSaudeIndexRouteImport.update({
     id: '/',
@@ -268,6 +302,10 @@ export interface FileRoutesByFullPath {
   '/sugestoes': typeof AuthenticatedSugestoesRoute
   '/treinamentos': typeof AuthenticatedTreinamentosRoute
   '/tutoriais': typeof AuthenticatedTutoriaisRoute
+  '/ajuda/novidades': typeof AuthenticatedAjudaNovidadesRoute
+  '/ajuda/problemas': typeof AuthenticatedAjudaProblemasRoute
+  '/ajuda/procedimentos': typeof AuthenticatedAjudaProcedimentosRoute
+  '/ajuda/sugestoes': typeof AuthenticatedAjudaSugestoesRoute
   '/amor-saude/clinicas': typeof AuthenticatedAmorSaudeClinicasRoute
   '/amor-saude/consultas': typeof AuthenticatedAmorSaudeConsultasRoute
   '/amor-saude/exames': typeof AuthenticatedAmorSaudeExamesRoute
@@ -275,6 +313,7 @@ export interface FileRoutesByFullPath {
   '/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
   '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
   '/api/public/message-image': typeof ApiPublicMessageImageRoute
+  '/ajuda/': typeof AuthenticatedAjudaIndexRoute
   '/amor-saude/': typeof AuthenticatedAmorSaudeIndexRoute
   '/scripts/': typeof AuthenticatedScriptsIndexRoute
   '/scripts/fluxo/$fluxo': typeof AuthenticatedScriptsFluxoFluxoRoute
@@ -304,6 +343,10 @@ export interface FileRoutesByTo {
   '/treinamentos': typeof AuthenticatedTreinamentosRoute
   '/tutoriais': typeof AuthenticatedTutoriaisRoute
   '/': typeof AuthenticatedIndexRoute
+  '/ajuda/novidades': typeof AuthenticatedAjudaNovidadesRoute
+  '/ajuda/problemas': typeof AuthenticatedAjudaProblemasRoute
+  '/ajuda/procedimentos': typeof AuthenticatedAjudaProcedimentosRoute
+  '/ajuda/sugestoes': typeof AuthenticatedAjudaSugestoesRoute
   '/amor-saude/clinicas': typeof AuthenticatedAmorSaudeClinicasRoute
   '/amor-saude/consultas': typeof AuthenticatedAmorSaudeConsultasRoute
   '/amor-saude/exames': typeof AuthenticatedAmorSaudeExamesRoute
@@ -311,6 +354,7 @@ export interface FileRoutesByTo {
   '/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
   '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
   '/api/public/message-image': typeof ApiPublicMessageImageRoute
+  '/ajuda': typeof AuthenticatedAjudaIndexRoute
   '/amor-saude': typeof AuthenticatedAmorSaudeIndexRoute
   '/scripts': typeof AuthenticatedScriptsIndexRoute
   '/scripts/fluxo/$fluxo': typeof AuthenticatedScriptsFluxoFluxoRoute
@@ -343,6 +387,10 @@ export interface FileRoutesById {
   '/_authenticated/treinamentos': typeof AuthenticatedTreinamentosRoute
   '/_authenticated/tutoriais': typeof AuthenticatedTutoriaisRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/ajuda/novidades': typeof AuthenticatedAjudaNovidadesRoute
+  '/_authenticated/ajuda/problemas': typeof AuthenticatedAjudaProblemasRoute
+  '/_authenticated/ajuda/procedimentos': typeof AuthenticatedAjudaProcedimentosRoute
+  '/_authenticated/ajuda/sugestoes': typeof AuthenticatedAjudaSugestoesRoute
   '/_authenticated/amor-saude/clinicas': typeof AuthenticatedAmorSaudeClinicasRoute
   '/_authenticated/amor-saude/consultas': typeof AuthenticatedAmorSaudeConsultasRoute
   '/_authenticated/amor-saude/exames': typeof AuthenticatedAmorSaudeExamesRoute
@@ -350,6 +398,7 @@ export interface FileRoutesById {
   '/_authenticated/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
   '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
   '/api/public/message-image': typeof ApiPublicMessageImageRoute
+  '/_authenticated/ajuda/': typeof AuthenticatedAjudaIndexRoute
   '/_authenticated/amor-saude/': typeof AuthenticatedAmorSaudeIndexRoute
   '/_authenticated/scripts/': typeof AuthenticatedScriptsIndexRoute
   '/_authenticated/scripts/fluxo/$fluxo': typeof AuthenticatedScriptsFluxoFluxoRoute
@@ -382,6 +431,10 @@ export interface FileRouteTypes {
     | '/sugestoes'
     | '/treinamentos'
     | '/tutoriais'
+    | '/ajuda/novidades'
+    | '/ajuda/problemas'
+    | '/ajuda/procedimentos'
+    | '/ajuda/sugestoes'
     | '/amor-saude/clinicas'
     | '/amor-saude/consultas'
     | '/amor-saude/exames'
@@ -389,6 +442,7 @@ export interface FileRouteTypes {
     | '/scripts/biblioteca'
     | '/api/public/knowledge-file'
     | '/api/public/message-image'
+    | '/ajuda/'
     | '/amor-saude/'
     | '/scripts/'
     | '/scripts/fluxo/$fluxo'
@@ -418,6 +472,10 @@ export interface FileRouteTypes {
     | '/treinamentos'
     | '/tutoriais'
     | '/'
+    | '/ajuda/novidades'
+    | '/ajuda/problemas'
+    | '/ajuda/procedimentos'
+    | '/ajuda/sugestoes'
     | '/amor-saude/clinicas'
     | '/amor-saude/consultas'
     | '/amor-saude/exames'
@@ -425,6 +483,7 @@ export interface FileRouteTypes {
     | '/scripts/biblioteca'
     | '/api/public/knowledge-file'
     | '/api/public/message-image'
+    | '/ajuda'
     | '/amor-saude'
     | '/scripts'
     | '/scripts/fluxo/$fluxo'
@@ -456,6 +515,10 @@ export interface FileRouteTypes {
     | '/_authenticated/treinamentos'
     | '/_authenticated/tutoriais'
     | '/_authenticated/'
+    | '/_authenticated/ajuda/novidades'
+    | '/_authenticated/ajuda/problemas'
+    | '/_authenticated/ajuda/procedimentos'
+    | '/_authenticated/ajuda/sugestoes'
     | '/_authenticated/amor-saude/clinicas'
     | '/_authenticated/amor-saude/consultas'
     | '/_authenticated/amor-saude/exames'
@@ -463,6 +526,7 @@ export interface FileRouteTypes {
     | '/_authenticated/scripts/biblioteca'
     | '/api/public/knowledge-file'
     | '/api/public/message-image'
+    | '/_authenticated/ajuda/'
     | '/_authenticated/amor-saude/'
     | '/_authenticated/scripts/'
     | '/_authenticated/scripts/fluxo/$fluxo'
@@ -654,6 +718,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTutoriaisRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/ajuda/': {
+      id: '/_authenticated/ajuda/'
+      path: '/ajuda'
+      fullPath: '/ajuda/'
+      preLoaderRoute: typeof AuthenticatedAjudaIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ajuda/novidades': {
+      id: '/_authenticated/ajuda/novidades'
+      path: '/ajuda/novidades'
+      fullPath: '/ajuda/novidades'
+      preLoaderRoute: typeof AuthenticatedAjudaNovidadesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ajuda/problemas': {
+      id: '/_authenticated/ajuda/problemas'
+      path: '/ajuda/problemas'
+      fullPath: '/ajuda/problemas'
+      preLoaderRoute: typeof AuthenticatedAjudaProblemasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ajuda/procedimentos': {
+      id: '/_authenticated/ajuda/procedimentos'
+      path: '/ajuda/procedimentos'
+      fullPath: '/ajuda/procedimentos'
+      preLoaderRoute: typeof AuthenticatedAjudaProcedimentosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ajuda/sugestoes': {
+      id: '/_authenticated/ajuda/sugestoes'
+      path: '/ajuda/sugestoes'
+      fullPath: '/ajuda/sugestoes'
+      preLoaderRoute: typeof AuthenticatedAjudaSugestoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/amor-saude/': {
       id: '/_authenticated/amor-saude/'
       path: '/'
@@ -780,7 +879,12 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTreinamentosRoute: typeof AuthenticatedTreinamentosRoute
   AuthenticatedTutoriaisRoute: typeof AuthenticatedTutoriaisRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedAjudaNovidadesRoute: typeof AuthenticatedAjudaNovidadesRoute
+  AuthenticatedAjudaProblemasRoute: typeof AuthenticatedAjudaProblemasRoute
+  AuthenticatedAjudaProcedimentosRoute: typeof AuthenticatedAjudaProcedimentosRoute
+  AuthenticatedAjudaSugestoesRoute: typeof AuthenticatedAjudaSugestoesRoute
   AuthenticatedScriptsBibliotecaRoute: typeof AuthenticatedScriptsBibliotecaRoute
+  AuthenticatedAjudaIndexRoute: typeof AuthenticatedAjudaIndexRoute
   AuthenticatedScriptsIndexRoute: typeof AuthenticatedScriptsIndexRoute
   AuthenticatedScriptsFluxoFluxoRoute: typeof AuthenticatedScriptsFluxoFluxoRoute
   AuthenticatedScriptsFluxoIndexRoute: typeof AuthenticatedScriptsFluxoIndexRoute
@@ -809,7 +913,12 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedTreinamentosRoute: AuthenticatedTreinamentosRoute,
   AuthenticatedTutoriaisRoute: AuthenticatedTutoriaisRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedAjudaNovidadesRoute: AuthenticatedAjudaNovidadesRoute,
+  AuthenticatedAjudaProblemasRoute: AuthenticatedAjudaProblemasRoute,
+  AuthenticatedAjudaProcedimentosRoute: AuthenticatedAjudaProcedimentosRoute,
+  AuthenticatedAjudaSugestoesRoute: AuthenticatedAjudaSugestoesRoute,
   AuthenticatedScriptsBibliotecaRoute: AuthenticatedScriptsBibliotecaRoute,
+  AuthenticatedAjudaIndexRoute: AuthenticatedAjudaIndexRoute,
   AuthenticatedScriptsIndexRoute: AuthenticatedScriptsIndexRoute,
   AuthenticatedScriptsFluxoFluxoRoute: AuthenticatedScriptsFluxoFluxoRoute,
   AuthenticatedScriptsFluxoIndexRoute: AuthenticatedScriptsFluxoIndexRoute,

@@ -42,10 +42,11 @@ export const listMostViewedArticles = createServerFn({ method: "GET" })
       .select("id,title,section")
       .in("id", topIds);
     if (itemsError) throw new Error(itemsError.message);
-    const byId = new Map((items ?? []).map((i: { id: string }) => [i.id, i]));
+    type Item = { id: string; title: string; section: string };
+    const byId = new Map<string, Item>((items ?? []).map((i: Item) => [i.id, i]));
     return topIds
       .map((id) => byId.get(id))
-      .filter(Boolean)
+      .filter((i): i is Item => !!i)
       .map((i) => ({ ...i, views: counts.get(i.id) ?? 0 }));
   });
 
@@ -96,7 +97,8 @@ export const getAjudaFeedbackSummary = createServerFn({ method: "GET" })
     const { data: profiles } = userIds.length
       ? await db.from("profiles").select("id,display_name,email").in("id", userIds)
       : { data: [] as { id: string; display_name: string | null; email: string }[] };
-    const profileById = new Map((profiles ?? []).map((p: { id: string }) => [p.id, p]));
+    type ProfileRow = { id: string; display_name: string | null; email: string };
+    const profileById = new Map<string, ProfileRow>((profiles ?? []).map((p: ProfileRow) => [p.id, p]));
 
     const bySection = new Map<string, { sim: number; nao: number; recentesNao: { data: string; pessoa: string }[] }>();
     for (const r of rows ?? []) {
