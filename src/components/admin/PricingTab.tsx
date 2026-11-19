@@ -2,9 +2,12 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { listPricing, upsertPricing, deletePricing, setPricingItemUnidades } from "@/lib/content.functions";
-import { listExames, upsertExame, deleteExame, setExameUnidades } from "@/lib/exames.functions";
-import { listProcedimentos, upsertProcedimento, deleteProcedimento, setProcedimentoUnidades } from "@/lib/odontologia.functions";
+import { listExames, upsertExame, deleteExame } from "@/lib/exames.functions";
+import { listProcedimentos, upsertProcedimento, deleteProcedimento } from "@/lib/odontologia.functions";
 import { listUnidades, upsertUnidade } from "@/lib/unidades.functions";
+import { getAmorSaude, setAvaliacaoOdonto, setItemClinicas } from "@/lib/amorsaude.functions";
+import { ClinicasPicker } from "@/components/admin/ClinicasPicker";
+import { AREAS } from "@/components/amor-saude/model";
 import { simulatorChat } from "@/lib/simulator.chat.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -51,8 +54,13 @@ function ConsultasSubTab() {
   const unidadesQ = useQuery({ queryKey: ["unidades"], queryFn: () => unidadesListFn({}) });
   const unidadesList = (unidadesQ.data ?? []) as { id: string; nome: string }[];
 
-  type UnidadeSel = "none" | "principal" | "outras";
-  const [edit, setEdit] = useState<null | { id?: string; category: string; specialty: string; cartao_price: number | string | null; particular_price: number | string | null; notes: string; description: string; unidadesSel: Record<string, UnidadeSel> }>(null);
+  const setClinicasFn = useServerFn(setItemClinicas);
+  type ConsultaEdit = {
+    id?: string; category: string; specialty: string; cartao_price: number | string | null; particular_price: number | string | null;
+    notes: string; description: string; area: string; para_quem: string; como_agendar: string;
+    clinicaIds: string[]; refAntiga: string | null; pendente: boolean;
+  };
+  const [edit, setEdit] = useState<null | ConsultaEdit>(null);
   const [descGenerating, setDescGenerating] = useState(false);
 
   type AiPricingItem = { category: string; specialty: string; cartao_price: number | null; particular_price: number | null; notes: string | null; regioes_principais: string[]; regioes_outras: string[]; selected: boolean };
@@ -166,15 +174,15 @@ Responda APENAS com o texto da descrição, sem aspas, sem markdown.`;
           cartao_price: edit!.cartao_price ? Number(edit!.cartao_price) : null,
           particular_price: edit!.particular_price ? Number(edit!.particular_price) : null,
           notes: edit!.notes || null, description: edit!.description || null, position: 0,
+          area: edit!.area.trim() || null, para_quem: edit!.para_quem.trim() || null, como_agendar: edit!.como_agendar.trim() || null,
+          clinicas_pendente: edit!.pendente,
         },
       });
+      // Os vínculos antigos com "unidades" ficam como estão (referência); o site usa as clínicas.
       const pricingItemId = edit!.id ?? String(saved.id);
-      const unidades = Object.entries(edit!.unidadesSel)
-        .filter(([, sel]) => sel !== "none")
-        .map(([unidade_id, sel]) => ({ unidade_id, destaque: sel === "principal" }));
-      await setUnidadesFn({ data: { pricing_item_id: String(pricingItemId), unidades } });
+      await setClinicasFn({ data: { tipo: "consulta", item_id: String(pricingItemId), clinica_ids: edit!.clinicaIds } });
     },
-    onSuccess: () => { toast.success("Salvo."); setEdit(null); qc.invalidateQueries({ queryKey: ["pricing"] }); },
+    onSuccess: () => { toast.success("Salvo."); setEdit(null); qc.invalidateQueries({ queryKey: ["pricing"] }); qc.invalidateQueries({ queryKey: ["amor-saude"] }); },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
   });
   const delMut = useMutation({
@@ -183,31 +191,40 @@ Responda APENAS com o texto da descrição, sem aspas, sem markdown.`;
   });
 
   const openEdit = (p: any) => {
-    const sel: Record<string, UnidadeSel> = {};
-    ((p.unidades ?? []) as { destaque: boolean; unidade: { id: string; nome: string } | null }[]).forEach((link) => {
-      if (link.unidade) sel[link.unidade.id] = link.destaque ? "principal" : "outras";
+    setEdit({
+      id: p.id, category: p.category, specialty: p.specialty, cartao_price: p.cartao_price?.toString() ?? "", particular_price: p.particular_price?.toString() ?? "",
+      notes: p.notes ?? "", description: p.description ?? "", area: p.area ?? "", para_quem: p.para_quem ?? "", como_agendar: p.como_agendar ?? "",
+      clinicaIds: ((p.clinicas ?? []) as { clinica_id: string }[]).map((c) => c.clinica_id),
+      refAntiga: p.clinicas_ref_antiga ?? null, pendente: !!p.clinicas_pendente,
     });
-    setEdit({ id: p.id, category: p.category, specialty: p.specialty, cartao_price: p.cartao_price?.toString() ?? "", particular_price: p.particular_price?.toString() ?? "", notes: p.notes ?? "", description: p.description ?? "", unidadesSel: sel });
   };
+  const pendentes = ((q.data ?? []) as any[]).filter((p) => p.clinicas_pendente).length;
 
   return (
     <Card className="overflow-hidden">
       <div className="flex justify-between items-center p-4 border-b border-border">
-        <h3 className="font-semibold">Consultas ({q.data?.length ?? 0})</h3>
+        <div>
+          <h3 className="font-semibold">Consultas ({q.data?.length ?? 0})</h3>
+          {pendentes > 0 && <p className="text-xs text-muted-foreground">{pendentes} com clínicas para conferir (marcadas com “Revisar”).</p>}
+        </div>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" className="gap-2" onClick={() => setAiOpen(true)}><Sparkles className="h-4 w-4" /> Preencher com IA</Button>
-          <Button size="sm" className="gap-2" onClick={() => setEdit({ category: "Consultas", specialty: "", cartao_price: "", particular_price: "", notes: "", description: "", unidadesSel: {} })}><Plus className="h-4 w-4" /> Novo</Button>
+          <Button size="sm" className="gap-2" onClick={() => setEdit({ category: "Consultas", specialty: "", cartao_price: "", particular_price: "", notes: "", description: "", area: "", para_quem: "", como_agendar: "", clinicaIds: [], refAntiga: null, pendente: false })}><Plus className="h-4 w-4" /> Novo</Button>
         </div>
       </div>
       <Table>
-        <TableHeader><TableRow><TableHead>Categoria</TableHead><TableHead>Especialidade</TableHead><TableHead className="text-right">CDT</TableHead><TableHead className="text-right">Particular</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>Área</TableHead><TableHead>Especialidade</TableHead><TableHead className="text-right">CDT</TableHead><TableHead className="text-right">Particular</TableHead><TableHead>Clínicas</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
         <TableBody>
           {(q.data ?? []).map((p: any) => (
             <TableRow key={p.id}>
-              <TableCell><Badge variant="secondary">{p.category}</Badge></TableCell>
+              <TableCell>{p.area ? <Badge variant="secondary">{p.area}</Badge> : <span className="text-xs text-muted-foreground">Outras</span>}</TableCell>
               <TableCell className="font-medium">{p.specialty}</TableCell>
               <TableCell className="text-right">{p.cartao_price != null ? `R$ ${Number(p.cartao_price).toFixed(2)}` : "—"}</TableCell>
               <TableCell className="text-right">{p.particular_price != null ? `R$ ${Number(p.particular_price).toFixed(2)}` : "—"}</TableCell>
+              <TableCell>
+                <span className="text-sm">{(p.clinicas ?? []).length}</span>
+                {p.clinicas_pendente && <Badge variant="outline" className="ml-2 border-warning text-warning">Revisar</Badge>}
+              </TableCell>
               <TableCell className="text-right space-x-1">
                 <Button size="icon" variant="ghost" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
                 <Button size="icon" variant="ghost" onClick={() => confirm("Excluir?") && delMut.mutate(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
@@ -230,24 +247,26 @@ Responda APENAS com o texto da descrição, sem aspas, sem markdown.`;
               </div>
               <div><Label>Observações</Label><Input value={edit.notes} onChange={(e) => setEdit({ ...edit, notes: e.target.value })} /></div>
               <div>
-                <Label>Unidades onde está disponível</Label>
-                {unidadesList.length === 0 && <p className="text-xs text-muted-foreground mt-1">Nenhuma unidade cadastrada — vá em Admin → Unidades primeiro.</p>}
-                <div className="space-y-1 mt-1">
-                  {unidadesList.map((u) => (
-                    <div key={u.id} className="flex items-center justify-between gap-2 text-sm p-1.5 rounded border border-border/60">
-                      <span>{u.nome}</span>
-                      <Select value={edit.unidadesSel[u.id] ?? "none"} onValueChange={(v) => setEdit({ ...edit, unidadesSel: { ...edit.unidadesSel, [u.id]: v as UnidadeSel } })}>
-                        <SelectTrigger className="h-7 w-36 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Não vinculada</SelectItem>
-                          <SelectItem value="principal">Principal</SelectItem>
-                          <SelectItem value="outras">Outras regiões</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  ))}
-                </div>
+                <Label>Área</Label>
+                <Input list="amor-areas" value={edit.area} onChange={(e) => setEdit({ ...edit, area: e.target.value })} placeholder="Ex.: Coração e circulação (vazio = Outras)" />
+                <datalist id="amor-areas">{AREAS.map((a) => <option key={a} value={a} />)}</datalist>
               </div>
+              <div><Label>Para quem indicar</Label><Textarea rows={2} value={edit.para_quem} onChange={(e) => setEdit({ ...edit, para_quem: e.target.value })} placeholder="Ex.: pressão alta, histórico de infarto na família, check-up acima dos 40." /></div>
+              <div><Label>Como agendar</Label><Textarea rows={2} value={edit.como_agendar} onChange={(e) => setEdit({ ...edit, como_agendar: e.target.value })} placeholder="Ex.: WhatsApp da clínica · segunda a sábado, das 8h às 18h." /></div>
+              {edit.refAntiga && edit.pendente && (
+                <div className="rounded-md border border-warning/40 bg-warning/5 p-3 text-sm">
+                  <p className="font-medium">Texto antigo das regiões (referência)</p>
+                  <p className="mt-0.5 text-muted-foreground">{edit.refAntiga}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">A migração marcou as clínicas que casaram. Confira, ajuste abaixo e marque “Conferido”.</p>
+                </div>
+              )}
+              <ClinicasPicker value={edit.clinicaIds} onChange={(ids) => setEdit({ ...edit, clinicaIds: ids })} />
+              {(edit.pendente || edit.refAntiga) && (
+                <div className="flex items-center gap-2">
+                  <Switch checked={!edit.pendente} onCheckedChange={(v) => setEdit({ ...edit, pendente: !v })} />
+                  <Label className="!mt-0">Clínicas conferidas</Label>
+                </div>
+              )}
               <div>
                 <div className="flex items-center justify-between">
                   <Label>Descrição para busca (opcional)</Label>
@@ -313,15 +332,12 @@ function ExamesSubTab() {
   const list = useServerFn(listExames);
   const upsert = useServerFn(upsertExame);
   const del = useServerFn(deleteExame);
-  const setUnidadesFn = useServerFn(setExameUnidades);
-  const unidadesListFn = useServerFn(listUnidades);
+  const setClinicasFn = useServerFn(setItemClinicas);
   const genAI = useServerFn(simulatorChat);
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["exames"], queryFn: () => list({}) });
-  const unidadesQ = useQuery({ queryKey: ["unidades"], queryFn: () => unidadesListFn({}) });
-  const unidadesList = (unidadesQ.data ?? []) as { id: string; nome: string }[];
 
-  const [edit, setEdit] = useState<null | { id?: string; nome: string; tipo: "laboratorial" | "imagem"; categoria: string; material: string; jejum: boolean; preparo: string; descricao: string; observacoes: string; unidadeIds: string[] }>(null);
+  const [edit, setEdit] = useState<null | { id?: string; nome: string; tipo: "laboratorial" | "imagem"; categoria: string; material: string; jejum: boolean; preparo: string; descricao: string; observacoes: string; media: string; preparoItens: string; clinicaIds: string[] }>(null);
 
   const upsertMut = useMutation({
     mutationFn: async () => {
@@ -329,11 +345,13 @@ function ExamesSubTab() {
         id: edit!.id, nome: edit!.nome, tipo: edit!.tipo, categoria: edit!.categoria || null,
         material: edit!.material || null, jejum: edit!.jejum, preparo: edit!.preparo || null,
         descricao: edit!.descricao || null, observacoes: edit!.observacoes || null, position: 0,
+        media_referencia: edit!.media.trim() ? Number(edit!.media.replace(",", ".")) : null,
+        preparo_itens: edit!.preparoItens.split("\n").map((l) => l.replace(/^\s*[•\-*]\s*/, "").trim()).filter(Boolean),
       } });
       const exameId = edit!.id ?? String(saved.id);
-      await setUnidadesFn({ data: { exame_id: String(exameId), unidade_ids: edit!.unidadeIds } });
+      await setClinicasFn({ data: { tipo: "exame", item_id: String(exameId), clinica_ids: edit!.clinicaIds } });
     },
-    onSuccess: () => { toast.success("Salvo."); setEdit(null); qc.invalidateQueries({ queryKey: ["exames"] }); },
+    onSuccess: () => { toast.success("Salvo."); setEdit(null); qc.invalidateQueries({ queryKey: ["exames"] }); qc.invalidateQueries({ queryKey: ["amor-saude"] }); },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
   });
   const delMut = useMutation({
@@ -342,8 +360,13 @@ function ExamesSubTab() {
   });
 
   const openEdit = (e: any) => {
-    const ids = ((e.unidades ?? []) as { unidade: { id: string } | null }[]).filter((l) => l.unidade).map((l) => l.unidade!.id);
-    setEdit({ id: e.id, nome: e.nome, tipo: e.tipo, categoria: e.categoria ?? "", material: e.material ?? "", jejum: e.jejum, preparo: e.preparo ?? "", descricao: e.descricao ?? "", observacoes: e.observacoes ?? "", unidadeIds: ids });
+    setEdit({
+      id: e.id, nome: e.nome, tipo: e.tipo, categoria: e.categoria ?? "", material: e.material ?? "", jejum: e.jejum, preparo: e.preparo ?? "",
+      descricao: e.descricao ?? "", observacoes: e.observacoes ?? "",
+      media: e.media_referencia != null ? String(e.media_referencia) : "",
+      preparoItens: ((e.preparo_itens ?? []) as string[]).join("\n"),
+      clinicaIds: ((e.clinicas ?? []) as { clinica_id: string }[]).map((c) => c.clinica_id),
+    });
   };
 
   const [aiOpen, setAiOpen] = useState(false);
@@ -413,11 +436,11 @@ Regras:
         <h3 className="font-semibold">Exames ({q.data?.length ?? 0})</h3>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" className="gap-2" onClick={() => setAiOpen(true)}><Sparkles className="h-4 w-4" /> Preencher com IA</Button>
-          <Button size="sm" className="gap-2" onClick={() => setEdit({ nome: "", tipo: "laboratorial", categoria: "", material: "", jejum: false, preparo: "", descricao: "", observacoes: "", unidadeIds: [] })}><Plus className="h-4 w-4" /> Novo</Button>
+          <Button size="sm" className="gap-2" onClick={() => setEdit({ nome: "", tipo: "laboratorial", categoria: "", material: "", jejum: false, preparo: "", descricao: "", observacoes: "", media: "", preparoItens: "", clinicaIds: [] })}><Plus className="h-4 w-4" /> Novo</Button>
         </div>
       </div>
       <Table>
-        <TableHeader><TableRow><TableHead>Tipo</TableHead><TableHead>Nome</TableHead><TableHead>Categoria</TableHead><TableHead>Jejum</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>Tipo</TableHead><TableHead>Nome</TableHead><TableHead>Categoria</TableHead><TableHead>Jejum</TableHead><TableHead>Clínicas</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
         <TableBody>
           {(q.data ?? []).map((e: any) => (
             <TableRow key={e.id}>
@@ -425,6 +448,7 @@ Regras:
               <TableCell className="font-medium">{e.nome}</TableCell>
               <TableCell>{e.categoria || "—"}</TableCell>
               <TableCell>{e.jejum ? "Sim" : "Não"}</TableCell>
+              <TableCell>{(e.clinicas ?? []).length || <span className="text-xs text-muted-foreground">nenhuma</span>}</TableCell>
               <TableCell className="text-right space-x-1">
                 <Button size="icon" variant="ghost" onClick={() => openEdit(e)}><Pencil className="h-4 w-4" /></Button>
                 <Button size="icon" variant="ghost" onClick={() => confirm("Excluir?") && delMut.mutate(e.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
@@ -461,18 +485,16 @@ Regras:
               <div><Label>Descrição</Label><Textarea rows={3} value={edit.descricao} onChange={(e) => setEdit({ ...edit, descricao: e.target.value })} /></div>
               <div><Label>Observações</Label><Input value={edit.observacoes} onChange={(e) => setEdit({ ...edit, observacoes: e.target.value })} /></div>
               <div>
-                <Label>Unidades onde é realizado</Label>
-                {unidadesList.length === 0 && <p className="text-xs text-muted-foreground mt-1">Nenhuma unidade cadastrada.</p>}
-                <div className="space-y-1 mt-1">
-                  {unidadesList.map((u) => (
-                    <label key={u.id} className="flex items-center gap-2 text-sm p-1.5 rounded border border-border/60">
-                      <input type="checkbox" checked={edit.unidadeIds.includes(u.id)}
-                        onChange={(ev) => setEdit({ ...edit, unidadeIds: ev.target.checked ? [...edit.unidadeIds, u.id] : edit.unidadeIds.filter((id) => id !== u.id) })} />
-                      {u.nome}
-                    </label>
-                  ))}
-                </div>
+                <Label>Média de referência (R$, opcional)</Label>
+                <Input inputMode="decimal" value={edit.media} onChange={(e) => setEdit({ ...edit, media: e.target.value })} placeholder="Ex.: 450,00" />
+                <p className="mt-1 text-xs text-muted-foreground">No site aparece com a observação “varia conforme o pedido médico”.</p>
               </div>
+              <div>
+                <Label>Preparo para o cliente (um item por linha)</Label>
+                <Textarea rows={4} value={edit.preparoItens} onChange={(e) => setEdit({ ...edit, preparoItens: e.target.value })} placeholder={"Jejum de 8 horas\nLevar acompanhante maior de idade"} />
+                <p className="mt-1 text-xs text-muted-foreground">Vazio: o site monta o preparo com jejum, preparo, material/método e observações acima.</p>
+              </div>
+              <ClinicasPicker value={edit.clinicaIds} onChange={(ids) => setEdit({ ...edit, clinicaIds: ids })} label="Clínicas onde faz" />
             </div>
           )}
           <DialogFooter><Button onClick={() => upsertMut.mutate()} disabled={upsertMut.isPending}>Salvar</Button></DialogFooter>
@@ -531,15 +553,12 @@ function OdontologiaSubTab() {
   const list = useServerFn(listProcedimentos);
   const upsert = useServerFn(upsertProcedimento);
   const del = useServerFn(deleteProcedimento);
-  const setUnidadesFn = useServerFn(setProcedimentoUnidades);
-  const unidadesListFn = useServerFn(listUnidades);
+  const setClinicasFn = useServerFn(setItemClinicas);
   const genAI = useServerFn(simulatorChat);
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["procedimentos"], queryFn: () => list({}) });
-  const unidadesQ = useQuery({ queryKey: ["unidades"], queryFn: () => unidadesListFn({}) });
-  const unidadesList = (unidadesQ.data ?? []) as { id: string; nome: string }[];
 
-  const [edit, setEdit] = useState<null | { id?: string; nome: string; categoria: string; descricao: string; cuidados_pos: string; observacoes: string; unidadeIds: string[] }>(null);
+  const [edit, setEdit] = useState<null | { id?: string; nome: string; categoria: string; descricao: string; cuidados_pos: string; observacoes: string; clinicaIds: string[] }>(null);
 
   const upsertMut = useMutation({
     mutationFn: async () => {
@@ -548,9 +567,9 @@ function OdontologiaSubTab() {
         descricao: edit!.descricao || null, cuidados_pos: edit!.cuidados_pos || null, observacoes: edit!.observacoes || null, position: 0,
       } });
       const procId = edit!.id ?? String(saved.id);
-      await setUnidadesFn({ data: { procedimento_id: String(procId), unidade_ids: edit!.unidadeIds } });
+      await setClinicasFn({ data: { tipo: "odontologia", item_id: String(procId), clinica_ids: edit!.clinicaIds } });
     },
-    onSuccess: () => { toast.success("Salvo."); setEdit(null); qc.invalidateQueries({ queryKey: ["procedimentos"] }); },
+    onSuccess: () => { toast.success("Salvo."); setEdit(null); qc.invalidateQueries({ queryKey: ["procedimentos"] }); qc.invalidateQueries({ queryKey: ["amor-saude"] }); },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
   });
   const delMut = useMutation({
@@ -559,8 +578,8 @@ function OdontologiaSubTab() {
   });
 
   const openEdit = (p: any) => {
-    const ids = ((p.unidades ?? []) as { unidade: { id: string } | null }[]).filter((l) => l.unidade).map((l) => l.unidade!.id);
-    setEdit({ id: p.id, nome: p.nome, categoria: p.categoria ?? "", descricao: p.descricao ?? "", cuidados_pos: p.cuidados_pos ?? "", observacoes: p.observacoes ?? "", unidadeIds: ids });
+    const ids = ((p.clinicas ?? []) as { clinica_id: string }[]).map((c) => c.clinica_id);
+    setEdit({ id: p.id, nome: p.nome, categoria: p.categoria ?? "", descricao: p.descricao ?? "", cuidados_pos: p.cuidados_pos ?? "", observacoes: p.observacoes ?? "", clinicaIds: ids });
   };
 
   const [aiOpen, setAiOpen] = useState(false);
@@ -623,16 +642,18 @@ Regras:
         <h3 className="font-semibold">Procedimentos Odontológicos ({q.data?.length ?? 0})</h3>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" className="gap-2" onClick={() => setAiOpen(true)}><Sparkles className="h-4 w-4" /> Preencher com IA</Button>
-          <Button size="sm" className="gap-2" onClick={() => setEdit({ nome: "", categoria: "", descricao: "", cuidados_pos: "", observacoes: "", unidadeIds: [] })}><Plus className="h-4 w-4" /> Novo</Button>
+          <Button size="sm" className="gap-2" onClick={() => setEdit({ nome: "", categoria: "", descricao: "", cuidados_pos: "", observacoes: "", clinicaIds: [] })}><Plus className="h-4 w-4" /> Novo</Button>
         </div>
       </div>
+      <AvaliacaoOdontoField />
       <Table>
-        <TableHeader><TableRow><TableHead>Nome</TableHead><TableHead>Categoria</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>Nome</TableHead><TableHead>Categoria</TableHead><TableHead>Clínicas</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
         <TableBody>
           {(q.data ?? []).map((p: any) => (
             <TableRow key={p.id}>
               <TableCell className="font-medium">{p.nome}</TableCell>
               <TableCell>{p.categoria || "—"}</TableCell>
+              <TableCell>{(p.clinicas ?? []).length || <span className="text-xs text-muted-foreground">nenhuma</span>}</TableCell>
               <TableCell className="text-right space-x-1">
                 <Button size="icon" variant="ghost" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
                 <Button size="icon" variant="ghost" onClick={() => confirm("Excluir?") && delMut.mutate(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
@@ -654,19 +675,7 @@ Regras:
               <div><Label>Descrição</Label><Textarea rows={3} value={edit.descricao} onChange={(e) => setEdit({ ...edit, descricao: e.target.value })} /></div>
               <div><Label>Cuidados pós-procedimento</Label><Textarea rows={2} value={edit.cuidados_pos} onChange={(e) => setEdit({ ...edit, cuidados_pos: e.target.value })} /></div>
               <div><Label>Observações</Label><Input value={edit.observacoes} onChange={(e) => setEdit({ ...edit, observacoes: e.target.value })} /></div>
-              <div>
-                <Label>Unidades onde é realizado</Label>
-                {unidadesList.length === 0 && <p className="text-xs text-muted-foreground mt-1">Nenhuma unidade cadastrada.</p>}
-                <div className="space-y-1 mt-1">
-                  {unidadesList.map((u) => (
-                    <label key={u.id} className="flex items-center gap-2 text-sm p-1.5 rounded border border-border/60">
-                      <input type="checkbox" checked={edit.unidadeIds.includes(u.id)}
-                        onChange={(ev) => setEdit({ ...edit, unidadeIds: ev.target.checked ? [...edit.unidadeIds, u.id] : edit.unidadeIds.filter((id) => id !== u.id) })} />
-                      {u.nome}
-                    </label>
-                  ))}
-                </div>
-              </div>
+              <ClinicasPicker value={edit.clinicaIds} onChange={(ids) => setEdit({ ...edit, clinicaIds: ids })} label="Clínicas onde faz" />
             </div>
           )}
           <DialogFooter><Button onClick={() => upsertMut.mutate()} disabled={upsertMut.isPending}>Salvar</Button></DialogFooter>
@@ -711,5 +720,31 @@ Regras:
         </DialogContent>
       </Dialog>
     </Card>
+  );
+}
+
+// Valor geral da "Avaliação odontológica (Cartão de TODOS)", mostrado em Amor Saúde → Odontologia.
+function AvaliacaoOdontoField() {
+  const getFn = useServerFn(getAmorSaude);
+  const setFn = useServerFn(setAvaliacaoOdonto);
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ["amor-saude"], queryFn: () => getFn({}) });
+  const atual = q.data?.avaliacaoOdonto ?? null;
+  const [valor, setValor] = useState<string | null>(null);
+  const shown = valor ?? (atual != null ? String(atual).replace(".", ",") : "");
+  const save = useMutation({
+    mutationFn: () => setFn({ data: { valor: shown.trim() ? Number(shown.replace(",", ".")) : null } }),
+    onSuccess: () => { toast.success("Valor da avaliação salvo."); setValor(null); qc.invalidateQueries({ queryKey: ["amor-saude"] }); },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
+  });
+  return (
+    <div className="flex flex-wrap items-end gap-3 border-b border-border p-4">
+      <div>
+        <Label htmlFor="avaliacao-odonto">Avaliação odontológica (Cartão de TODOS), R$</Label>
+        <Input id="avaliacao-odonto" inputMode="decimal" className="mt-1 w-40" value={shown} onChange={(e) => setValor(e.target.value)} placeholder="Ex.: 25,00" />
+      </div>
+      <Button size="sm" onClick={() => save.mutate()} disabled={save.isPending || valor == null}>Salvar valor</Button>
+      <p className="basis-full text-xs text-muted-foreground">Vazio: o bloco da avaliação não aparece no site.</p>
+    </div>
   );
 }

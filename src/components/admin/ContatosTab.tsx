@@ -21,6 +21,7 @@ type Tipo = "cartao_de_todos" | "clinica_amor_saude" | "outros";
 interface ContatoRow {
   id: string; tipo: Tipo; nome_regiao: string; endereco: string | null; numero: string | null; ponto_referencia: string | null;
   contato1: string | null; contato2: string | null; contato3: string | null; destaque: boolean; position: number;
+  regiao?: string | null; maps_url?: string | null;
 }
 
 const TIPOS: { value: Tipo; label: string; temDestaque: boolean }[] = [
@@ -56,7 +57,10 @@ function ContatosSubTab({ tipo, label, temDestaque }: { tipo: Tipo; label: strin
   const [edit, setEdit] = useState<null | {
     id?: string; nome_regiao: string; endereco: string; numero: string; ponto_referencia: string;
     contato1: string; contato2: string; contato3: string; destaque: boolean; position: number;
+    regiao?: string; maps_url?: string;
   }>(null);
+  const isClinica = tipo === "clinica_amor_saude";
+  const regioesExistentes = [...new Set(rows.map((r) => r.regiao?.trim()).filter((x): x is string => !!x))].sort();
 
   const upsertMut = useMutation({
     mutationFn: () => upsert({ data: {
@@ -64,6 +68,7 @@ function ContatosSubTab({ tipo, label, temDestaque }: { tipo: Tipo; label: strin
       endereco: edit!.endereco || null, numero: edit!.numero || null, ponto_referencia: edit!.ponto_referencia || null,
       contato1: edit!.contato1 || null, contato2: edit!.contato2 || null, contato3: edit!.contato3 || null,
       destaque: edit!.destaque, position: edit!.position,
+      ...(isClinica ? { regiao: edit!.regiao?.trim() || null, maps_url: edit!.maps_url?.trim() || null } : {}),
     } }),
     onSuccess: () => { toast.success("Salvo."); setEdit(null); qc.invalidateQueries({ queryKey: ["contatos"] }); },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
@@ -85,6 +90,7 @@ function ContatosSubTab({ tipo, label, temDestaque }: { tipo: Tipo; label: strin
   const openEdit = (r: ContatoRow) => setEdit({
     id: r.id, nome_regiao: r.nome_regiao, endereco: r.endereco ?? "", numero: r.numero ?? "", ponto_referencia: r.ponto_referencia ?? "",
     contato1: r.contato1 ?? "", contato2: r.contato2 ?? "", contato3: r.contato3 ?? "", destaque: r.destaque, position: r.position,
+    regiao: r.regiao ?? "", maps_url: r.maps_url ?? "",
   });
 
   // ---- Alternar Principal/Outras direto na tabela ----
@@ -244,17 +250,18 @@ Regras:
           <Button size="sm" variant="outline" className="gap-2" onClick={() => setAiOpen(true)}>
             <Sparkles className="h-4 w-4" /> Preencher com IA
           </Button>
-          <Button size="sm" className="gap-2" onClick={() => setEdit({ nome_regiao: "", endereco: "", numero: "", ponto_referencia: "", contato1: "", contato2: "", contato3: "", destaque: false, position: rows.length * 10 })}>
+          <Button size="sm" className="gap-2" onClick={() => setEdit({ nome_regiao: "", endereco: "", numero: "", ponto_referencia: "", contato1: "", contato2: "", contato3: "", destaque: false, position: rows.length * 10, regiao: "", maps_url: "" })}>
             <Plus className="h-4 w-4" /> Novo
           </Button>
         </div>
       </div>
       <Table>
-        <TableHeader><TableRow><TableHead>Região</TableHead><TableHead>Endereço</TableHead>{temDestaque && <TableHead>Destaque</TableHead>}<TableHead>Contatos</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>{isClinica ? "Clínica" : "Região"}</TableHead>{isClinica && <TableHead>Região</TableHead>}<TableHead>Endereço</TableHead>{temDestaque && <TableHead>Destaque</TableHead>}<TableHead>Contatos</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
         <TableBody>
           {rows.map((r, idx) => (
             <TableRow key={r.id}>
               <TableCell className="font-medium">{r.nome_regiao}</TableCell>
+              {isClinica && <TableCell className="text-sm">{r.regiao || <span className="text-muted-foreground">—</span>}</TableCell>}
               <TableCell className="text-sm text-muted-foreground">{[r.endereco, r.numero ? `nº ${r.numero}` : null].filter(Boolean).join(", ") || "—"}</TableCell>
               {temDestaque && (
                 <TableCell>
@@ -273,7 +280,7 @@ Regras:
               </TableCell>
             </TableRow>
           ))}
-          {rows.length === 0 && <TableRow><TableCell colSpan={temDestaque ? 5 : 4} className="text-center text-muted-foreground py-8">Nenhum cadastrado ainda.</TableCell></TableRow>}
+          {rows.length === 0 && <TableRow><TableCell colSpan={(temDestaque ? 5 : 4) + (isClinica ? 1 : 0)} className="text-center text-muted-foreground py-8">Nenhum cadastrado ainda.</TableCell></TableRow>}
         </TableBody>
       </Table>
 
@@ -288,6 +295,20 @@ Regras:
                 <div><Label>Número</Label><Input value={edit.numero} onChange={(e) => setEdit({ ...edit, numero: e.target.value })} placeholder="206" /></div>
               </div>
               <div><Label>Ponto de referência (opcional)</Label><Input value={edit.ponto_referencia} onChange={(e) => setEdit({ ...edit, ponto_referencia: e.target.value })} placeholder="Ex: próximo à praça central" /></div>
+              {isClinica && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <Label>Região</Label>
+                    <Input list="amor-regioes" value={edit.regiao ?? ""} onChange={(e) => setEdit({ ...edit, regiao: e.target.value })} placeholder="Ex.: Justinópolis" />
+                    <datalist id="amor-regioes">{regioesExistentes.map((r) => <option key={r} value={r} />)}</datalist>
+                  </div>
+                  <div>
+                    <Label>Link do Google Maps (opcional)</Label>
+                    <Input value={edit.maps_url ?? ""} onChange={(e) => setEdit({ ...edit, maps_url: e.target.value })} placeholder="Vazio: o site gera pelo endereço" />
+                  </div>
+                  <p className="text-xs text-muted-foreground sm:col-span-2">A região organiza o seletor “Região do cliente” no Amor Saúde. Telefone/WhatsApp é o Contato 1.</p>
+                </div>
+              )}
               <div><Label>Contato 1</Label><Input value={edit.contato1} onChange={(e) => setEdit({ ...edit, contato1: e.target.value })} placeholder="(31) 99999-0000" /></div>
               <div><Label>Contato 2 (opcional)</Label><Input value={edit.contato2} onChange={(e) => setEdit({ ...edit, contato2: e.target.value })} /></div>
               <div><Label>Contato 3 (opcional)</Label><Input value={edit.contato3} onChange={(e) => setEdit({ ...edit, contato3: e.target.value })} /></div>
