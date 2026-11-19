@@ -202,7 +202,17 @@ Avalie a conversa abaixo entre o atendente e o cliente. Considere:
 - Cometeu algum erro de informação ou de processo, inclusive sobre as informações públicas básicas acima?
 
 Responda APENAS com um JSON válido, sem texto extra, sem markdown, neste formato exato:
-{"nota": 0-100, "pontos_fortes": ["..."], "pontos_melhoria": ["..."], "erros": ["..."], "resumo": "..."}`;
+{
+  "nota": 0-100,
+  "resumo": "...",
+  "pontos_fortes": ["..."],
+  "pontos_melhoria": ["..."],
+  "erros": ["..."],
+  "trechos": { "pontos_fortes": ["trecho exato da conversa ou null"], "pontos_melhoria": ["..."], "erros": ["..."] },
+  "mensagem_fraca": "a mensagem mais fraca do ATENDENTE, copiada exatamente como foi escrita, ou null se não houver uma claramente fraca",
+  "reescrita": "como você reescreveria essa mensagem, ou null"
+}
+Os arrays dentro de "trechos" devem ter o mesmo tamanho dos arrays correspondentes (pontos_fortes/pontos_melhoria/erros), na mesma ordem — um trecho (ou null) para cada item.`;
 
     const { chatCompletion } = await import("@/lib/ai-gateway.server");
     const reply = await chatCompletion({

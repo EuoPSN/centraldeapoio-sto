@@ -5,14 +5,13 @@ import { listMessages } from "@/lib/messages.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Send, StopCircle, RotateCcw, BookOpen, MessageSquare } from "lucide-react";
-import { ClienteAvatar } from "@/components/ClienteAvatar";
+import { Send, RotateCcw, BookOpen, MessageSquare } from "lucide-react";
 import { WhatsAppText } from "@/components/WhatsAppText";
 import { toast } from "sonner";
 import { problemScenarioChat, evaluateProblemScenario } from "@/lib/problemscenarios.functions";
 import { saveProblemSimulatorResult } from "@/lib/gamification.functions";
-import { DIFFICULTY_COLORS, DIFFICULTY_LABELS } from "@/components/SimuladorIA";
+import { DIFFICULTY_DOT_CLASSES, DIFFICULTY_LABELS, DIFFICULTY_TEXT_CLASSES } from "@/components/simulador/difficulty";
+import { AvaliacaoScreen, type Avaliacao } from "@/components/simulador/AvaliacaoScreen";
 
 export const FAIXA_ETARIA_LABELS: Record<string, string> = {
   "20-30": "20 a 30 anos", "30-40": "30 a 40 anos", "40-60": "40 a 60 anos", "60-80": "60 a 80 anos",
@@ -24,16 +23,25 @@ interface Scenario {
   cliente_nome?: string | null; cliente_cpf?: string | null; cliente_regiao?: string | null;
   cliente_genero?: string | null; faixa_etaria?: string | null;
 }
-interface Message { role: "atendente" | "cliente"; content: string; }
-interface Avaliacao { nota: number; resumo: string; pontos_fortes: string[]; pontos_melhoria: string[]; erros: string[]; }
+interface Message { role: "atendente" | "cliente"; content: string; time: string }
+
+function horaAtual() {
+  return new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}
+
+function iniciais(nome: string) {
+  const partes = nome.trim().split(/\s+/).filter(Boolean);
+  if (partes.length === 0) return "?";
+  return (partes[0][0] + (partes[1]?.[0] ?? "")).toUpperCase();
+}
 
 export function SimuladorProblema({ scenario, onReset }: { scenario: Scenario; onReset: () => void }) {
   const [briefingLido, setBriefingLido] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [pendingAttendantMessages, setPendingAttendantMessages] = useState<string[]>([]);
-  const [encerrado, setEncerrado] = useState(false);
   const [xpGanho, setXpGanho] = useState<number | null>(null);
+  const [melhorNotaPerfil, setMelhorNotaPerfil] = useState<number | null>(null);
   const [avaliacao, setAvaliacao] = useState<Avaliacao | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -67,14 +75,24 @@ export function SimuladorProblema({ scenario, onReset }: { scenario: Scenario; o
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
+  const resetarConversa = () => {
+    setMessages([]);
+    setInput("");
+    setPendingAttendantMessages([]);
+    setAvaliacao(null);
+    setXpGanho(null);
+    setMelhorNotaPerfil(null);
+    setBriefingLido(false);
+  };
+
   const sendMut = useMutation({
-    mutationFn: async (history: Message[]) => {
+    mutationFn: async (history: { role: "atendente" | "cliente"; content: string }[]) => {
       const { content } = await chatFn({ data: { scenario_id: scenario.id, history } });
       return content;
     },
     onSuccess: (result) => {
       const partes = result.split("||BREAK||").map((p) => p.trim()).filter(Boolean);
-      setMessages((prev) => [...prev, ...partes.map((p) => ({ role: "cliente" as const, content: p }))]);
+      setMessages((prev) => [...prev, ...partes.map((p) => ({ role: "cliente" as const, content: p, time: horaAtual() }))]);
     },
     onError: () => toast.error("Erro ao obter resposta do cliente virtual."),
   });
@@ -87,9 +105,9 @@ export function SimuladorProblema({ scenario, onReset }: { scenario: Scenario; o
   // Enviar só adiciona a mensagem na conversa e na fila — o cliente virtual só
   // responde quando o atendente clicar em "Aguardar resposta" (pode mandar 2-3 seguidas antes).
   const handleSend = () => {
-    if (!input.trim() || encerrado) return;
+    if (!input.trim()) return;
     const text = input.trim();
-    setMessages((prev) => [...prev, { role: "atendente", content: text }]);
+    setMessages((prev) => [...prev, { role: "atendente", content: text, time: horaAtual() }]);
     setPendingAttendantMessages((prev) => [...prev, text]);
     setInput("");
   };
@@ -97,7 +115,7 @@ export function SimuladorProblema({ scenario, onReset }: { scenario: Scenario; o
   const handleAwaitResponse = () => {
     if (pendingAttendantMessages.length === 0) return;
     setPendingAttendantMessages([]);
-    sendMut.mutate(messages);
+    sendMut.mutate(messages.map(({ role, content }) => ({ role, content })));
   };
 
   const avaliarMut = useMutation({
@@ -121,8 +139,12 @@ export function SimuladorProblema({ scenario, onReset }: { scenario: Scenario; o
             pontos_fortes: parsed.pontos_fortes ?? [],
             pontos_melhoria: parsed.pontos_melhoria ?? [],
             erros: parsed.erros ?? [],
+            trechos: parsed.trechos ?? null,
+            mensagem_fraca: parsed.mensagem_fraca ?? null,
+            reescrita: parsed.reescrita ?? null,
           } });
           setXpGanho(saved.ganho);
+          setMelhorNotaPerfil(saved.melhorNotaPerfil);
         } catch {
           // segue sem XP se salvar falhar
         }
@@ -134,50 +156,22 @@ export function SimuladorProblema({ scenario, onReset }: { scenario: Scenario; o
   });
 
   const handleEncerrar = () => {
-    setEncerrado(true);
     avaliarMut.mutate();
   };
 
   // Tela de resultado
   if (avaliacao) {
-    const nota = avaliacao.nota ?? 0;
-    const cor = nota >= 70 ? "text-emerald-600" : nota >= 40 ? "text-yellow-600" : "text-red-600";
     return (
-      <Card className="p-6 space-y-4">
-        <div className="text-center">
-          <p className="text-sm text-muted-foreground mb-1">Avaliação do atendimento</p>
-          <p className={`text-5xl font-bold ${cor}`}>{nota}<span className="text-2xl">/100</span></p>
-          <p className="text-sm text-muted-foreground mt-2">{avaliacao.resumo}</p>
-          {xpGanho !== null && (
-            <Badge className="mt-2 bg-amber-200 text-amber-800">+{xpGanho} XP em Solução de Problemas!</Badge>
-          )}
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {avaliacao.pontos_fortes?.length > 0 && (
-            <Card className="p-4 bg-emerald-50 border-emerald-200">
-              <h4 className="font-semibold text-emerald-800 text-sm mb-2">✅ Pontos fortes</h4>
-              <ul className="space-y-1">{avaliacao.pontos_fortes.map((p, i) => <li key={i} className="text-xs text-emerald-700">• {p}</li>)}</ul>
-            </Card>
-          )}
-          {avaliacao.pontos_melhoria?.length > 0 && (
-            <Card className="p-4 bg-yellow-50 border-yellow-200">
-              <h4 className="font-semibold text-yellow-800 text-sm mb-2">⚠️ Melhorar</h4>
-              <ul className="space-y-1">{avaliacao.pontos_melhoria.map((p, i) => <li key={i} className="text-xs text-yellow-700">• {p}</li>)}</ul>
-            </Card>
-          )}
-          {avaliacao.erros?.length > 0 && (
-            <Card className="p-4 bg-red-50 border-red-200">
-              <h4 className="font-semibold text-red-800 text-sm mb-2">❌ Erros</h4>
-              <ul className="space-y-1">{avaliacao.erros.map((p, i) => <li key={i} className="text-xs text-red-700">• {p}</li>)}</ul>
-            </Card>
-          )}
-        </div>
-        <div className="flex justify-center gap-3 pt-2">
-          <Button variant="outline" onClick={onReset} className="gap-2">
-            <RotateCcw className="h-4 w-4" /> Novo cenário
-          </Button>
-        </div>
-      </Card>
+      <AvaliacaoScreen
+        avaliacao={avaliacao}
+        xpGanho={xpGanho}
+        melhorNota={melhorNotaPerfil}
+        nomePerfil={scenario.name}
+        genero={scenario.cliente_genero}
+        resumoPersonalidade={scenario.personalidade}
+        onTreinarDeNovo={resetarConversa}
+        onOutroCliente={onReset}
+      />
     );
   }
 
@@ -188,9 +182,12 @@ export function SimuladorProblema({ scenario, onReset }: { scenario: Scenario; o
         <div className="flex items-center gap-2">
           <BookOpen className="h-5 w-5 text-gold-text" />
           <h3 className="font-semibold">O que aconteceu</h3>
-          <Badge className={`ml-auto text-xs ${DIFFICULTY_COLORS[scenario.difficulty]}`}>{DIFFICULTY_LABELS[scenario.difficulty]}</Badge>
+          <span className={`ml-auto flex items-center gap-1.5 text-sm ${DIFFICULTY_TEXT_CLASSES[scenario.difficulty] ?? ""}`}>
+            <span className={`h-2 w-2 rounded-full ${DIFFICULTY_DOT_CLASSES[scenario.difficulty] ?? "bg-muted-foreground"}`} />
+            {DIFFICULTY_LABELS[scenario.difficulty] ?? scenario.difficulty}
+          </span>
         </div>
-        {scenario.category?.name && <Badge variant="secondary">{scenario.category.name}</Badge>}
+        {scenario.category?.name && <p className="text-xs text-muted-foreground">{scenario.category.name}</p>}
         <p className="text-sm leading-relaxed whitespace-pre-line">{scenario.enredo}</p>
         <p className="text-xs text-muted-foreground border-t pt-3">
           Leia com atenção. Ao começar, o cliente virtual já abre a conversa contando o problema — você precisa se apresentar,
@@ -209,10 +206,15 @@ export function SimuladorProblema({ scenario, onReset }: { scenario: Scenario; o
     <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4 items-start">
       <Card className="p-4 space-y-4 sticky top-4">
         <div className="flex flex-col items-center text-center gap-2">
-          <ClienteAvatar genero={scenario.cliente_genero ?? undefined} size={80} />
+          <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center text-xl font-semibold">
+            {iniciais(scenario.cliente_nome || scenario.name)}
+          </div>
           <div>
             <p className="font-semibold text-sm">{scenario.cliente_nome || scenario.name}</p>
-            <Badge className={`text-xs mt-1 ${DIFFICULTY_COLORS[scenario.difficulty]}`}>{DIFFICULTY_LABELS[scenario.difficulty]}</Badge>
+            <span className={`inline-flex items-center gap-1.5 text-xs mt-1 ${DIFFICULTY_TEXT_CLASSES[scenario.difficulty] ?? ""}`}>
+              <span className={`h-2 w-2 rounded-full ${DIFFICULTY_DOT_CLASSES[scenario.difficulty] ?? "bg-muted-foreground"}`} />
+              {DIFFICULTY_LABELS[scenario.difficulty] ?? scenario.difficulty}
+            </span>
           </div>
         </div>
         <div className="space-y-2 text-xs border-t pt-3">
@@ -250,37 +252,48 @@ export function SimuladorProblema({ scenario, onReset }: { scenario: Scenario; o
         </Button>
       </Card>
 
-      <Card className="p-4 flex flex-col gap-3">
-        <div className="flex items-center justify-between">
+      <Card className="p-0 flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 border-b">
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-sm">{scenario.name}</span>
-            <Badge className={DIFFICULTY_COLORS[scenario.difficulty]}>{DIFFICULTY_LABELS[scenario.difficulty]}</Badge>
+            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-semibold">
+              {iniciais(scenario.cliente_nome || scenario.name)}
+            </div>
+            <div>
+              <p className="font-semibold text-sm leading-tight">{scenario.cliente_nome || scenario.name}</p>
+              <p className="text-[11px] text-muted-foreground leading-tight">online</p>
+            </div>
           </div>
-          <Button size="sm" variant="destructive" onClick={handleEncerrar} disabled={messages.length === 0} className="gap-2">
-            <StopCircle className="h-4 w-4" />
-            {avaliarMut.isPending ? "Avaliando..." : "Encerrar e Avaliar"}
+          <Button size="sm" onClick={handleEncerrar} disabled={messages.length === 0} className="gap-2">
+            {avaliarMut.isPending ? "Avaliando..." : "Encerrar e avaliar"}
           </Button>
         </div>
 
-        <div ref={scrollRef} className="flex flex-col gap-2 min-h-[300px] max-h-[400px] overflow-y-auto p-2 bg-muted/20 rounded-md">
-          {messages.map((m, i) => (
-            <div key={i} className={`flex ${m.role === "atendente" ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[75%] rounded-xl px-3 py-2 text-sm ${m.role === "atendente" ? "bg-primary text-primary-foreground" : "bg-background border text-foreground"}`}>
-                <p className="text-[10px] font-medium mb-1 opacity-70">{m.role === "atendente" ? "Você" : scenario.name}</p>
-                <WhatsAppText text={m.content} />
+        <div ref={scrollRef} className="flex flex-col gap-1 min-h-[360px] max-h-[460px] overflow-y-auto p-4 bg-sidebar">
+          {messages.map((m, i) => {
+            const anterior = messages[i - 1];
+            const agrupado = anterior && anterior.role === m.role;
+            const ehAtendente = m.role === "atendente";
+            return (
+              <div key={i} className={`flex ${ehAtendente ? "justify-end" : "justify-start"} ${agrupado ? "mt-0.5" : "mt-2"}`}>
+                <div className={`max-w-[75%] px-3 py-2 text-sm border ${
+                  ehAtendente
+                    ? `bg-surface-2 border-transparent rounded-xl ${agrupado ? "rounded-tr-sm" : ""}`
+                    : `bg-surface border-border rounded-xl ${agrupado ? "rounded-tl-sm" : ""}`
+                }`}>
+                  <WhatsAppText text={m.content} />
+                  <p className="text-[10px] text-muted-foreground text-right mt-0.5">{m.time}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           {sendMut.isPending && (
-            <div className="flex justify-start">
-              <div className="bg-background border rounded-xl px-3 py-2 text-sm text-muted-foreground">
-                {scenario.name} está digitando...
-              </div>
-            </div>
+            <p className="text-xs text-muted-foreground italic mt-2">
+              {(scenario.cliente_nome || scenario.name)} está digitando...
+            </p>
           )}
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 p-3 border-t">
           {shortcutMatches.length > 0 && (
             <div className="border border-border rounded-md bg-popover shadow-md overflow-hidden max-h-56 overflow-y-auto">
               {shortcutMatches.map((m, i) => (
@@ -304,19 +317,19 @@ export function SimuladorProblema({ scenario, onReset }: { scenario: Scenario; o
                 }
                 if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
               }}
-              placeholder="Digite sua mensagem... (use / para respostas rápidas)" rows={2} className="resize-none" disabled={encerrado} />
-            <div className="flex flex-col gap-2">
-              <Button onClick={handleSend} disabled={!input.trim() || encerrado} className="gap-1 text-xs">
-                <Send className="h-4 w-4" />
+              placeholder="Digite sua mensagem... (use / para respostas rápidas)" rows={1} className="resize-none" />
+            <Button variant="outline" onClick={handleSend} disabled={!input.trim()} className="gap-1 text-xs shrink-0">
+              <Send className="h-4 w-4" /> Enviar
+            </Button>
+            {pendingAttendantMessages.length > 0 && (
+              <Button onClick={handleAwaitResponse} disabled={sendMut.isPending} className="gap-1 text-xs shrink-0">
+                <MessageSquare className="h-3 w-3" /> Aguardar resposta
               </Button>
-              {pendingAttendantMessages.length > 0 && (
-                <Button onClick={handleAwaitResponse} disabled={sendMut.isPending || encerrado}
-                  variant="outline" className="gap-1 text-xs">
-                  <MessageSquare className="h-3 w-3" />
-                </Button>
-              )}
-            </div>
+            )}
           </div>
+          <p className="text-[11px] text-muted-foreground">
+            Você pode mandar várias mensagens seguidas; o cliente responde quando você clicar em "Aguardar resposta".
+          </p>
         </div>
       </Card>
     </div>
