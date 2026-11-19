@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<title>MarcIAna · animações do olho orbital</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;box-sizing:border-box}
+body{font-family:Montserrat,sans-serif;color:#0B0B0B;background:#fff;padding:32px 40px}
+h1{font-family:Cinzel,serif;font-weight:500;letter-spacing:.1em;font-size:24px}
+p.l{color:#5C564C;margin:6px 0 24px;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));max-width:900px;gap:16px}
+.card{border:1px solid #E4E0D6;border-radius:16px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:10px}
+.card.d{background:#0B0B0B;border-color:#0B0B0B;color:#F5F5F0}
+.card b{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8A6623}
+.card.d b{color:#D4AF37}
+.card span{font-size:12px;color:#5C564C;text-align:center;line-height:18px}
+.card.d span{color:#B8B2A6}
+svg{width:140px;height:140px;color:#B58A35;overflow:visible}
+.d svg{color:#D4AF37}
+svg *{transform-box:view-box;transform-origin:50px 50px}
+
+/* 1. repouso: pisca a cada ~5 s */
+.blink .eye{animation:blink 5s infinite}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.08)}}
+
+/* 2. pensando: pupila dilata + ponto orbita o anel */
+.think .pupil{animation:dilate 1.6s ease-in-out infinite}
+@keyframes dilate{0%,100%{transform:scale(1)}50%{transform:scale(1.9)}}
+.think .moon{opacity:1;animation:orbit 1.6s linear infinite}
+@keyframes orbit{to{transform:rotate(360deg)}}
+
+/* 3. escrevendo: pupila lê da esquerda para a direita */
+.read .iris{animation:read 1.4s ease-in-out infinite}
+@keyframes read{0%,100%{transform:translateX(-6px)}50%{transform:translateX(6px)}}
+
+/* 4. pronto: pisca uma vez e a pupila contrai */
+.done .eye{animation:blink1 2.4s infinite}
+.done .pupil{animation:shrink 2.4s infinite}
+@keyframes blink1{0%,10%,30%,100%{transform:scaleY(1)}18%{transform:scaleY(.08)}}
+@keyframes shrink{0%,30%{transform:scale(1.9)}50%,100%{transform:scale(1)}}
+
+/* 5. não encontrei: semicerra e olha para baixo */
+.miss .eye{animation:squint 2.6s ease-in-out infinite}
+.miss .iris{animation:down 2.6s ease-in-out infinite}
+@keyframes squint{0%,100%{transform:scaleY(1)}40%,70%{transform:scaleY(.55)}}
+@keyframes down{0%,100%{transform:translateY(0)}40%,70%{transform:translateY(3px)}}
+
+/* 6. ouvindo: pupila acompanha o mouse (estado do campo focado) */
+.follow .iris{transition:transform .25s ease-out}
+
+.moon{opacity:0}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.note{margin-top:22px;font-size:13px;color:#5C564C;line-height:20px;max-width:900px}
+</style></head><body>
+<h1>MARCIANA · ANIMAÇÕES DO OLHO</h1>
+<p class="l">Tudo feito com SVG e CSS, leve e sem vídeo. Os cartões estão em loop só para você ver; no site, cada animação toca no momento certo.</p>
+
+<template id="t"><svg viewBox="0 0 100 100"><g class="eye" fill="currentColor">
+<path d="M10 52 Q50 4 90 42 Q50 20 10 52Z"/><path d="M90 48 Q50 96 10 58 Q50 80 90 48Z"/>
+<g class="iris"><circle cx="50" cy="50" r="12" fill="none" stroke="currentColor" stroke-width="4.5"/><circle class="pupil" cx="50" cy="50" r="4"/>
+<g class="moon"><circle cx="50" cy="38" r="3.2"/></g></g></g></svg></template>
+
+<div class="grid">
+<div class="card blink"><b>Em repouso</b><i></i><span>Pisca devagar de vez em quando. Fica no avatar e no menu.</span></div>
+<div class="card d think"><b>Pensando</b><i></i><span>A pupila dilata e um ponto gira pelo anel, como uma órbita.</span></div>
+<div class="card read"><b>Escrevendo</b><i></i><span>A pupila vai de um lado ao outro, como quem lê, enquanto o texto aparece.</span></div>
+<div class="card d done"><b>Pronto</b><i></i><span>Uma piscada e a pupila volta ao normal quando a resposta termina.</span></div>
+<div class="card miss"><b>Não encontrei</b><i></i><span>Semicerra e olha para baixo quando não acha a resposta na base.</span></div>
+<div class="card d follow" id="f"><b>Te ouvindo</b><i></i><span>Com o campo de pergunta ativo, a pupila segue o seu mouse. Passe o mouse na página.</span></div>
+</div>
+<p class="note">Quem tem a opção "reduzir movimento" ligada no computador vê o olho parado. Dá para trocar a velocidade ou tirar qualquer um desses estados.</p>
+
+<script>
+const t=document.getElementById('t');
+document.querySelectorAll('.card i').forEach(i=>i.replaceWith(t.content.cloneNode(true)));
+const f=document.querySelector('#f .iris'),fs=document.querySelector('#f svg');
+document.addEventListener('mousemove',e=>{const r=fs.getBoundingClientRect();const dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);const d=Math.hypot(dx,dy)||1;const k=Math.min(1,d/300);f.style.transform=`translate(${dx/d*7*k}px,${dy/d*3.5*k}px)`});
+</script>
+</body></html>
