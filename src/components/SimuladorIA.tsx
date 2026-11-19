@@ -6,19 +6,19 @@ import { listMessages } from "@/lib/messages.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Send, StopCircle, RotateCcw, MessageSquare, Paperclip, X } from "lucide-react";
-import { ClienteAvatar } from "@/components/ClienteAvatar";
+import { Send, RotateCcw, MessageSquare, Paperclip, X } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { simulatorChat } from "@/lib/simulator.chat.functions";
 import { saveSimulatorResult } from "@/lib/gamification.functions";
 import { supabase } from "@/integrations/supabase/client";
-import { listClientProfileStates } from "@/lib/clientprofilestates.functions"; 
+import { listClientProfileStates } from "@/lib/clientprofilestates.functions";
 import { getClientKnowledge } from "@/lib/chat.functions";
 import { WhatsAppText } from "@/components/WhatsAppText";
 import { SIMULATOR_CLIENT_MODEL, SIMULATOR_EVALUATION_MODEL } from "@/lib/ai-models";
+import { AvaliacaoScreen, type Avaliacao } from "@/components/simulador/AvaliacaoScreen";
 
+export { DIFFICULTY_LABELS } from "@/components/simulador/difficulty";
 
 interface Profile {
   id: string;
@@ -34,6 +34,7 @@ interface Profile {
   cliente_telefone?: string | null;
   cliente_regiao?: string | null;
   cliente_genero?: string | null;
+  cliente_origem_lead?: string | null;
   endereco_rua?: string | null;
   endereco_numero?: string | null;
   endereco_complemento?: string | null;
@@ -52,7 +53,17 @@ interface ClientProfileState {
   overlay_nome_x: number | null; overlay_nome_y: number | null;
   overlay_cpf_x: number | null; overlay_cpf_y: number | null;
 }
-interface Message { role: "atendente" | "cliente"; content: string; images?: string[]; }
+interface Message { role: "atendente" | "cliente"; content: string; images?: string[]; time: string }
+
+function horaAtual() {
+  return new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}
+
+function iniciais(nome: string) {
+  const partes = nome.trim().split(/\s+/).filter(Boolean);
+  if (partes.length === 0) return "?";
+  return (partes[0][0] + (partes[1]?.[0] ?? "")).toUpperCase();
+}
 
 // Desenha o nome e CPF fictícios do perfil por cima do molde de documento,
 // nas posições marcadas pelo admin, e retorna uma imagem final (data URL).
@@ -93,25 +104,52 @@ function composeOverlayImage(
   });
 }
 
-export const DIFFICULTY_COLORS: Record<string, string> = {
-  facil: "bg-green-100 text-green-800", medio: "bg-yellow-100 text-yellow-800",
-  dificil: "bg-orange-100 text-orange-800", especialista: "bg-red-100 text-red-800"
-};
-export const DIFFICULTY_LABELS: Record<string, string> = {
-  facil: "Fácil", medio: "Médio", dificil: "Difícil", especialista: "Especialista"
-};
+const EVAL_PROMPT = `Você é um avaliador especialista em atendimentos
+de vendas do Cartão de Todos.
+
+CONTEXTO DA EMPRESA — PROCESSOS CORRETOS QUE NUNCA DEVEM SER AVALIADOS COMO ERRO:
+- Solicitar dados do cartão de crédito ou débito (número, validade, CVV) é CORRETO e obrigatório para processar o pagamento
+- Solicitar CPF, nome completo, data de nascimento, endereço e e-mail é CORRETO e necessário para o cadastro
+- Informar que os dados são protegidos pela LGPD é CORRETO
+- Solicitar foto do documento (frente e verso) e selfie é CORRETO — faz parte do processo de KYC
+- Enviar link de confirmação por outro número é CORRETO e é o processo padrão da empresa
+- Informar o prazo de fidelidade de 12 meses e a multa de 50% é CORRETO e obrigatório
+- Oferecer o Pacote Ouro (R$38,39 primeiro mês / R$48,39 seguintes) como alternativa é CORRETO
+- Verificar com a gerência sobre isenção de taxa de adesão é CORRETO
+- Pedir o estado civil do cliente é CORRETO — é dado obrigatório do cadastro
+- Informar a matrícula ao final do cadastro é CORRETO
+
+AVALIE NEGATIVAMENTE APENAS:
+- Falta de empatia ou linguagem inadequada com o cliente
+- Informações incorretas sobre valores, benefícios ou regras do produto
+- Não contornar objeções quando o cliente resistir
+- Pular etapas obrigatórias do fluxo de atendimento
+- Prometer algo que a empresa não oferece
+- Não confirmar os dados antes de processar
+
+Analise a conversa abaixo e responda APENAS com um JSON válido, sem texto extra, sem markdown, sem blocos de código.
+O JSON deve ter exatamente estes campos:
+{
+  "nota": 0-100,
+  "resumo": "...",
+  "pontos_fortes": ["..."],
+  "pontos_melhoria": ["..."],
+  "erros": ["..."],
+  "trechos": { "pontos_fortes": ["trecho exato da conversa ou null"], "pontos_melhoria": ["..."], "erros": ["..."] },
+  "mensagem_fraca": "a mensagem mais fraca do ATENDENTE, copiada exatamente como foi escrita, ou null se não houver uma claramente fraca",
+  "reescrita": "como você reescreveria essa mensagem, ou null"
+}
+Os arrays dentro de "trechos" devem ter o mesmo tamanho dos arrays correspondentes (pontos_fortes/pontos_melhoria/erros), na mesma ordem — um trecho (ou null) para cada item.`;
 
 export function SimuladorIA({ profile, onReset }: { profile: Profile; onReset: () => void }) {
-  
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-const [attachedImages, setAttachedImages] = useState<string[]>([]);
-const [uploadingImg, setUploadingImg] = useState(false);
-const fileInputRef = useRef<HTMLInputElement>(null);
-  const [encerrado, setEncerrado] = useState(false);
-  const [xpGanho, setXpGanho] = useState<number | null>(null);
+  const [attachedImages, setAttachedImages] = useState<string[]>([]);
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [aguardandoResposta, setAguardandoResposta] = useState(false);
-const [pendingAttendantMessages, setPendingAttendantMessages] = useState<string[]>([]);
+  const [pendingAttendantMessages, setPendingAttendantMessages] = useState<string[]>([]);
 
   // Atalhos "/palavra" (respostas rápidas cadastradas em Admin → Mensagens)
   const shortcutsFn = useServerFn(listMessages);
@@ -149,50 +187,64 @@ const [pendingAttendantMessages, setPendingAttendantMessages] = useState<string[
   const states = (statesQ.data ?? []) as ClientProfileState[];
   const [stateIndex, setStateIndex] = useState(0);
 
-const handleFilesSelected = async (files: FileList | null) => {
-  if (!files || files.length === 0) return;
-  const remaining = 2 - attachedImages.length;
-  if (remaining <= 0) {
-    toast.error("Máximo de 2 imagens por mensagem.");
-    return;
-  }
-  const list = Array.from(files).slice(0, remaining);
-  setUploadingImg(true);
-  try {
-    const { data: userData } = await supabase.auth.getUser();
-    const uid = userData?.user?.id;
-    if (!uid) throw new Error("Usuário não autenticado");
-    for (const file of list) {
-      if (!file.type.startsWith("image/")) {
-        toast.error(`${file.name} não é uma imagem.`);
-        continue;
-      }
-      if (file.size > 8 * 1024 * 1024) {
-        toast.error(`${file.name} excede 8MB.`);
-        continue;
-      }
-      const ext = file.name.split(".").pop() ?? "jpg";
-      const path = `${uid}/simulador/${crypto.randomUUID()}.${ext}`;
-      const { error } = await supabase.storage.from("chat-images").upload(path, file, {
-        contentType: file.type,
-        upsert: false,
-      });
-      if (error) throw error;
-      const { data: signed, error: signErr } = await supabase.storage.from("chat-images").createSignedUrl(path, 60 * 60 * 24 * 365);
-      if (signErr || !signed) throw signErr ?? new Error("Não foi possível gerar URL da imagem");
-      setAttachedImages((prev) => [...prev, signed.signedUrl]);
+  const handleFilesSelected = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const remaining = 2 - attachedImages.length;
+    if (remaining <= 0) {
+      toast.error("Máximo de 2 imagens por mensagem.");
+      return;
     }
-  } catch (e) {
-    toast.error(e instanceof Error ? e.message : "Erro ao enviar imagem");
-  } finally {
-    setUploadingImg(false);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  }
-};
+    const list = Array.from(files).slice(0, remaining);
+    setUploadingImg(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData?.user?.id;
+      if (!uid) throw new Error("Usuário não autenticado");
+      for (const file of list) {
+        if (!file.type.startsWith("image/")) {
+          toast.error(`${file.name} não é uma imagem.`);
+          continue;
+        }
+        if (file.size > 8 * 1024 * 1024) {
+          toast.error(`${file.name} excede 8MB.`);
+          continue;
+        }
+        const ext = file.name.split(".").pop() ?? "jpg";
+        const path = `${uid}/simulador/${crypto.randomUUID()}.${ext}`;
+        const { error } = await supabase.storage.from("chat-images").upload(path, file, {
+          contentType: file.type,
+          upsert: false,
+        });
+        if (error) throw error;
+        const { data: signed, error: signErr } = await supabase.storage.from("chat-images").createSignedUrl(path, 60 * 60 * 24 * 365);
+        if (signErr || !signed) throw signErr ?? new Error("Não foi possível gerar URL da imagem");
+        setAttachedImages((prev) => [...prev, signed.signedUrl]);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao enviar imagem");
+    } finally {
+      setUploadingImg(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
   const saveResultFn = useServerFn(saveSimulatorResult);
-  const [avaliacao, setAvaliacao] = useState<any>(null);
+  const [avaliacao, setAvaliacao] = useState<Avaliacao | null>(null);
+  const [xpGanho, setXpGanho] = useState<number | null>(null);
+  const [melhorNotaPerfil, setMelhorNotaPerfil] = useState<number | null>(null);
 
-const buildSystemPrompt = (idx: number) => {
+  const resetarConversa = () => {
+    setMessages([]);
+    setInput("");
+    setAttachedImages([]);
+    setAguardandoResposta(false);
+    setPendingAttendantMessages([]);
+    setAvaliacao(null);
+    setXpGanho(null);
+    setMelhorNotaPerfil(null);
+    setStateIndex(0);
+  };
+
+  const buildSystemPrompt = (idx: number) => {
     // Filiação = cliente novo, ainda fornecendo os dados dele.
     // Refiliação/Migração/EDT = cliente já tem cadastro, e vai CONFERIR o que o atendente disser.
     const isCadastroExistente = !!profile.category?.slug && profile.category.slug !== "filiacao";
@@ -229,7 +281,7 @@ Personalidade: ${profile.personality}.
 Objetivos: ${profile.objectives}.
 Objeções típicas: ${profile.objections}.
 Comportamentos: ${profile.behaviors}.
-Nível de dificuldade: ${DIFFICULTY_LABELS[profile.difficulty]}.
+Nível de dificuldade: ${profile.difficulty}.
 ${dadosBlock}
 ${clientKnowledge ? `\nO que você, como cliente comum, já sabe ou já viu no site/Google sobre o Cartão de Todos (use isso com naturalidade, sem citar como "fonte"):\n${clientKnowledge}\n` : ""}
 Responda APENAS como o cliente — nunca quebre o personagem.
@@ -242,7 +294,7 @@ Se o atendente errar muito, fique mais resistente.`;
 Você pode responder com 1, 2 ou até 3 mensagens curtas separadas, exatamente como faria no WhatsApp — quebre em mensagens naturais usando o separador ||BREAK|| entre elas. Exemplo: 'Oi tudo bem?' ||BREAK|| 'Me fala mais sobre esse cartão' ||BREAK|| 'Quanto custa?'. Use múltiplas mensagens apenas quando for natural — não force.`;
     }
 
-const atual = states[idx];
+    const atual = states[idx];
     const proximo = states[idx + 1];
     return `${base}
 
@@ -259,113 +311,86 @@ Avalie se a ÚLTIMA mensagem do atendente atende esse critério, considerando ta
   };
 
   const sendAI = useServerFn(simulatorChat);
-const sendMut = useMutation({
-  mutationFn: async (text: string) => {
-    const history = messages.map(m => {
-      if (m.images && m.images.length > 0) {
-        return {
-          role: m.role === "atendente" ? "user" : "assistant",
-          content: [
-            ...(m.content ? [{ type: "text" as const, text: m.content }] : []),
-            ...m.images.map((url) => ({ type: "image_url" as const, image_url: { url } })),
-          ],
-        };
-      }
-      return { role: m.role === "atendente" ? "user" : "assistant", content: m.content };
-    });
-    const payload = [
-      { role: "system", content: buildSystemPrompt(stateIndex) },
-      ...history,
-      { role: "user", content: text }
-    ];
-    const { content } = await sendAI({ data: { messages: payload, model: SIMULATOR_CLIENT_MODEL } });
-    return content;
-  },
-  onSuccess: async (result) => {
-    if (states.length === 0) {
-      const partes = result.split("||BREAK||").map((p: string) => p.trim()).filter(Boolean);
-      setMessages(prev => [...prev, ...partes.map((p: string) => ({ role: "cliente" as const, content: p }))]);
-      setAguardandoResposta(false);
-      return;
-    }
-    try {
-      const clean = result.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(clean);
-      const falas: string[] = Array.isArray(parsed.mensagens) && parsed.mensagens.length > 0
-        ? parsed.mensagens
-        : [String(parsed.mensagens ?? result)];
-      setMessages(prev => [...prev, ...falas.map((f: string) => ({ role: "cliente" as const, content: f }))]);
-      if (parsed.avanca && stateIndex < states.length - 1) {
-        const proximo = states[stateIndex + 1];
-        setStateIndex(stateIndex + 1);
-        if (proximo?.attachment_url) {
-          let imagemFinal = proximo.attachment_url;
-          if (proximo.overlay_enabled) {
-            imagemFinal = await composeOverlayImage(proximo.attachment_url, profile.cliente_nome ?? undefined, profile.cliente_cpf ?? undefined, {
-              nomeX: proximo.overlay_nome_x, nomeY: proximo.overlay_nome_y,
-              cpfX: proximo.overlay_cpf_x, cpfY: proximo.overlay_cpf_y,
-            });
-          }
-          setMessages(prev => [...prev, {
-            role: "cliente" as const,
-            content: proximo.attachment_label || "Segue o documento.",
-            images: [imagemFinal],
-          }]);
+  const sendMut = useMutation({
+    mutationFn: async (text: string) => {
+      const history = messages.map(m => {
+        if (m.images && m.images.length > 0) {
+          return {
+            role: m.role === "atendente" ? "user" : "assistant",
+            content: [
+              ...(m.content ? [{ type: "text" as const, text: m.content }] : []),
+              ...m.images.map((url) => ({ type: "image_url" as const, image_url: { url } })),
+            ],
+          };
         }
+        return { role: m.role === "atendente" ? "user" : "assistant", content: m.content };
+      });
+      const payload = [
+        { role: "system", content: buildSystemPrompt(stateIndex) },
+        ...history,
+        { role: "user", content: text }
+      ];
+      const { content } = await sendAI({ data: { messages: payload, model: SIMULATOR_CLIENT_MODEL } });
+      return content;
+    },
+    onSuccess: async (result) => {
+      if (states.length === 0) {
+        const partes = result.split("||BREAK||").map((p: string) => p.trim()).filter(Boolean);
+        setMessages(prev => [...prev, ...partes.map((p: string) => ({ role: "cliente" as const, content: p, time: horaAtual() }))]);
+        setAguardandoResposta(false);
+        return;
       }
-    } catch {
-      const partes = result.split("||BREAK||").map((p: string) => p.trim()).filter(Boolean);
-      setMessages(prev => [...prev, ...partes.map((p: string) => ({ role: "cliente" as const, content: p }))]);
-    }
-    setAguardandoResposta(false);
-  },
-  onError: () => toast.error("Erro ao obter resposta do cliente virtual.")
-});
+      try {
+        const clean = result.replace(/```json|```/g, "").trim();
+        const parsed = JSON.parse(clean);
+        const falas: string[] = Array.isArray(parsed.mensagens) && parsed.mensagens.length > 0
+          ? parsed.mensagens
+          : [String(parsed.mensagens ?? result)];
+        setMessages(prev => [...prev, ...falas.map((f: string) => ({ role: "cliente" as const, content: f, time: horaAtual() }))]);
+        if (parsed.avanca && stateIndex < states.length - 1) {
+          const proximo = states[stateIndex + 1];
+          setStateIndex(stateIndex + 1);
+          if (proximo?.attachment_url) {
+            let imagemFinal = proximo.attachment_url;
+            if (proximo.overlay_enabled) {
+              imagemFinal = await composeOverlayImage(proximo.attachment_url, profile.cliente_nome ?? undefined, profile.cliente_cpf ?? undefined, {
+                nomeX: proximo.overlay_nome_x, nomeY: proximo.overlay_nome_y,
+                cpfX: proximo.overlay_cpf_x, cpfY: proximo.overlay_cpf_y,
+              });
+            }
+            setMessages(prev => [...prev, {
+              role: "cliente" as const,
+              content: proximo.attachment_label || "Segue o documento.",
+              images: [imagemFinal],
+              time: horaAtual(),
+            }]);
+          }
+        }
+      } catch {
+        const partes = result.split("||BREAK||").map((p: string) => p.trim()).filter(Boolean);
+        setMessages(prev => [...prev, ...partes.map((p: string) => ({ role: "cliente" as const, content: p, time: horaAtual() }))]);
+      }
+      setAguardandoResposta(false);
+    },
+    onError: () => toast.error("Erro ao obter resposta do cliente virtual.")
+  });
 
   const avaliarAI = useServerFn(simulatorChat);
-const avaliarMut = useMutation({
-  mutationFn: async () => {
-    const conversa = messages.map(m => `${m.role === "atendente" ? "Atendente" : "Cliente"}: ${m.content}`).join("\n");
-    const evalPrompt = `Você é um avaliador especialista em atendimentos 
-de vendas do Cartão de Todos.
-
-CONTEXTO DA EMPRESA — PROCESSOS CORRETOS QUE NUNCA DEVEM SER AVALIADOS COMO ERRO:
-- Solicitar dados do cartão de crédito ou débito (número, validade, CVV) é CORRETO e obrigatório para processar o pagamento
-- Solicitar CPF, nome completo, data de nascimento, endereço e e-mail é CORRETO e necessário para o cadastro
-- Informar que os dados são protegidos pela LGPD é CORRETO
-- Solicitar foto do documento (frente e verso) e selfie é CORRETO — faz parte do processo de KYC
-- Enviar link de confirmação por outro número é CORRETO e é o processo padrão da empresa
-- Informar o prazo de fidelidade de 12 meses e a multa de 50% é CORRETO e obrigatório
-- Oferecer o Pacote Ouro (R$38,39 primeiro mês / R$48,39 seguintes) como alternativa é CORRETO
-- Verificar com a gerência sobre isenção de taxa de adesão é CORRETO
-- Pedir o estado civil do cliente é CORRETO — é dado obrigatório do cadastro
-- Informar a matrícula ao final do cadastro é CORRETO
-
-AVALIE NEGATIVAMENTE APENAS:
-- Falta de empatia ou linguagem inadequada com o cliente
-- Informações incorretas sobre valores, benefícios ou regras do produto
-- Não contornar objeções quando o cliente resistir
-- Pular etapas obrigatórias do fluxo de atendimento
-- Prometer algo que a empresa não oferece
-- Não confirmar os dados antes de processar
-
-Analise a conversa abaixo e responda APENAS com um JSON válido, 
-sem texto extra, sem markdown, sem blocos de código.
-O JSON deve ter exatamente estes campos:
-{"nota": 0-100, "pontos_fortes": ["..."], "pontos_melhoria": ["..."], "erros": ["..."], "resumo": "..."}`;
-    const payload = [
-      { role: "system", content: evalPrompt },
-      { role: "user", content: conversa }
-    ];
-    const { content } = await avaliarAI({ data: { messages: payload, model: SIMULATOR_EVALUATION_MODEL } });
-    return content;
-  },
-  onSuccess: async (result) => {
+  const avaliarMut = useMutation({
+    mutationFn: async () => {
+      const conversa = messages.map(m => `${m.role === "atendente" ? "Atendente" : "Cliente"}: ${m.content}`).join("\n");
+      const payload = [
+        { role: "system", content: EVAL_PROMPT },
+        { role: "user", content: conversa }
+      ];
+      const { content } = await avaliarAI({ data: { messages: payload, model: SIMULATOR_EVALUATION_MODEL } });
+      return content;
+    },
+    onSuccess: async (result) => {
       try {
         const clean = result.replace(/```json|```/g, "").trim();
         const parsed = JSON.parse(clean);
         setAvaliacao(parsed);
-        // Save result and get XP earned
         try {
           const saved = await saveResultFn({ data: {
             profile_id: profile.id,
@@ -375,9 +400,13 @@ O JSON deve ter exatamente estes campos:
             resumo: parsed.resumo,
             pontos_fortes: parsed.pontos_fortes ?? [],
             pontos_melhoria: parsed.pontos_melhoria ?? [],
-            erros: parsed.erros ?? []
+            erros: parsed.erros ?? [],
+            trechos: parsed.trechos ?? null,
+            mensagem_fraca: parsed.mensagem_fraca ?? null,
+            reescrita: parsed.reescrita ?? null,
           } });
           setXpGanho(saved.ganho);
+          setMelhorNotaPerfil(saved.melhorNotaPerfil);
         } catch (e) {
           // Silently ignore errors in saving result
         }
@@ -385,13 +414,13 @@ O JSON deve ter exatamente estes campos:
         toast.error("Não foi possível gerar a avaliação. Tente novamente.");
       }
     },
-  onError: () => toast.error("Erro ao gerar avaliação.")
-});
+    onError: () => toast.error("Erro ao gerar avaliação.")
+  });
 
   const handleSend = () => {
     if (!input.trim() && attachedImages.length === 0) return;
     const text = input.trim();
-    setMessages(prev => [...prev, { role: "atendente", content: text, images: attachedImages.length ? attachedImages : undefined }]);
+    setMessages(prev => [...prev, { role: "atendente", content: text, images: attachedImages.length ? attachedImages : undefined, time: horaAtual() }]);
     setPendingAttendantMessages(prev => [...prev, text]);
     setInput("");
     setAttachedImages([]);
@@ -406,210 +435,191 @@ O JSON deve ter exatamente estes campos:
   };
 
   const handleEncerrar = () => {
-    setEncerrado(true);
     avaliarMut.mutate();
   };
 
   if (avaliacao) {
-    const nota = avaliacao.nota ?? 0;
-    const cor = nota >= 70 ? "text-emerald-600" : nota >= 40 ? "text-yellow-600" : "text-red-600";
     return (
-      <Card className="p-6 space-y-4">
-        <div className="text-center">
-          <p className="text-sm text-muted-foreground mb-1">Avaliação da simulação</p>
-          <p className={`text-5xl font-bold ${cor}`}>{nota}<span className="text-2xl">/100</span></p>
-          <p className="text-sm text-muted-foreground mt-2">{avaliacao.resumo}</p>
-          {xpGanho !== null && (
-            <Badge className="mt-2 bg-amber-200 text-amber-800">+{xpGanho} XP conquistados!</Badge>
-          )}
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {avaliacao.pontos_fortes?.length > 0 && (
-            <Card className="p-4 bg-emerald-50 border-emerald-200">
-              <h4 className="font-semibold text-emerald-800 text-sm mb-2">✅ Pontos fortes</h4>
-              <ul className="space-y-1">{avaliacao.pontos_fortes.map((p: string, i: number) => <li key={i} className="text-xs text-emerald-700">• {p}</li>)}</ul>
-            </Card>
-          )}
-          {avaliacao.pontos_melhoria?.length > 0 && (
-            <Card className="p-4 bg-yellow-50 border-yellow-200">
-              <h4 className="font-semibold text-yellow-800 text-sm mb-2">⚠️ Melhorar</h4>
-              <ul className="space-y-1">{avaliacao.pontos_melhoria.map((p: string, i: number) => <li key={i} className="text-xs text-yellow-700">• {p}</li>)}</ul>
-            </Card>
-          )}
-          {avaliacao.erros?.length > 0 && (
-            <Card className="p-4 bg-red-50 border-red-200">
-              <h4 className="font-semibold text-red-800 text-sm mb-2">❌ Erros</h4>
-              <ul className="space-y-1">{avaliacao.erros.map((p: string, i: number) => <li key={i} className="text-xs text-red-700">• {p}</li>)}</ul>
-            </Card>
-          )}
-        </div>
-        <div className="flex justify-center gap-3 pt-2">
-          <Button variant="outline" onClick={onReset} className="gap-2">
-            <RotateCcw className="h-4 w-4" /> Nova simulação
-          </Button>
-        </div>
-      </Card>
+      <AvaliacaoScreen
+        avaliacao={avaliacao}
+        xpGanho={xpGanho}
+        melhorNota={melhorNotaPerfil}
+        nomePerfil={profile.name}
+        genero={profile.cliente_genero}
+        resumoPersonalidade={profile.personality}
+        onTreinarDeNovo={resetarConversa}
+        onOutroCliente={onReset}
+      />
     );
   }
 
   return (
-  <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4 items-start">
-    {/* Card do cliente */}
-    <Card className="p-4 space-y-4 sticky top-4">
-      <div className="flex flex-col items-center text-center gap-2">
-        <ClienteAvatar genero={profile.cliente_genero ?? undefined} size={80} />
-        <div>
-          <p className="font-semibold text-sm">{profile.cliente_nome || profile.name}</p>
-          <Badge className={`text-xs mt-1 ${DIFFICULTY_COLORS[profile.difficulty]}`}>{DIFFICULTY_LABELS[profile.difficulty]}</Badge>
-        </div>
-      </div>
-      <div className="space-y-2 text-xs border-t pt-3">
-        {profile.cliente_cpf && (
-          <div className="flex justify-between gap-2">
-            <span className="text-muted-foreground">CPF</span>
-            <span className="font-mono font-medium">{profile.cliente_cpf}</span>
+    <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4 items-start">
+      {/* Coluna do cliente: só os dados reais que o atendente teria */}
+      <Card className="p-4 space-y-4 sticky top-4">
+        <div className="flex flex-col items-center text-center gap-2">
+          <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center text-xl font-semibold">
+            {iniciais(profile.cliente_nome || profile.name)}
           </div>
-        )}
-        {profile.cliente_regiao && (
-          <div className="flex justify-between gap-2">
-            <span className="text-muted-foreground">Região</span>
-            <span className="font-medium text-right">{profile.cliente_regiao}</span>
+          <div>
+            <p className="font-semibold text-sm">{profile.cliente_nome || profile.name}</p>
+            <p className="text-xs text-muted-foreground">Cliente virtual</p>
           </div>
-        )}
-        <div className="flex justify-between gap-2">
-          <span className="text-muted-foreground">Perfil</span>
-          <span className="font-medium text-right">{profile.name}</span>
         </div>
-      </div>
-      <div className="border-t pt-3 space-y-1">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Personalidade</p>
-        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-4">{profile.personality}</p>
-      </div>
-      <Button size="sm" variant="outline" onClick={onReset} className="w-full gap-2 mt-2">
-        <RotateCcw className="h-3 w-3" /> Trocar cliente
-      </Button>
-    </Card>
-
-    {/* Chat principal */}
-    <Card className="p-4 flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-sm">{profile.name}</span>
-          <Badge className={DIFFICULTY_COLORS[profile.difficulty]}>{DIFFICULTY_LABELS[profile.difficulty]}</Badge>
+        <div className="space-y-2 text-xs border-t pt-3">
+          {profile.cliente_regiao && (
+            <div className="flex justify-between gap-2">
+              <span className="text-muted-foreground">Região</span>
+              <span className="font-medium text-right">{profile.cliente_regiao}</span>
+            </div>
+          )}
+          {profile.cliente_cpf && (
+            <div className="flex justify-between gap-2">
+              <span className="text-muted-foreground">CPF</span>
+              <span className="font-mono font-medium">{profile.cliente_cpf}</span>
+            </div>
+          )}
+          {profile.cliente_origem_lead && (
+            <div className="flex justify-between gap-2">
+              <span className="text-muted-foreground">Origem</span>
+              <span className="font-medium text-right">{profile.cliente_origem_lead}</span>
+            </div>
+          )}
         </div>
-        <Button size="sm" variant="destructive" onClick={handleEncerrar}
-          disabled={messages.length === 0} className="gap-2">
-          <StopCircle className="h-4 w-4" />
-          {avaliarMut.isPending ? "Avaliando..." : "Encerrar e Avaliar"}
+        <div className="border border-dashed border-border rounded-md p-2.5">
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            A personalidade e o perfil {profile.cliente_genero === "feminino" ? "desta cliente" : "deste cliente"} aparecem na avaliação, quando você encerrar.
+          </p>
+        </div>
+        <Button size="sm" variant="outline" onClick={onReset} className="w-full gap-2">
+          <RotateCcw className="h-3 w-3" /> Trocar cliente
         </Button>
-      </div>
+      </Card>
 
-      {states.length > 0 && (
-        <div className="space-y-1">
-          <div className="flex items-center gap-1">
-            {states.map((s, i) => (
-              <div key={s.id} className={`h-1.5 flex-1 rounded-full ${i <= stateIndex ? "bg-primary" : "bg-muted"}`} title={s.name} />
-            ))}
-          </div>
-          <p className="text-[11px] text-muted-foreground">
-            Etapa {stateIndex + 1}/{states.length}: <span className="font-medium text-foreground">{states[stateIndex]?.name}</span>
-          </p>
-        </div>
-      )}
-
-      <div className="flex flex-col gap-2 min-h-[300px] max-h-[400px] overflow-y-auto p-2 bg-muted/20 rounded-md">
-        {messages.length === 0 && (
-          <p className="text-xs text-muted-foreground text-center mt-10">
-            Inicie o atendimento. Você é o vendedor — o cliente virtual vai responder.
-          </p>
-        )}
-        {messages.map((m, i) => (
-          <div key={i} className={`flex ${m.role === "atendente" ? "justify-end" : "justify-start"}`}>
-            <div className={`max-w-[75%] rounded-xl px-3 py-2 text-sm ${m.role === "atendente" ? "bg-primary text-primary-foreground" : "bg-background border text-foreground"}`}>
-              <p className="text-[10px] font-medium mb-1 opacity-70">
-                {m.role === "atendente" ? "Você" : profile.name}
-              </p>
-              {m.images && m.images.length > 0 && (
-                <div className="flex gap-1 flex-wrap mb-1">
-                  {m.images.map((url, idx) => (
-                    <img key={idx} src={url} alt="anexo" className="h-16 w-16 object-cover rounded-md border border-border/50" />
-                  ))}
-                </div>
-              )}
-            <WhatsAppText text={m.content} />
+      {/* Chat estilo WhatsApp, cores OMNIA */}
+      <Card className="p-0 flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-semibold">
+              {iniciais(profile.cliente_nome || profile.name)}
+            </div>
+            <div>
+              <p className="font-semibold text-sm leading-tight">{profile.cliente_nome || profile.name}</p>
+              <p className="text-[11px] text-muted-foreground leading-tight">online</p>
             </div>
           </div>
-        ))}
-        {sendMut.isPending && (
-          <div className="flex justify-start">
-            <div className="bg-background border rounded-xl px-3 py-2 text-sm text-muted-foreground">
-              {profile.name} está digitando...
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-2">
-        {attachedImages.length > 0 && (
-          <div className="flex gap-2 flex-wrap">
-            {attachedImages.map((url, i) => (
-              <div key={i} className="relative h-14 w-14 rounded-md overflow-hidden border border-border group">
-                <img src={url} alt="anexo" className="h-full w-full object-cover" />
-                <button type="button"
-                  className="absolute top-0.5 right-0.5 bg-black/60 text-white rounded-full p-0.5"
-                  onClick={() => setAttachedImages(prev => prev.filter((_, idx) => idx !== i))}>
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-{shortcutMatches.length > 0 && (
-          <div className="border border-border rounded-md bg-popover shadow-md overflow-hidden max-h-56 overflow-y-auto">
-            {shortcutMatches.map((m, i) => (
-              <button key={m.id} type="button"
-                className={`w-full text-left px-3 py-2 text-sm flex flex-col gap-0.5 border-b border-border/50 last:border-0 ${i === shortcutIndex ? "bg-primary/10" : "hover:bg-muted/50"}`}
-                onMouseEnter={() => setShortcutIndex(i)}
-                onClick={() => applyShortcut(m)}>
-                <span className="font-medium text-gold-text">/{m.shortcut}</span>
-                <span className="text-xs text-muted-foreground truncate">{m.title} — {m.content}</span>
-              </button>
-            ))}
-          </div>
-        )}
-        <div className="flex gap-2">
-          <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden"
-            onChange={(e) => handleFilesSelected(e.target.files)} />
-          <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden"
-            onChange={(e) => handleFilesSelected(e.target.files)} />
-          <Button type="button" variant="outline" size="icon" className="shrink-0"
-            onClick={() => fileInputRef.current?.click()} disabled={uploadingImg || attachedImages.length >= 2 || encerrado}>
-            <Paperclip className="h-4 w-4" />
+          <Button size="sm" onClick={handleEncerrar} disabled={messages.length === 0} className="gap-2">
+            {avaliarMut.isPending ? "Avaliando..." : "Encerrar e avaliar"}
           </Button>
-<Textarea value={input} onChange={e => setInput(e.target.value)}
-            onKeyDown={e => {
-              if (shortcutMatches.length > 0) {
-                if (e.key === "ArrowDown") { e.preventDefault(); setShortcutIndex(i => (i + 1) % shortcutMatches.length); return; }
-                if (e.key === "ArrowUp") { e.preventDefault(); setShortcutIndex(i => (i - 1 + shortcutMatches.length) % shortcutMatches.length); return; }
-                if ((e.key === "Enter" || e.key === "Tab") && !e.shiftKey) { e.preventDefault(); applyShortcut(shortcutMatches[shortcutIndex]); return; }
-              }
-              if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
-            }}
-            placeholder="Digite sua mensagem... (use / para respostas rápidas)" rows={2} className="resize-none" />
-          <div className="flex flex-col gap-2">
-            <Button onClick={handleSend} disabled={(!input.trim() && attachedImages.length === 0) || encerrado} className="gap-1 text-xs">
-              <Send className="h-4 w-4" />
+        </div>
+
+        {states.length > 0 && (
+          <div className="px-4 pt-2 space-y-1">
+            <div className="flex items-center gap-1">
+              {states.map((s, i) => (
+                <div key={s.id} className={`h-1.5 flex-1 rounded-full ${i <= stateIndex ? "bg-primary" : "bg-muted"}`} title={s.name} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-col gap-1 min-h-[360px] max-h-[460px] overflow-y-auto p-4 bg-sidebar">
+          {messages.length === 0 && (
+            <p className="text-xs text-muted-foreground text-center mt-10">
+              Inicie o atendimento. Você é o vendedor — o cliente virtual vai responder.
+            </p>
+          )}
+          {messages.map((m, i) => {
+            const anterior = messages[i - 1];
+            const agrupado = anterior && anterior.role === m.role;
+            const ehAtendente = m.role === "atendente";
+            return (
+              <div key={i} className={`flex ${ehAtendente ? "justify-end" : "justify-start"} ${agrupado ? "mt-0.5" : "mt-2"}`}>
+                <div className={`max-w-[75%] px-3 py-2 text-sm border ${
+                  ehAtendente
+                    ? `bg-surface-2 border-transparent rounded-xl ${agrupado ? "rounded-tr-sm" : ""}`
+                    : `bg-surface border-border rounded-xl ${agrupado ? "rounded-tl-sm" : ""}`
+                }`}>
+                  {m.images && m.images.length > 0 && (
+                    <div className="flex gap-1 flex-wrap mb-1">
+                      {m.images.map((url, idx) => (
+                        <img key={idx} src={url} alt="anexo" className="h-16 w-16 object-cover rounded-md border border-border/50" />
+                      ))}
+                    </div>
+                  )}
+                  <WhatsAppText text={m.content} />
+                  <p className="text-[10px] text-muted-foreground text-right mt-0.5">{m.time}</p>
+                </div>
+              </div>
+            );
+          })}
+          {sendMut.isPending && (
+            <p className="text-xs text-muted-foreground italic mt-2">
+              {(profile.cliente_nome || profile.name)} está digitando...
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-2 p-3 border-t">
+          {attachedImages.length > 0 && (
+            <div className="flex gap-2 flex-wrap">
+              {attachedImages.map((url, i) => (
+                <div key={i} className="relative h-14 w-14 rounded-md overflow-hidden border border-border group">
+                  <img src={url} alt="anexo" className="h-full w-full object-cover" />
+                  <button type="button"
+                    className="absolute top-0.5 right-0.5 bg-black/60 text-white rounded-full p-0.5"
+                    onClick={() => setAttachedImages(prev => prev.filter((_, idx) => idx !== i))}>
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          {shortcutMatches.length > 0 && (
+            <div className="border border-border rounded-md bg-popover shadow-md overflow-hidden max-h-56 overflow-y-auto">
+              {shortcutMatches.map((m, i) => (
+                <button key={m.id} type="button"
+                  className={`w-full text-left px-3 py-2 text-sm flex flex-col gap-0.5 border-b border-border/50 last:border-0 ${i === shortcutIndex ? "bg-primary/10" : "hover:bg-muted/50"}`}
+                  onMouseEnter={() => setShortcutIndex(i)}
+                  onClick={() => applyShortcut(m)}>
+                  <span className="font-medium text-gold-text">/{m.shortcut}</span>
+                  <span className="text-xs text-muted-foreground truncate">{m.title} — {m.content}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden"
+              onChange={(e) => handleFilesSelected(e.target.files)} />
+            <Button type="button" variant="outline" size="icon" className="shrink-0"
+              onClick={() => fileInputRef.current?.click()} disabled={uploadingImg || attachedImages.length >= 2}>
+              <Paperclip className="h-4 w-4" />
+            </Button>
+            <Textarea value={input} onChange={e => setInput(e.target.value)}
+              onKeyDown={e => {
+                if (shortcutMatches.length > 0) {
+                  if (e.key === "ArrowDown") { e.preventDefault(); setShortcutIndex(i => (i + 1) % shortcutMatches.length); return; }
+                  if (e.key === "ArrowUp") { e.preventDefault(); setShortcutIndex(i => (i - 1 + shortcutMatches.length) % shortcutMatches.length); return; }
+                  if ((e.key === "Enter" || e.key === "Tab") && !e.shiftKey) { e.preventDefault(); applyShortcut(shortcutMatches[shortcutIndex]); return; }
+                }
+                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
+              }}
+              placeholder="Digite sua mensagem... (use / para respostas rápidas)" rows={1} className="resize-none" />
+            <Button variant="outline" onClick={handleSend} disabled={(!input.trim() && attachedImages.length === 0)} className="gap-1 text-xs shrink-0">
+              <Send className="h-4 w-4" /> Enviar
             </Button>
             {pendingAttendantMessages.length > 0 && (
-              <Button onClick={handleAwaitResponse} disabled={sendMut.isPending || encerrado}
-                variant="outline" className="gap-1 text-xs">
-                <MessageSquare className="h-3 w-3" />
+              <Button onClick={handleAwaitResponse} disabled={sendMut.isPending}
+                className="gap-1 text-xs shrink-0">
+                <MessageSquare className="h-3 w-3" /> Aguardar resposta
               </Button>
             )}
           </div>
+          <p className="text-[11px] text-muted-foreground">
+            Você pode mandar várias mensagens seguidas; a cliente responde quando você clicar em "Aguardar resposta".
+          </p>
         </div>
-      </div>
-    </Card>
-  </div>
-);
+      </Card>
+    </div>
+  );
 }
