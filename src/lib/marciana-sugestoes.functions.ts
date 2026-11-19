@@ -34,7 +34,12 @@ export const upsertMarcianaSugestao = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await requireAdmin(context);
     const { data: r, error } = data.id
-      ? await context.supabase.from("marciana_sugestoes").update(data).eq("id", data.id).select().single()
+      ? await context.supabase
+          .from("marciana_sugestoes")
+          .update(data)
+          .eq("id", data.id)
+          .select()
+          .single()
       : await context.supabase.from("marciana_sugestoes").insert(data).select().single();
     if (error) throw new Error(error.message);
     return r;

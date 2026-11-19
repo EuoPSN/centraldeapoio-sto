@@ -2,7 +2,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import {
-  listMarcianaSugestoes, upsertMarcianaSugestao, deleteMarcianaSugestao,
+  listMarcianaSugestoes,
+  upsertMarcianaSugestao,
+  deleteMarcianaSugestao,
 } from "@/lib/marciana-sugestoes.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,7 +28,8 @@ export function MarcianaSugestoesSection() {
   const invalidate = () => qc.invalidateQueries({ queryKey: ["marciana-sugestoes"] });
 
   const saveMut = useMutation({
-    mutationFn: (v: { id?: string; texto: string; ordem: number; ativo: boolean }) => upsert({ data: v }),
+    mutationFn: (v: { id?: string; texto: string; ordem: number; ativo: boolean }) =>
+      upsert({ data: v }),
     onSuccess: invalidate,
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao salvar"),
   });
@@ -52,7 +55,8 @@ export function MarcianaSugestoesSection() {
           <MessageCircleQuestion className="h-4 w-4 text-gold-text" /> Sugestões da tela inicial
         </h3>
         <p className="text-sm text-muted-foreground mt-1">
-          Pílulas de pergunta exibidas na tela inicial da MarcIAna (clicar envia a pergunta). Mostre de 4 a 6 ativas
+          Pílulas de pergunta exibidas na tela inicial da MarcIAna (clicar envia a pergunta). Mostre
+          de 4 a 6 ativas
           {ativasCount > 0 ? ` — hoje: ${ativasCount}.` : "."}
         </p>
       </div>
@@ -64,13 +68,16 @@ export function MarcianaSugestoesSection() {
               defaultValue={s.texto}
               onBlur={(e) => {
                 const texto = e.target.value.trim();
-                if (texto && texto !== s.texto) saveMut.mutate({ id: s.id, texto, ordem: s.ordem, ativo: s.ativo });
+                if (texto && texto !== s.texto)
+                  saveMut.mutate({ id: s.id, texto, ordem: s.ordem, ativo: s.ativo });
               }}
               className="flex-1"
             />
             <Switch
               checked={s.ativo}
-              onCheckedChange={(v) => saveMut.mutate({ id: s.id, texto: s.texto, ordem: s.ordem, ativo: v })}
+              onCheckedChange={(v) =>
+                saveMut.mutate({ id: s.id, texto: s.texto, ordem: s.ordem, ativo: v })
+              }
               aria-label="Ativa"
             />
             <Button
@@ -92,10 +99,17 @@ export function MarcianaSugestoesSection() {
           placeholder="Nova sugestão de pergunta..."
           value={novo}
           onChange={(e) => setNovo(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") addNovo(); }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") addNovo();
+          }}
           className="flex-1"
         />
-        <Button size="sm" className="gap-2" onClick={addNovo} disabled={!novo.trim() || saveMut.isPending}>
+        <Button
+          size="sm"
+          className="gap-2"
+          onClick={addNovo}
+          disabled={!novo.trim() || saveMut.isPending}
+        >
           <Plus className="h-4 w-4" /> Adicionar
         </Button>
       </div>
