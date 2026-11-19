@@ -15,8 +15,8 @@ function formatBRL(v: number) {
 }
 
 /**
- * Planos em promoção com a etiqueta vermelha de gôndola e o botão Copiar.
- * Usado na Início e na aba Planos de Preços. Some quando não há plano ativo,
+ * Planos em promoção com o preço do 1º mês e o botão Copiar.
+ * Usado na aba Planos de Preços. Some quando não há plano ativo,
  * a menos que `showEmpty` peça a mensagem de lista vazia.
  */
 export function PromoPlansPanel({ showEmpty = false, className }: { showEmpty?: boolean; className?: string }) {

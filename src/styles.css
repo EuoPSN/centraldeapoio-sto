@@ -23,7 +23,6 @@
   --text-sm--line-height: 1.5714;
   --text-lg--line-height: 1.5556;
   --text-2xl--line-height: 1.3333;
-  --font-price: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -64,10 +63,6 @@
   --color-nebula: var(--nebula);
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);
-  --color-tag: var(--tag);
-  --color-tag-foreground: var(--tag-foreground);
-  --color-tag-promo: var(--tag-promo);
-  --color-tag-promo-foreground: var(--tag-promo-foreground);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -125,11 +120,6 @@
   --warning: #9a5b00;
   --warning-foreground: #ffffff;
 
-  /* Etiqueta de preço (redesign anterior; as páginas serão revistas depois) */
-  --tag: #ffd400;
-  --tag-foreground: #1c221f;
-  --tag-promo: #e1251b;
-  --tag-promo-foreground: #ffffff;
 
   --sidebar: var(--sidebar-bg);
   --sidebar-foreground: var(--ink);
@@ -214,40 +204,6 @@
   font-weight: 300;
   text-transform: uppercase;
   letter-spacing: 0.24em;
-}
-
-/* ============================================================
- * Etiqueta de gôndola: o único elemento chamativo da Central.
- * Amarela para preço normal; vermelha (.is-promo) para promoção.
- * Ponta recortada à esquerda e numeral condensado pesado.
- * ============================================================ */
-@utility price-tag {
-  display: inline-flex;
-  align-items: flex-start;
-  justify-content: flex-end;
-  gap: 0.125rem;
-  min-width: 6.25rem;
-  padding: 0.25rem 0.625rem 0.1875rem 1.125rem;
-  background: var(--color-tag);
-  color: var(--color-tag-foreground);
-  clip-path: polygon(0.625rem 0, 100% 0, 100% 100%, 0.625rem 100%, 0 50%);
-  font-family: var(--font-price);
-  font-weight: 800;
-  font-size: 1.5rem;
-  line-height: 1;
-  letter-spacing: 0;
-  font-variant-numeric: tabular-nums lining-nums;
-  white-space: nowrap;
-}
-@utility price-tag-sm {
-  min-width: 4.75rem;
-  padding: 0.1875rem 0.5rem 0.125rem 0.875rem;
-  clip-path: polygon(0.5rem 0, 100% 0, 100% 100%, 0.5rem 100%, 0 50%);
-  font-size: 1.125rem;
-}
-@utility price-tag-promo {
-  background: var(--color-tag-promo);
-  color: var(--color-tag-promo-foreground);
 }
 
 /* Troca de tema: cores mudam em 250ms (só durante a troca). */

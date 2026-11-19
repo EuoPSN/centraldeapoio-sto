@@ -102,9 +102,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         rel: "stylesheet",
         // OMNIA: Cinzel (nome, saudação e títulos institucionais, sempre em
-        // caixa alta) e Montserrat (todo o resto). Barlow Condensed fica só
-        // no numeral da etiqueta de preço.
-        href: "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Montserrat:wght@300;400;500;600&family=Barlow+Condensed:wght@700;800&display=swap",
+        // caixa alta) e Montserrat (todo o resto).
+        href: "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Montserrat:wght@300;400;500;600&display=swap",
       },
       {
         rel: "stylesheet",
