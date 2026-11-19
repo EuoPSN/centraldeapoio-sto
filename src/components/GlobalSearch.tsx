@@ -28,25 +28,31 @@ import {
 /** Evento para abrir a busca global já com um texto (ex.: campo central da Início). */
 export const OPEN_SEARCH_EVENT = "omnia:open-search";
 
-export function openGlobalSearch(query = "") {
-  window.dispatchEvent(new CustomEvent<{ query: string }>(OPEN_SEARCH_EVENT, { detail: { query } }));
+type SearchScope = "all" | "messages";
+
+/** Abre a busca global; `scope: "messages"` mostra só mensagens (Scripts). */
+export function openGlobalSearch(query = "", scope: SearchScope = "all") {
+  window.dispatchEvent(new CustomEvent<{ query: string; scope: SearchScope }>(OPEN_SEARCH_EVENT, { detail: { query, scope } }));
 }
 
 export function GlobalSearch() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [scope, setScope] = useState<SearchScope>("all");
   const navigate = useNavigate();
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
+        setScope("all");
         setOpen((o) => !o);
       }
     };
     const openWith = (e: Event) => {
-      const q = (e as CustomEvent<{ query?: string }>).detail?.query ?? "";
-      setQuery(q);
+      const detail = (e as CustomEvent<{ query?: string; scope?: SearchScope }>).detail;
+      setQuery(detail?.query ?? "");
+      setScope(detail?.scope ?? "all");
       setOpen(true);
     };
     window.addEventListener("keydown", handler);
@@ -90,10 +96,10 @@ export function GlobalSearch() {
   const procedimentos = useQuery({ queryKey: ["sg-procedimentos"], queryFn: () => lProced({}), enabled: open });
   const changelog = useQuery({ queryKey: ["sg-changelog"], queryFn: () => lChangelog({}), enabled: open });
 
-  type Item = { id: string; title: string; preview: string; icon: typeof BookOpen; route: string };
+  type Item = { id: string; title: string; preview: string; icon: typeof BookOpen; route: string; search?: Record<string, string> };
   type ContentSearchRow = { id: string; title: string; content: string };
   type KnowledgeSearchRow = { id: string; title: string; content: string; summary: string | null };
-  type MessageSearchRow = { id: string; title: string; content: string; category?: { name: string } | null };
+  type MessageSearchRow = { id: string; title: string; content: string; shortcut?: string | null; category?: { id: string; name: string } | null; subcategory?: { id: string; name: string } | null };
   type PricingSearchRow = { id: string; specialty: string; category: string; cartao_price: number | null };
   type ProfileSearchRow = { id: string; name: string; difficulty: string; category?: { name: string } | null };
   type CategorySearchRow = { id: string; name: string; scope: string };
@@ -104,7 +110,19 @@ export function GlobalSearch() {
   type ChangelogSearchRow = { id: string; title: string; summary: string; published: boolean };
 
   const items = useMemo(() => ({
-    messages: ((messages.data ?? []) as MessageSearchRow[]).map((r) => ({ id: r.id, title: r.title, preview: r.category?.name ? `${r.category.name} · ${r.content.slice(0, 60)}` : r.content.slice(0, 80), icon: MessageSquareQuote, route: "/scripts" })),
+    // Abre a mensagem direto na Biblioteca, já selecionada.
+    messages: ((messages.data ?? []) as MessageSearchRow[]).map((r) => ({
+      id: r.id,
+      title: r.shortcut ? `${r.title} /${r.shortcut}` : r.title,
+      preview: r.category?.name ? `${r.category.name} · ${r.content.slice(0, 60)}` : r.content.slice(0, 80),
+      icon: MessageSquareQuote,
+      route: "/scripts/biblioteca",
+      search: {
+        msg: r.id,
+        ...(r.category?.id ? { categoria: r.category.id } : {}),
+        ...(r.subcategory?.id ? { sub: r.subcategory.id } : {}),
+      },
+    })),
     knowledge: ((knowledge.data ?? []) as KnowledgeSearchRow[]).map((r) => ({ id: r.id, title: r.title, preview: (r.summary || r.content).slice(0, 80), icon: BookOpen, route: "/conhecimento" })),
     pricing: ((pricing.data ?? []) as PricingSearchRow[]).map((r) => ({ id: r.id, title: r.specialty, preview: `${r.category}${r.cartao_price ? ` · R$ ${Number(r.cartao_price).toFixed(2)}` : ""}`, icon: DollarSign, route: "/precos" })),
     problems: ((prob.data ?? []) as ContentSearchRow[]).map((r) => ({ id: r.id, title: r.title, preview: r.content.slice(0, 80), icon: Wrench, route: "/problemas" })),
@@ -121,9 +139,9 @@ export function GlobalSearch() {
     cats.data, metas.data, unidades.data, exames.data, procedimentos.data, changelog.data,
   ]);
 
-  const go = (path: string) => {
+  const go = (path: string, search?: Record<string, string>) => {
     setOpen(false);
-    navigate({ to: path });
+    navigate({ to: path, search: search as never });
   };
 
   const askMarciana = () => {
@@ -153,7 +171,7 @@ export function GlobalSearch() {
       <CommandInput
         value={query}
         onValueChange={setQuery}
-        placeholder="Buscar em scripts, conhecimento, preços, perfis, unidades..."
+        placeholder={scope === "messages" ? "Buscar mensagem pelo nome, texto ou atalho…" : "Buscar em scripts, conhecimento, preços, perfis, unidades..."}
       />
       <CommandList>
         <CommandEmpty>
@@ -162,12 +180,13 @@ export function GlobalSearch() {
             : "Nenhum resultado. Tente outra palavra."}
         </CommandEmpty>
         {groups.map(({ key, heading, limit }) => {
-          const list = items[key];
+          if (scope === "messages" && key !== "messages") return null;
+          const list = items[key] as Item[];
           if (list.length === 0) return null;
           return (
             <CommandGroup key={key} heading={heading}>
-              {list.slice(0, limit).map((i) => (
-                <CommandItem key={i.id} onSelect={() => go(i.route)} value={`${key} ${i.title} ${i.preview}`}>
+              {list.slice(0, scope === "messages" ? 50 : limit).map((i) => (
+                <CommandItem key={i.id} onSelect={() => go(i.route, (i as Item).search)} value={`${key} ${i.title} ${i.preview}`}>
                   <i.icon className="h-4 w-4 text-gold-text" />
                   <div className="flex flex-col">
                     <span className="font-medium">{i.title}</span>
@@ -178,7 +197,7 @@ export function GlobalSearch() {
             </CommandGroup>
           );
         })}
-        {query.trim() && (
+        {query.trim() && scope === "all" && (
           <CommandGroup heading="MarcIAna" forceMount>
             <CommandItem forceMount value="__perguntar-marciana" onSelect={askMarciana}>
               <Bot className="h-4 w-4 text-gold-text" />

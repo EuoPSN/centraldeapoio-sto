@@ -69,6 +69,8 @@ function AppLayout() {
               aria-label="Abrir ou recolher o menu"
               className="h-9 w-9 text-ink-muted hover:bg-accent hover:text-ink [&_svg]:stroke-[1.5]"
             />
+            {/* Trilha de navegação: as páginas que têm uma preenchem este espaço (TopbarBreadcrumb). */}
+            <nav id="topbar-breadcrumb" aria-label="Você está em" className="flex min-w-0 flex-1 items-center" />
             <ThemeToggle />
           </header>
 
