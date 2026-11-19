@@ -1,0 +1,20 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font",
+        "value": "montserrat",
+        "createdAt": "2026-11-19T14:35:34.432Z",
+        "reason": "Brand brief docs/redesign-omnia/prompt-lovable-base-omnia.md names Montserrat as the OMNIA UI font; DESIGN.md predates the OMNIA rebrand"
+      },
+      {
+        "rule": "overused-font",
+        "value": "montserrat",
+        "createdAt": "2026-11-19T14:42:45.880Z",
+        "reason": "Brand brief docs/redesign-omnia/prompt-lovable-base-omnia.md mandates Montserrat for OMNIA UI; card-especialidades.png sketch uses it"
+      }
+    ]
+  }
+}

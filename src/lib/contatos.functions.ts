@@ -34,6 +34,9 @@ const ContatoInput = z.object({
   contato2: z.string().nullable().optional(),
   contato3: z.string().nullable().optional(),
   destaque: z.boolean().default(false),
+  // Clínicas Amor Saúde: região e link do Google Maps (opcionais; ausentes não sobrescrevem).
+  regiao: z.string().max(80).nullable().optional(),
+  maps_url: z.string().max(500).nullable().optional(),
   position: z.number().int().default(0),
 });
 

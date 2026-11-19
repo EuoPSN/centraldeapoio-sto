@@ -1,11 +1,10 @@
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
-import { useMemo, useState, type ComponentType, type ReactNode } from "react";
-import { ArrowRight, AudioLines, Phone, Quote, Search } from "lucide-react";
-import { openGlobalSearch } from "@/components/GlobalSearch";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useMemo } from "react";
+import { ArrowRight, AudioLines, Phone, Quote } from "lucide-react";
+import { HubCard, HubSearchField } from "@/components/HubCard";
 import {
   TopbarBreadcrumb, buildFlows, useFlowData, useMessageCategories, useMessages, SkeletonLine,
 } from "@/components/scripts/shared";
-import { cn } from "@/lib/utils";
 
 // Links antigos para /scripts com parâmetros vão para a tela certa.
 type LegacySearch = Record<string, string | undefined>;
@@ -71,7 +70,11 @@ function ScriptsHub() {
         <HubCard icon={AudioLines} title="Roteiros de áudio" text="O texto de como falar e um áudio de exemplo." badge="Em breve" soon />
       </div>
 
-      <MessageSearchField />
+      <HubSearchField
+        scope="messages"
+        label="Buscar mensagem"
+        placeholder="Ou busque uma mensagem pelo nome, texto ou atalho (/lead)…"
+      />
     </div>
   );
 }
@@ -82,95 +85,4 @@ function flowsFooter(nFlows: number, nStages: number) {
   return nFlows === 1
     ? `${nStages} ${nStages === 1 ? "etapa" : "etapas"}`
     : `${nFlows} fluxos · ${media} etapas em média`;
-}
-
-function HubCard({
-  to, icon: Icon, title, text, footer, badge, recommended, soon,
-}: {
-  to?: string;
-  icon: ComponentType<{ className?: string; strokeWidth?: number }>;
-  title: string;
-  text: string;
-  footer?: ReactNode;
-  badge?: string;
-  recommended?: boolean;
-  soon?: boolean;
-}) {
-  const body = (
-    <>
-      <div className="flex items-start justify-between gap-2">
-        <span
-          className={cn(
-            "grid h-11 w-11 shrink-0 place-items-center rounded-full border",
-            soon ? "border-line-strong text-ink-muted" : "border-gold text-gold-text",
-          )}
-        >
-          <Icon className="h-[18px] w-[18px]" strokeWidth={1.5} />
-        </span>
-        {badge && (
-          <span
-            className={cn(
-              "rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase leading-4 tracking-[0.06em]",
-              recommended ? "bg-gold text-on-gold" : "bg-surface-2 text-ink-muted",
-            )}
-          >
-            {badge}
-          </span>
-        )}
-      </div>
-      <h2 className="mt-5 text-[17px] font-semibold leading-[22px] text-ink [text-wrap:balance]">{title}</h2>
-      <p className="mt-2 text-[13.5px] leading-5 text-ink-muted">{text}</p>
-      <p className={cn("mt-auto pt-4 text-[13px] leading-5", soon ? "text-ink-muted" : "font-semibold text-gold-text")}>
-        {soon ? "Em construção" : footer}
-      </p>
-    </>
-  );
-
-  const base = "flex min-h-[212px] flex-col rounded-[14px] border p-5";
-  if (!to) {
-    return (
-      <div aria-disabled className={cn(base, "border-line bg-sidebar")}>
-        {body}
-      </div>
-    );
-  }
-  return (
-    <Link
-      to={to}
-      className={cn(
-        base,
-        "bg-surface transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-        recommended ? "border-gold border-[1.5px] hover:bg-surface-2/60" : "border-line hover:border-line-strong hover:bg-surface-2/60",
-      )}
-    >
-      {body}
-    </Link>
-  );
-}
-
-// Abre a busca global já filtrada por mensagens, com o que foi digitado.
-function MessageSearchField() {
-  const [value, setValue] = useState("");
-  return (
-    <label className="mt-10 flex w-full max-w-[640px] cursor-text items-center gap-3 rounded-[14px] border border-line-strong bg-surface px-5 py-[15px] transition-colors hover:border-ink-muted focus-within:border-gold focus-within:hover:border-gold">
-      <Search className="h-[18px] w-[18px] shrink-0 text-ink-muted" strokeWidth={1.5} aria-hidden />
-      <span className="sr-only">Buscar mensagem</span>
-      <input
-        type="search"
-        value={value}
-        autoComplete="off"
-        spellCheck={false}
-        onChange={(e) => {
-          const q = e.target.value;
-          if (q.trim()) {
-            openGlobalSearch(q, "messages");
-            setValue("");
-          } else setValue(q);
-        }}
-        placeholder="Ou busque uma mensagem pelo nome, texto ou atalho (/lead)…"
-        className="min-w-0 flex-1 bg-transparent text-[15px] leading-6 text-ink outline-none placeholder:text-ink-muted [&::-webkit-search-cancel-button]:hidden"
-      />
-      <kbd className="hidden shrink-0 rounded border border-line px-1.5 py-px font-sans text-xs leading-5 text-ink-muted sm:inline-block">Ctrl K</kbd>
-    </label>
-  );
 }

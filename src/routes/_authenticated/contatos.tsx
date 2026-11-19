@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
@@ -21,7 +21,6 @@ interface ContatoRow {
 
 const TIPOS: { value: Tipo; label: string; temDestaque: boolean }[] = [
   { value: "cartao_de_todos", label: "Cartão de Todos", temDestaque: true },
-  { value: "clinica_amor_saude", label: "Clínica Amor Saúde", temDestaque: true },
   { value: "outros", label: "Outros Endereços", temDestaque: false },
 ];
 
@@ -102,9 +101,15 @@ function Page() {
 
       {!q.isLoading && (
         <Tabs defaultValue="cartao_de_todos">
-          <TabsList className="mb-3">
-            {TIPOS.map((t) => <TabsTrigger key={t.value} value={t.value}>{t.label}</TabsTrigger>)}
-          </TabsList>
+          <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <TabsList>
+              {TIPOS.map((t) => <TabsTrigger key={t.value} value={t.value}>{t.label}</TabsTrigger>)}
+            </TabsList>
+            {/* A aba "Clínica Amor Saúde" mudou para o Amor Saúde. */}
+            <Link to="/amor-saude/clinicas" className="text-sm font-medium text-gold-text underline-offset-4 hover:underline">
+              As clínicas Amor Saúde agora ficam em Amor Saúde → Clínicas
+            </Link>
+          </div>
           {TIPOS.map((t) => {
             const items = rows.filter((r) => r.tipo === t.value).sort((a, b) => a.position - b.position);
             return (

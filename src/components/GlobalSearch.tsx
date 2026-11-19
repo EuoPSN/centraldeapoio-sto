@@ -20,20 +20,23 @@ import { listUnidades } from "@/lib/unidades.functions";
 import { listExames } from "@/lib/exames.functions";
 import { listProcedimentos } from "@/lib/odontologia.functions";
 import { listChangelog } from "@/lib/changelog.functions";
+import { listContatos } from "@/lib/contatos.functions";
 import {
   BookOpen, DollarSign, GraduationCap, MessageSquareQuote, Wrench,
-  Users, Tag, UserCog, MapPin, FlaskConical, Stethoscope, Star, Bot,
+  Users, Tag, UserCog, MapPin, FlaskConical, Stethoscope, Star, Bot, Hospital,
 } from "lucide-react";
 
 /** Evento para abrir a busca global já com um texto (ex.: campo central da Início). */
 export const OPEN_SEARCH_EVENT = "omnia:open-search";
 
-type SearchScope = "all" | "messages";
+export type SearchScope = "all" | "messages" | "amor";
 
-/** Abre a busca global; `scope: "messages"` mostra só mensagens (Scripts). */
+/** Abre a busca global; `scope: "messages"` mostra só mensagens (Scripts), `"amor"` só o Amor Saúde. */
 export function openGlobalSearch(query = "", scope: SearchScope = "all") {
   window.dispatchEvent(new CustomEvent<{ query: string; scope: SearchScope }>(OPEN_SEARCH_EVENT, { detail: { query, scope } }));
 }
+
+const AMOR_KEYS: string[] = ["pricing", "exames", "procedimentos", "clinicas"];
 
 export function GlobalSearch() {
   const [open, setOpen] = useState(false);
@@ -80,6 +83,7 @@ export function GlobalSearch() {
   const lExames = useServerFn(listExames);
   const lProced = useServerFn(listProcedimentos);
   const lChangelog = useServerFn(listChangelog);
+  const lContatos = useServerFn(listContatos);
 
   const knowledge = useQuery({ queryKey: ["sg-knowledge"], queryFn: () => lKnowledge({}), enabled: open });
   const prob = useQuery({ queryKey: ["sg-prob"], queryFn: () => lcProb({ data: { section: "problemas" } }), enabled: open });
@@ -95,6 +99,7 @@ export function GlobalSearch() {
   const exames = useQuery({ queryKey: ["sg-exames"], queryFn: () => lExames({}), enabled: open });
   const procedimentos = useQuery({ queryKey: ["sg-procedimentos"], queryFn: () => lProced({}), enabled: open });
   const changelog = useQuery({ queryKey: ["sg-changelog"], queryFn: () => lChangelog({}), enabled: open });
+  const contatos = useQuery({ queryKey: ["sg-contatos"], queryFn: () => lContatos({}), enabled: open });
 
   type Item = { id: string; title: string; preview: string; icon: typeof BookOpen; route: string; search?: Record<string, string> };
   type ContentSearchRow = { id: string; title: string; content: string };
@@ -108,6 +113,7 @@ export function GlobalSearch() {
   type ExameSearchRow = { id: string; nome: string; tipo: string; categoria: string | null };
   type ProcedimentoSearchRow = { id: string; nome: string; categoria: string | null };
   type ChangelogSearchRow = { id: string; title: string; summary: string; published: boolean };
+  type ClinicaSearchRow = { id: string; tipo: string; nome_regiao: string; regiao?: string | null; endereco: string | null };
 
   const items = useMemo(() => ({
     // Abre a mensagem direto na Biblioteca, já selecionada.
@@ -124,19 +130,21 @@ export function GlobalSearch() {
       },
     })),
     knowledge: ((knowledge.data ?? []) as KnowledgeSearchRow[]).map((r) => ({ id: r.id, title: r.title, preview: (r.summary || r.content).slice(0, 80), icon: BookOpen, route: "/conhecimento" })),
-    pricing: ((pricing.data ?? []) as PricingSearchRow[]).map((r) => ({ id: r.id, title: r.specialty, preview: `${r.category}${r.cartao_price ? ` · R$ ${Number(r.cartao_price).toFixed(2)}` : ""}`, icon: DollarSign, route: "/precos" })),
+    // Amor Saúde: abre o item direto na subpágina certa.
+    pricing: ((pricing.data ?? []) as PricingSearchRow[]).map((r) => ({ id: r.id, title: r.specialty, preview: `Consulta${r.cartao_price != null ? ` · R$ ${Number(r.cartao_price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })} no Cartão` : ""}`, icon: DollarSign, route: "/amor-saude/consultas", search: { item: r.id } })),
+    clinicas: ((contatos.data ?? []) as ClinicaSearchRow[]).filter((r) => r.tipo === "clinica_amor_saude").map((r) => ({ id: r.id, title: r.nome_regiao, preview: [r.regiao, r.endereco].filter(Boolean).join(" · ") || "Clínica Amor Saúde", icon: Hospital, route: "/amor-saude/clinicas", search: { item: r.id } })),
     problems: ((prob.data ?? []) as ContentSearchRow[]).map((r) => ({ id: r.id, title: r.title, preview: r.content.slice(0, 80), icon: Wrench, route: "/problemas" })),
     tutorials: ((tut.data ?? []) as ContentSearchRow[]).map((r) => ({ id: r.id, title: r.title, preview: r.content.slice(0, 80), icon: GraduationCap, route: "/tutoriais" })),
     profiles: ((profiles.data ?? []) as ProfileSearchRow[]).map((r) => ({ id: r.id, title: r.name, preview: r.category?.name ? `${r.category.name} · dificuldade ${r.difficulty}` : `Dificuldade ${r.difficulty}`, icon: Users, route: "/simulador-ia" })),
     categories: ((cats.data ?? []) as CategorySearchRow[]).map((r) => ({ id: r.id, title: r.name, preview: `Categoria · ${r.scope}`, icon: Tag, route: "/admin" })),
     metas: ((metas.data ?? []) as MetaSearchRow[]).map((r) => ({ id: r.nome, title: r.nome, preview: `Meta de ${r.mes_referencia}`, icon: UserCog, route: "/funcionarios" })),
     unidades: ((unidades.data ?? []) as UnidadeSearchRow[]).map((r) => ({ id: r.id, title: r.nome, preview: [r.cidade, r.estado].filter(Boolean).join("/") || "Unidade", icon: MapPin, route: "/admin" })),
-    exames: ((exames.data ?? []) as ExameSearchRow[]).map((r) => ({ id: r.id, title: r.nome, preview: `${r.tipo === "imagem" ? "Imagem" : "Laboratorial"}${r.categoria ? ` · ${r.categoria}` : ""}`, icon: FlaskConical, route: "/precos" })),
-    procedimentos: ((procedimentos.data ?? []) as ProcedimentoSearchRow[]).map((r) => ({ id: r.id, title: r.nome, preview: r.categoria ?? "Procedimento odontológico", icon: Stethoscope, route: "/precos" })),
+    exames: ((exames.data ?? []) as ExameSearchRow[]).map((r) => ({ id: r.id, title: r.nome, preview: `${r.tipo === "imagem" ? "Imagem" : "Laboratorial"}${r.categoria ? ` · ${r.categoria}` : ""}`, icon: FlaskConical, route: "/amor-saude/exames", search: { item: r.id } })),
+    procedimentos: ((procedimentos.data ?? []) as ProcedimentoSearchRow[]).map((r) => ({ id: r.id, title: r.nome, preview: r.categoria ?? "Procedimento odontológico", icon: Stethoscope, route: "/amor-saude/odontologia", search: { item: r.id } })),
     changelog: ((changelog.data ?? []) as ChangelogSearchRow[]).filter((r) => r.published).map((r) => ({ id: r.id, title: r.title, preview: r.summary.slice(0, 80), icon: Star, route: "/" })),
   } satisfies Record<string, Item[]>), [
     messages.data, knowledge.data, pricing.data, prob.data, tut.data, profiles.data,
-    cats.data, metas.data, unidades.data, exames.data, procedimentos.data, changelog.data,
+    cats.data, metas.data, unidades.data, exames.data, procedimentos.data, changelog.data, contatos.data,
   ]);
 
   const go = (path: string, search?: Record<string, string>) => {
@@ -154,9 +162,10 @@ export function GlobalSearch() {
   const groups: { key: keyof typeof items; heading: string; limit: number }[] = [
     { key: "messages", heading: "Scripts / Mensagens", limit: 8 },
     { key: "knowledge", heading: "Base de Conhecimento", limit: 6 },
-    { key: "pricing", heading: "Tabela de Preços", limit: 6 },
-    { key: "exames", heading: "Exames", limit: 6 },
-    { key: "procedimentos", heading: "Procedimentos Odontológicos", limit: 6 },
+    { key: "pricing", heading: "Amor Saúde · Consultas", limit: 6 },
+    { key: "exames", heading: "Amor Saúde · Exames", limit: 6 },
+    { key: "procedimentos", heading: "Amor Saúde · Odontologia", limit: 6 },
+    { key: "clinicas", heading: "Amor Saúde · Clínicas", limit: 6 },
     { key: "profiles", heading: "Perfis de Cliente", limit: 6 },
     { key: "unidades", heading: "Unidades", limit: 6 },
     { key: "categories", heading: "Categorias", limit: 6 },
@@ -171,7 +180,11 @@ export function GlobalSearch() {
       <CommandInput
         value={query}
         onValueChange={setQuery}
-        placeholder={scope === "messages" ? "Buscar mensagem pelo nome, texto ou atalho…" : "Buscar em scripts, conhecimento, preços, perfis, unidades..."}
+        placeholder={
+          scope === "messages" ? "Buscar mensagem pelo nome, texto ou atalho…"
+            : scope === "amor" ? "Buscar especialidade, exame, procedimento ou clínica…"
+              : "Buscar em scripts, conhecimento, preços, perfis, unidades..."
+        }
       />
       <CommandList>
         <CommandEmpty>
@@ -181,11 +194,12 @@ export function GlobalSearch() {
         </CommandEmpty>
         {groups.map(({ key, heading, limit }) => {
           if (scope === "messages" && key !== "messages") return null;
+          if (scope === "amor" && !AMOR_KEYS.includes(key)) return null;
           const list = items[key] as Item[];
           if (list.length === 0) return null;
           return (
             <CommandGroup key={key} heading={heading}>
-              {list.slice(0, scope === "messages" ? 50 : limit).map((i) => (
+              {list.slice(0, scope === "all" ? limit : 50).map((i) => (
                 <CommandItem key={i.id} onSelect={() => go(i.route, (i as Item).search)} value={`${key} ${i.title} ${i.preview}`}>
                   <i.icon className="h-4 w-4 text-gold-text" />
                   <div className="flex flex-col">
