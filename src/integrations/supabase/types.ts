@@ -512,6 +512,17 @@ export type Database = {
       }
       contatos_enderecos: {
         Row: {
+          bairro: string | null
+          cidade: string | null
+          horario: string | null
+          atende_tambem: string[]
+          subtitulo: string | null
+          quando_indicar: string | null
+          whatsapp: string | null
+          email: string | null
+          site: string | null
+          updated_at: string
+          use_count: number
           regiao: string | null
           maps_url: string | null
           contato1: string | null
@@ -528,6 +539,17 @@ export type Database = {
           tipo: string
         }
         Insert: {
+          bairro?: string | null
+          cidade?: string | null
+          horario?: string | null
+          atende_tambem?: string[]
+          subtitulo?: string | null
+          quando_indicar?: string | null
+          whatsapp?: string | null
+          email?: string | null
+          site?: string | null
+          updated_at?: string
+          use_count?: number
           regiao?: string | null
           maps_url?: string | null
           contato1?: string | null
@@ -544,6 +566,17 @@ export type Database = {
           tipo: string
         }
         Update: {
+          bairro?: string | null
+          cidade?: string | null
+          horario?: string | null
+          atende_tambem?: string[]
+          subtitulo?: string | null
+          quando_indicar?: string | null
+          whatsapp?: string | null
+          email?: string | null
+          site?: string | null
+          updated_at?: string
+          use_count?: number
           regiao?: string | null
           maps_url?: string | null
           contato1?: string | null
@@ -2577,6 +2610,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      increment_contato_use: {
+        Args: { contato_id: string }
+        Returns: undefined
+      }
       increment_amor_saude_use: {
         Args: { item_id: string; item_tipo: string }
         Returns: undefined
