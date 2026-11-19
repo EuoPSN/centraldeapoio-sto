@@ -133,7 +133,7 @@ export const listPricing = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("pricing_items")
-      .select("*, unidades:pricing_item_unidades(destaque, unidade:unidades(id,nome))")
+      .select("*, unidades:pricing_item_unidades(destaque, unidade:unidades(id,nome)), clinicas:pricing_item_clinicas(clinica_id)")
       .order("category", { ascending: true })
       .order("position", { ascending: true })
       .order("specialty", { ascending: true });
@@ -149,6 +149,11 @@ const PricingInput = z.object({
   category: z.string().min(1).max(60).default("consulta"),
   notes: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
+  // Amor Saúde: área, para quem indicar, como agendar, revisão das clínicas.
+  area: z.string().max(60).nullable().optional(),
+  para_quem: z.string().nullable().optional(),
+  como_agendar: z.string().nullable().optional(),
+  clinicas_pendente: z.boolean().optional(),
   position: z.number().int().default(0),
 });
 

@@ -8,7 +8,7 @@ export const listExames = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("exames")
-      .select("*, unidades:exame_unidades(unidade:unidades(id,nome))")
+      .select("*, unidades:exame_unidades(unidade:unidades(id,nome)), clinicas:exame_clinicas(clinica_id)")
       .order("tipo", { ascending: true })
       .order("position", { ascending: true })
       .order("nome", { ascending: true });
@@ -32,6 +32,9 @@ const ExameInput = z.object({
   preparo: z.string().nullable().optional(),
   descricao: z.string().nullable().optional(),
   observacoes: z.string().nullable().optional(),
+  // Amor Saúde: média de referência (opcional) e preparo em itens.
+  media_referencia: z.number().nonnegative().nullable().optional(),
+  preparo_itens: z.array(z.string().min(1).max(300)).optional(),
   position: z.number().int().default(0),
 });
 

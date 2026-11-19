@@ -8,7 +8,7 @@ export const listProcedimentos = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("procedimentos_odontologicos")
-      .select("*, unidades:procedimento_unidades(unidade:unidades(id,nome))")
+      .select("*, unidades:procedimento_unidades(unidade:unidades(id,nome)), clinicas:procedimento_clinicas(clinica_id)")
       .order("position", { ascending: true })
       .order("nome", { ascending: true });
     if (error) throw new Error(error.message);
