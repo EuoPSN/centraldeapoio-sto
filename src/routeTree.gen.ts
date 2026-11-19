@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as PendenteRouteImport } from './routes/pendente'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedAmorSaudeRouteImport } from './routes/_authenticated/amor-saude'
 import { Route as AuthenticatedAssistenteRouteImport } from './routes/_authenticated/assistente'
 import { Route as AuthenticatedBibliotecaRouteImport } from './routes/_authenticated/biblioteca'
 import { Route as AuthenticatedChecklistRouteImport } from './routes/_authenticated/checklist'
@@ -33,6 +34,11 @@ import { Route as AuthenticatedSimuladorIaRouteImport } from './routes/_authenti
 import { Route as AuthenticatedSugestoesRouteImport } from './routes/_authenticated/sugestoes'
 import { Route as AuthenticatedTreinamentosRouteImport } from './routes/_authenticated/treinamentos'
 import { Route as AuthenticatedTutoriaisRouteImport } from './routes/_authenticated/tutoriais'
+import { Route as AuthenticatedAmorSaudeIndexRouteImport } from './routes/_authenticated/amor-saude.index'
+import { Route as AuthenticatedAmorSaudeClinicasRouteImport } from './routes/_authenticated/amor-saude.clinicas'
+import { Route as AuthenticatedAmorSaudeConsultasRouteImport } from './routes/_authenticated/amor-saude.consultas'
+import { Route as AuthenticatedAmorSaudeExamesRouteImport } from './routes/_authenticated/amor-saude.exames'
+import { Route as AuthenticatedAmorSaudeOdontologiaRouteImport } from './routes/_authenticated/amor-saude.odontologia'
 import { Route as AuthenticatedScriptsIndexRouteImport } from './routes/_authenticated/scripts.index'
 import { Route as AuthenticatedScriptsBibliotecaRouteImport } from './routes/_authenticated/scripts.biblioteca'
 import { Route as ApiPublicKnowledgeFileRouteImport } from './routes/api/public/knowledge-file'
@@ -62,6 +68,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAmorSaudeRoute = AuthenticatedAmorSaudeRouteImport.update({
+  id: '/amor-saude',
+  path: '/amor-saude',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAssistenteRoute = AuthenticatedAssistenteRouteImport.update({
@@ -167,6 +178,36 @@ const AuthenticatedTutoriaisRoute = AuthenticatedTutoriaisRouteImport.update({
   path: '/tutoriais',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAmorSaudeIndexRoute =
+  AuthenticatedAmorSaudeIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedAmorSaudeRoute,
+  } as any)
+const AuthenticatedAmorSaudeClinicasRoute =
+  AuthenticatedAmorSaudeClinicasRouteImport.update({
+    id: '/clinicas',
+    path: '/clinicas',
+    getParentRoute: () => AuthenticatedAmorSaudeRoute,
+  } as any)
+const AuthenticatedAmorSaudeConsultasRoute =
+  AuthenticatedAmorSaudeConsultasRouteImport.update({
+    id: '/consultas',
+    path: '/consultas',
+    getParentRoute: () => AuthenticatedAmorSaudeRoute,
+  } as any)
+const AuthenticatedAmorSaudeExamesRoute =
+  AuthenticatedAmorSaudeExamesRouteImport.update({
+    id: '/exames',
+    path: '/exames',
+    getParentRoute: () => AuthenticatedAmorSaudeRoute,
+  } as any)
+const AuthenticatedAmorSaudeOdontologiaRoute =
+  AuthenticatedAmorSaudeOdontologiaRouteImport.update({
+    id: '/odontologia',
+    path: '/odontologia',
+    getParentRoute: () => AuthenticatedAmorSaudeRoute,
+  } as any)
 const AuthenticatedScriptsIndexRoute =
   AuthenticatedScriptsIndexRouteImport.update({
     id: '/scripts/',
@@ -207,6 +248,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/pendente': typeof PendenteRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/amor-saude': typeof AuthenticatedAmorSaudeRouteWithChildren
   '/assistente': typeof AuthenticatedAssistenteRoute
   '/biblioteca': typeof AuthenticatedBibliotecaRoute
   '/checklist': typeof AuthenticatedChecklistRoute
@@ -226,9 +268,14 @@ export interface FileRoutesByFullPath {
   '/sugestoes': typeof AuthenticatedSugestoesRoute
   '/treinamentos': typeof AuthenticatedTreinamentosRoute
   '/tutoriais': typeof AuthenticatedTutoriaisRoute
+  '/amor-saude/clinicas': typeof AuthenticatedAmorSaudeClinicasRoute
+  '/amor-saude/consultas': typeof AuthenticatedAmorSaudeConsultasRoute
+  '/amor-saude/exames': typeof AuthenticatedAmorSaudeExamesRoute
+  '/amor-saude/odontologia': typeof AuthenticatedAmorSaudeOdontologiaRoute
   '/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
   '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
   '/api/public/message-image': typeof ApiPublicMessageImageRoute
+  '/amor-saude/': typeof AuthenticatedAmorSaudeIndexRoute
   '/scripts/': typeof AuthenticatedScriptsIndexRoute
   '/scripts/fluxo/$fluxo': typeof AuthenticatedScriptsFluxoFluxoRoute
   '/scripts/fluxo/': typeof AuthenticatedScriptsFluxoIndexRoute
@@ -257,9 +304,14 @@ export interface FileRoutesByTo {
   '/treinamentos': typeof AuthenticatedTreinamentosRoute
   '/tutoriais': typeof AuthenticatedTutoriaisRoute
   '/': typeof AuthenticatedIndexRoute
+  '/amor-saude/clinicas': typeof AuthenticatedAmorSaudeClinicasRoute
+  '/amor-saude/consultas': typeof AuthenticatedAmorSaudeConsultasRoute
+  '/amor-saude/exames': typeof AuthenticatedAmorSaudeExamesRoute
+  '/amor-saude/odontologia': typeof AuthenticatedAmorSaudeOdontologiaRoute
   '/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
   '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
   '/api/public/message-image': typeof ApiPublicMessageImageRoute
+  '/amor-saude': typeof AuthenticatedAmorSaudeIndexRoute
   '/scripts': typeof AuthenticatedScriptsIndexRoute
   '/scripts/fluxo/$fluxo': typeof AuthenticatedScriptsFluxoFluxoRoute
   '/scripts/fluxo': typeof AuthenticatedScriptsFluxoIndexRoute
@@ -270,6 +322,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/pendente': typeof PendenteRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/amor-saude': typeof AuthenticatedAmorSaudeRouteWithChildren
   '/_authenticated/assistente': typeof AuthenticatedAssistenteRoute
   '/_authenticated/biblioteca': typeof AuthenticatedBibliotecaRoute
   '/_authenticated/checklist': typeof AuthenticatedChecklistRoute
@@ -290,9 +343,14 @@ export interface FileRoutesById {
   '/_authenticated/treinamentos': typeof AuthenticatedTreinamentosRoute
   '/_authenticated/tutoriais': typeof AuthenticatedTutoriaisRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/amor-saude/clinicas': typeof AuthenticatedAmorSaudeClinicasRoute
+  '/_authenticated/amor-saude/consultas': typeof AuthenticatedAmorSaudeConsultasRoute
+  '/_authenticated/amor-saude/exames': typeof AuthenticatedAmorSaudeExamesRoute
+  '/_authenticated/amor-saude/odontologia': typeof AuthenticatedAmorSaudeOdontologiaRoute
   '/_authenticated/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
   '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
   '/api/public/message-image': typeof ApiPublicMessageImageRoute
+  '/_authenticated/amor-saude/': typeof AuthenticatedAmorSaudeIndexRoute
   '/_authenticated/scripts/': typeof AuthenticatedScriptsIndexRoute
   '/_authenticated/scripts/fluxo/$fluxo': typeof AuthenticatedScriptsFluxoFluxoRoute
   '/_authenticated/scripts/fluxo/': typeof AuthenticatedScriptsFluxoIndexRoute
@@ -304,6 +362,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/pendente'
     | '/admin'
+    | '/amor-saude'
     | '/assistente'
     | '/biblioteca'
     | '/checklist'
@@ -323,9 +382,14 @@ export interface FileRouteTypes {
     | '/sugestoes'
     | '/treinamentos'
     | '/tutoriais'
+    | '/amor-saude/clinicas'
+    | '/amor-saude/consultas'
+    | '/amor-saude/exames'
+    | '/amor-saude/odontologia'
     | '/scripts/biblioteca'
     | '/api/public/knowledge-file'
     | '/api/public/message-image'
+    | '/amor-saude/'
     | '/scripts/'
     | '/scripts/fluxo/$fluxo'
     | '/scripts/fluxo/'
@@ -354,9 +418,14 @@ export interface FileRouteTypes {
     | '/treinamentos'
     | '/tutoriais'
     | '/'
+    | '/amor-saude/clinicas'
+    | '/amor-saude/consultas'
+    | '/amor-saude/exames'
+    | '/amor-saude/odontologia'
     | '/scripts/biblioteca'
     | '/api/public/knowledge-file'
     | '/api/public/message-image'
+    | '/amor-saude'
     | '/scripts'
     | '/scripts/fluxo/$fluxo'
     | '/scripts/fluxo'
@@ -366,6 +435,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/pendente'
     | '/_authenticated/admin'
+    | '/_authenticated/amor-saude'
     | '/_authenticated/assistente'
     | '/_authenticated/biblioteca'
     | '/_authenticated/checklist'
@@ -386,9 +456,14 @@ export interface FileRouteTypes {
     | '/_authenticated/treinamentos'
     | '/_authenticated/tutoriais'
     | '/_authenticated/'
+    | '/_authenticated/amor-saude/clinicas'
+    | '/_authenticated/amor-saude/consultas'
+    | '/_authenticated/amor-saude/exames'
+    | '/_authenticated/amor-saude/odontologia'
     | '/_authenticated/scripts/biblioteca'
     | '/api/public/knowledge-file'
     | '/api/public/message-image'
+    | '/_authenticated/amor-saude/'
     | '/_authenticated/scripts/'
     | '/_authenticated/scripts/fluxo/$fluxo'
     | '/_authenticated/scripts/fluxo/'
@@ -437,6 +512,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/amor-saude': {
+      id: '/_authenticated/amor-saude'
+      path: '/amor-saude'
+      fullPath: '/amor-saude'
+      preLoaderRoute: typeof AuthenticatedAmorSaudeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/assistente': {
@@ -572,6 +654,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTutoriaisRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/amor-saude/': {
+      id: '/_authenticated/amor-saude/'
+      path: '/'
+      fullPath: '/amor-saude/'
+      preLoaderRoute: typeof AuthenticatedAmorSaudeIndexRouteImport
+      parentRoute: typeof AuthenticatedAmorSaudeRoute
+    }
+    '/_authenticated/amor-saude/clinicas': {
+      id: '/_authenticated/amor-saude/clinicas'
+      path: '/clinicas'
+      fullPath: '/amor-saude/clinicas'
+      preLoaderRoute: typeof AuthenticatedAmorSaudeClinicasRouteImport
+      parentRoute: typeof AuthenticatedAmorSaudeRoute
+    }
+    '/_authenticated/amor-saude/consultas': {
+      id: '/_authenticated/amor-saude/consultas'
+      path: '/consultas'
+      fullPath: '/amor-saude/consultas'
+      preLoaderRoute: typeof AuthenticatedAmorSaudeConsultasRouteImport
+      parentRoute: typeof AuthenticatedAmorSaudeRoute
+    }
+    '/_authenticated/amor-saude/exames': {
+      id: '/_authenticated/amor-saude/exames'
+      path: '/exames'
+      fullPath: '/amor-saude/exames'
+      preLoaderRoute: typeof AuthenticatedAmorSaudeExamesRouteImport
+      parentRoute: typeof AuthenticatedAmorSaudeRoute
+    }
+    '/_authenticated/amor-saude/odontologia': {
+      id: '/_authenticated/amor-saude/odontologia'
+      path: '/odontologia'
+      fullPath: '/amor-saude/odontologia'
+      preLoaderRoute: typeof AuthenticatedAmorSaudeOdontologiaRouteImport
+      parentRoute: typeof AuthenticatedAmorSaudeRoute
+    }
     '/_authenticated/scripts/': {
       id: '/_authenticated/scripts/'
       path: '/scripts'
@@ -617,8 +734,32 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedAmorSaudeRouteChildren {
+  AuthenticatedAmorSaudeClinicasRoute: typeof AuthenticatedAmorSaudeClinicasRoute
+  AuthenticatedAmorSaudeConsultasRoute: typeof AuthenticatedAmorSaudeConsultasRoute
+  AuthenticatedAmorSaudeExamesRoute: typeof AuthenticatedAmorSaudeExamesRoute
+  AuthenticatedAmorSaudeOdontologiaRoute: typeof AuthenticatedAmorSaudeOdontologiaRoute
+  AuthenticatedAmorSaudeIndexRoute: typeof AuthenticatedAmorSaudeIndexRoute
+}
+
+const AuthenticatedAmorSaudeRouteChildren: AuthenticatedAmorSaudeRouteChildren =
+  {
+    AuthenticatedAmorSaudeClinicasRoute: AuthenticatedAmorSaudeClinicasRoute,
+    AuthenticatedAmorSaudeConsultasRoute: AuthenticatedAmorSaudeConsultasRoute,
+    AuthenticatedAmorSaudeExamesRoute: AuthenticatedAmorSaudeExamesRoute,
+    AuthenticatedAmorSaudeOdontologiaRoute:
+      AuthenticatedAmorSaudeOdontologiaRoute,
+    AuthenticatedAmorSaudeIndexRoute: AuthenticatedAmorSaudeIndexRoute,
+  }
+
+const AuthenticatedAmorSaudeRouteWithChildren =
+  AuthenticatedAmorSaudeRoute._addFileChildren(
+    AuthenticatedAmorSaudeRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedAmorSaudeRoute: typeof AuthenticatedAmorSaudeRouteWithChildren
   AuthenticatedAssistenteRoute: typeof AuthenticatedAssistenteRoute
   AuthenticatedBibliotecaRoute: typeof AuthenticatedBibliotecaRoute
   AuthenticatedChecklistRoute: typeof AuthenticatedChecklistRoute
@@ -647,6 +788,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedAmorSaudeRoute: AuthenticatedAmorSaudeRouteWithChildren,
   AuthenticatedAssistenteRoute: AuthenticatedAssistenteRoute,
   AuthenticatedBibliotecaRoute: AuthenticatedBibliotecaRoute,
   AuthenticatedChecklistRoute: AuthenticatedChecklistRoute,

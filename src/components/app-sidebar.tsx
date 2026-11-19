@@ -33,7 +33,7 @@ const GROUPS: GroupDef[] = [
     key: "atendimento", label: "Atendimento", icon: Headset,
     pages: [
       { route: "/scripts", label: "Scripts" },
-      { route: "/precos", label: "Amor Saúde" },
+      { route: "/amor-saude", label: "Amor Saúde", aliases: ["/precos"] },
       { route: "/contatos", label: "Contatos e Endereços" },
       { route: "/biblioteca", label: "Biblioteca", aliases: ["/imagens"] },
     ],

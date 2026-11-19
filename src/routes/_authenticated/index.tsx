@@ -343,7 +343,7 @@ function PendenciasLine() {
 
 const ATALHOS = [
   { label: "Scripts", to: "/scripts" },
-  { label: "Amor Saúde", to: "/precos" },
+  { label: "Amor Saúde", to: "/amor-saude" },
   { label: "MarcIAna", to: "/assistente" },
   { label: "Simulador IA", to: "/simulador-ia" },
 ] as const;
