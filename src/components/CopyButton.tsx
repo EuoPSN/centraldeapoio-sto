@@ -36,8 +36,8 @@ export function CopyButton({
       title={isIcon ? label : undefined}
       className={cn(
         "shrink-0 gap-1.5",
-        isIcon ? "h-9 w-9 rounded-lg text-primary" : "min-w-[6.25rem] font-semibold text-primary",
-        copied && "border-primary bg-accent text-primary",
+        isIcon ? "h-9 w-9 rounded-lg text-gold-text" : "min-w-[6.25rem] font-semibold text-gold-text",
+        copied && "border-primary bg-accent text-gold-text",
         className,
       )}
       onClick={async (e) => {

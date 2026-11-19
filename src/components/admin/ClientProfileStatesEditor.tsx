@@ -483,7 +483,7 @@ Responda APENAS com JSON válido, sem markdown e sem texto fora do JSON, neste f
                       </Button>
                     </div>
                     {armMode && (
-                      <p className="text-xs text-primary">Clique no ponto da imagem abaixo onde o {armMode === "nome" ? "nome" : "CPF"} deve aparecer.</p>
+                      <p className="text-xs text-gold-text">Clique no ponto da imagem abaixo onde o {armMode === "nome" ? "nome" : "CPF"} deve aparecer.</p>
                     )}
                     <div
                       ref={imgWrapRef}

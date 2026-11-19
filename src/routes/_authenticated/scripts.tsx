@@ -74,7 +74,7 @@ function MessageCard({ m, onCopy, showCategory = false }: { m: MessageRow; onCop
           <h3 className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13.5px] font-semibold leading-snug">
             <span className="min-w-0">{m.title}</span>
             {m.shortcut && (
-              <span className="rounded bg-accent px-1.5 py-px font-mono text-[11px] font-medium text-primary" title="Atalho no WhatsApp Business">/{m.shortcut}</span>
+              <span className="rounded bg-accent px-1.5 py-px font-mono text-[11px] font-medium text-gold-text" title="Atalho no WhatsApp Business">/{m.shortcut}</span>
             )}
           </h3>
         </div>
@@ -165,7 +165,7 @@ function FluxoAtendimento() {
         className="scroll-mt-[calc(var(--topbar-h)+4.5rem)]"
       >
         <h2 className="mb-2 flex items-baseline gap-2 text-[15px] font-semibold">
-          <span className="tabular-nums text-primary">{idx + 1}</span>
+          <span className="tabular-nums text-gold-text">{idx + 1}</span>
           <span>{stage.name}</span>
           <span className="text-xs font-normal text-muted-foreground">
             {stageMessages.length} {stageMessages.length === 1 ? "mensagem" : "mensagens"}

@@ -108,7 +108,7 @@ function UnidadesLine({ principais, outras }: { principais: string[]; outras: st
   if (principais.length === 0 && outras.length === 0) return null;
   return (
     <p className="mt-1 flex items-start gap-1 text-xs text-muted-foreground">
-      <MapPin className="mt-px h-3.5 w-3.5 shrink-0 text-primary" />
+      <MapPin className="mt-px h-3.5 w-3.5 shrink-0 text-gold-text" />
       <span>
         {principais.length > 0 && <><span className="font-medium text-foreground">{principais.join(", ")}</span></>}
         {principais.length > 0 && outras.length > 0 && " · "}
@@ -217,7 +217,7 @@ function ConsultasPublico() {
                   {desc && (
                     <button type="button" aria-label={`O que é ${specialty}`} aria-expanded={isOpen}
                       onClick={() => toggleDesc(descKey)}
-                      className="rounded text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                      className="rounded text-muted-foreground transition-colors hover:text-gold-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                       <Info className="h-3.5 w-3.5" />
                     </button>
                   )}

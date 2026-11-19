@@ -24,7 +24,7 @@ export function RouteLoadingOverlay() {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/70">
       <div role="status" className="flex items-center gap-2.5 rounded-xl border border-border bg-card px-5 py-3.5 text-sm">
-        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+        <Loader2 className="h-4 w-4 animate-spin text-gold-text" />
         <span className="font-medium">Carregando…</span>
       </div>
     </div>

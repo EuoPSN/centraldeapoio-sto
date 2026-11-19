@@ -118,7 +118,7 @@ function ImagensSubPage() {
             <img src={img.image_url} alt={img.title} className="w-full h-48 object-cover" />
             <div className="p-3 space-y-2 flex-1 flex flex-col">
               <div>
-                {img.category && <p className="text-xs uppercase tracking-wide text-primary font-medium">{img.category.name}</p>}
+                {img.category && <p className="text-xs uppercase tracking-wide text-gold-text font-medium">{img.category.name}</p>}
                 <h3 className="font-semibold">{img.title}</h3>
               </div>
               <div className="mt-auto">
@@ -192,10 +192,10 @@ function PdfsSubPage() {
           {filtered.map((pdf) => (
             <Card key={pdf.id} className="overflow-hidden flex flex-col cursor-pointer hover:bg-muted/40 transition-colors" onClick={() => setOpenPdf(pdf)}>
               <div className="h-40 flex items-center justify-center bg-muted/40">
-                <FileText className="h-12 w-12 text-primary" />
+                <FileText className="h-12 w-12 text-gold-text" />
               </div>
               <div className="p-3 space-y-1">
-                {pdf.category && <p className="text-xs uppercase tracking-wide text-primary font-medium">{pdf.category.name}</p>}
+                {pdf.category && <p className="text-xs uppercase tracking-wide text-gold-text font-medium">{pdf.category.name}</p>}
                 <h3 className="font-semibold">{pdf.title}</h3>
               </div>
             </Card>
@@ -209,7 +209,7 @@ function PdfsSubPage() {
             <Button size="sm" variant="outline" onClick={() => setOpenPdf(null)}>← Voltar pra lista</Button>
             <div className="flex items-center gap-3">
               <span className="text-sm text-muted-foreground flex items-center gap-1"><FileText className="h-4 w-4" /> {openPdf.title}</span>
-              <a href={openPdf.pdf_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">Abrir em nova aba</a>
+              <a href={openPdf.pdf_url} target="_blank" rel="noopener noreferrer" className="text-sm text-gold-text hover:underline">Abrir em nova aba</a>
             </div>
           </div>
           <iframe

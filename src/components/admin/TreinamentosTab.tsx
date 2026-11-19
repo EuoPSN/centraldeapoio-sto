@@ -151,7 +151,7 @@ function CurriculoSubTab() {
                 <Label>PDF do módulo</Label>
                 {edit.pdf_name ? (
                   <div className="flex items-center justify-between gap-2 p-2 rounded border border-border mt-1">
-                    <span className="text-sm flex items-center gap-1.5"><FileText className="h-4 w-4 text-primary" /> {edit.pdf_name}</span>
+                    <span className="text-sm flex items-center gap-1.5"><FileText className="h-4 w-4 text-gold-text" /> {edit.pdf_name}</span>
                     <Button size="sm" variant="ghost" onClick={() => setEdit({ ...edit, pdf_path: "", pdf_name: "" })}>Remover</Button>
                   </div>
                 ) : (

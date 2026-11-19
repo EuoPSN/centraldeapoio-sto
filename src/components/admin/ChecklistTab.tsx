@@ -78,7 +78,7 @@ export function ChecklistTab() {
     <div className="space-y-6">
       <Card className="overflow-hidden">
         <div className="flex justify-between items-center p-4 border-b border-border">
-          <h3 className="font-semibold flex items-center gap-2"><ListChecks className="h-4 w-4 text-primary" /> Itens do Check-list ({items.length})</h3>
+          <h3 className="font-semibold flex items-center gap-2"><ListChecks className="h-4 w-4 text-gold-text" /> Itens do Check-list ({items.length})</h3>
           <Button size="sm" className="gap-2" onClick={() => setEdit({ titulo: "", tipo: "binario", meta_padrao: "100", ativo: true })}>
             <Plus className="h-4 w-4" /> Novo item
           </Button>
@@ -110,7 +110,7 @@ export function ChecklistTab() {
 
       <Card className="p-5 space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-3">
-          <h3 className="font-semibold flex items-center gap-2"><ListChecks className="h-4 w-4 text-primary" /> Acompanhamento do dia</h3>
+          <h3 className="font-semibold flex items-center gap-2"><ListChecks className="h-4 w-4 text-gold-text" /> Acompanhamento do dia</h3>
           <Input type="date" value={dia} onChange={(e) => setDia(e.target.value)} className="w-44" />
         </div>
 
@@ -123,13 +123,13 @@ export function ChecklistTab() {
             <div className="grid grid-cols-2 gap-3">
               <Card className="p-4">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">Média da equipe</p>
-                <p className="text-2xl font-bold text-primary mt-1">{summary.teamAveragePct}%</p>
+                <p className="text-2xl font-bold text-gold-text mt-1">{summary.teamAveragePct}%</p>
               </Card>
               <Card className={`p-4 ${summary.zeroCount > 0 ? "bg-red-50 border-red-200" : ""}`}>
                 <p className="text-xs uppercase tracking-wide text-muted-foreground flex items-center gap-1">
                   {summary.zeroCount > 0 && <AlertTriangle className="h-3.5 w-3.5 text-red-600" />} Não fizeram nada hoje
                 </p>
-                <p className={`text-2xl font-bold mt-1 ${summary.zeroCount > 0 ? "text-red-600" : "text-primary"}`}>{summary.zeroCount}</p>
+                <p className={`text-2xl font-bold mt-1 ${summary.zeroCount > 0 ? "text-red-600" : "text-gold-text"}`}>{summary.zeroCount}</p>
               </Card>
             </div>
 

@@ -196,7 +196,7 @@ Escreva sua próxima mensagem pro cliente (1-2 frases). Responda APENAS com o te
     <Card className="overflow-hidden">
       <div className="flex justify-between items-center p-4 border-b border-border">
         <h3 className="font-semibold flex items-center gap-2">
-          <Wrench className="h-4 w-4 text-primary" /> Situações-Problema ({scenarios.length})
+          <Wrench className="h-4 w-4 text-gold-text" /> Situações-Problema ({scenarios.length})
         </h3>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setGenOpen(true)} className="gap-2"><Sparkles className="h-4 w-4" /> Gerar cenário com IA</Button>

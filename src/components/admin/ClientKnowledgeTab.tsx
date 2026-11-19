@@ -42,7 +42,7 @@ export function ClientKnowledgeTab() {
   return (
     <Card className="p-5 space-y-3">
       <div>
-        <h3 className="font-semibold flex items-center gap-2"><BookOpen className="h-4 w-4 text-primary" /> Conhecimento do Cliente</h3>
+        <h3 className="font-semibold flex items-center gap-2"><BookOpen className="h-4 w-4 text-gold-text" /> Conhecimento do Cliente</h3>
         <p className="text-sm text-muted-foreground mt-1">
           O básico que um cliente comum saberia sobre o Cartão de Todos — valor de cada plano, o que é a clínica/parceria,
           coisas que dariam pra achar pesquisando no Google ou no site. Não é processo interno.

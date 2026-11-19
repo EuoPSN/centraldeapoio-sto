@@ -64,9 +64,6 @@
   --color-nebula: var(--nebula);
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);
-  --color-brand: var(--brand);
-  --color-brand-foreground: var(--brand-foreground);
-  --color-brand-muted: var(--brand-muted);
   --color-tag: var(--tag);
   --color-tag-foreground: var(--tag-foreground);
   --color-tag-promo: var(--tag-promo);
@@ -133,11 +130,6 @@
   --tag-foreground: #1c221f;
   --tag-promo: #e1251b;
   --tag-promo-foreground: #ffffff;
-
-  /* Legado do topo verde; o novo topo (§5) não usa mais. */
-  --brand: var(--ink);
-  --brand-foreground: var(--surface);
-  --brand-muted: var(--ink-muted);
 
   --sidebar: var(--sidebar-bg);
   --sidebar-foreground: var(--ink);
@@ -209,7 +201,7 @@
 }
 
 /* Overline: rótulos de grupo e seções (12/16, caixa alta, 0.12em). */
-@utility overline {
+@utility type-overline {
   font-size: 0.75rem;
   line-height: 1rem;
   font-weight: 600;
@@ -218,7 +210,7 @@
 }
 
 /* Descritor fino em caixa alta (ex.: "APOIO"). */
-@utility descriptor {
+@utility type-descriptor {
   font-weight: 300;
   text-transform: uppercase;
   letter-spacing: 0.24em;
@@ -272,6 +264,18 @@ html.theme-transition *::after {
   html.theme-transition * {
     transition: none !important;
   }
+}
+
+/* Menu lateral: itens de um grupo entram em cascata (fade + 4px). */
+@keyframes omnia-menu-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.omnia-menu-item {
+  animation: omnia-menu-in 150ms ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .omnia-menu-item { animation: none; }
 }
 
 /* Transição suave entre páginas */

@@ -87,7 +87,7 @@ function AtendimentosTab({ perfilInicial }: { perfilInicial?: string }) {
         <>
           <Card className="p-3 h-fit">
             <h3 className="font-semibold mb-2 px-2 text-sm flex items-center gap-2">
-              <GraduationCap className="h-4 w-4 text-primary" /> Perfis de Cliente
+              <GraduationCap className="h-4 w-4 text-gold-text" /> Perfis de Cliente
             </h3>
             {categorias.length > 0 && (
               <div className="flex flex-wrap gap-1 px-2 mb-2">
@@ -173,7 +173,7 @@ function ProblemasTab() {
         <>
           <Card className="p-3 h-fit">
             <h3 className="font-semibold mb-2 px-2 text-sm flex items-center gap-2">
-              <Wrench className="h-4 w-4 text-primary" /> Situações-Problema
+              <Wrench className="h-4 w-4 text-gold-text" /> Situações-Problema
             </h3>
             {categorias.length > 0 && (
               <div className="flex flex-wrap gap-1 px-2 mb-2">

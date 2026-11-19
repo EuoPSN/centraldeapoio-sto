@@ -57,7 +57,7 @@ export function MenuTab() {
           return (
             <div key={it.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/40">
               <div className="flex items-center gap-3 min-w-0">
-                <Icon className="h-4 w-4 text-primary shrink-0" />
+                <Icon className="h-4 w-4 text-gold-text shrink-0" />
                 <div className="min-w-0">
                   <div className="font-medium text-sm truncate">{it.label}</div>
                   <div className="text-xs text-muted-foreground truncate">{it.route} · seção: {it.section}</div>

@@ -135,7 +135,7 @@ export function GlobalSearch() {
             <CommandGroup key={key} heading={heading}>
               {list.slice(0, limit).map((i) => (
                 <CommandItem key={i.id} onSelect={() => go(i.route)} value={`${key} ${i.title} ${i.preview}`}>
-                  <i.icon className="h-4 w-4 text-primary" />
+                  <i.icon className="h-4 w-4 text-gold-text" />
                   <div className="flex flex-col">
                     <span className="font-medium">{i.title}</span>
                     <span className="text-xs text-muted-foreground truncate">{i.preview}</span>

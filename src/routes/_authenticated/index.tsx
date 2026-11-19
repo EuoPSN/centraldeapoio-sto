@@ -110,7 +110,7 @@ function LinkRow({ to, search, icon: Icon, title, hint, children }: {
       search={search as never}
       className="flex items-center gap-3 border-t border-border px-4 py-3 transition-colors hover:bg-accent/60 focus-visible:bg-accent focus-visible:outline-none"
     >
-      <Icon className="h-4 w-4 shrink-0 text-primary" />
+      <Icon className="h-4 w-4 shrink-0 text-gold-text" />
       <span className="min-w-0 flex-1">
         <span className="block font-medium">{title}</span>
         {hint && <span className="block text-[12.5px] text-muted-foreground">{hint}</span>}
@@ -185,7 +185,7 @@ function Home() {
           onClick={openSearch}
           className="flex w-full items-center gap-3 border-t border-border px-4 py-3 text-left transition-colors hover:bg-accent/60 focus-visible:bg-accent focus-visible:outline-none"
         >
-          <Search className="h-4 w-4 shrink-0 text-primary" />
+          <Search className="h-4 w-4 shrink-0 text-gold-text" />
           <span className="min-w-0 flex-1">
             <span className="block font-medium">Buscar qualquer coisa</span>
             <span className="block text-[12.5px] text-muted-foreground">Especialidade, exame, mensagem, unidade</span>
@@ -205,12 +205,12 @@ function Home() {
             </span>
           </LinkRow>
           <PanelRow className="py-3">
-            <Sparkles className="h-4 w-4 shrink-0 text-primary" />
+            <Sparkles className="h-4 w-4 shrink-0 text-gold-text" />
             <span className="min-w-0 flex-1">
               <span className="block font-medium">Treinar no simulador</span>
               <span className="block text-[12.5px] text-muted-foreground">A IA sorteia um cliente para você.</span>
             </span>
-            <Button size="sm" variant="outline" onClick={sortearDesafio} disabled={(profilesQ.data ?? []).length === 0} className="font-semibold text-primary">
+            <Button size="sm" variant="outline" onClick={sortearDesafio} disabled={(profilesQ.data ?? []).length === 0} className="font-semibold text-gold-text">
               Testar agora
             </Button>
           </PanelRow>
@@ -244,7 +244,7 @@ function Home() {
               to={s.route}
               className="flex items-center gap-2.5 border-t border-border px-4 py-3 text-sm font-medium transition-colors hover:bg-accent/60 focus-visible:bg-accent focus-visible:outline-none sm:border-l sm:first:border-l-0"
             >
-              <s.icon className="h-4 w-4 shrink-0 text-primary" />
+              <s.icon className="h-4 w-4 shrink-0 text-gold-text" />
               {s.title}
             </Link>
           ))}

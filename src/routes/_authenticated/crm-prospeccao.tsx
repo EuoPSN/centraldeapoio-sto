@@ -85,7 +85,7 @@ function Page() {
       {rows.length > 0 && (
         <div className="grid grid-cols-3 gap-3">
           <Card className="p-4 text-center">
-            <p className="text-2xl font-bold text-primary">{totais.t}</p>
+            <p className="text-2xl font-bold text-gold-text">{totais.t}</p>
             <p className="text-xs text-muted-foreground mt-1">Total Tentativas</p>
           </Card>
           <Card className="p-4 text-center">

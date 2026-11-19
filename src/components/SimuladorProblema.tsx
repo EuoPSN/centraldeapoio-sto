@@ -186,7 +186,7 @@ export function SimuladorProblema({ scenario, onReset }: { scenario: Scenario; o
     return (
       <Card className="p-6 space-y-4 max-w-2xl mx-auto">
         <div className="flex items-center gap-2">
-          <BookOpen className="h-5 w-5 text-primary" />
+          <BookOpen className="h-5 w-5 text-gold-text" />
           <h3 className="font-semibold">O que aconteceu</h3>
           <Badge className={`ml-auto text-xs ${DIFFICULTY_COLORS[scenario.difficulty]}`}>{DIFFICULTY_LABELS[scenario.difficulty]}</Badge>
         </div>
@@ -288,7 +288,7 @@ export function SimuladorProblema({ scenario, onReset }: { scenario: Scenario; o
                   className={`w-full text-left px-3 py-2 text-sm flex flex-col gap-0.5 border-b border-border/50 last:border-0 ${i === shortcutIndex ? "bg-primary/10" : "hover:bg-muted/50"}`}
                   onMouseEnter={() => setShortcutIndex(i)}
                   onClick={() => applyShortcut(m)}>
-                  <span className="font-medium text-primary">/{m.shortcut}</span>
+                  <span className="font-medium text-gold-text">/{m.shortcut}</span>
                   <span className="text-xs text-muted-foreground truncate">{m.title} — {m.content}</span>
                 </button>
               ))}

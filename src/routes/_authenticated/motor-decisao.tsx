@@ -67,7 +67,7 @@ function Page() {
       <div className="mx-auto w-full max-w-4xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7 space-y-6">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Zap className="h-6 w-6 text-primary" /> Motor de Decisão
+            <Zap className="h-6 w-6 text-gold-text" /> Motor de Decisão
           </h1>
           <p className="text-muted-foreground text-sm">Selecione um processo para ser guiado até a decisão correta.</p>
         </div>
@@ -100,7 +100,7 @@ function Page() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold flex items-center gap-2">
-            <Zap className="h-5 w-5 text-primary" /> {selectedMotor.name}
+            <Zap className="h-5 w-5 text-gold-text" /> {selectedMotor.name}
           </h1>
           {selectedMotor.category && <Badge variant="outline" className="text-xs">{selectedMotor.category}</Badge>}
         </div>
@@ -117,7 +117,7 @@ function Page() {
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
               <span className="text-muted-foreground truncate">{h.node.title}</span>
               <ChevronRight className="h-3 w-3 text-muted-foreground" />
-              <span className="font-medium text-primary">{h.answer}</span>
+              <span className="font-medium text-gold-text">{h.answer}</span>
             </div>
           ))}
         </Card>

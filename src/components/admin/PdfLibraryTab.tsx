@@ -100,7 +100,7 @@ export function PdfLibraryTab() {
           {filtered.map((item) => (
             <Card key={item.id} className="overflow-hidden group relative">
               <div className="h-32 flex items-center justify-center bg-muted/40">
-                <FileText className="h-10 w-10 text-primary" />
+                <FileText className="h-10 w-10 text-gold-text" />
               </div>
               <div className="p-2 space-y-1">
                 <p className="text-sm font-medium truncate">{item.title}</p>
@@ -139,7 +139,7 @@ export function PdfLibraryTab() {
                 <Label>PDF</Label>
                 {edit.pdf_name ? (
                   <div className="flex items-center justify-between gap-2 p-2 rounded border border-border mt-1">
-                    <span className="text-sm flex items-center gap-1.5"><FileText className="h-4 w-4 text-primary" /> {edit.pdf_name}</span>
+                    <span className="text-sm flex items-center gap-1.5"><FileText className="h-4 w-4 text-gold-text" /> {edit.pdf_name}</span>
                     <Button size="sm" variant="ghost" onClick={() => setEdit({ ...edit, pdf_path: "", pdf_name: "" })}>Trocar</Button>
                   </div>
                 ) : (

@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 interface PillProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   active?: boolean;
-  /** "brand" usa o verde no ativo (trilha de etapas); "ink" usa o grafite (filtros). */
+  /** "brand" usa o dourado no ativo (trilha de etapas); "ink" usa o grafite (filtros). */
   tone?: "ink" | "brand";
 }
 

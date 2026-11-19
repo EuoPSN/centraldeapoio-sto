@@ -20,7 +20,7 @@ function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-5xl font-bold tracking-tight text-primary">404</h1>
+        <h1 className="text-5xl font-bold tracking-tight text-gold-text">404</h1>
         <h2 className="mt-4 text-xl font-semibold">Página não encontrada</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           O endereço que você acessou não existe ou foi movido.

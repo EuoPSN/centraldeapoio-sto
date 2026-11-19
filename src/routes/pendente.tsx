@@ -46,7 +46,7 @@ function PendentePage() {
     <div className="min-h-screen flex items-center justify-center p-4 bg-muted/30">
       <Card className="p-8 max-w-md w-full text-center space-y-4">
         <OmniaLockup className="mx-auto w-fit" symbolSize={40} />
-        <Clock className="h-10 w-10 text-primary mx-auto" />
+        <Clock className="h-10 w-10 text-gold-text mx-auto" />
         <h1 className="text-xl font-semibold">Sua conta está aguardando aprovação</h1>
         <p className="text-sm text-muted-foreground">
           Um administrador precisa liberar seu acesso antes de você poder entrar na OMNIA Apoio.

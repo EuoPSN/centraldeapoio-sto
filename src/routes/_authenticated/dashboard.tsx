@@ -26,11 +26,11 @@ function StatCard({ label, value, sub, icon: Icon, cor }: {
   return (
     <Card className="p-4 flex items-start gap-3">
       <div className={`p-2 rounded-lg ${cor ?? "bg-primary/10"}`}>
-        <Icon className={`h-5 w-5 ${cor ? "text-white" : "text-primary"}`} />
+        <Icon className={`h-5 w-5 ${cor ? "text-white" : "text-gold-text"}`} />
       </div>
       <div className="min-w-0">
         <p className="text-xs text-muted-foreground truncate">{label}</p>
-        <p className="text-2xl font-bold text-primary">{value}</p>
+        <p className="text-2xl font-bold text-gold-text">{value}</p>
         {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
       </div>
     </Card>
@@ -65,7 +65,7 @@ function DashboardPage() {
     <div className="space-y-6 mx-auto w-full max-w-6xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
-          <BarChart2 className="h-6 w-6 text-primary" /> Dashboard Operacional
+          <BarChart2 className="h-6 w-6 text-gold-text" /> Dashboard Operacional
         </h1>
         <p className="text-muted-foreground text-sm">Indicadores reais da equipe baseados em simulações e relatórios.</p>
       </div>

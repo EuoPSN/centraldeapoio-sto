@@ -571,7 +571,7 @@ O JSON deve ter exatamente estes campos:
                 className={`w-full text-left px-3 py-2 text-sm flex flex-col gap-0.5 border-b border-border/50 last:border-0 ${i === shortcutIndex ? "bg-primary/10" : "hover:bg-muted/50"}`}
                 onMouseEnter={() => setShortcutIndex(i)}
                 onClick={() => applyShortcut(m)}>
-                <span className="font-medium text-primary">/{m.shortcut}</span>
+                <span className="font-medium text-gold-text">/{m.shortcut}</span>
                 <span className="text-xs text-muted-foreground truncate">{m.title} — {m.content}</span>
               </button>
             ))}

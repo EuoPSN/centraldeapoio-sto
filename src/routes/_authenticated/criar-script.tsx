@@ -120,7 +120,7 @@ function CriarScriptPage() {
       </header>
 
       <Card className="p-5 space-y-3 bg-primary/5 border-primary/20">
-        <h3 className="font-semibold flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> Gerar com IA</h3>
+        <h3 className="font-semibold flex items-center gap-2"><Sparkles className="h-4 w-4 text-gold-text" /> Gerar com IA</h3>
         <p className="text-sm text-muted-foreground">Descreva o que você precisa (tom, assunto, situação) — a IA monta o script pra você revisar antes de enviar.</p>
         <Textarea rows={3} value={genDesc} onChange={(e) => setGenDesc(e.target.value)}
           placeholder="Ex: mensagem explicando por que a cobrança veio em duplicidade e pedindo desculpas pelo transtorno" />

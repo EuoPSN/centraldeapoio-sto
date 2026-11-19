@@ -119,7 +119,7 @@ function Page() {
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap mt-1">{s.description}</p>
                   {s.admin_response && (
                     <div className="mt-3 p-3 bg-primary/5 border border-primary/20 rounded-md">
-                      <p className="text-xs uppercase font-semibold text-primary mb-1">Resposta do admin</p>
+                      <p className="text-xs uppercase font-semibold text-gold-text mb-1">Resposta do admin</p>
                       <p className="text-sm whitespace-pre-wrap">{s.admin_response}</p>
                     </div>
                   )}

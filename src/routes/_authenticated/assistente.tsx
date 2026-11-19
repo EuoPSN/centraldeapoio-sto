@@ -166,7 +166,7 @@ const removePendingImage = (index: number) => {
                 key={c.id}
                 className={cn(
                   "group flex items-center gap-1 rounded-md px-2 py-1.5 cursor-pointer text-sm hover:bg-accent/40 transition-colors",
-                  activeId === c.id && "bg-primary/10 text-primary"
+                  activeId === c.id && "bg-primary/10 text-gold-text"
                 )}
                 onClick={() => setActiveId(c.id)}
               >
