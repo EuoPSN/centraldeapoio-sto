@@ -20,6 +20,7 @@ import { Plus, Pencil, Trash2, Wrench, Sparkles, FlaskConical } from "lucide-rea
 import { toast } from "sonner";
 import { DIFFICULTY_LABELS } from "@/components/SimuladorIA";
 import { FAIXA_ETARIA_LABELS } from "@/components/SimuladorProblema";
+import { SCENARIO_GENERATION_MODEL, SIMULATOR_CLIENT_MODEL, SIMULATOR_EVALUATION_MODEL } from "@/lib/ai-models";
 
 interface ScenarioRow {
   id: string; name: string; enredo: string; personalidade: string; solucao_esperada: string;
@@ -88,7 +89,7 @@ Crie um cenário coerente com a categoria e a descrição dada. Responda APENAS 
 - "personalidade": 1 frase de como o cliente reage/se comporta durante a conversa.
 - "solucao_esperada": a resolução correta e específica pra esse caso, como um procedimento real que um atendente seguiria.`;
 
-      const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: "Gere o cenário." }], model: "google/gemini-2.5-flash" } });
+      const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: "Gere o cenário." }], model: SCENARIO_GENERATION_MODEL } });
       const clean = content.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
 
@@ -156,12 +157,12 @@ Escreva sua próxima mensagem pro cliente (1-2 frases). Responda APENAS com o te
       while (turns < maxTurns) {
         turns++;
         const historyForAtendente = log.map((l) => ({ role: l.role === "atendente" ? ("assistant" as const) : ("user" as const), content: l.text }));
-        const { content: atendMsg } = await testAI({ data: { messages: [{ role: "system", content: atendentePrompt }, ...historyForAtendente], model: "google/gemini-2.5-flash" } });
+        const { content: atendMsg } = await testAI({ data: { messages: [{ role: "system", content: atendentePrompt }, ...historyForAtendente], model: SIMULATOR_CLIENT_MODEL } });
         log.push({ role: "atendente", text: atendMsg.trim() });
         setTestLog([...log]);
 
         const historyForCliente = log.map((l) => ({ role: l.role === "atendente" ? ("user" as const) : ("assistant" as const), content: l.text }));
-        const { content: clienteRaw } = await testAI({ data: { messages: [{ role: "system", content: clientePrompt }, ...historyForCliente], model: "google/gemini-2.5-flash" } });
+        const { content: clienteRaw } = await testAI({ data: { messages: [{ role: "system", content: clientePrompt }, ...historyForCliente], model: SIMULATOR_CLIENT_MODEL } });
         let falas: string[] = [];
         try {
           const parsed = JSON.parse(clienteRaw.replace(/```json|```/g, "").trim());
@@ -181,7 +182,7 @@ Escreva sua próxima mensagem pro cliente (1-2 frases). Responda APENAS com o te
       } else {
         const transcript = log.map((l) => `${l.role === "atendente" ? "Atendente" : "Cliente"}: ${l.text}`).join("\n");
         const diagPrompt = `Leia esta simulação automática de atendimento que NÃO chegou na solução esperada ("${s.solucao_esperada}") depois de ${maxTurns} turnos. Em até 3 frases, diga o que provavelmente está mal definido no cenário (ex: enredo confuso, solução esperada específica ou pouco óbvia demais pela conversa, personalidade travando o diálogo). Seja direto, sem rodeios.\n\nTranscrição:\n${transcript}`;
-        const { content } = await testAI({ data: { messages: [{ role: "user", content: diagPrompt }], model: "google/gemini-2.5-flash" } });
+        const { content } = await testAI({ data: { messages: [{ role: "user", content: diagPrompt }], model: SIMULATOR_EVALUATION_MODEL } });
         setTestResult({ status: "nao_resolveu", diagnostico: content.trim() });
       }
     } catch (e) {

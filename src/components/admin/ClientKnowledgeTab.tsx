@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { BookOpen } from "lucide-react";
 import { toast } from "sonner";
+import { MARCIANA_CHAT_MODEL } from "@/lib/ai-models";
 
 export function ClientKnowledgeTab() {
   const getSettings = useServerFn(getAiSettings);
@@ -29,7 +30,7 @@ export function ClientKnowledgeTab() {
       // mas updateAiSettings salva a linha inteira de configurações.
       return updateSettings({ data: {
         system_prompt: s?.system_prompt ?? "",
-        model: s?.model ?? "google/gemini-3-flash-preview",
+        model: s?.model ?? MARCIANA_CHAT_MODEL,
         essential_facts: s?.essential_facts ?? "",
         client_knowledge: content,
       } });

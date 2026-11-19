@@ -15,6 +15,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, Sparkles, Wand2 } from "lucide-react";
 import { toast } from "sonner";
+import { ADMIN_ASSISTANT_MODEL } from "@/lib/ai-models";
 
 type Tipo = "cartao_de_todos" | "clinica_amor_saude" | "outros";
 interface ContatoRow {
@@ -129,7 +130,7 @@ Regras:
 - "numero": só o número do endereço, separado. Use "" se não houver.
 - "contato1", "contato2", "contato3": até 3 telefones/whatsapp mencionados para essa unidade, um em cada campo. Use "" para os que não existirem.
 - Responda APENAS com o array JSON, sem markdown, sem texto fora do JSON.`;
-      const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: aiInput }], model: "google/gemini-2.5-flash" } });
+      const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: aiInput }], model: ADMIN_ASSISTANT_MODEL } });
       const clean = content.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
       const items: Draft[] = (Array.isArray(parsed) ? parsed : [])
@@ -185,7 +186,7 @@ Regras:
 - Telefones: reformate cada um pro padrão "(DDD) XXXXX-XXXX" (celular) ou "(DDD) XXXX-XXXX" (fixo), mantendo o mesmo número. Se um campo já estava vazio, mantenha vazio.
 - Se o campo de endereço tiver um número de casa/prédio embutido no meio do texto, separe em "endereco" (só o nome da rua) e "numero". Se o número já estava separado, mantenha como está.
 - Responda APENAS com um array JSON no formato exato: [{"id": "...", "nome_regiao": "...", "endereco": "...", "numero": "...", "contato1": "...", "contato2": "...", "contato3": "..."}]. Sem markdown, sem texto fora do JSON.`;
-      const { content } = await genAI({ data: { messages: [{ role: "user", content: prompt }], model: "google/gemini-2.5-flash" } });
+      const { content } = await genAI({ data: { messages: [{ role: "user", content: prompt }], model: ADMIN_ASSISTANT_MODEL } });
       const clean = content.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
       const proposals: OrganizeProposal[] = (Array.isArray(parsed) ? parsed : [])

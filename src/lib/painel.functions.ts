@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { chatCompletion } from "@/lib/ai-gateway.server";
+import { EMPLOYEE_PANEL_MODEL } from "@/lib/ai-models";
 
 const PERFIS_MATURIDADE = ["Técnico", "Comercial", "Investigativo", "Empático", "Rápido", "Detalhista"];
 const NIVEIS_LIDERANCA = ["P1", "P2", "P3", "P4"];
@@ -186,7 +187,7 @@ Os níveis de liderança situacional (Hersey-Blanchard):
 }`;
 
     const text = await chatCompletion({
-      model: "google/gemini-2.5-flash",
+      model: EMPLOYEE_PANEL_MODEL,
       messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
     });

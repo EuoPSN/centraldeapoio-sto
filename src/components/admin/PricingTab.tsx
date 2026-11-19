@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Pencil, Plus, Trash2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { ADMIN_ASSISTANT_MODEL } from "@/lib/ai-models";
 
 export function PricingTab() {
   return (
@@ -77,7 +78,7 @@ Regras:
 - "notes" é opcional: use apenas se houver informação extra relevante.
 - "regioes_principais" e "regioes_outras" são listas de nomes de bairro/região/cidade, SE o texto mencionar onde aquele item está disponível. Se não houver nada, devolva as duas listas vazias.
 - Responda APENAS com o array JSON, sem markdown, sem nenhum texto fora do JSON.`;
-      const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: aiInput }], model: "google/gemini-2.5-flash" } });
+      const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: aiInput }], model: ADMIN_ASSISTANT_MODEL } });
       const clean = content.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
       const items: AiPricingItem[] = (Array.isArray(parsed) ? parsed : [])
@@ -148,7 +149,7 @@ Observações cadastradas: ${edit.notes || "-"}
 Escreva uma descrição curta (1 a 2 frases, até 240 caracteres), mencionando o que resolve e 3-6 palavras-chave/sinônimos relacionados.
 
 Responda APENAS com o texto da descrição, sem aspas, sem markdown.`;
-      const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: "Gere a descrição." }], model: "google/gemini-2.5-flash" } });
+      const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: "Gere a descrição." }], model: ADMIN_ASSISTANT_MODEL } });
       setEdit((f) => f ? { ...f, description: content.trim() } : f);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao gerar descrição.");
@@ -369,7 +370,7 @@ Regras:
 - "descricao": o que o exame avalia/serve para quê.
 - "observacoes": informação extra relevante. Use "" se não houver.
 - Responda APENAS com o array JSON, sem markdown, sem texto fora do JSON.`;
-      const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: aiInput }], model: "google/gemini-2.5-flash" } });
+      const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: aiInput }], model: ADMIN_ASSISTANT_MODEL } });
       const clean = content.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
       const items: ExameDraft[] = (Array.isArray(parsed) ? parsed : [])
@@ -583,7 +584,7 @@ Regras:
 - "cuidados_pos": cuidados após o procedimento, em texto livre. Use "" se não houver.
 - "observacoes": informação extra relevante. Use "" se não houver.
 - Responda APENAS com o array JSON, sem markdown, sem texto fora do JSON.`;
-      const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: aiInput }], model: "google/gemini-2.5-flash" } });
+      const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: aiInput }], model: ADMIN_ASSISTANT_MODEL } });
       const clean = content.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
       const items: ProcedimentoDraft[] = (Array.isArray(parsed) ? parsed : [])

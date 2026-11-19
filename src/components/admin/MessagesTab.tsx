@@ -24,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Pencil, Plus, Trash2, ArrowUp, ArrowDown, Sparkles, Wand2, X, Upload, Loader2, Image as ImageIcon, Download, Search } from "lucide-react";
 import { toast } from "sonner";
+import { ADMIN_ASSISTANT_MODEL, ADMIN_ORGANIZER_MODEL } from "@/lib/ai-models";
 
 interface Cat { id: string; name: string; parent_id: string | null; }
 interface Stage { id: string; name: string; position: number; category_id: string | null; path_id: string | null; }
@@ -469,7 +470,7 @@ export function MessagesTab() {
 Título da mensagem: "${m.title}"
 Conteúdo da mensagem: "${m.content}"
 Responda APENAS com a frase da descrição, sem aspas, sem markdown, sem texto adicional.`;
-      const { content } = await genAI({ data: { messages: [{ role: "user", content: prompt }], model: "google/gemini-2.5-flash" } });
+      const { content } = await genAI({ data: { messages: [{ role: "user", content: prompt }], model: ADMIN_ASSISTANT_MODEL } });
       const desc = content.replace(/^"+|"+$/g, "").trim();
       await upsert({ data: {
         id: m.id, category_id: m.category_id, subcategory_id: m.subcategory_id,
@@ -518,7 +519,7 @@ Organize essas mensagens em etapas lógicas de atendimento, na ordem em que norm
 Responda APENAS com um JSON no formato exato:
 {"stages": [{"name": "Nome da etapa", "message_ids": ["id1", "id2"]}]}
 As etapas devem vir na ordem certa de uso. Sem markdown, sem texto fora do JSON.`;
-      const { content } = await genAI({ data: { messages: [{ role: "user", content: prompt }], model: "google/gemini-2.5-flash" } });
+      const { content } = await genAI({ data: { messages: [{ role: "user", content: prompt }], model: ADMIN_ORGANIZER_MODEL } });
       const clean = content.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
       const stagesOut = Array.isArray(parsed?.stages) ? parsed.stages : [];

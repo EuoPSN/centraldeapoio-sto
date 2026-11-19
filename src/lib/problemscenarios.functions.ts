@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { isAdminUser } from "@/lib/authz";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { SIMULATOR_CLIENT_MODEL, SIMULATOR_EVALUATION_MODEL } from "@/lib/ai-models";
 
 async function requireAdmin(ctx: { supabase: any; userId: string }) {
   const isAdmin = await isAdminUser(ctx.supabase, ctx.userId);
@@ -174,7 +175,7 @@ ${isStart
       : [{ role: "system" as const, content: systemPrompt }, ...history];
 
     const { chatCompletion } = await import("@/lib/ai-gateway.server");
-    const reply = await chatCompletion({ model: "google/gemini-2.5-flash", messages, temperature: 0.7 });
+    const reply = await chatCompletion({ model: SIMULATOR_CLIENT_MODEL, messages, temperature: 0.7 });
     return { content: reply };
   });
 
@@ -205,7 +206,7 @@ Responda APENAS com um JSON válido, sem texto extra, sem markdown, neste format
 
     const { chatCompletion } = await import("@/lib/ai-gateway.server");
     const reply = await chatCompletion({
-      model: "google/gemini-2.5-flash",
+      model: SIMULATOR_EVALUATION_MODEL,
       messages: [{ role: "system", content: evalPrompt }, { role: "user", content: data.transcript }],
       temperature: 0.3,
     });

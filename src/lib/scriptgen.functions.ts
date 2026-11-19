@@ -3,6 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { generateEmbedding, chatCompletion } from "@/lib/ai-gateway.server";
 import { fetchLexicalMatches, combineRagMatches, type RagMatch } from "@/lib/chat.functions";
 import { z } from "zod";
+import { SCRIPT_GENERATION_MODEL } from "@/lib/ai-models";
 
 // Gera sugestões de script consultando a Base de Conhecimento de verdade (a mesma
 // busca híbrida — textual + semântica — que a MarcIAna usa), em vez de só usar a
@@ -44,7 +45,7 @@ Cada item deve ter:
 Responda APENAS com um array JSON, no formato exato: [{"title":"...","content":"...","shortcut":"...","internal_note":"..."}]. Sem markdown, sem texto fora do JSON.`;
 
     const reply = await chatCompletion({
-      model: "google/gemini-2.5-flash",
+      model: SCRIPT_GENERATION_MODEL,
       messages: [{ role: "system", content: prompt }, { role: "user", content: data.descricao }],
       temperature: 0.5,
     });

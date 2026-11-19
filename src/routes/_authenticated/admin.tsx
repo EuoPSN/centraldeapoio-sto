@@ -53,6 +53,7 @@ import { TreinamentosTab } from "@/components/admin/TreinamentosTab";
 import { listAdminSections } from "@/lib/settings.functions";
 import { getIcon } from "@/lib/icon-map";
 import { cn } from "@/lib/utils";
+import { MARCIANA_CHAT_MODEL } from "@/lib/ai-models";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   beforeLoad: async () => {
@@ -567,7 +568,7 @@ function AiTab() {
 
 const [name, setName] = useState("");
   const [prompt, setPrompt] = useState("");
-  const [model, setModel] = useState("google/gemini-3-flash-preview");
+  const [model, setModel] = useState(MARCIANA_CHAT_MODEL);
   const [genderArticle, setGenderArticle] = useState("a");
   const [resumeReindex, setResumeReindex] = useState(false);
   const [essentialFacts, setEssentialFacts] = useState("");
@@ -688,7 +689,7 @@ const saveSettingsMut = useMutation({
       <Card className="p-5">
         <h3 className="font-semibold flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> Modelo da IA</h3>
         <p className="text-sm text-muted-foreground mt-1">
-          O assistente usa <code className="text-xs bg-muted px-1 py-0.5 rounded">google/gemini-3-flash-preview</code> via Lovable AI Gateway, com busca híbrida na base interna. Embeddings em 1536 dimensões compatíveis com <code className="text-xs bg-muted px-1 py-0.5 rounded">text-embedding-3-small</code>.
+          O assistente usa <code className="text-xs bg-muted px-1 py-0.5 rounded">{MARCIANA_CHAT_MODEL}</code> via Lovable AI Gateway, com busca híbrida na base interna. Embeddings em 1536 dimensões compatíveis com <code className="text-xs bg-muted px-1 py-0.5 rounded">text-embedding-3-small</code>.
         </p>
       </Card>
 
@@ -747,7 +748,7 @@ const saveSettingsMut = useMutation({
                     <SelectValue placeholder="Selecione o modelo" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="google/gemini-3-flash-preview">google/gemini-3-flash-preview</SelectItem>
+                    <SelectItem value={MARCIANA_CHAT_MODEL}>{MARCIANA_CHAT_MODEL}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
