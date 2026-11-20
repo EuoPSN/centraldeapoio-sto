@@ -251,6 +251,8 @@ const AcaoInput = z.discriminatedUnion("acao", [
   z.object({ acao: z.literal("voltar_fila"), id: UUID, ponto_parada: PontoZ }),
 ]);
 
+export type AcaoInputT = z.infer<typeof AcaoInput>;
+
 export const acaoRetomada = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => AcaoInput.parse(d))
@@ -467,16 +469,18 @@ export async function contarAtendentesAtrasados(supabase: unknown): Promise<{ at
 // Relatório Excel: dados brutos (o arquivo é montado no navegador)
 // ---------------------------------------------------------------------------
 
+type Linha = Record<string, string | number | boolean | null>;
+
 export interface DadosRelatorio {
   de: string;
   ate: string;
   escopo: "atendente" | "equipe";
   exportadoPor: string;
   exportadoEm: string;
-  tickets: Record<string, unknown>[];
-  eventos: Record<string, unknown>[];
-  mensagens: Record<string, unknown>[];
-  versoes: Record<string, unknown>[];
+  tickets: Linha[];
+  eventos: Linha[];
+  mensagens: Linha[];
+  versoes: Linha[];
   objecoes: { data_hora: string; atendente: string; objecao: string; angulo_copiado: string; objecao_nova: boolean }[];
   atendentes: Record<string, string>;
 }
@@ -501,20 +505,20 @@ export const getDadosRelatorio = createServerFn({ method: "POST" })
     // Telefone NUNCA é selecionado: o Admin lê pela view e o atendente pela lista de colunas.
     const tabela = equipe ? "retomadas_admin" : "retomadas";
     const colsTickets = equipe ? "*" : COLS_SEM_TELEFONE;
-    let qEv = s.from("retomada_eventos").select("id, retomada_id, user_id, ponto_parada, etapa, acao, mensagem_id, mensagem_versao, usou_recomendada, detalhe, created_at").gte("created_at", ini).lt("created_at", fim).order("created_at");
+    let qEv = s.from("retomada_eventos").select("id, retomada_id, user_id, ponto_parada, etapa, acao, mensagem_id, mensagem_versao, usou_recomendada, prevista_em, detalhe, created_at").gte("created_at", ini).lt("created_at", fim).order("created_at");
     let qTk = s.from(tabela).select(colsTickets).gte("created_at", ini).lt("created_at", fim);
     let qUso = s.from("cliente_disse_uso").select("user_id, objecao_id, angulo, created_at").not("objecao_id", "is", null).gte("created_at", ini).lt("created_at", fim).order("created_at");
     if (filtroUser) { qEv = qEv.eq("user_id", filtroUser); qTk = qTk.eq("user_id", filtroUser); qUso = qUso.eq("user_id", filtroUser); }
     const [ev, tk, uso] = await Promise.all([qEv, qTk, qUso]);
-    const eventos = (check(ev) ?? []) as Record<string, unknown>[];
-    const tickets = (check(tk) ?? []) as Record<string, unknown>[];
+    const eventos = (check(ev) ?? []) as Linha[];
+    const tickets = (check(tk) ?? []) as Linha[];
 
     // Tickets criados antes do período, mas com ação dentro dele.
     const tem = new Set(tickets.map((t) => String(t.id)));
     const faltam = [...new Set(eventos.map((e) => String(e.retomada_id)).filter((id) => !tem.has(id)))];
     for (let i = 0; i < faltam.length; i += 200) {
       const rows = check(await s.from(tabela).select(colsTickets).in("id", faltam.slice(i, i + 200))) ?? [];
-      tickets.push(...(rows as Record<string, unknown>[]));
+      tickets.push(...(rows as Linha[]));
     }
 
     const ids = [...new Set([...tickets.map((t) => String(t.user_id)), ...eventos.map((e) => String(e.user_id)), ...(((uso.data ?? []) as { user_id: string }[]).map((u) => u.user_id))])];
@@ -552,8 +556,8 @@ export const getDadosRelatorio = createServerFn({ method: "POST" })
       exportadoPor: await nomeDoAtendente(context),
       exportadoEm: new Date().toISOString(),
       tickets, eventos,
-      mensagens: ((mAtual.data ?? []) as Record<string, unknown>[]),
-      versoes: ((mVers.data ?? []) as Record<string, unknown>[]),
+      mensagens: (mAtual.data ?? []) as Linha[],
+      versoes: (mVers.data ?? []) as Linha[],
       objecoes: usos.map((u) => ({
         data_hora: u.created_at,
         atendente: atendentes[u.user_id] ?? "",

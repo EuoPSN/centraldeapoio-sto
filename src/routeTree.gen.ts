@@ -29,6 +29,7 @@ import { Route as AuthenticatedMotorDecisaoRouteImport } from './routes/_authent
 import { Route as AuthenticatedPrecosRouteImport } from './routes/_authenticated/precos'
 import { Route as AuthenticatedProblemasRouteImport } from './routes/_authenticated/problemas'
 import { Route as AuthenticatedRankingRouteImport } from './routes/_authenticated/ranking'
+import { Route as AuthenticatedRetomarRouteImport } from './routes/_authenticated/retomar'
 import { Route as AuthenticatedSimuladorIaRouteImport } from './routes/_authenticated/simulador-ia'
 import { Route as AuthenticatedSugestoesRouteImport } from './routes/_authenticated/sugestoes'
 import { Route as AuthenticatedTreinamentosRouteImport } from './routes/_authenticated/treinamentos'
@@ -156,6 +157,11 @@ const AuthenticatedProblemasRoute = AuthenticatedProblemasRouteImport.update({
 const AuthenticatedRankingRoute = AuthenticatedRankingRouteImport.update({
   id: '/ranking',
   path: '/ranking',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedRetomarRoute = AuthenticatedRetomarRouteImport.update({
+  id: '/retomar',
+  path: '/retomar',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedSimuladorIaRoute =
@@ -310,6 +316,7 @@ export interface FileRoutesByFullPath {
   '/precos': typeof AuthenticatedPrecosRoute
   '/problemas': typeof AuthenticatedProblemasRoute
   '/ranking': typeof AuthenticatedRankingRoute
+  '/retomar': typeof AuthenticatedRetomarRoute
   '/simulador-ia': typeof AuthenticatedSimuladorIaRoute
   '/sugestoes': typeof AuthenticatedSugestoesRoute
   '/treinamentos': typeof AuthenticatedTreinamentosRoute
@@ -352,6 +359,7 @@ export interface FileRoutesByTo {
   '/precos': typeof AuthenticatedPrecosRoute
   '/problemas': typeof AuthenticatedProblemasRoute
   '/ranking': typeof AuthenticatedRankingRoute
+  '/retomar': typeof AuthenticatedRetomarRoute
   '/simulador-ia': typeof AuthenticatedSimuladorIaRoute
   '/sugestoes': typeof AuthenticatedSugestoesRoute
   '/treinamentos': typeof AuthenticatedTreinamentosRoute
@@ -398,6 +406,7 @@ export interface FileRoutesById {
   '/_authenticated/precos': typeof AuthenticatedPrecosRoute
   '/_authenticated/problemas': typeof AuthenticatedProblemasRoute
   '/_authenticated/ranking': typeof AuthenticatedRankingRoute
+  '/_authenticated/retomar': typeof AuthenticatedRetomarRoute
   '/_authenticated/simulador-ia': typeof AuthenticatedSimuladorIaRoute
   '/_authenticated/sugestoes': typeof AuthenticatedSugestoesRoute
   '/_authenticated/treinamentos': typeof AuthenticatedTreinamentosRoute
@@ -445,6 +454,7 @@ export interface FileRouteTypes {
     | '/precos'
     | '/problemas'
     | '/ranking'
+    | '/retomar'
     | '/simulador-ia'
     | '/sugestoes'
     | '/treinamentos'
@@ -487,6 +497,7 @@ export interface FileRouteTypes {
     | '/precos'
     | '/problemas'
     | '/ranking'
+    | '/retomar'
     | '/simulador-ia'
     | '/sugestoes'
     | '/treinamentos'
@@ -532,6 +543,7 @@ export interface FileRouteTypes {
     | '/_authenticated/precos'
     | '/_authenticated/problemas'
     | '/_authenticated/ranking'
+    | '/_authenticated/retomar'
     | '/_authenticated/simulador-ia'
     | '/_authenticated/sugestoes'
     | '/_authenticated/treinamentos'
@@ -706,6 +718,13 @@ declare module '@tanstack/react-router' {
       path: '/ranking'
       fullPath: '/ranking'
       preLoaderRoute: typeof AuthenticatedRankingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/retomar': {
+      id: '/_authenticated/retomar'
+      path: '/retomar'
+      fullPath: '/retomar'
+      preLoaderRoute: typeof AuthenticatedRetomarRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/simulador-ia': {
@@ -912,6 +931,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPrecosRoute: typeof AuthenticatedPrecosRoute
   AuthenticatedProblemasRoute: typeof AuthenticatedProblemasRoute
   AuthenticatedRankingRoute: typeof AuthenticatedRankingRoute
+  AuthenticatedRetomarRoute: typeof AuthenticatedRetomarRoute
   AuthenticatedSimuladorIaRoute: typeof AuthenticatedSimuladorIaRoute
   AuthenticatedSugestoesRoute: typeof AuthenticatedSugestoesRoute
   AuthenticatedTreinamentosRoute: typeof AuthenticatedTreinamentosRoute
@@ -948,6 +968,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPrecosRoute: AuthenticatedPrecosRoute,
   AuthenticatedProblemasRoute: AuthenticatedProblemasRoute,
   AuthenticatedRankingRoute: AuthenticatedRankingRoute,
+  AuthenticatedRetomarRoute: AuthenticatedRetomarRoute,
   AuthenticatedSimuladorIaRoute: AuthenticatedSimuladorIaRoute,
   AuthenticatedSugestoesRoute: AuthenticatedSugestoesRoute,
   AuthenticatedTreinamentosRoute: AuthenticatedTreinamentosRoute,
