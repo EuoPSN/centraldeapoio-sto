@@ -34,6 +34,7 @@ import { Route as AuthenticatedSimuladorIaRouteImport } from './routes/_authenti
 import { Route as AuthenticatedSugestoesRouteImport } from './routes/_authenticated/sugestoes'
 import { Route as AuthenticatedTreinamentosRouteImport } from './routes/_authenticated/treinamentos'
 import { Route as AuthenticatedTutoriaisRouteImport } from './routes/_authenticated/tutoriais'
+import { Route as AuthenticatedAdminKeyRouteImport } from './routes/_authenticated/admin.$key'
 import { Route as AuthenticatedAjudaIndexRouteImport } from './routes/_authenticated/ajuda.index'
 import { Route as AuthenticatedAjudaNovidadesRouteImport } from './routes/_authenticated/ajuda.novidades'
 import { Route as AuthenticatedAjudaProblemasRouteImport } from './routes/_authenticated/ajuda.problemas'
@@ -183,6 +184,11 @@ const AuthenticatedTutoriaisRoute = AuthenticatedTutoriaisRouteImport.update({
   path: '/tutoriais',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminKeyRoute = AuthenticatedAdminKeyRouteImport.update({
+  id: '/$key',
+  path: '/$key',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
 const AuthenticatedAjudaIndexRoute = AuthenticatedAjudaIndexRouteImport.update({
   id: '/ajuda/',
   path: '/ajuda/',
@@ -281,7 +287,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
   '/pendente': typeof PendenteRoute
-  '/admin': typeof AuthenticatedAdminRoute
+  '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/amor-saude': typeof AuthenticatedAmorSaudeRouteWithChildren
   '/assistente': typeof AuthenticatedAssistenteRoute
   '/biblioteca': typeof AuthenticatedBibliotecaRoute
@@ -302,6 +308,7 @@ export interface FileRoutesByFullPath {
   '/sugestoes': typeof AuthenticatedSugestoesRoute
   '/treinamentos': typeof AuthenticatedTreinamentosRoute
   '/tutoriais': typeof AuthenticatedTutoriaisRoute
+  '/admin/$key': typeof AuthenticatedAdminKeyRoute
   '/ajuda/novidades': typeof AuthenticatedAjudaNovidadesRoute
   '/ajuda/problemas': typeof AuthenticatedAjudaProblemasRoute
   '/ajuda/procedimentos': typeof AuthenticatedAjudaProcedimentosRoute
@@ -322,7 +329,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/pendente': typeof PendenteRoute
-  '/admin': typeof AuthenticatedAdminRoute
+  '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/assistente': typeof AuthenticatedAssistenteRoute
   '/biblioteca': typeof AuthenticatedBibliotecaRoute
   '/checklist': typeof AuthenticatedChecklistRoute
@@ -343,6 +350,7 @@ export interface FileRoutesByTo {
   '/treinamentos': typeof AuthenticatedTreinamentosRoute
   '/tutoriais': typeof AuthenticatedTutoriaisRoute
   '/': typeof AuthenticatedIndexRoute
+  '/admin/$key': typeof AuthenticatedAdminKeyRoute
   '/ajuda/novidades': typeof AuthenticatedAjudaNovidadesRoute
   '/ajuda/problemas': typeof AuthenticatedAjudaProblemasRoute
   '/ajuda/procedimentos': typeof AuthenticatedAjudaProcedimentosRoute
@@ -365,7 +373,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/pendente': typeof PendenteRoute
-  '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/amor-saude': typeof AuthenticatedAmorSaudeRouteWithChildren
   '/_authenticated/assistente': typeof AuthenticatedAssistenteRoute
   '/_authenticated/biblioteca': typeof AuthenticatedBibliotecaRoute
@@ -387,6 +395,7 @@ export interface FileRoutesById {
   '/_authenticated/treinamentos': typeof AuthenticatedTreinamentosRoute
   '/_authenticated/tutoriais': typeof AuthenticatedTutoriaisRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/admin/$key': typeof AuthenticatedAdminKeyRoute
   '/_authenticated/ajuda/novidades': typeof AuthenticatedAjudaNovidadesRoute
   '/_authenticated/ajuda/problemas': typeof AuthenticatedAjudaProblemasRoute
   '/_authenticated/ajuda/procedimentos': typeof AuthenticatedAjudaProcedimentosRoute
@@ -431,6 +440,7 @@ export interface FileRouteTypes {
     | '/sugestoes'
     | '/treinamentos'
     | '/tutoriais'
+    | '/admin/$key'
     | '/ajuda/novidades'
     | '/ajuda/problemas'
     | '/ajuda/procedimentos'
@@ -472,6 +482,7 @@ export interface FileRouteTypes {
     | '/treinamentos'
     | '/tutoriais'
     | '/'
+    | '/admin/$key'
     | '/ajuda/novidades'
     | '/ajuda/problemas'
     | '/ajuda/procedimentos'
@@ -515,6 +526,7 @@ export interface FileRouteTypes {
     | '/_authenticated/treinamentos'
     | '/_authenticated/tutoriais'
     | '/_authenticated/'
+    | '/_authenticated/admin/$key'
     | '/_authenticated/ajuda/novidades'
     | '/_authenticated/ajuda/problemas'
     | '/_authenticated/ajuda/procedimentos'
@@ -718,6 +730,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTutoriaisRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/$key': {
+      id: '/_authenticated/admin/$key'
+      path: '/$key'
+      fullPath: '/admin/$key'
+      preLoaderRoute: typeof AuthenticatedAdminKeyRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/ajuda/': {
       id: '/_authenticated/ajuda/'
       path: '/ajuda'
@@ -833,6 +852,17 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminKeyRoute: typeof AuthenticatedAdminKeyRoute
+}
+
+const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminKeyRoute: AuthenticatedAdminKeyRoute,
+}
+
+const AuthenticatedAdminRouteWithChildren =
+  AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
+
 interface AuthenticatedAmorSaudeRouteChildren {
   AuthenticatedAmorSaudeClinicasRoute: typeof AuthenticatedAmorSaudeClinicasRoute
   AuthenticatedAmorSaudeConsultasRoute: typeof AuthenticatedAmorSaudeConsultasRoute
@@ -857,7 +887,7 @@ const AuthenticatedAmorSaudeRouteWithChildren =
   )
 
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedAmorSaudeRoute: typeof AuthenticatedAmorSaudeRouteWithChildren
   AuthenticatedAssistenteRoute: typeof AuthenticatedAssistenteRoute
   AuthenticatedBibliotecaRoute: typeof AuthenticatedBibliotecaRoute
@@ -891,7 +921,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedAmorSaudeRoute: AuthenticatedAmorSaudeRouteWithChildren,
   AuthenticatedAssistenteRoute: AuthenticatedAssistenteRoute,
   AuthenticatedBibliotecaRoute: AuthenticatedBibliotecaRoute,

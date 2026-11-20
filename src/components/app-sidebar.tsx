@@ -7,6 +7,7 @@ import {
   PenLine, Search, Settings,
 } from "lucide-react";
 import { MarcianaEyeIcon } from "@/components/marciana/MarcianaEye";
+import { useAdminPendingCounts } from "@/components/admin/AdminShell";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, useSidebar } from "@/components/ui/sidebar";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger,
@@ -120,6 +121,8 @@ export function AppSidebar({ isAdmin, email, displayName, role }: { isAdmin: boo
   const novidadesFn = useServerFn(getAjudaNovidadesStatus);
   const novidadesQ = useQuery({ queryKey: ["ajuda", "novidades-status"], queryFn: () => novidadesFn({}), staleTime: 60_000 });
   const hasNovidades = (novidadesQ.data?.unseenCount ?? 0) > 0;
+  const { data: adminPending } = useAdminPendingCounts(isAdmin);
+  const adminPendingTotal = isAdmin ? adminPending?.total ?? 0 : 0;
   const { state, isMobile } = useSidebar();
   const collapsed = state === "collapsed" && !isMobile;
 
@@ -233,6 +236,7 @@ export function AppSidebar({ isAdmin, email, displayName, role }: { isAdmin: boo
                     <ul id={panelId} className="relative mb-2 ml-[18px] mt-1 border-l border-line">
                       {g.pages.map((p, i) => {
                         const active = isActive(p.route);
+                        const showAdminPending = p.route === "/admin" && adminPendingTotal > 0;
                         return (
                           <li key={p.route} className="omnia-menu-item relative" style={{ animationDelay: `${i * 30}ms` }}>
                             {active && <span aria-hidden className="absolute -left-[3.5px] top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-gold" />}
@@ -240,12 +244,17 @@ export function AppSidebar({ isAdmin, email, displayName, role }: { isAdmin: boo
                               to={p.route}
                               aria-current={active ? "page" : undefined}
                               className={cn(
-                                "block rounded-md py-1.5 pl-4 pr-2 text-[14.5px] leading-6 transition-colors",
+                                "flex items-center justify-between gap-2 rounded-md py-1.5 pl-4 pr-2 text-[14.5px] leading-6 transition-colors",
                                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                                 active ? "font-semibold text-gold-text" : "text-ink hover:text-gold-text",
                               )}
                             >
-                              {p.label}
+                              <span className="truncate">{p.label}</span>
+                              {showAdminPending && (
+                                <span aria-label={`${adminPendingTotal} pendências`} className="grid h-4 min-w-4 shrink-0 place-items-center rounded-full bg-gold px-1 text-[10px] font-semibold text-on-gold">
+                                  {adminPendingTotal}
+                                </span>
+                              )}
                             </Link>
                           </li>
                         );

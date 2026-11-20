@@ -10,6 +10,7 @@ import { getMe } from "@/lib/content.functions";
 import { touchLastSeen } from "@/lib/dashboard.functions";
 import { ThemeController, ThemeToggle } from "@/components/ThemeController";
 import { HelpButton } from "@/components/HelpButton";
+import { EditPageLink } from "@/components/EditPageLink";
 import { useEffect, type CSSProperties } from "react";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -73,6 +74,7 @@ function AppLayout() {
             {/* Trilha de navegação: as páginas que têm uma preenchem este espaço (TopbarBreadcrumb). */}
             <nav id="topbar-breadcrumb" aria-label="Você está em" className="flex min-w-0 flex-1 items-center" />
             <div className="flex shrink-0 items-center gap-2.5">
+              <EditPageLink isAdmin={isAdmin} />
               <HelpButton />
               <ThemeToggle />
             </div>
