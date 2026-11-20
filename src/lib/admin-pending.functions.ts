@@ -77,6 +77,26 @@ export const getAdminPendingCounts = createServerFn({ method: "GET" })
       items.push({ key: "scriptreview", title: "Scripts enviados para revisar", context, count, href: "/admin/messages" });
     }
 
+    // 2b) Objeções novas para revisar (fila do "O cliente disse…")
+    {
+      const { data, error } = await db
+        .from("objecoes_pendentes")
+        .select("fala_exemplo, ocorrencias")
+        .eq("status", "pendente")
+        .order("ocorrencias", { ascending: false });
+      if (error) throw new Error(error.message);
+      const rows = data ?? [];
+      const count = rows.length;
+      bySection.objecoesnovas = count;
+      items.push({
+        key: "objecoesnovas",
+        title: "Objeções novas para revisar",
+        context: count > 0 ? `"${rows[0].fala_exemplo}"` : "Tudo em dia",
+        count,
+        href: "/admin/objecoesnovas",
+      });
+    }
+
     // 3) Perguntas sem boa resposta na MarcIAna (feedback 👎 ainda não resolvido)
     {
       const { data, error } = await db

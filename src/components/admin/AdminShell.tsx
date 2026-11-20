@@ -34,6 +34,7 @@ import { HomepageMessagesTab } from "@/components/admin/HomepageMessagesTab";
 import { TaxonomyTab } from "@/components/admin/TaxonomyTab";
 import { BibliotecaTab } from "@/components/admin/BibliotecaTab";
 import { PromoPlansTab } from "@/components/admin/PromoPlansTab";
+import { ObjecoesAdminTab, ObjecoesNovasTab, FechamentoAdminTab, EconomiaAdminTab } from "@/components/admin/ClienteDisseAdmin";
 
 // Ordem dos grupos na entrada, no seletor e em "Organização das abas".
 export const ADMIN_GROUP_ORDER = ["Atendimento", "Inteligência", "Treino", "Central de Ajuda", "Equipe e sistema"];
@@ -51,6 +52,10 @@ export const ADMIN_TAB_COMPONENTS: Record<string, ComponentType> = {
   pricing: PricingTab,
   contatos: ContatosTab,
   scriptreview: () => <MensagensEScriptsTab defaultTab="revisar" />,
+  objecoes: ObjecoesAdminTab,
+  objecoesnovas: ObjecoesNovasTab,
+  fechamento: FechamentoAdminTab,
+  economia: EconomiaAdminTab,
 
   knowledge: KnowledgeTab,
   ai: AiTab,
