@@ -35,6 +35,7 @@ import { TaxonomyTab } from "@/components/admin/TaxonomyTab";
 import { BibliotecaTab } from "@/components/admin/BibliotecaTab";
 import { PromoPlansTab } from "@/components/admin/PromoPlansTab";
 import { ObjecoesAdminTab, ObjecoesNovasTab, FechamentoAdminTab, EconomiaAdminTab } from "@/components/admin/ClienteDisseAdmin";
+import { CadenciaAdminTab, MotivosPerdaAdminTab } from "@/components/admin/RetomadaAdmin";
 
 // Ordem dos grupos na entrada, no seletor e em "Organização das abas".
 export const ADMIN_GROUP_ORDER = ["Atendimento", "Inteligência", "Treino", "Central de Ajuda", "Equipe e sistema"];
@@ -56,6 +57,8 @@ export const ADMIN_TAB_COMPONENTS: Record<string, ComponentType> = {
   objecoesnovas: ObjecoesNovasTab,
   fechamento: FechamentoAdminTab,
   economia: EconomiaAdminTab,
+  cadencia: CadenciaAdminTab,
+  motivosperda: MotivosPerdaAdminTab,
 
   knowledge: KnowledgeTab,
   ai: AiTab,

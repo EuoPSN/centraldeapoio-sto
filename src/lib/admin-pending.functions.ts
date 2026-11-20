@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { isAdminUser } from "@/lib/authz";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { contarAtendentesAtrasados } from "@/lib/retomada.functions";
 
 async function requireAdmin(ctx: { supabase: unknown; userId: string }) {
   const s = ctx.supabase as { rpc: (n: string, p: unknown) => Promise<{ data: boolean | null }> };
@@ -94,6 +95,20 @@ export const getAdminPendingCounts = createServerFn({ method: "GET" })
         context: count > 0 ? `"${rows[0].fala_exemplo}"` : "Tudo em dia",
         count,
         href: "/admin/objecoesnovas",
+      });
+    }
+
+    // 2c) Atendentes com retomadas atrasadas há mais de 1 dia
+    {
+      // Se a migração das retomadas ainda não rodou, não derruba as outras pendências.
+      const { atendentes, tickets } = await contarAtendentesAtrasados(db).catch(() => ({ atendentes: 0, tickets: 0 }));
+      bySection.cadencia = atendentes;
+      items.push({
+        key: "cadencia",
+        title: "Atendentes com retomadas atrasadas",
+        context: atendentes > 0 ? `${tickets} ${tickets === 1 ? "retomada atrasada" : "retomadas atrasadas"} há mais de 1 dia` : "Tudo em dia",
+        count: atendentes,
+        href: "/admin/cadencia",
       });
     }
 
