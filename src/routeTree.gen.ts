@@ -47,6 +47,7 @@ import { Route as AuthenticatedAmorSaudeExamesRouteImport } from './routes/_auth
 import { Route as AuthenticatedAmorSaudeOdontologiaRouteImport } from './routes/_authenticated/amor-saude.odontologia'
 import { Route as AuthenticatedScriptsIndexRouteImport } from './routes/_authenticated/scripts.index'
 import { Route as AuthenticatedScriptsBibliotecaRouteImport } from './routes/_authenticated/scripts.biblioteca'
+import { Route as AuthenticatedScriptsClienteDisseRouteImport } from './routes/_authenticated/scripts.cliente-disse'
 import { Route as ApiPublicKnowledgeFileRouteImport } from './routes/api/public/knowledge-file'
 import { Route as ApiPublicMessageImageRouteImport } from './routes/api/public/message-image'
 import { Route as AuthenticatedScriptsFluxoIndexRouteImport } from './routes/_authenticated/scripts.fluxo.index'
@@ -260,6 +261,12 @@ const AuthenticatedScriptsBibliotecaRoute =
     path: '/scripts/biblioteca',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedScriptsClienteDisseRoute =
+  AuthenticatedScriptsClienteDisseRouteImport.update({
+    id: '/scripts/cliente-disse',
+    path: '/scripts/cliente-disse',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicKnowledgeFileRoute = ApiPublicKnowledgeFileRouteImport.update({
   id: '/api/public/knowledge-file',
   path: '/api/public/knowledge-file',
@@ -317,6 +324,7 @@ export interface FileRoutesByFullPath {
   '/amor-saude/exames': typeof AuthenticatedAmorSaudeExamesRoute
   '/amor-saude/odontologia': typeof AuthenticatedAmorSaudeOdontologiaRoute
   '/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
+  '/scripts/cliente-disse': typeof AuthenticatedScriptsClienteDisseRoute
   '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
   '/api/public/message-image': typeof ApiPublicMessageImageRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
@@ -359,6 +367,7 @@ export interface FileRoutesByTo {
   '/amor-saude/exames': typeof AuthenticatedAmorSaudeExamesRoute
   '/amor-saude/odontologia': typeof AuthenticatedAmorSaudeOdontologiaRoute
   '/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
+  '/scripts/cliente-disse': typeof AuthenticatedScriptsClienteDisseRoute
   '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
   '/api/public/message-image': typeof ApiPublicMessageImageRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
@@ -404,6 +413,7 @@ export interface FileRoutesById {
   '/_authenticated/amor-saude/exames': typeof AuthenticatedAmorSaudeExamesRoute
   '/_authenticated/amor-saude/odontologia': typeof AuthenticatedAmorSaudeOdontologiaRoute
   '/_authenticated/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
+  '/_authenticated/scripts/cliente-disse': typeof AuthenticatedScriptsClienteDisseRoute
   '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
   '/api/public/message-image': typeof ApiPublicMessageImageRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
@@ -449,6 +459,7 @@ export interface FileRouteTypes {
     | '/amor-saude/exames'
     | '/amor-saude/odontologia'
     | '/scripts/biblioteca'
+    | '/scripts/cliente-disse'
     | '/api/public/knowledge-file'
     | '/api/public/message-image'
     | '/admin/'
@@ -491,6 +502,7 @@ export interface FileRouteTypes {
     | '/amor-saude/exames'
     | '/amor-saude/odontologia'
     | '/scripts/biblioteca'
+    | '/scripts/cliente-disse'
     | '/api/public/knowledge-file'
     | '/api/public/message-image'
     | '/admin'
@@ -535,6 +547,7 @@ export interface FileRouteTypes {
     | '/_authenticated/amor-saude/exames'
     | '/_authenticated/amor-saude/odontologia'
     | '/_authenticated/scripts/biblioteca'
+    | '/_authenticated/scripts/cliente-disse'
     | '/api/public/knowledge-file'
     | '/api/public/message-image'
     | '/_authenticated/admin/'
@@ -821,6 +834,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedScriptsBibliotecaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/scripts/cliente-disse': {
+      id: '/_authenticated/scripts/cliente-disse'
+      path: '/scripts/cliente-disse'
+      fullPath: '/scripts/cliente-disse'
+      preLoaderRoute: typeof AuthenticatedScriptsClienteDisseRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/knowledge-file': {
       id: '/api/public/knowledge-file'
       path: '/api/public/knowledge-file'
@@ -903,6 +923,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAjudaProcedimentosRoute: typeof AuthenticatedAjudaProcedimentosRoute
   AuthenticatedAjudaSugestoesRoute: typeof AuthenticatedAjudaSugestoesRoute
   AuthenticatedScriptsBibliotecaRoute: typeof AuthenticatedScriptsBibliotecaRoute
+  AuthenticatedScriptsClienteDisseRoute: typeof AuthenticatedScriptsClienteDisseRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAjudaIndexRoute: typeof AuthenticatedAjudaIndexRoute
   AuthenticatedScriptsIndexRoute: typeof AuthenticatedScriptsIndexRoute
@@ -938,6 +959,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAjudaProcedimentosRoute: AuthenticatedAjudaProcedimentosRoute,
   AuthenticatedAjudaSugestoesRoute: AuthenticatedAjudaSugestoesRoute,
   AuthenticatedScriptsBibliotecaRoute: AuthenticatedScriptsBibliotecaRoute,
+  AuthenticatedScriptsClienteDisseRoute: AuthenticatedScriptsClienteDisseRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedAjudaIndexRoute: AuthenticatedAjudaIndexRoute,
   AuthenticatedScriptsIndexRoute: AuthenticatedScriptsIndexRoute,

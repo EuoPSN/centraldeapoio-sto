@@ -5,6 +5,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 // correspondente (Ranking, Criar Scripts, o próprio Admin...) não mostra o link.
 const ROUTE_TO_ADMIN_SECTION: [string, string][] = [
   ["/amor-saude", "pricing"],
+  ["/scripts/cliente-disse", "objecoes"],
   ["/scripts", "messages"],
   ["/assistente", "marciana"],
   ["/simulador-ia", "perfis"],
