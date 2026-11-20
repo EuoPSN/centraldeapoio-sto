@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { removerDadosPessoais } from "@/lib/cliente-disse";
 import {
-  calcularUso, limparTrecho, mensagemLimite,
+  calcularUso, limparTrecho, linhaUltimaMensagem, mensagemLimite,
   type RaioxResposta, type UsoStatus,
 } from "@/lib/cerebro";
 import { PONTO_LABEL, type Ponto } from "@/lib/retomada";
@@ -23,11 +23,21 @@ const BUCKET = "chat-images";
 const FerramentaIA = z.enum(["copiloto", "raiox"]);
 
 const EntradaConversa = z.object({
-  texto: z.string().max(40000).default(""),
+  texto: z.string().max(100000).default(""),
+  /** Quem falou por último e quando (o servidor calcula "há quanto tempo"). */
+  ultima_mensagem: z.object({ de: z.enum(["cliente", "atendente", "pessoa"]), em: z.string().max(40) }).nullable().default(null),
   /** Caminhos dos prints no Storage (bucket chat-images, pasta do próprio usuário). */
   caminhos: z.array(z.string().max(300)).max(4).default([]),
   primeiro_nome_cliente: z.string().trim().max(60).nullable().default(null),
 });
+
+/** Texto limpo + linha "última mensagem: de quem e há quanto tempo". */
+function textoParaIA(data: z.infer<typeof EntradaConversa>): string {
+  const limpo = removerDadosPessoais(data.texto);
+  if (!limpo.trim()) return limpo;
+  const ultima = linhaUltimaMensagem(data.ultima_mensagem);
+  return ultima ? `${limpo}\n\n${ultima}` : limpo;
+}
 
 async function adminStorage() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -77,7 +87,7 @@ export const analisarConversaCopiloto = createServerFn({ method: "POST" })
 
     const img = await prepararImagens(context, data.caminhos);
     try {
-      const resultado = await analisarCopiloto({ texto: removerDadosPessoais(data.texto), imagens: img.urls });
+      const resultado = await analisarCopiloto({ texto: textoParaIA(data), imagens: img.urls });
       await registrarUso(context, "copiloto");
       return { ok: true, resultado, uso: calcularUso("copiloto", antes.usado + 1, antes.limite) };
     } finally {
@@ -106,7 +116,7 @@ export const fazerRaiox = createServerFn({ method: "POST" })
     const img = await prepararImagens(context, data.caminhos);
     try {
       const resultado = await analisarRaiox({
-        texto: removerDadosPessoais(data.texto),
+        texto: textoParaIA(data),
         imagens: img.urls,
         tempoResposta: data.tempo_resposta,
         primeiroNomeCliente: data.primeiro_nome_cliente,

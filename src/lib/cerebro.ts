@@ -145,22 +145,53 @@ export function mensagemLimite(ferramenta: Ferramenta): string {
 export const ERRO_ANALISE = "Não consegui analisar agora. Tente de novo.";
 
 // ---------------------------------------------------------------------------
-// Conversa exportada do WhatsApp (.txt): limpeza no navegador, antes do envio
+// Conversa exportada (.txt): leitura e limpeza no navegador, antes do envio.
+// Formatos: Ztalk, WhatsApp Android ("dd/mm/aaaa hh:mm - Nome: texto") e
+// WhatsApp iOS ("[dd/mm/aaaa hh:mm] Nome: texto"). O formato é detectado sozinho.
+// A conversa bruta nunca é guardada: só o resultado limpo desta função.
 // ---------------------------------------------------------------------------
 
-const MAX_MENSAGENS = 80;
+/** Mensagens enviadas à IA: as primeiras e as últimas, quando a conversa é longa. */
+export const MAX_PRIMEIRAS = 10;
+export const MAX_ULTIMAS = 80;
+const MAX_CARACTERES_MENSAGEM = 900;
+
+export type DeQuem = "cliente" | "atendente" | "pessoa";
+
+export interface UltimaMensagem { de: DeQuem; /** ISO com fuso de Brasília. */ em: string }
 
 export interface ConversaPreparada {
-  /** Texto pronto para a IA (sem telefone, CPF, e-mail e com o cliente como "Cliente"). */
+  /** Texto pronto para a IA (sem telefone, CPF, e-mail; cliente como "Cliente"; sem cabeçalho do arquivo). */
   texto: string;
   /** Primeiro nome do cliente, lido só no navegador (não vai para a IA). */
   primeiroNomeCliente: string | null;
-  /** Calculado aqui, a partir dos horários do .txt, quando o atendente foi identificado. */
+  /** Calculado aqui, a partir dos horários, quando o atendente foi identificado. */
   tempoResposta: { mediaMin: number; maiorMin: number } | null;
+  /** Total real de mensagens da conversa (avisos do sistema não contam). */
   mensagens: number;
+  /** null quando não deu para saber quem é o atendente. */
+  doCliente: number | null;
+  doAtendente: number | null;
+  /** Data e hora da primeira e da última mensagem (dd/mm/aaaa hh:mm). */
+  primeira: string | null;
+  ultima: string | null;
+  /** Linhas que não consegui interpretar. */
+  naoReconhecidas: number;
+  /** Quantas mensagens vão para a IA e quantas ficaram de fora (conversa longa). */
+  enviadas: number;
+  cortadas: number;
+  /** Quem falou por último e quando (para o servidor calcular "há quanto tempo"). */
+  ultimaMensagem: UltimaMensagem | null;
+  /** Últimas mensagens já limpas, só para mostrar na tela. */
+  previa: { de: DeQuem; texto: string }[];
 }
 
-const CABECALHO = /^‎?\[?(\d{1,2})\/(\d{1,2})\/(\d{2,4}),?\s+(\d{1,2}):(\d{2})(?::\d{2})?(?:\s*[ap]\.?m\.?)?\]?\s*(?:-\s*)?(.*)$/i;
+const ZTALK_MSG = /^\[(\d{1,2})\/(\d{1,2})\/(\d{4}) (\d{1,2}):(\d{2}):(\d{2})\]\[[^\]]*\]\[([^\]]*)\]\[([^\]]*)\]\s*-\s?(.*)$/;
+const ZTALK_ID = /^ID:\s*\S+\s+-\s+Tipo:/;
+const ZTALK_INICIO = /^Iniciado em:/;
+const COMECA_COM_DATA = /^\[\d{1,2}\/\d{1,2}\/\d{2,4}[ ,]+\d{1,2}:\d{2}/;
+const CABECALHO = /^\[?(\d{1,2})\/(\d{1,2})\/(\d{2,4}),?\s+(\d{1,2}):(\d{2})(?::(\d{2}))?(?:\s*[ap]\.?m\.?)?\]?\s*(?:-\s*)?(.*)$/i;
+const SO_NUMERO = /^[+\d\s()-]+$/;
 
 function primeiroToken(nome: string) {
   return nome.trim().split(/\s+/)[0] ?? "";
@@ -168,57 +199,153 @@ function primeiroToken(nome: string) {
 function escapar(s: string) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
+const dois = (n: number) => String(n).padStart(2, "0");
 
-/** Lê o .txt exportado do WhatsApp (formatos Android e iOS). `nomeAtendente` é
- * o nome de quem está usando a tela, para saber quem é o cliente. */
+function formatarData(em: number): string {
+  const d = new Date(em);
+  return `${dois(d.getUTCDate())}/${dois(d.getUTCMonth() + 1)}/${d.getUTCFullYear()} ${dois(d.getUTCHours())}:${dois(d.getUTCMinutes())}`;
+}
+function isoBrasilia(em: number): string {
+  const d = new Date(em);
+  return `${d.getUTCFullYear()}-${dois(d.getUTCMonth() + 1)}-${dois(d.getUTCDate())}T${dois(d.getUTCHours())}:${dois(d.getUTCMinutes())}:${dois(d.getUTCSeconds())}-03:00`;
+}
+
+/** "13h46", "25 min", "2 dias e 3h". */
+export function formatarEspera(min: number): string {
+  const m = Math.round(min);
+  if (m < 1) return "menos de 1 min";
+  if (m < 60) return `${m} min`;
+  const h = Math.floor(m / 60);
+  const r = m % 60;
+  if (h < 24) return r ? `${h}h${dois(r)}` : `${h}h`;
+  const d = Math.floor(h / 24);
+  const hh = h % 24;
+  return `${d} ${d === 1 ? "dia" : "dias"}${hh ? ` e ${hh}h` : ""}`;
+}
+
+/** Linha que diz à IA quem falou por último e há quanto tempo (calculada no servidor, na hora da análise). */
+export function linhaUltimaMensagem(u: UltimaMensagem | null, agora = Date.now()): string {
+  if (!u) return "";
+  const t = Date.parse(u.em);
+  if (Number.isNaN(t)) return "";
+  const quem = u.de === "cliente" ? "do cliente" : u.de === "atendente" ? "do atendente" : "de uma das pessoas (atendente não identificado)";
+  return `ÚLTIMA MENSAGEM: ${quem}, há ${formatarEspera(Math.max(0, (agora - t) / 60000))}.`;
+}
+
+interface Msg { quem: string; de: DeQuem | null; texto: string; em: number }
+
+/** Lê o .txt exportado (Ztalk ou WhatsApp). `nomeAtendente` é o nome de quem usa a tela
+ * e só serve para o WhatsApp comum, onde o arquivo não diz quem é o atendente. */
 export function prepararConversaTxt(bruto: string, nomeAtendente = ""): ConversaPreparada {
-  type Msg = { quem: string; texto: string; em: number | null };
+  const linhas = bruto.replace(/\r/g, "").split("\n").map((l) => l.replace(/[‎‏﻿]/g, ""));
+  const ztalk = linhas.some((l) => ZTALK_MSG.test(l));
+
   const msgs: Msg[] = [];
-  for (const linhaCrua of bruto.replace(/\r/g, "").split("\n")) {
-    const linha = linhaCrua.replace(/[‎‏]/g, "");
-    const m = CABECALHO.exec(linha);
-    if (m) {
-      const resto = m[6];
-      const idx = resto.indexOf(": ");
-      if (idx <= 0) continue; // aviso do sistema (criptografia, entrou no grupo…)
-      let ano = Number(m[3]);
-      if (ano < 100) ano += 2000;
-      const em = Date.UTC(ano, Number(m[2]) - 1, Number(m[1]), Number(m[4]), Number(m[5]));
-      msgs.push({ quem: resto.slice(0, idx).trim(), texto: resto.slice(idx + 2).trim(), em });
-    } else if (msgs.length && linha.trim()) {
-      msgs[msgs.length - 1].texto += `\n${linha.trim()}`;
+  let atual: Msg | null = null;
+  let aviso = false; // dentro de um aviso do sistema (suas linhas seguintes são ignoradas)
+  let brancas = 0;
+  let naoReconhecidas = 0;
+
+  for (const l of linhas) {
+    if (!l.trim()) { brancas++; continue; }
+
+    if (ztalk) {
+      if (ZTALK_ID.test(l) || ZTALK_INICIO.test(l)) { atual = null; aviso = false; brancas = 0; continue; } // cabeçalho
+      const z = ZTALK_MSG.exec(l);
+      if (z) {
+        brancas = 0;
+        const dir = z[7].trim();
+        const em = Date.UTC(Number(z[3]), Number(z[2]) - 1, Number(z[1]), Number(z[4]), Number(z[5]), Number(z[6]));
+        if (dir === "I") { atual = null; aviso = true; continue; }
+        if (dir !== ">" && dir !== "<") { naoReconhecidas++; atual = null; aviso = false; continue; }
+        aviso = false;
+        atual = { quem: z[8].trim(), de: dir === ">" ? "cliente" : "atendente", texto: z[9].trim(), em };
+        msgs.push(atual);
+        continue;
+      }
+      if (COMECA_COM_DATA.test(l)) { naoReconhecidas++; atual = null; aviso = false; brancas = 0; continue; }
+    } else {
+      const m = CABECALHO.exec(l);
+      if (m) {
+        brancas = 0;
+        const resto = m[7];
+        const idx = resto.indexOf(": ");
+        if (idx <= 0) { atual = null; aviso = true; continue; } // aviso do sistema (criptografia, entrou no grupo…)
+        aviso = false;
+        let ano = Number(m[3]);
+        if (ano < 100) ano += 2000;
+        const em = Date.UTC(ano, Number(m[2]) - 1, Number(m[1]), Number(m[4]), Number(m[5]), Number(m[6] ?? 0));
+        atual = { quem: resto.slice(0, idx).trim(), de: null, texto: resto.slice(idx + 2).trim(), em };
+        msgs.push(atual);
+        continue;
+      }
     }
+
+    // Linha sem data: continua a mensagem anterior (linhas em branco no meio viram quebra de linha).
+    if (atual) atual.texto += `${"\n".repeat(brancas + 1)}${l.trim()}`;
+    else if (!aviso) naoReconhecidas++;
+    brancas = 0;
   }
 
-  const recentes = msgs.slice(-MAX_MENSAGENS);
-  const quemFala = [...new Set(recentes.map((m) => m.quem))];
-  const alvo = primeiroToken(nomeAtendente).toLowerCase();
-  const atendente = alvo.length >= 2 ? quemFala.find((q) => primeiroToken(q).toLowerCase() === alvo) ?? null : null;
-  const clientes = atendente ? quemFala.filter((q) => q !== atendente) : [];
-
+  // Quem é quem.
+  let clientes: string[] = [];
   const rotulo = new Map<string, string>();
-  quemFala.forEach((q, i) => {
-    if (atendente) rotulo.set(q, q === atendente ? "Atendente" : "Cliente");
-    else rotulo.set(q, `Pessoa ${String.fromCharCode(65 + i)}`);
-  });
+  if (ztalk) {
+    clientes = [...new Set(msgs.filter((m) => m.de === "cliente").map((m) => m.quem))];
+  } else {
+    const quemFala = [...new Set(msgs.map((m) => m.quem))];
+    const alvo = primeiroToken(nomeAtendente).toLowerCase();
+    const atendente = alvo.length >= 2 ? quemFala.find((q) => primeiroToken(q).toLowerCase() === alvo) ?? null : null;
+    clientes = atendente ? quemFala.filter((q) => q !== atendente) : [];
+    quemFala.forEach((q, i) => rotulo.set(q, atendente ? (q === atendente ? "Atendente" : "Cliente") : `Pessoa ${String.fromCharCode(65 + i)}`));
+    for (const m of msgs) m.de = atendente ? (m.quem === atendente ? "atendente" : "cliente") : "pessoa";
+  }
+  const identificado = ztalk || msgs.some((m) => m.de !== "pessoa");
 
-  const primeiroNomeCliente = clientes.length === 1 && !/^[+\d\s()-]+$/.test(clientes[0]) ? primeiroToken(clientes[0]) : null;
-  const nomesParaTrocar = (atendente ? clientes : []).flatMap((c) => [c, primeiroToken(c)]).filter((n) => n.length >= 3 && !/^[+\d\s()-]+$/.test(n));
+  // Nome do cliente: só no navegador (não vai para a IA).
+  const nomesCliente = clientes.map((c) => (ztalk ? c.replace(/^Cliente\s*/i, "") : c));
+  const nomeUnico = nomesCliente.length === 1 ? nomesCliente[0] : "";
+  const primeiroNomeCliente = nomeUnico && !SO_NUMERO.test(nomeUnico) ? primeiroToken(nomeUnico) : null;
+  const nomesParaTrocar = nomesCliente.flatMap((c) => [c, primeiroToken(c)]).filter((n) => n.length >= 3 && !SO_NUMERO.test(n));
 
-  const linhas = recentes.map((m) => {
-    let t = m.texto;
+  const limpar = (texto: string) => {
+    let t = texto;
     for (const n of nomesParaTrocar) t = t.replace(new RegExp(`(?<![\\p{L}\\d])${escapar(n)}(?![\\p{L}\\d])`, "giu"), "Cliente");
-    return `${rotulo.get(m.quem)}: ${removerDadosPessoais(t)}`;
+    t = removerDadosPessoais(t).trim() || "(sem texto)";
+    return t.length > MAX_CARACTERES_MENSAGEM ? `${t.slice(0, MAX_CARACTERES_MENSAGEM)}…` : t;
+  };
+  const nomeDe = (m: Msg) => (ztalk ? (m.de === "cliente" ? "Cliente" : "Atendente") : rotulo.get(m.quem) ?? "Pessoa");
+
+  // Totais reais, antes de qualquer corte.
+  const total = msgs.length;
+  const doCliente = identificado ? msgs.filter((m) => m.de === "cliente").length : null;
+  const doAtendente = identificado ? msgs.filter((m) => m.de === "atendente").length : null;
+
+  // Conversa longa: 10 primeiras + 80 últimas.
+  const limite = MAX_PRIMEIRAS + MAX_ULTIMAS;
+  const cortadas = Math.max(0, total - limite);
+  const indices = msgs.map((_, i) => i);
+  const enviar = cortadas ? [...indices.slice(0, MAX_PRIMEIRAS), ...indices.slice(total - MAX_ULTIMAS)] : indices;
+
+  const saida: string[] = [];
+  const previa: ConversaPreparada["previa"] = [];
+  if (enviar.length) saida.push("Formato de cada mensagem: [data e hora · quem · tempo desde a mensagem anterior] texto");
+  enviar.forEach((i, pos) => {
+    if (cortadas && pos === MAX_PRIMEIRAS) saida.push(`[… ${cortadas} ${cortadas === 1 ? "mensagem do meio omitida" : "mensagens do meio omitidas"} …]`);
+    const m = msgs[i];
+    const espera = i > 0 ? ` · ${formatarEspera((m.em - msgs[i - 1].em) / 60000)} depois` : "";
+    const t = limpar(m.texto);
+    saida.push(`[${formatarData(m.em)} · ${nomeDe(m)}${espera}] ${t}`);
+    previa.push({ de: m.de ?? "pessoa", texto: t });
   });
 
   // Tempo de resposta do atendente: espera entre a última fala do cliente e a resposta.
   let tempoResposta: ConversaPreparada["tempoResposta"] = null;
-  if (atendente) {
+  if (identificado) {
     const esperas: number[] = [];
     let pendente: number | null = null;
-    for (const m of recentes) {
-      if (m.em == null) continue;
-      if (m.quem === atendente) {
+    for (const m of msgs) {
+      if (m.de === "atendente") {
         if (pendente != null) { esperas.push((m.em - pendente) / 60000); pendente = null; }
       } else if (pendente == null) pendente = m.em;
     }
@@ -230,7 +357,22 @@ export function prepararConversaTxt(bruto: string, nomeAtendente = ""): Conversa
     }
   }
 
-  return { texto: linhas.join("\n"), primeiroNomeCliente, tempoResposta, mensagens: recentes.length };
+  const fim = msgs[total - 1];
+  return {
+    texto: saida.join("\n"),
+    primeiroNomeCliente,
+    tempoResposta,
+    mensagens: total,
+    doCliente,
+    doAtendente,
+    primeira: total ? formatarData(msgs[0].em) : null,
+    ultima: fim ? formatarData(fim.em) : null,
+    naoReconhecidas,
+    enviadas: enviar.length,
+    cortadas,
+    ultimaMensagem: fim ? { de: fim.de ?? "pessoa", em: isoBrasilia(fim.em) } : null,
+    previa: previa.slice(-12),
+  };
 }
 
 // ---------------------------------------------------------------------------

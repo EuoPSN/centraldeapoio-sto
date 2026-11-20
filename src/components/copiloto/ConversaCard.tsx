@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { toast } from "sonner";
 import { ImagePlus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { prepararConversaTxt, type ConversaPreparada, type UsoStatus } from "@/lib/cerebro";
+import { MAX_PRIMEIRAS, MAX_ULTIMAS, prepararConversaTxt, type ConversaPreparada, type UsoStatus } from "@/lib/cerebro";
 import { GoldButton, OutlineButton } from "@/components/scripts/shared";
 import { Overline } from "@/components/cliente-disse/shared";
 import { cn } from "@/lib/utils";
@@ -124,7 +124,11 @@ export function ConversaCard({
   const imgInput = useRef<HTMLInputElement>(null);
   const txtInput = useRef<HTMLInputElement>(null);
   const { imagens, txt } = conversa;
-  const linhas = txt ? txt.preparada.texto.split("\n").slice(-12) : [];
+  const prep = txt?.preparada;
+  const contagem = prep
+    ? [`${prep.mensagens} ${prep.mensagens === 1 ? "mensagem" : "mensagens"}`,
+       ...(prep.doCliente != null && prep.doAtendente != null ? [`${prep.doCliente} do cliente`, `${prep.doAtendente} do atendente`] : ["atendente não identificado"])].join(" · ")
+    : "";
 
   return (
     <section aria-label="Conversa" className={cn("flex flex-col rounded-2xl border border-dashed border-line-strong p-4", className)}>
@@ -151,21 +155,32 @@ export function ConversaCard({
           </ul>
         )}
 
-        {txt && (
+        {txt && prep && (
           <div className={cn(imagens.length && "mt-3")}>
-            <p className="mb-2 flex items-center justify-between gap-2 text-[12.5px] text-ink-muted">
-              <span className="truncate">{txt.nome} · {txt.preparada.mensagens} mensagens</span>
+            <p className="flex items-center justify-between gap-2 text-[12.5px] text-ink-muted">
+              <span className="truncate">{txt.nome}</span>
               <button type="button" onClick={conversa.removerTxt} className="shrink-0 hover:text-ink">Remover</button>
             </p>
-            <ul className="flex max-h-[260px] flex-col gap-1.5 overflow-y-auto">
-              {linhas.map((l, i) => {
-                const meu = l.startsWith("Atendente:");
-                return (
-                  <li key={i} className={cn("max-w-[88%] whitespace-pre-wrap break-words rounded-lg border border-line px-2.5 py-1.5 text-[13.5px] leading-5 text-ink", meu ? "ml-auto bg-line/40" : "bg-surface")}>
-                    {l.replace(/^(Atendente|Cliente|Pessoa [A-Z]): /, "")}
-                  </li>
-                );
-              })}
+            <p className="mt-0.5 text-[13px] font-medium text-ink">{contagem}</p>
+            {prep.primeira && prep.ultima && (
+              <p className="text-[12.5px] text-ink-muted">Primeira: {prep.primeira} · Última: {prep.ultima}</p>
+            )}
+            {prep.cortadas > 0 && (
+              <p role="status" className="mt-1 text-[12.5px] leading-5 text-gold-text">
+                Conversa longa: vou enviar só as {MAX_PRIMEIRAS} primeiras e as {MAX_ULTIMAS} últimas mensagens ({prep.cortadas} do meio ficam de fora).
+              </p>
+            )}
+            {prep.naoReconhecidas > 0 && (
+              <p role="status" className="mt-1 text-[12.5px] leading-5 text-gold-text">
+                {prep.naoReconhecidas} {prep.naoReconhecidas === 1 ? "linha não reconhecida" : "linhas não reconhecidas"}
+              </p>
+            )}
+            <ul className="mt-2 flex max-h-[260px] flex-col gap-1.5 overflow-y-auto">
+              {prep.previa.map((l, i) => (
+                <li key={i} className={cn("max-w-[88%] whitespace-pre-wrap break-words rounded-lg border border-line px-2.5 py-1.5 text-[13.5px] leading-5 text-ink", l.de === "atendente" ? "ml-auto bg-line/40" : "bg-surface")}>
+                  {l.texto}
+                </li>
+              ))}
             </ul>
           </div>
         )}
@@ -173,7 +188,7 @@ export function ConversaCard({
 
       <p className="mt-3 text-[13px] leading-5 text-ink-muted">
         {imagens.length > 0 ? `Print colado com Ctrl+V · ${imagens.length} ${imagens.length === 1 ? "imagem" : "imagens"}. ` : ""}
-        Também aceita o .txt exportado do WhatsApp. Telefone, CPF e e-mail são apagados antes da análise.
+        Também aceita o .txt exportado do WhatsApp ou da Ztalk. Telefone, CPF e e-mail são apagados antes da análise.
       </p>
 
       {children}
