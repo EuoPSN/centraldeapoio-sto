@@ -193,6 +193,113 @@ export type Database = {
         }
         Relationships: []
       }
+      cadencia_mensagens: {
+        Row: {
+          audio_exemplo_url: string | null
+          canal: string
+          codigo: string | null
+          created_at: string
+          etapa: string
+          id: string
+          papel: string
+          ponto_parada: string
+          por_que: string
+          publicada_em: string | null
+          status: string
+          texto: string
+          updated_at: string
+          versao: number
+        }
+        Insert: {
+          audio_exemplo_url?: string | null
+          canal?: string
+          codigo?: string | null
+          created_at?: string
+          etapa: string
+          id?: string
+          papel?: string
+          ponto_parada: string
+          por_que?: string
+          publicada_em?: string | null
+          status?: string
+          texto?: string
+          updated_at?: string
+          versao?: number
+        }
+        Update: {
+          audio_exemplo_url?: string | null
+          canal?: string
+          codigo?: string | null
+          created_at?: string
+          etapa?: string
+          id?: string
+          papel?: string
+          ponto_parada?: string
+          por_que?: string
+          publicada_em?: string | null
+          status?: string
+          texto?: string
+          updated_at?: string
+          versao?: number
+        }
+        Relationships: []
+      }
+      cadencia_mensagens_versoes: {
+        Row: {
+          audio_exemplo_url: string | null
+          canal: string
+          codigo: string
+          etapa: string
+          id: string
+          mensagem_id: string
+          papel: string
+          ponto_parada: string
+          por_que: string
+          publicada_em: string | null
+          substituida_em: string
+          texto: string
+          versao: number
+        }
+        Insert: {
+          audio_exemplo_url?: string | null
+          canal: string
+          codigo: string
+          etapa: string
+          id?: string
+          mensagem_id: string
+          papel: string
+          ponto_parada: string
+          por_que: string
+          publicada_em?: string | null
+          substituida_em?: string
+          texto: string
+          versao: number
+        }
+        Update: {
+          audio_exemplo_url?: string | null
+          canal?: string
+          codigo?: string
+          etapa?: string
+          id?: string
+          mensagem_id?: string
+          papel?: string
+          ponto_parada?: string
+          por_que?: string
+          publicada_em?: string | null
+          substituida_em?: string
+          texto?: string
+          versao?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cadencia_mensagens_versoes_mensagem_id_fkey"
+            columns: ["mensagem_id"]
+            isOneToOne: false
+            referencedRelation: "cadencia_mensagens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           color: string | null
@@ -1906,6 +2013,33 @@ export type Database = {
           },
         ]
       }
+      motivos_perda: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+          ordem: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+          ordem?: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          ordem?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       nav_items: {
         Row: {
           admin_only: boolean
@@ -2673,6 +2807,147 @@ export type Database = {
         }
         Relationships: []
       }
+      retomada_eventos: {
+        Row: {
+          acao: string
+          created_at: string
+          detalhe: string | null
+          etapa: string
+          id: string
+          mensagem_id: string | null
+          mensagem_versao: number | null
+          ponto_parada: string | null
+          prevista_em: string | null
+          retomada_id: string
+          user_id: string
+          usou_recomendada: boolean | null
+        }
+        Insert: {
+          acao: string
+          created_at?: string
+          detalhe?: string | null
+          etapa: string
+          id?: string
+          mensagem_id?: string | null
+          mensagem_versao?: number | null
+          ponto_parada?: string | null
+          prevista_em?: string | null
+          retomada_id: string
+          user_id?: string
+          usou_recomendada?: boolean | null
+        }
+        Update: {
+          acao?: string
+          created_at?: string
+          detalhe?: string | null
+          etapa?: string
+          id?: string
+          mensagem_id?: string | null
+          mensagem_versao?: number | null
+          ponto_parada?: string | null
+          prevista_em?: string | null
+          retomada_id?: string
+          user_id?: string
+          usou_recomendada?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "retomada_eventos_mensagem_id_fkey"
+            columns: ["mensagem_id"]
+            isOneToOne: false
+            referencedRelation: "cadencia_mensagens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "retomada_eventos_retomada_id_fkey"
+            columns: ["retomada_id"]
+            isOneToOne: false
+            referencedRelation: "retomadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "retomada_eventos_retomada_id_fkey"
+            columns: ["retomada_id"]
+            isOneToOne: false
+            referencedRelation: "retomadas_admin"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      retomadas: {
+        Row: {
+          codigo: string
+          created_at: string
+          d10_enviado_em: string | null
+          etapa_atual: string
+          fechamento_caso_id: string | null
+          id: string
+          motivo_perda: string | null
+          observacao: string
+          origem: string
+          ponto_parada: string
+          ponto_parada_inicial: string
+          primeiro_nome: string
+          proxima_em: string | null
+          status: string
+          subetapa_fechamento: string | null
+          telefone: string | null
+          updated_at: string
+          user_id: string
+          vezes_voltou: number
+        }
+        Insert: {
+          codigo?: string
+          created_at?: string
+          d10_enviado_em?: string | null
+          etapa_atual?: string
+          fechamento_caso_id?: string | null
+          id?: string
+          motivo_perda?: string | null
+          observacao?: string
+          origem?: string
+          ponto_parada: string
+          ponto_parada_inicial: string
+          primeiro_nome?: string
+          proxima_em?: string | null
+          status?: string
+          subetapa_fechamento?: string | null
+          telefone?: string | null
+          updated_at?: string
+          user_id?: string
+          vezes_voltou?: number
+        }
+        Update: {
+          codigo?: string
+          created_at?: string
+          d10_enviado_em?: string | null
+          etapa_atual?: string
+          fechamento_caso_id?: string | null
+          id?: string
+          motivo_perda?: string | null
+          observacao?: string
+          origem?: string
+          ponto_parada?: string
+          ponto_parada_inicial?: string
+          primeiro_nome?: string
+          proxima_em?: string | null
+          status?: string
+          subetapa_fechamento?: string | null
+          telefone?: string | null
+          updated_at?: string
+          user_id?: string
+          vezes_voltou?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "retomadas_fechamento_caso_id_fkey"
+            columns: ["fechamento_caso_id"]
+            isOneToOne: false
+            referencedRelation: "fechamento_casos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scripts: {
         Row: {
           body: string
@@ -3044,7 +3319,38 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      retomadas_admin: {
+        Row: {
+          atendente: string | null
+          codigo: string | null
+          created_at: string | null
+          d10_enviado_em: string | null
+          etapa_atual: string | null
+          fechamento_caso_id: string | null
+          id: string | null
+          motivo_perda: string | null
+          observacao: string | null
+          origem: string | null
+          ponto_parada: string | null
+          ponto_parada_inicial: string | null
+          primeiro_nome: string | null
+          proxima_em: string | null
+          status: string | null
+          subetapa_fechamento: string | null
+          updated_at: string | null
+          user_id: string | null
+          vezes_voltou: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "retomadas_fechamento_caso_id_fkey"
+            columns: ["fechamento_caso_id"]
+            isOneToOne: false
+            referencedRelation: "fechamento_casos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       cliente_disse_contagens: {
@@ -3068,6 +3374,7 @@ export type Database = {
         Returns: undefined
       }
       limpar_fechamento_casos: { Args: never; Returns: number }
+      limpar_retomadas: { Args: never; Returns: number }
       marcar_ajuda_novidades_vistas: { Args: never; Returns: undefined }
       match_knowledge: {
         Args: { match_count?: number; query_embedding: string }
