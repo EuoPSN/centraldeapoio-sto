@@ -490,6 +490,13 @@ export interface DadosRelatorio {
   versoes: Linha[];
   objecoes: { data_hora: string; atendente: string; objecao: string; angulo_copiado: string; objecao_nova: boolean }[];
   atendentes: Record<string, string>;
+  /** Só no arquivo da equipe (Admin): o que aconteceu depois de cada versão enviada. Vazio no arquivo do atendente. */
+  desempenho: { mensagem_id: string; versao: number; enviadas: number; responderam: number; fecharam: number; selo: string }[];
+  /** Fichas de "Conversas que fecharam": as publicadas e, no arquivo do atendente, as dele. */
+  biblioteca: {
+    id: string; autor: string; status: string; objecao: string; ponto_parada: string; plano: string; perfil: string;
+    onde_travou: string; o_que_fez: string[]; mensagem_chave: string; dias_ate_fechar: number | null; util: number; nao_util: number;
+  }[];
 }
 
 /** Atendente: só os próprios tickets. Admin: todos, com filtro opcional de atendente. */
@@ -558,6 +565,61 @@ export const getDadosRelatorio = createServerFn({ method: "POST" })
       for (const r of (pend.data ?? []) as { objecao_id: string | null }[]) if (r.objecao_id) vieramDaFila.add(r.objecao_id);
     }
 
+    // Mensagens que vendem (só equipe): desde a data inicial até agora, na equipe toda.
+    // Se as funções do banco ainda não existem, as colunas ficam vazias.
+    let desempenho: DadosRelatorio["desempenho"] = [];
+    if (equipe) {
+      try {
+        const dias = Math.max(1, Math.ceil((Date.now() - new Date(ini).getTime()) / 86400_000));
+        const [rd, cfg] = await Promise.all([
+          s.rpc("mensagens_desempenho", { p_dias: dias }),
+          s.from("config_mensagens_vendem").select("min_envios").eq("id", 1).maybeSingle(),
+        ]);
+        const minEnvios = Number(cfg.data?.min_envios ?? 10);
+        if (!rd.error) {
+          desempenho = ((rd.data ?? []) as Record<string, unknown>[])
+            .filter((r) => r.origem === "cadencia")
+            .map((r) => ({
+              mensagem_id: String(r.mensagem_id), versao: Number(r.versao), enviadas: Number(r.enviadas),
+              responderam: Number(r.responderam), fecharam: Number(r.fecharam),
+              selo: Number(r.enviadas) < minEnvios ? "poucos_envios" : r.selo ? String(r.selo) : "",
+            }));
+        }
+      } catch { desempenho = []; }
+    }
+
+    // Biblioteca: fichas (sem conversa, sem nome, sem telefone) e os votos de "Isso ajudou".
+    let biblioteca: DadosRelatorio["biblioteca"] = [];
+    try {
+      let qf = s.from("conversas_fichas").select("*").order("created_at", { ascending: false }).limit(2000);
+      qf = equipe ? qf.eq("status", "publicada") : qf.or(`status.eq.publicada,autor_id.eq.${context.userId}`);
+      const fichas = (check(await qf) ?? []) as Record<string, unknown>[];
+      if (fichas.length) {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const adm = supabaseAdmin as any;
+        const fids = fichas.map((f) => String(f.id));
+        const autorIds = [...new Set(fichas.map((f) => String(f.autor_id)))];
+        const [vt, pf] = await Promise.all([
+          adm.from("conversas_fichas_feedback").select("ficha_id, util").in("ficha_id", fids),
+          adm.from("profiles").select("id, display_name, email").in("id", autorIds),
+        ]);
+        const nomes = new Map(((pf.data ?? []) as { id: string; display_name: string | null; email: string }[]).map((p) => [p.id, p.display_name?.trim() || p.email.split("@")[0]]));
+        const votos = new Map<string, { u: number; n: number }>();
+        for (const v of (vt.data ?? []) as { ficha_id: string; util: boolean }[]) {
+          const x = votos.get(v.ficha_id) ?? { u: 0, n: 0 };
+          if (v.util) x.u++; else x.n++;
+          votos.set(v.ficha_id, x);
+        }
+        biblioteca = fichas.map((f) => ({
+          id: String(f.id), autor: nomes.get(String(f.autor_id)) ?? "", status: String(f.status), objecao: String(f.objecao_rotulo ?? ""),
+          ponto_parada: String(f.ponto_parada), plano: String(f.plano ?? ""), perfil: String(f.perfil_cliente ?? ""),
+          onde_travou: String(f.onde_travou ?? ""), o_que_fez: Array.isArray(f.o_que_fez) ? (f.o_que_fez as unknown[]).map(String) : [],
+          mensagem_chave: String(f.mensagem_chave ?? ""), dias_ate_fechar: f.dias_ate_fechar == null ? null : Number(f.dias_ate_fechar),
+          util: votos.get(String(f.id))?.u ?? 0, nao_util: votos.get(String(f.id))?.n ?? 0,
+        }));
+      }
+    } catch { biblioteca = []; }
+
     return {
       de: data.de, ate: data.ate, escopo: equipe ? "equipe" : "atendente",
       exportadoPor: await nomeDoAtendente(context),
@@ -573,6 +635,8 @@ export const getDadosRelatorio = createServerFn({ method: "POST" })
         objecao_nova: vieramDaFila.has(u.objecao_id),
       })),
       atendentes,
+      desempenho,
+      biblioteca,
     };
   });
 
