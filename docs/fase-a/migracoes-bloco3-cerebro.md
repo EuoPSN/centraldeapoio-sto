@@ -231,3 +231,193 @@ INSERT INTO public.funil_etapas (etapa, nome, ordem) VALUES
   ('venda_concluida',  'Venda concluída',  5)
 ON CONFLICT (etapa) DO NOTHING;
 ```
+
+
+## 2. `20261128090100_ia_uso_limites.sql`
+
+```sql
+-- Fase A · bloco 3 · Cérebro da Omnia — 2/4: uso de IA e limites diários.
+-- ia_uso não guarda conteúdo, só quem usou qual ferramenta e quando. Idempotente.
+
+CREATE TABLE IF NOT EXISTS public.ia_uso (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE DEFAULT auth.uid(),
+  ferramenta TEXT NOT NULL
+    CHECK (ferramenta IN ('marciana','cliente_disse','mensagem_cliente','retomada','copiloto','raiox','simulador')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+GRANT SELECT, INSERT ON public.ia_uso TO authenticated;
+GRANT ALL ON public.ia_uso TO service_role;
+ALTER TABLE public.ia_uso ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "ia_uso_insert_own" ON public.ia_uso;
+CREATE POLICY "ia_uso_insert_own" ON public.ia_uso
+  FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "ia_uso_read" ON public.ia_uso;
+CREATE POLICY "ia_uso_read" ON public.ia_uso
+  FOR SELECT TO authenticated
+  USING (user_id = auth.uid() OR private.has_role(auth.uid(), 'admin'::app_role));
+
+CREATE INDEX IF NOT EXISTS idx_ia_uso_user_dia ON public.ia_uso(user_id, ferramenta, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ia_uso_data ON public.ia_uso(created_at DESC);
+
+-- Limite diário por ferramenta (NULL = sem limite). Editável no Admin.
+CREATE TABLE IF NOT EXISTS public.ia_limites (
+  ferramenta TEXT PRIMARY KEY
+    CHECK (ferramenta IN ('marciana','cliente_disse','mensagem_cliente','retomada','copiloto','raiox','simulador')),
+  limite_diario INT CHECK (limite_diario IS NULL OR limite_diario > 0),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.ia_limites TO authenticated;
+GRANT ALL ON public.ia_limites TO service_role;
+ALTER TABLE public.ia_limites ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "ia_limites_read" ON public.ia_limites;
+CREATE POLICY "ia_limites_read" ON public.ia_limites FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "ia_limites_write_admin" ON public.ia_limites;
+CREATE POLICY "ia_limites_write_admin" ON public.ia_limites
+  FOR ALL TO authenticated
+  USING (private.has_role(auth.uid(), 'admin'::app_role))
+  WITH CHECK (private.has_role(auth.uid(), 'admin'::app_role));
+
+DROP TRIGGER IF EXISTS trg_ia_limites_updated ON public.ia_limites;
+CREATE TRIGGER trg_ia_limites_updated
+  BEFORE UPDATE ON public.ia_limites
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+INSERT INTO public.ia_limites (ferramenta, limite_diario) VALUES
+  ('copiloto', 30), ('raiox', 10),
+  ('marciana', NULL), ('mensagem_cliente', NULL), ('cliente_disse', NULL), ('retomada', NULL), ('simulador', NULL)
+ON CONFLICT (ferramenta) DO NOTHING;
+
+-- Liberações extras do Admin para uma pessoa (soma ao limite diário até valido_ate).
+CREATE TABLE IF NOT EXISTS public.ia_limites_extra (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  ferramenta TEXT NOT NULL
+    CHECK (ferramenta IN ('marciana','cliente_disse','mensagem_cliente','retomada','copiloto','raiox','simulador')),
+  extra INT NOT NULL CHECK (extra > 0),
+  valido_ate TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL
+);
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.ia_limites_extra TO authenticated;
+GRANT ALL ON public.ia_limites_extra TO service_role;
+ALTER TABLE public.ia_limites_extra ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "ia_limites_extra_read" ON public.ia_limites_extra;
+CREATE POLICY "ia_limites_extra_read" ON public.ia_limites_extra
+  FOR SELECT TO authenticated
+  USING (user_id = auth.uid() OR private.has_role(auth.uid(), 'admin'::app_role));
+
+DROP POLICY IF EXISTS "ia_limites_extra_write_admin" ON public.ia_limites_extra;
+CREATE POLICY "ia_limites_extra_write_admin" ON public.ia_limites_extra
+  FOR ALL TO authenticated
+  USING (private.has_role(auth.uid(), 'admin'::app_role))
+  WITH CHECK (private.has_role(auth.uid(), 'admin'::app_role));
+
+CREATE INDEX IF NOT EXISTS idx_ia_limites_extra_user ON public.ia_limites_extra(user_id, ferramenta, valido_ate);
+```
+
+
+## 3. `20261128090200_raiox_resultados.sql`
+
+```sql
+-- Fase A · bloco 3 · Cérebro da Omnia — 3/4: resultados do Raio-X da venda.
+-- Guarda só o resultado da análise (trechos já sem nome/telefone do cliente),
+-- nunca a conversa. Apagado automaticamente após 90 dias. Idempotente.
+
+CREATE TABLE IF NOT EXISTS public.raiox_resultados (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE DEFAULT auth.uid(),
+  retomada_id UUID REFERENCES public.retomadas(id) ON DELETE SET NULL,
+  etapa TEXT,
+  onde_perdeu JSONB NOT NULL DEFAULT '{}'::jsonb,
+  faltou JSONB NOT NULL DEFAULT '[]'::jsonb,
+  reescrita JSONB NOT NULL DEFAULT '{}'::jsonb,
+  escrita JSONB NOT NULL DEFAULT '[]'::jsonb,
+  habito JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+GRANT SELECT, INSERT ON public.raiox_resultados TO authenticated;
+GRANT ALL ON public.raiox_resultados TO service_role;
+ALTER TABLE public.raiox_resultados ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "raiox_insert_own" ON public.raiox_resultados;
+CREATE POLICY "raiox_insert_own" ON public.raiox_resultados
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    user_id = auth.uid()
+    AND (retomada_id IS NULL OR EXISTS (
+      SELECT 1 FROM public.retomadas r WHERE r.id = retomada_id AND r.user_id = auth.uid()
+    ))
+  );
+
+DROP POLICY IF EXISTS "raiox_read" ON public.raiox_resultados;
+CREATE POLICY "raiox_read" ON public.raiox_resultados
+  FOR SELECT TO authenticated
+  USING (user_id = auth.uid() OR private.has_role(auth.uid(), 'admin'::app_role));
+
+CREATE INDEX IF NOT EXISTS idx_raiox_user ON public.raiox_resultados(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_raiox_data ON public.raiox_resultados(created_at DESC);
+
+-- Limpeza: Raio-X com mais de 90 dias e registros de uso com mais de 35 dias.
+-- Chamada ao abrir /raiox e, se o pg_cron existir, todo dia às 03:41.
+CREATE OR REPLACE FUNCTION public.limpar_raiox()
+RETURNS INT
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE n INT := 0; k INT;
+BEGIN
+  DELETE FROM public.raiox_resultados WHERE created_at < now() - interval '90 days';
+  GET DIAGNOSTICS k = ROW_COUNT;
+  n := n + k;
+  DELETE FROM public.ia_uso WHERE created_at < now() - interval '35 days';
+  GET DIAGNOSTICS k = ROW_COUNT;
+  n := n + k;
+  RETURN n;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.limpar_raiox() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.limpar_raiox() TO authenticated, service_role;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
+    BEGIN
+      PERFORM cron.unschedule('limpar_raiox');
+    EXCEPTION WHEN OTHERS THEN NULL;
+    END;
+    PERFORM cron.schedule('limpar_raiox', '41 3 * * *', 'SELECT public.limpar_raiox();');
+  END IF;
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'pg_cron indisponível: a limpeza roda ao abrir a página.';
+END;
+$$;
+```
+
+
+## 4. `20261128090300_cerebro_admin_sections.sql`
+
+```sql
+-- Fase A · bloco 3 · Cérebro da Omnia — 4/4: seções novas do Painel Admin
+-- (grupo Inteligência). Idempotente.
+INSERT INTO public.admin_sections (tab_key, label, icon, group_name, position, visible) VALUES
+  ('cerebro',     'Cérebro da Omnia', 'Brain',      'Inteligência', 5,  true),
+  ('raioxequipe', 'Raio-X da equipe', 'ScanSearch', 'Inteligência', 35, true)
+ON CONFLICT (tab_key) DO UPDATE SET
+  label = excluded.label,
+  icon = excluded.icon,
+  group_name = excluded.group_name,
+  position = excluded.position,
+  visible = excluded.visible;
+```
