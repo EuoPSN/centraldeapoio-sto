@@ -3,11 +3,13 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listAdminSections } from "@/lib/settings.functions";
+import { getAdminPendingCounts } from "@/lib/admin-pending.functions";
 import { getIcon } from "@/lib/icon-map";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { ChevronDown, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -91,10 +93,25 @@ export function useAdminSections() {
   return { isLoading: q.isLoading, sections, visible, grouped, orderedGroups };
 }
 
+// Contagens de pendência (sugestões, scripts para revisar, MarcIAna, Central de
+// Ajuda, Amor Saúde, Contatos) — uma função de servidor só, reaproveitada na
+// entrada, no seletor de seções e na pílula do menu lateral do site.
+export function useAdminPendingCounts(enabled = true) {
+  const fn = useServerFn(getAdminPendingCounts);
+  const q = useQuery({ queryKey: ["admin-pending-counts"], queryFn: () => fn({}), staleTime: 30_000, enabled });
+  return { data: q.data, isLoading: q.isLoading };
+}
+
+export function PendingDot({ n }: { n: number }) {
+  if (!n) return null;
+  return <Badge className="h-5 min-w-5 shrink-0 justify-center rounded-full px-1 text-[11px]">{n}</Badge>;
+}
+
 /** Barra de topo do Admin: entrada ("Painel Admin" + busca) ou dentro de uma
  * seção ("← Painel Admin" + seletor de grupo/seção + busca). */
 export function AdminTopBar({ current }: { current?: AdminSectionRow }) {
   const { grouped, orderedGroups } = useAdminSections();
+  const { data: pending } = useAdminPendingCounts();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
 
@@ -132,6 +149,7 @@ export function AdminTopBar({ current }: { current?: AdminSectionRow }) {
                         className={cn("flex w-full items-center justify-between gap-2", s.tab_key === current.tab_key && "font-semibold text-gold-text")}
                       >
                         {s.label}
+                        <PendingDot n={pending?.bySection[s.tab_key] ?? 0} />
                       </Link>
                     </DropdownMenuItem>
                   ))}

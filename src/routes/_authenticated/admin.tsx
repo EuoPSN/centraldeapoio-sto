@@ -1,6 +1,7 @@
 import { createFileRoute, redirect, Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { AdminTopBar, AdminSectionIcon, useAdminSections } from "@/components/admin/AdminShell";
+import { AdminTopBar, AdminSectionIcon, PendingDot, useAdminSections, useAdminPendingCounts } from "@/components/admin/AdminShell";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   // Links antigos usavam ?aba=<tab_key> pra abrir uma seção direto (ex.: os
@@ -27,6 +28,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 function AdminEntryPage() {
   const { grouped, orderedGroups, isLoading } = useAdminSections();
+  const { data: pending, isLoading: pendingLoading } = useAdminPendingCounts();
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7">
@@ -34,9 +36,30 @@ function AdminEntryPage() {
 
       <h1 className="text-2xl font-medium">O que precisa de você</h1>
 
-      {isLoading && <p className="mt-4 text-sm text-muted-foreground">Carregando…</p>}
+      {pendingLoading && <p className="mt-4 text-sm text-muted-foreground">Carregando…</p>}
+      {pending && (
+        <ul className="mt-4 divide-y divide-line">
+          {pending.items.map((it) => (
+            <li key={it.key} className={cn("flex items-center justify-between gap-4 py-3", it.count === 0 && "opacity-50")}>
+              <div className="flex items-start gap-4 min-w-0">
+                <span className="w-7 shrink-0 text-right text-xl font-semibold tabular-nums">{it.count}</span>
+                <div className="min-w-0">
+                  <p className="font-medium text-ink truncate">{it.title}</p>
+                  <p className="text-sm text-ink-muted truncate">{it.context}</p>
+                </div>
+              </div>
+              {it.count > 0 && (
+                <Link to={it.href} className="shrink-0 text-sm font-medium text-gold-text hover:underline">
+                  Resolver →
+                </Link>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
 
       <p className="mt-10 type-overline text-ink-muted">Seções</p>
+      {isLoading && <p className="mt-4 text-sm text-muted-foreground">Carregando…</p>}
       <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {orderedGroups.map((g) => (
           <div key={g} className="rounded-2xl border border-line p-4">
@@ -54,7 +77,8 @@ function AdminEntryPage() {
                     params={{ key: s.tab_key }}
                     className="flex items-center justify-between gap-2 rounded-md px-1.5 py-1.5 text-[13.5px] text-ink hover:bg-sidebar"
                   >
-                    {s.label}
+                    <span className="truncate">{s.label}</span>
+                    <PendingDot n={pending?.bySection[s.tab_key] ?? 0} />
                   </Link>
                 </li>
               ))}
