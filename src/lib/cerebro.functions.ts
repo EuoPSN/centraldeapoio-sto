@@ -4,7 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isAdminUser } from "@/lib/authz";
 import { removerDadosPessoais } from "@/lib/cliente-disse";
 import {
-  ETAPAS_FUNIL, FERRAMENTAS, blocoVazio, contarPalavras, gerarEtapasFunil, gerarPadraoEscrita,
+  ETAPAS_FUNIL, ETAPA_FUNIL_NOME, FERRAMENTAS, blocoVazio, contarPalavras, gerarEtapasFunil, gerarPadraoEscrita,
   type CerebroBloco, type FunilEtapa, type PadraoEscritaItem, type RegraFixa,
 } from "@/lib/cerebro";
 import { diaBR, inicioDiaBR, somarDias } from "@/lib/retomada";
@@ -265,4 +265,85 @@ export const excluirLimiteExtra = createServerFn({ method: "POST" })
     await requireAdmin(context);
     check(await db(context).from("ia_limites_extra").delete().eq("id", data.id));
     return { ok: true };
+  });
+
+// ---------------------------------------------------------------------------
+// Raio-X da equipe (só números e padrões; nunca conversa nem dados do cliente)
+// ---------------------------------------------------------------------------
+
+interface ContagemItem { nome: string; n: number }
+export interface PadroesRaiox {
+  total: number;
+  tecnicas: ContagemItem[];
+  escrita: ContagemItem[];
+  etapa: ContagemItem | null;
+}
+export interface RaioxEquipe {
+  equipe: PadroesRaiox;
+  vendedores: (PadroesRaiox & { user_id: string; nome: string; ultimo: string })[];
+}
+export interface RaioxResultadoAdmin {
+  id: string;
+  created_at: string;
+  etapa: string | null;
+  onde_perdeu: { descricao?: string; fala_cliente?: string; fala_atendente?: string };
+  faltou: { tecnica: string; explicacao: string }[];
+  reescrita: { original?: string; sugerida?: string };
+  escrita: { errado: string; certo: string; regra?: string }[];
+  habito: { titulo?: string };
+}
+
+function top(map: Map<string, ContagemItem>, k = 3): ContagemItem[] {
+  return [...map.values()].sort((a, b) => b.n - a.n || a.nome.localeCompare(b.nome)).slice(0, k);
+}
+function somar(map: Map<string, ContagemItem>, nome: string | undefined | null) {
+  const t = (nome ?? "").trim();
+  if (!t) return;
+  const k = t.toLowerCase();
+  const atual = map.get(k);
+  if (atual) atual.n += 1; else map.set(k, { nome: t, n: 1 });
+}
+
+function padroes(linhas: { etapa: string | null; faltou: unknown; escrita: unknown }[]): PadroesRaiox {
+  const tec = new Map<string, ContagemItem>(), esc = new Map<string, ContagemItem>(), eta = new Map<string, ContagemItem>();
+  for (const l of linhas) {
+    if (l.etapa) somar(eta, (ETAPA_FUNIL_NOME as Record<string, string>)[l.etapa] ?? l.etapa);
+    for (const f of (Array.isArray(l.faltou) ? l.faltou : []) as { tecnica?: string }[]) somar(tec, f.tecnica);
+    for (const e of (Array.isArray(l.escrita) ? l.escrita : []) as { regra?: string; errado?: string }[]) somar(esc, e.regra || e.errado);
+  }
+  return { total: linhas.length, tecnicas: top(tec), escrita: top(esc), etapa: top(eta, 1)[0] ?? null };
+}
+
+export const getRaioxEquipe = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<RaioxEquipe> => {
+    await requireAdmin(context);
+    const s = db(context);
+    const [res, prof] = await Promise.all([
+      s.from("raiox_resultados").select("user_id, etapa, faltou, escrita, created_at").order("created_at", { ascending: false }).limit(5000),
+      s.from("profiles").select("id, display_name, email"),
+    ]);
+    const linhas = (check(res) ?? []) as { user_id: string; etapa: string | null; faltou: unknown; escrita: unknown; created_at: string }[];
+    const nomeDe = new Map(((check(prof) ?? []) as { id: string; display_name: string | null; email: string | null }[])
+      .map((p) => [p.id, p.display_name?.trim() || String(p.email ?? "").split("@")[0] || "Sem nome"]));
+    const por = new Map<string, typeof linhas>();
+    for (const l of linhas) (por.get(l.user_id) ?? por.set(l.user_id, []).get(l.user_id)!).push(l);
+    const vendedores = [...por.entries()]
+      .map(([user_id, ls]) => ({ user_id, nome: nomeDe.get(user_id) ?? "Sem nome", ultimo: ls[0].created_at, ...padroes(ls) }))
+      .sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome));
+    return { equipe: padroes(linhas), vendedores };
+  });
+
+export const getRaioxVendedor = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ user_id: UUID }).parse(d))
+  .handler(async ({ data, context }): Promise<RaioxResultadoAdmin[]> => {
+    await requireAdmin(context);
+    const r = await db(context)
+      .from("raiox_resultados")
+      .select("id, created_at, etapa, onde_perdeu, faltou, reescrita, escrita, habito")
+      .eq("user_id", data.user_id)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    return (check(r) ?? []) as RaioxResultadoAdmin[];
   });
