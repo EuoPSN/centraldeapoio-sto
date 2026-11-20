@@ -1,22 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
-import { listContent } from "@/lib/content.functions";
-import { ContentList } from "@/components/ContentList";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
+// Problemas Técnicos virou uma aba da Central de Ajuda.
 export const Route = createFileRoute("/_authenticated/problemas")({
-  component: Page,
+  beforeLoad: ({ search }) => {
+    throw redirect({ to: "/ajuda/problemas", search: search as never });
+  },
 });
-
-function Page() {
-  const fn = useServerFn(listContent);
-  const q = useQuery({ queryKey: ["content", "problemas"], queryFn: () => fn({ data: { section: "problemas" } }) });
-  return (
-    <ContentList
-      title="Problemas Técnicos"
-      subtitle="Soluções rápidas para os problemas mais comuns do dia a dia: PC, sistema, login, etc."
-      items={q.data ?? []}
-      loading={q.isLoading}
-    />
-  );
-}

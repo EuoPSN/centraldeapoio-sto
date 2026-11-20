@@ -3,7 +3,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  BookMarked, ChevronDown, ChevronUp, GraduationCap, Headset, Home, LayoutGrid, LifeBuoy, LogOut,
+  ChevronDown, ChevronUp, GraduationCap, Headset, Home, LayoutGrid, LifeBuoy, LogOut,
   PenLine, Search, Settings,
 } from "lucide-react";
 import { MarcianaEyeIcon } from "@/components/marciana/MarcianaEye";
@@ -15,6 +15,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { OmniaLockup, OmniaSymbol } from "@/components/OmniaLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { listNavItems } from "@/lib/settings.functions";
+import { getAjudaNovidadesStatus } from "@/lib/ajuda.functions";
 import { cn } from "@/lib/utils";
 
 // Menu lateral da OMNIA Apoio, em sanfona.
@@ -59,8 +60,8 @@ const GROUPS: GroupDef[] = [
   },
 ];
 
-// Ficam na Central de Ajuda (rodapé) até a página ser unificada.
-const HELP_ROUTES = ["/problemas", "/tutoriais", "/sugestoes"];
+// Central de Ajuda: link fixo no rodapé do menu.
+const HELP_ROUTES = ["/ajuda", "/problemas", "/tutoriais", "/sugestoes"];
 
 interface GroupView { key: string; label: string; icon: GroupDef["icon"]; pages: { route: string; label: string }[] }
 
@@ -116,6 +117,9 @@ export function AppSidebar({ isAdmin, email, displayName, role }: { isAdmin: boo
   const fn = useServerFn(listNavItems);
   const q = useQuery({ queryKey: ["nav-items"], queryFn: () => fn({}), staleTime: 60_000 });
   const groups = useNavGroups(isAdmin, q.data as NavRow[] | undefined);
+  const novidadesFn = useServerFn(getAjudaNovidadesStatus);
+  const novidadesQ = useQuery({ queryKey: ["ajuda", "novidades-status"], queryFn: () => novidadesFn({}), staleTime: 60_000 });
+  const hasNovidades = (novidadesQ.data?.unseenCount ?? 0) > 0;
   const { state, isMobile } = useSidebar();
   const collapsed = state === "collapsed" && !isMobile;
 
@@ -259,12 +263,12 @@ export function AppSidebar({ isAdmin, email, displayName, role }: { isAdmin: boo
       <SidebarFooter className={cn("mx-3.5 gap-1 border-t border-line px-0 pb-4 pt-3", collapsed && "mx-2 items-center")}>
         {collapsed ? (
           <>
-            <HelpMenu collapsed active={helpActive} />
+            <HelpMenu collapsed active={helpActive} hasNovidades={hasNovidades} />
             <RailButton label={`${name} · Sair`} onClick={handleSignOut}><LogOut className="h-[18px] w-[18px]" {...ICON} /></RailButton>
           </>
         ) : (
           <>
-            <HelpMenu active={helpActive} />
+            <HelpMenu active={helpActive} hasNovidades={hasNovidades} />
             <div className="mt-1 flex items-center gap-2.5 px-1.5">
               <span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-line bg-surface-2 text-[11px] font-semibold text-ink">
                 {initials(name)}
@@ -313,53 +317,33 @@ function RailButton({ label, to, active, onClick, children }: { label: string; t
   );
 }
 
-// Central de Ajuda: por enquanto leva para Problemas Técnicos; Tutoriais e
-// Sugestões ficam no menu ao lado até a página ser unificada.
-function HelpMenu({ active, collapsed = false }: { active: boolean; collapsed?: boolean }) {
-  const links = (
-    <>
-      <DropdownMenuLabel className="type-overline text-xs text-ink-muted">Central de Ajuda</DropdownMenuLabel>
-      <DropdownMenuItem asChild><Link to="/problemas">Problemas Técnicos</Link></DropdownMenuItem>
-      <DropdownMenuItem asChild><Link to="/tutoriais">Tutoriais</Link></DropdownMenuItem>
-      <DropdownMenuItem asChild><Link to="/sugestoes">Sugestões</Link></DropdownMenuItem>
-    </>
-  );
+// Central de Ajuda: link fixo no rodapé do menu. O ponto dourado acompanha o
+// selo "N novas" do card de Novidades (há item do changelog ainda não visto).
+function HelpMenu({ active, hasNovidades, collapsed = false }: { active: boolean; hasNovidades: boolean; collapsed?: boolean }) {
   if (collapsed) {
     return (
-      <DropdownMenu>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <DropdownMenuTrigger aria-label="Central de Ajuda" className={cn(railClass, active && "text-gold")}>
-              <LifeBuoy className="h-[18px] w-[18px]" {...ICON} />
-            </DropdownMenuTrigger>
-          </TooltipTrigger>
-          <TooltipContent side="right">Central de Ajuda</TooltipContent>
-        </Tooltip>
-        <DropdownMenuContent side="right" align="end" sideOffset={10} className="min-w-48">{links}</DropdownMenuContent>
-      </DropdownMenu>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Link to="/ajuda" aria-label="Central de Ajuda" className={cn(railClass, "relative", active && "text-gold")}>
+            <LifeBuoy className="h-[18px] w-[18px]" {...ICON} />
+            {hasNovidades && <span aria-hidden className="absolute right-1.5 top-1.5 h-[7px] w-[7px] rounded-full bg-gold" />}
+          </Link>
+        </TooltipTrigger>
+        <TooltipContent side="right">Central de Ajuda</TooltipContent>
+      </Tooltip>
     );
   }
   return (
-    <div className="flex items-center gap-1">
-      <Link
-        to="/problemas"
-        className={cn(
-          "flex h-9 flex-1 items-center gap-2.5 rounded-lg px-2.5 text-[15px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-          active ? "bg-sidebar-accent text-ink" : "text-ink hover:bg-sidebar-accent/70",
-        )}
-      >
-        <LifeBuoy className={cn("h-[18px] w-[18px]", active ? "text-gold" : "text-ink-muted")} {...ICON} />
-        Central de Ajuda
-      </Link>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          aria-label="Mais opções de ajuda: Tutoriais e Sugestões"
-          className="grid h-9 w-8 place-items-center rounded-md text-ink-muted transition-colors hover:bg-sidebar-accent hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <BookMarked className="h-4 w-4" {...ICON} />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent side="top" align="end" className="min-w-48">{links}</DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+    <Link
+      to="/ajuda"
+      className={cn(
+        "flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-[15px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        active ? "bg-sidebar-accent text-ink" : "text-ink hover:bg-sidebar-accent/70",
+      )}
+    >
+      <LifeBuoy className={cn("h-[18px] w-[18px]", active ? "text-gold" : "text-ink-muted")} {...ICON} />
+      <span className="flex-1">Central de Ajuda</span>
+      {hasNovidades && <span aria-hidden className="h-[7px] w-[7px] shrink-0 rounded-full bg-gold" />}
+    </Link>
   );
 }

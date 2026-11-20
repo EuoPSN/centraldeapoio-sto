@@ -1,27 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
-import { listContent } from "@/lib/content.functions";
-import { ContentList } from "@/components/ContentList";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
+// Tutoriais virou "Procedimentos do atendimento" dentro da Central de Ajuda.
 export const Route = createFileRoute("/_authenticated/tutoriais")({
-  component: Page,
+  beforeLoad: ({ search }) => {
+    throw redirect({ to: "/ajuda/procedimentos", search: search as never });
+  },
 });
-
-function Page() {
-  const fn = useServerFn(listContent);
-
-  const tutoriaisQ = useQuery({
-    queryKey: ["content", "tutoriais"],
-    queryFn: () => fn({ data: { section: "tutoriais" } })
-  });
-
-  return (
-    <ContentList
-      title="Tutoriais"
-      subtitle="Passo a passo de procedimentos específicos do atendimento."
-      items={tutoriaisQ.data ?? []}
-      loading={tutoriaisQ.isLoading}
-    />
-  );
-}
