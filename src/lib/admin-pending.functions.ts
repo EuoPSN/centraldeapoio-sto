@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { isAdminUser } from "@/lib/authz";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { contarAtendentesAtrasados } from "@/lib/retomada.functions";
+import { contarFichasNovas } from "@/lib/fichas.functions";
 
 async function requireAdmin(ctx: { supabase: unknown; userId: string }) {
   const s = ctx.supabase as { rpc: (n: string, p: unknown) => Promise<{ data: boolean | null }> };
@@ -109,6 +110,34 @@ export const getAdminPendingCounts = createServerFn({ method: "GET" })
         context: atendentes > 0 ? `${tickets} ${tickets === 1 ? "retomada atrasada" : "retomadas atrasadas"} há mais de 1 dia` : "Tudo em dia",
         count: atendentes,
         href: "/admin/cadencia",
+      });
+    }
+
+    // 2d) Conversas que fecharam, enviadas pelos atendentes e à espera de revisão
+    {
+      // Se a migração das conversas ainda não rodou, não derruba as outras pendências.
+      const { count, recente } = await contarFichasNovas(db).catch(() => ({ count: 0, recente: null as string | null }));
+      bySection.conversasenviadas = count;
+      items.push({
+        key: "conversasenviadas",
+        title: "Conversas para revisar",
+        context: count > 0 && recente ? `A mais recente é de ${fmtData(recente)}` : "Tudo em dia",
+        count,
+        href: "/admin/conversasenviadas",
+      });
+    }
+
+    // 2e) Mensagens da retomada abaixo do esperado, com nova versão sugerida pela IA
+    {
+      const { data } = await db.from("mensagens_sugestoes").select("created_at").eq("status", "pendente").order("created_at", { ascending: false });
+      const count = (data ?? []).length;
+      bySection.mensagensvendem = count;
+      items.push({
+        key: "mensagensvendem",
+        title: "Mensagens abaixo do esperado",
+        context: count > 0 ? "Com sugestão de nova versão" : "Tudo em dia",
+        count,
+        href: "/admin/mensagensvendem",
       });
     }
 
