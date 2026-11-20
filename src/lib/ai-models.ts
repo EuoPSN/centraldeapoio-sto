@@ -49,3 +49,6 @@ export const COPILOTO_MODEL = "google/gemini-2.5-flash";
 
 /** Raio-X da venda: análise de uma venda perdida (técnicas que faltaram, escrita, reescrita). */
 export const RAIOX_MODEL = "google/gemini-2.5-flash";
+
+/** Biblioteca: monta a ficha de aprendizado de uma conversa que fechou, e sugere nova versão de mensagem abaixo do esperado. */
+export const BIBLIOTECA_MODEL = "google/gemini-2.5-flash";

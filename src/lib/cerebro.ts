@@ -8,7 +8,7 @@ import { removerDadosPessoais } from "@/lib/cliente-disse";
 // Ferramentas que usam o Cérebro
 // ---------------------------------------------------------------------------
 
-export const FERRAMENTAS = ["marciana", "cliente_disse", "mensagem_cliente", "retomada", "copiloto", "raiox", "simulador"] as const;
+export const FERRAMENTAS = ["marciana", "cliente_disse", "mensagem_cliente", "retomada", "copiloto", "raiox", "simulador", "biblioteca"] as const;
 export type Ferramenta = (typeof FERRAMENTAS)[number];
 
 export const FERRAMENTA_LABEL: Record<Ferramenta, string> = {
@@ -19,11 +19,12 @@ export const FERRAMENTA_LABEL: Record<Ferramenta, string> = {
   copiloto: "Copiloto",
   raiox: "Raio-X",
   simulador: "Simulador",
+  biblioteca: "Biblioteca",
 };
 
 /** Colunas mostradas no Admin ("Quem usa o quê"). A "Mensagem para o cliente"
  * faz parte da MarcIAna: marcar uma marca a outra. */
-export const FERRAMENTAS_COLUNAS = ["marciana", "cliente_disse", "retomada", "copiloto", "raiox", "simulador"] as const;
+export const FERRAMENTAS_COLUNAS = ["marciana", "cliente_disse", "retomada", "copiloto", "raiox", "simulador", "biblioteca"] as const;
 export type FerramentaColuna = (typeof FERRAMENTAS_COLUNAS)[number];
 
 export function ferramentasDaColuna(c: FerramentaColuna): Ferramenta[] {
@@ -184,7 +185,24 @@ export interface ConversaPreparada {
   ultimaMensagem: UltimaMensagem | null;
   /** Últimas mensagens já limpas, só para mostrar na tela. */
   previa: { de: DeQuem; texto: string }[];
+  /** Texto completo (já mascarado, sem corte) de cada mensagem do atendente. Serve para conferir
+   * que uma citação da IA existe de verdade; nunca é guardado nem devolvido ao navegador. */
+  textosAtendente: string[];
+  /** Nomes do cliente achados no arquivo (e os extras informados), para a conferência final. */
+  nomesCliente: string[];
+  /** Primeira e última mensagem, em ms (relógio de Brasília tratado como UTC). */
+  primeiraEm: number | null;
+  ultimaEm: number | null;
 }
+
+export interface OpcoesConversa {
+  /** Com o que trocar o nome do cliente (padrão "Cliente"; a ficha usa "[nome]"). */
+  trocaNome?: string;
+  /** Nomes já conhecidos (ex.: o da retomada) que também devem ser trocados. */
+  nomesExtras?: string[];
+}
+
+const AUTO_APRESENTACAO = /(?:[Mm]eu nome (?:é|e)|[Mm]e chamo|[Aa]qui (?:é|e)|[Ss]ou)\s+(?:(?:a|o)\s+)?(\p{Lu}[\p{L}'-]{2,})/gu;
 
 const ZTALK_MSG = /^\[(\d{1,2})\/(\d{1,2})\/(\d{4}) (\d{1,2}):(\d{2}):(\d{2})\]\[[^\]]*\]\[([^\]]*)\]\[([^\]]*)\]\s*-\s?(.*)$/;
 const ZTALK_ID = /^ID:\s*\S+\s+-\s+Tipo:/;
@@ -236,7 +254,8 @@ interface Msg { quem: string; de: DeQuem | null; texto: string; em: number }
 
 /** Lê o .txt exportado (Ztalk ou WhatsApp). `nomeAtendente` é o nome de quem usa a tela
  * e só serve para o WhatsApp comum, onde o arquivo não diz quem é o atendente. */
-export function prepararConversaTxt(bruto: string, nomeAtendente = ""): ConversaPreparada {
+export function prepararConversaTxt(bruto: string, nomeAtendente = "", opcoes: OpcoesConversa = {}): ConversaPreparada {
+  const trocaNome = opcoes.trocaNome ?? "Cliente";
   const linhas = bruto.replace(/\r/g, "").split("\n").map((l) => l.replace(/[‎‏﻿]/g, ""));
   const ztalk = linhas.some((l) => ZTALK_MSG.test(l));
 
@@ -306,15 +325,28 @@ export function prepararConversaTxt(bruto: string, nomeAtendente = ""): Conversa
   const nomesCliente = clientes.map((c) => (ztalk ? c.replace(/^Cliente\s*/i, "") : c));
   const nomeUnico = nomesCliente.length === 1 ? nomesCliente[0] : "";
   const primeiroNomeCliente = nomeUnico && !SO_NUMERO.test(nomeUnico) ? primeiroToken(nomeUnico) : null;
-  const nomesParaTrocar = nomesCliente.flatMap((c) => [c, primeiroToken(c)]).filter((n) => n.length >= 3 && !SO_NUMERO.test(n));
+  // Nomes que o próprio cliente diz ("meu nome é Maria", "sou a Maria") também são trocados.
+  const nomesDitos = new Set<string>();
+  for (const m of msgs) {
+    if (m.de !== "cliente" && !(m.de === "pessoa" && !ztalk)) continue;
+    for (const a of m.texto.matchAll(AUTO_APRESENTACAO)) nomesDitos.add(a[1]);
+  }
+  const extras = (opcoes.nomesExtras ?? []).map((n) => primeiroToken(n)).filter(Boolean);
+  const nomesParaTrocar = [...new Set([...nomesCliente.flatMap((c) => [c, primeiroToken(c)]), ...nomesDitos, ...extras])]
+    .filter((n) => n.length >= 3 && !SO_NUMERO.test(n))
+    .sort((a, b) => b.length - a.length);
 
-  const limpar = (texto: string) => {
+  const mascarar = (texto: string) => {
     let t = texto;
-    for (const n of nomesParaTrocar) t = t.replace(new RegExp(`(?<![\\p{L}\\d])${escapar(n)}(?![\\p{L}\\d])`, "giu"), "Cliente");
-    t = removerDadosPessoais(t).trim() || "(sem texto)";
+    for (const n of nomesParaTrocar) t = t.replace(new RegExp(`(?<![\\p{L}\\d])${escapar(n)}(?![\\p{L}\\d])`, "giu"), trocaNome);
+    return removerDadosPessoais(t).trim() || "(sem texto)";
+  };
+  const limpar = (texto: string) => {
+    const t = mascarar(texto);
     return t.length > MAX_CARACTERES_MENSAGEM ? `${t.slice(0, MAX_CARACTERES_MENSAGEM)}…` : t;
   };
   const nomeDe = (m: Msg) => (ztalk ? (m.de === "cliente" ? "Cliente" : "Atendente") : rotulo.get(m.quem) ?? "Pessoa");
+  // Nunca "Cliente <número>": o rótulo é só "Cliente".
 
   // Totais reais, antes de qualquer corte.
   const total = msgs.length;
@@ -372,6 +404,10 @@ export function prepararConversaTxt(bruto: string, nomeAtendente = ""): Conversa
     cortadas,
     ultimaMensagem: fim ? { de: fim.de ?? "pessoa", em: isoBrasilia(fim.em) } : null,
     previa: previa.slice(-12),
+    textosAtendente: msgs.filter((m) => m.de === "atendente").map((m) => mascarar(m.texto)),
+    nomesCliente: nomesParaTrocar,
+    primeiraEm: total ? msgs[0].em : null,
+    ultimaEm: fim ? fim.em : null,
   };
 }
 

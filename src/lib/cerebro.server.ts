@@ -7,9 +7,10 @@
 // `chamarIA` aqui.
 
 import { chatCompletion, type ChatMessage, type ChatContentPart } from "@/lib/ai-gateway.server";
-import { COPILOTO_MODEL, RAIOX_MODEL } from "@/lib/ai-models";
+import { BIBLIOTECA_MODEL, COPILOTO_MODEL, RAIOX_MODEL } from "@/lib/ai-models";
 import { isAdminUser } from "@/lib/authz";
 import { diaBR, inicioDiaBR } from "@/lib/retomada";
+import { ERRO_FICHA, FichaIASchema, validarFicha, type CamposFicha } from "@/lib/fichas";
 import {
   CopilotoRespostaSchema, RaioxRespostaSchema, ETAPAS_FUNIL, ETAPA_FUNIL_NOME, REGRAS_FIXAS_PADRAO,
   blocoVazio, calcularUso, contarPalavras, extrairJson, gerarEtapasFunil, gerarPadraoEscrita, limparTrecho, mensagemLimite,
@@ -52,6 +53,7 @@ const CONTEXTO_PADRAO: Record<Ferramenta, ContextoOmnia[]> = {
   simulador: [],
   copiloto: ["objecoes", "mensalidades", "amor_saude"],
   raiox: ["mensalidades"],
+  biblioteca: ["objecoes"],
 };
 
 interface DadosCerebro {
@@ -312,4 +314,75 @@ Responda APENAS com JSON:
     tempo_resposta: input.tempoResposta,
     perfil_id: perfilId,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Biblioteca: ficha de aprendizado de uma conversa que fechou
+// ---------------------------------------------------------------------------
+
+/** Monta a ficha a partir da conversa JÁ mascarada (sem telefone, CPF, e-mail; cliente como "Cliente";
+ * nomes como [nome]). A conversa só existe em memória: nada daqui é guardado nem registrado em log.
+ * As validações em código rodam depois da IA; se falharem, tenta mais uma vez e, se falhar de novo, lança ERRO_FICHA. */
+export async function gerarFichaIA(input: {
+  texto: string;
+  /** Mensagens do atendente (mascaradas, completas), para conferir a mensagem-chave. */
+  textosAtendente: string[];
+  /** Nomes do cliente que não podem aparecer em nenhum campo. */
+  nomes: string[];
+}): Promise<CamposFicha> {
+  const tarefa = `Você monta uma FICHA DE APRENDIZADO a partir de uma conversa de WhatsApp em que o atendente do Cartão de TODOS FECHOU uma venda. A ficha ajuda os colegas que travam na mesma objeção.
+Na conversa, "Atendente" é quem vende e "Cliente" é quem compra. O nome da cliente aparece como [nome]. Você não recebe telefone, CPF nem e-mail: não invente nenhum.
+Etapas do funil: use as definições do funil acima, quando houver, para escolher onde a cliente parou.
+Regras:
+- "objecao_id": o id (da lista de OBJEÇÕES PUBLICADAS) da objeção principal que o atendente teve de contornar; null se nenhuma combinar. "objecao_rotulo": nome curto da objeção (até 5 palavras, em minúsculas, ex.: "está caro"); se objecao_id existir, use o nome da lista.
+- "ponto_parada": onde a venda parou ANTES de fechar. Exatamente um destes: nao_respondeu_primeira | parou_explicativa | recebeu_proposta | travou_fechamento.
+- "plano": Prata, Ouro ou Diamante só se a conversa disser qual; senão "outro".
+- "perfil_cliente": perfil curto SEM nome, ex.: "Família com 4 dependentes · 1 idoso", "Casal com 1 filho", "Uma pessoa". Só o que aparece na conversa.
+- "onde_travou": uma ou duas frases em RESUMO sobre o que a cliente sentiu ou disse que travou a venda. NUNCA use aspas nem cite a fala da cliente.
+- "o_que_fez": de 2 a 4 passos curtos, cada um sobre o que o ATENDENTE fez (ex.: "Comparou o preço da consulta particular com o do cartão."). Sem nome de cliente.
+- "mensagem_chave": a mensagem do ATENDENTE que mais ajudou a virar a venda, COPIADA EXATAMENTE como está na conversa (pode ser um trecho contínuo de uma única mensagem do atendente), mantendo [nome] onde aparecer. Nunca use mensagem da cliente.
+- "por_que_funcionou": uma ou duas frases do porquê, no padrão de escrita acima.
+- Nunca escreva nome de cliente, de dependente, telefone, CPF ou e-mail em nenhum campo. Pagamento é só cartão de crédito ou débito. Nunca escreva "não é plano de saúde".
+Responda APENAS com JSON:
+{"objecao_id":null,"objecao_rotulo":"...","ponto_parada":"...","plano":"outro","perfil_cliente":"...","onde_travou":"...","o_que_fez":["..."],"mensagem_chave":"...","por_que_funcionou":"..."}`;
+
+  const a = await adminDb();
+  const { data: objs } = await a.from("objecoes").select("id, nome").eq("status", "publicada");
+  const validas = new Map(((objs ?? []) as { id: string; nome: string }[]).map((o) => [o.id, o.nome]));
+
+  let correcoes = "";
+  for (let tentativa = 0; tentativa < 2; tentativa++) {
+    const { texto: system } = await montarInstrucoes("biblioteca", `${tarefa}${correcoes}`);
+    let candidato: CamposFicha | null = null;
+    try {
+      const raw = await chamarIAJson({
+        model: BIBLIOTECA_MODEL,
+        temperature: 0.3,
+        messages: [{ role: "system", content: system }, { role: "user", content: `CONVERSA:\n${input.texto}` }],
+      });
+      const r = FichaIASchema.parse(raw);
+      const id = r.objecao_id && validas.has(r.objecao_id) ? r.objecao_id : null;
+      candidato = {
+        objecao_id: id,
+        objecao_rotulo: id ? validas.get(id)! : r.objecao_rotulo,
+        ponto_parada: r.ponto_parada,
+        plano: r.plano,
+        perfil_cliente: semPlanoDeSaude(r.perfil_cliente),
+        onde_travou: semPlanoDeSaude(r.onde_travou),
+        o_que_fez: r.o_que_fez.map(semPlanoDeSaude),
+        mensagem_chave: r.mensagem_chave,
+        por_que_funcionou: semPlanoDeSaude(r.por_que_funcionou),
+      };
+    } catch {
+      // Sem detalhes: a mensagem do erro poderia carregar trecho da resposta.
+      console.error("Ficha: resposta da IA inválida (tentativa", tentativa + 1, ")");
+    }
+    if (candidato) {
+      const problemas = validarFicha(candidato, { nomes: input.nomes, textosAtendente: input.textosAtendente });
+      if (!problemas.length) return candidato;
+      console.error("Ficha reprovada na validação:", problemas.join(", "));
+      correcoes = `\n\nATENÇÃO: a resposta anterior foi recusada (${problemas.join(", ")}). Corrija: a mensagem_chave tem de ser copiada exatamente de uma mensagem do ATENDENTE; sem aspas em onde_travou; sem nome, telefone, CPF ou e-mail em nenhum campo.`;
+    }
+  }
+  throw new Error(ERRO_FICHA);
 }
