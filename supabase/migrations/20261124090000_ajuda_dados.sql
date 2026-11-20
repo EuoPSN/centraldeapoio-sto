@@ -18,7 +18,7 @@ GRANT ALL ON public.ajuda_feedback TO service_role;
 ALTER TABLE public.ajuda_feedback ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "ajuda_feedback_select_own_or_admin" ON public.ajuda_feedback FOR SELECT TO authenticated
-  USING (user_id = auth.uid() OR public.has_role(auth.uid(), 'admin'));
+  USING (user_id = auth.uid() OR private.has_role(auth.uid(), 'admin'::app_role));
 CREATE POLICY "ajuda_feedback_insert_own" ON public.ajuda_feedback FOR INSERT TO authenticated
   WITH CHECK (user_id = auth.uid());
 CREATE POLICY "ajuda_feedback_update_own" ON public.ajuda_feedback FOR UPDATE TO authenticated
