@@ -372,7 +372,7 @@ function CentralSearch() {
             const q = e.target.value;
             // Ao digitar, a busca global abre com o texto e assume o foco.
             if (q.trim()) {
-              openGlobalSearch(q);
+              openGlobalSearch(q, "all", { clienteDisse: true });
               setValue("");
             } else {
               setValue(q);

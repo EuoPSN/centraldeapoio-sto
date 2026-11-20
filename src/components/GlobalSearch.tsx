@@ -23,17 +23,21 @@ import { listChangelog } from "@/lib/changelog.functions";
 import { listContatos } from "@/lib/contatos.functions";
 import {
   BookOpen, DollarSign, GraduationCap, MessageSquareQuote, Wrench,
-  Users, Tag, UserCog, MapPin, FlaskConical, Stethoscope, Star, Bot, Hospital, Building2, LifeBuoy,
+  Users, Tag, UserCog, MapPin, FlaskConical, Stethoscope, Star, Bot, Hospital, Building2, LifeBuoy, MessageCircleQuestion,
 } from "lucide-react";
 
 /** Evento para abrir a busca global já com um texto (ex.: campo central da Início). */
+function normalizeText(s: string) {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+
 export const OPEN_SEARCH_EVENT = "omnia:open-search";
 
 export type SearchScope = "all" | "messages" | "amor";
 
 /** Abre a busca global; `scope: "messages"` mostra só mensagens (Scripts), `"amor"` só o Amor Saúde. */
-export function openGlobalSearch(query = "", scope: SearchScope = "all") {
-  window.dispatchEvent(new CustomEvent<{ query: string; scope: SearchScope }>(OPEN_SEARCH_EVENT, { detail: { query, scope } }));
+export function openGlobalSearch(query = "", scope: SearchScope = "all", opts: { clienteDisse?: boolean } = {}) {
+  window.dispatchEvent(new CustomEvent<{ query: string; scope: SearchScope; clienteDisse?: boolean }>(OPEN_SEARCH_EVENT, { detail: { query, scope, clienteDisse: opts.clienteDisse } }));
 }
 
 const AMOR_KEYS: string[] = ["pricing", "exames", "procedimentos", "clinicas"];
@@ -42,6 +46,8 @@ export function GlobalSearch() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [scope, setScope] = useState<SearchScope>("all");
+  // Aberta pela busca central da Início: oferece "O cliente disse…" para falas longas.
+  const [clienteDisse, setClienteDisse] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -49,13 +55,15 @@ export function GlobalSearch() {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setScope("all");
+        setClienteDisse(false);
         setOpen((o) => !o);
       }
     };
     const openWith = (e: Event) => {
-      const detail = (e as CustomEvent<{ query?: string; scope?: SearchScope }>).detail;
+      const detail = (e as CustomEvent<{ query?: string; scope?: SearchScope; clienteDisse?: boolean }>).detail;
       setQuery(detail?.query ?? "");
       setScope(detail?.scope ?? "all");
+      setClienteDisse(!!detail?.clienteDisse);
       setOpen(true);
     };
     window.addEventListener("keydown", handler);
@@ -162,6 +170,19 @@ export function GlobalSearch() {
     navigate({ to: "/assistente", search: { pergunta } });
   };
 
+  // "O cliente disse": mais de 3 palavras e nenhum resultado com o texto exato.
+  const falaCliente = query.trim();
+  const temExato = useMemo(() => {
+    const n = normalizeText(falaCliente);
+    if (!n) return false;
+    return Object.values(items).some((list) => (list as Item[]).some((i) => normalizeText(`${i.title} ${i.preview}`).includes(n)));
+  }, [items, falaCliente]);
+  const mostrarClienteDisse = clienteDisse && scope === "all" && falaCliente.split(/\s+/).filter(Boolean).length > 3 && !temExato;
+  const abrirClienteDisse = () => {
+    setOpen(false);
+    navigate({ to: "/scripts/cliente-disse", search: { aba: "objecoes", fala: falaCliente } });
+  };
+
   const groups: { key: keyof typeof items; heading: string; limit: number }[] = [
     { key: "messages", heading: "Scripts / Mensagens", limit: 8 },
     { key: "knowledge", heading: "Base de Conhecimento", limit: 6 },
@@ -192,6 +213,17 @@ export function GlobalSearch() {
         }
       />
       <CommandList>
+        {mostrarClienteDisse && (
+          <CommandGroup heading="O cliente disse" forceMount>
+            <CommandItem forceMount value={falaCliente} onSelect={abrirClienteDisse}>
+              <MessageCircleQuestion className="h-4 w-4 text-gold-text" />
+              <span className="min-w-0 truncate">
+                O cliente disse: <span className="font-medium">“{falaCliente}”</span>
+              </span>
+              <span className="ml-auto shrink-0 text-xs font-semibold text-gold-text">ver resposta →</span>
+            </CommandItem>
+          </CommandGroup>
+        )}
         <CommandEmpty>
           {[messages, knowledge, pricing, unidades, exames, procedimentos].some((q) => q.isLoading)
             ? "Carregando conteúdo…"
