@@ -18,7 +18,7 @@ import { ChoicePill, CopyText, Overline } from "@/components/cliente-disse/share
 import { AdicionarRetomada } from "@/components/retomada/AdicionarRetomada";
 import { AudioExemplo } from "@/components/retomada/AudioExemplo";
 import { BaixarRelatorioButton } from "@/components/retomada/BaixarRelatorio";
-import { RETOMADA_BASE_KEY, RETOMADA_CONTAGEM_KEY, useRetomadaBase } from "@/components/retomada/hooks";
+import { RETOMADA_BASE_KEY, RETOMADA_CONTAGEM_KEY, useMensagensSelo, useRetomadaBase } from "@/components/retomada/hooks";
 import { useAvisosPermissao } from "@/components/retomada/Avisos";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -26,6 +26,7 @@ import {
 import { EnviarConversaDialog, FICHAS_RETOMADAS_KEY } from "@/components/biblioteca/EnviarConversaDialog";
 import { getFichasDasRetomadas } from "@/lib/fichas.functions";
 import { DIAS_PARA_ENVIAR } from "@/lib/fichas";
+import { SeloMensagem } from "@/components/retomada/SeloMensagem";
 import { cn } from "@/lib/utils";
 
 type FichasDasRetomadas = Record<string, { status: string; motivo_recusa: string | null }>;
@@ -311,6 +312,7 @@ function Detalhe({ r, base, onAtualizada, onProximo, lista, fichas, onEnviarConv
   const caso = r.fechamento_caso_id ? base.casos[r.fechamento_caso_id] ?? null : null;
   const msg = achaMensagem(base, r);
   const naFila = r.status === "fila";
+  const selos = useMensagensSelo().data;
   const [perdendo, setPerdendo] = useState(false);
   const [voltando, setVoltando] = useState(false);
   const [novoPonto, setNovoPonto] = useState<Ponto>(r.ponto_parada);
@@ -403,7 +405,7 @@ function Detalhe({ r, base, onAtualizada, onProximo, lista, fichas, onEnviarConv
         <>
           <div className="mt-4 rounded-xl bg-surface-2 px-5 py-4">
             <div className="flex items-center justify-between gap-3">
-              <Overline>{msg?.canal === "audio" ? `Roteiro do áudio (até 30 s) · ${etapaTxt}` : `Mensagem do ${etapaTxt}`}</Overline>
+              <Overline>{msg?.canal === "audio" ? `Roteiro do áudio (até 30 s) · ${etapaTxt}` : `Mensagem do ${etapaTxt}`}{msg && texto ? ` · Versão ${msg.versao}` : ""}</Overline>
               {texto && <CopyText text={texto} variant="link" onCopied={copiou} />}
             </div>
             {texto ? (
@@ -412,6 +414,15 @@ function Detalhe({ r, base, onAtualizada, onProximo, lista, fichas, onEnviarConv
               <p className="mt-2 text-[14px] text-ink-muted">Esta mensagem ainda não foi publicada. Fale com o administrador para escrever a cadência.</p>
             )}
           </div>
+
+          {msg && texto && selos && (
+            <SeloMensagem
+              selo={selos.selos[`cadencia:${msg.id}:${msg.versao}`]}
+              versaoBoa={selos.versoesBoas[msg.id]}
+              montar={(t) => montarMensagem(t, { nome: r.primeiro_nome, atendente: base.atendente, caso, observacao: r.observacao })}
+              onCopiou={copiou}
+            />
+          )}
 
           {msg?.canal === "audio" && (
             <div className="mt-3 space-y-2">

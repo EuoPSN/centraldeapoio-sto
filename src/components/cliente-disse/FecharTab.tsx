@@ -22,6 +22,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { SeloMensagem } from "@/components/retomada/SeloMensagem";
+import { useMensagensSelo } from "@/components/retomada/hooks";
 import { cn } from "@/lib/utils";
 
 const CASOS_KEY = ["cliente-disse-casos"] as const;
@@ -165,6 +167,7 @@ export function FecharTab({
   const mensagem = mensagemEtapa?.mensagem ? preencherTemplate(mensagemEtapa.mensagem, draft, economia) : "";
   const mensagemCompleta = [mensagem, comEconomia ? blocoEconomia : ""].filter(Boolean).join("\n\n");
   const registrar = useRegistrarUso();
+  const selos = useMensagensSelo().data;
   const hoje = hojeISO();
 
   return (
@@ -321,7 +324,7 @@ export function FecharTab({
                 <CopyText
                   variant="link"
                   text={mensagemCompleta}
-                  onCopied={() => mensagemEtapa && registrar({ fechamento_item_id: mensagemEtapa.id })}
+                  onCopied={() => mensagemEtapa && registrar({ fechamento_item_id: mensagemEtapa.id, caso_id: draft.id })}
                 />
               )}
             </div>
@@ -329,6 +332,9 @@ export function FecharTab({
               <p className="mt-2 whitespace-pre-line text-[15px] leading-[25px] text-ink">{mensagem}</p>
             ) : (
               <p className="mt-2 text-[14px] text-ink-muted">Nenhuma mensagem publicada para esta etapa ainda.</p>
+            )}
+            {mensagem && mensagemEtapa && selos && (
+              <SeloMensagem selo={selos.selos[`fechamento:${mensagemEtapa.id}:1`]} comLinkOutraVersao={false} />
             )}
           </div>
 

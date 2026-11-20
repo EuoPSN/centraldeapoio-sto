@@ -258,9 +258,24 @@ export const registrarUsoClienteDisse = createServerFn({ method: "POST" })
     objecao_id: z.string().uuid().nullable().default(null),
     fechamento_item_id: z.string().uuid().nullable().default(null),
     angulo: z.string().max(40).nullable().default(null),
+    /** Caso de fechamento aberto (salvo) em que a mensagem foi copiada: base do selo "levou ao fechamento". */
+    caso_id: z.string().uuid().nullable().default(null),
   }).refine((v) => v.objecao_id || v.fechamento_item_id).parse(d))
   .handler(async ({ data, context }) => {
-    check(await db(context).from("cliente_disse_uso").insert({ ...data, user_id: context.userId }));
+    const { caso_id, ...uso } = data;
+    check(await db(context).from("cliente_disse_uso").insert({ ...uso, user_id: context.userId }));
+    // Mensagens que vendem: a mensagem do Fechar com este cliente conta uma vez por caso.
+    if (caso_id && data.fechamento_item_id) {
+      try {
+        const s = db(context);
+        const { data: ja } = await s.from("mensagens_usos").select("id").eq("caso_id", caso_id).eq("item_id", data.fechamento_item_id).limit(1);
+        if (!(ja ?? []).length) {
+          await s.from("mensagens_usos").insert({ user_id: context.userId, origem: "fechamento", item_id: data.fechamento_item_id, versao: 1, caso_id });
+        }
+      } catch (err) {
+        console.error("Não consegui registrar o uso da mensagem (migração pendente?):", err instanceof Error ? err.message : "erro");
+      }
+    }
     return { ok: true };
   });
 
@@ -303,6 +318,9 @@ export const concluirCaso = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
+    // Antes de apagar o caso: as mensagens copiadas nele "levaram ao fechamento".
+    await db(context).from("mensagens_usos").update({ fechou_em: new Date().toISOString() }).eq("caso_id", data.id).eq("user_id", context.userId)
+      .then((r: { error?: { message: string } | null }) => { if (r?.error) console.error("Não consegui marcar o fechamento das mensagens:", r.error.message); });
     check(await db(context).from("fechamento_casos").delete().eq("id", data.id).eq("user_id", context.userId));
     return { ok: true };
   });

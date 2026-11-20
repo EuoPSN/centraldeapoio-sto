@@ -10,6 +10,7 @@ import { chatCompletion, type ChatMessage, type ChatContentPart } from "@/lib/ai
 import { BIBLIOTECA_MODEL, COPILOTO_MODEL, RAIOX_MODEL } from "@/lib/ai-models";
 import { isAdminUser } from "@/lib/authz";
 import { diaBR, inicioDiaBR } from "@/lib/retomada";
+import { variaveisOk } from "@/lib/mensagens-vendem";
 import { ERRO_FICHA, FichaIASchema, validarFicha, type CamposFicha } from "@/lib/fichas";
 import {
   CopilotoRespostaSchema, RaioxRespostaSchema, ETAPAS_FUNIL, ETAPA_FUNIL_NOME, REGRAS_FIXAS_PADRAO,
@@ -385,4 +386,55 @@ Responda APENAS com JSON:
     }
   }
   throw new Error(ERRO_FICHA);
+}
+
+// ---------------------------------------------------------------------------
+// Mensagens que vendem: nova versão de uma mensagem da cadência abaixo do esperado
+// ---------------------------------------------------------------------------
+
+export interface SugestaoDeMensagem { texto: string; por_que_mudar: string }
+
+/** Pede à IA uma nova versão da mensagem (ferramenta "retomada" do Cérebro + padrão de escrita).
+ * Mantém as variáveis da original e só usa as conhecidas; se a resposta não servir, tenta mais uma vez.
+ * Não recebe dado de cliente: só o texto da mensagem, o papel dela e a taxa de resposta. */
+export async function sugerirNovaVersaoMensagem(input: {
+  texto: string;
+  contexto: string;
+  papel: string;
+  canal: "texto" | "audio";
+  porQue: string;
+  taxaResposta: number | null;
+  mediaEtapa: number | null;
+}): Promise<SugestaoDeMensagem | null> {
+  const pct = (v: number | null) => (v == null ? "n/d" : `${Math.round(v * 100)}%`);
+  const tarefa = `Você reescreve UMA mensagem de retomada de venda do Cartão de TODOS (WhatsApp) que está respondendo abaixo do esperado.
+Mensagem atual (${input.canal === "audio" ? "roteiro de áudio de até 30 segundos" : "texto"}) — ${input.contexto}, papel "${input.papel}":
+"""${input.texto}"""
+${input.porQue ? `Por que a mensagem atual existe: ${input.porQue}\n` : ""}Taxa de resposta desta versão: ${pct(input.taxaResposta)}; média da etapa: ${pct(input.mediaEtapa)}.
+Regras:
+- Escreva a NOVA versão no padrão de escrita acima, com o mesmo papel e o mesmo objetivo, até 4 linhas e uma só pergunta no final.
+- Mantenha as variáveis {nome} {atendente} {plano} {dependentes} {usos} {observacao} que a mensagem atual usa e NÃO crie variável nova.
+- Em "por_que_mudar", diga em uma ou duas frases o que a versão atual faz de fraco e o que a nova muda.
+- Não invente preço, carência ou benefício. Pagamento é só cartão de crédito ou débito.
+Responda APENAS com JSON: {"texto":"...","por_que_mudar":"..."}`;
+
+  let correcao = "";
+  for (let tentativa = 0; tentativa < 2; tentativa++) {
+    try {
+      const { texto: system } = await montarInstrucoes("retomada", `${tarefa}${correcao}`);
+      const raw = (await chamarIAJson({
+        model: BIBLIOTECA_MODEL,
+        temperature: 0.5,
+        messages: [{ role: "system", content: system }, { role: "user", content: "Escreva a nova versão." }],
+      })) as { texto?: unknown; por_que_mudar?: unknown };
+      const texto = semPlanoDeSaude(String(raw.texto ?? "")).trim();
+      const porQue = String(raw.por_que_mudar ?? "").trim().slice(0, 600);
+      const v = variaveisOk(input.texto, texto);
+      if (texto && texto !== input.texto.trim() && v.ok) return { texto: texto.slice(0, 4000), por_que_mudar: porQue };
+      correcao = `\n\nATENÇÃO: a resposta anterior foi recusada. ${v.faltando.length ? `Faltou manter: ${v.faltando.map((x) => `{${x}}`).join(" ")}. ` : ""}${v.desconhecidas.length ? `Não use: ${v.desconhecidas.map((x) => `{${x}}`).join(" ")}. ` : ""}O texto tem de ser diferente do atual.`;
+    } catch {
+      console.error("Sugestão de mensagem: resposta da IA inválida");
+    }
+  }
+  return null;
 }
