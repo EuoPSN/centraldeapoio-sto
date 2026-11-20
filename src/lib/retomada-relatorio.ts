@@ -52,7 +52,7 @@ const C = {
     { nome: "primeiro_nome", significado: "Primeiro nome do cliente.", valores: "texto livre", largura: 16 },
     { nome: "atendente", significado: "Atendente que fez a ação.", valores: "nome do atendente", largura: 16 },
     { nome: "ponto_parada", significado: "Ponto de parada do ticket no momento da ação.", valores: PONTOS, largura: 24 },
-    { nome: "etapa", significado: "Etapa da cadência em que a ação aconteceu.", valores: ETAPAS, largura: 11 },
+    { nome: "etapa", significado: "Etapa da cadência da ação. Em respondeu, fechou e perdido é a etapa da última mensagem enviada (a que gerou o resultado).", valores: ETAPAS, largura: 11 },
     { nome: "acao", significado: "O que aconteceu.", valores: ACOES, largura: 18 },
     { nome: "codigo_mensagem", significado: "Mensagem da cadência ligada à ação (liga com a aba Mensagens).", valores: "<ponto_parada>_<etapa>, ex.: recebeu_proposta_d2", largura: 28 },
     { nome: "versao_mensagem", significado: "Versão da mensagem no momento da ação.", valores: "número inteiro", largura: 12 },

@@ -243,6 +243,13 @@ export const registrarCopiouRetomada = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Etapa da última mensagem enviada no ciclo atual (respostas, fechamentos e perdas contam nela). */
+async function etapaDoUltimoEnvio(ctx: Ctx, r: Retomada): Promise<EtapaRetomada> {
+  const evs = (check(await db(ctx).from("retomada_eventos").select("acao, etapa, created_at").eq("retomada_id", r.id).in("acao", ["enviei", "voltou_fila"]).order("created_at", { ascending: false }).limit(10)) ?? []) as { acao: string; etapa: EtapaRetomada }[];
+  const ultimo = evs[0];
+  return ultimo && ultimo.acao === "enviei" ? ultimo.etapa : r.etapa_atual;
+}
+
 const AcaoInput = z.discriminatedUnion("acao", [
   z.object({ acao: z.literal("enviei"), id: UUID }),
   z.object({ acao: z.literal("respondeu"), id: UUID }),
@@ -275,13 +282,13 @@ export const acaoRetomada = createServerFn({ method: "POST" })
         // D+10 enviado: sem resposta em 2 dias o ticket esfria sozinho.
         : { proxima_em: null, d10_enviado_em: agora.toISOString() };
     } else if (data.acao === "respondeu") {
-      evento = { ...base, acao: "respondeu" };
+      evento = { ...base, etapa: await etapaDoUltimoEnvio(context, r), acao: "respondeu" };
       patch = { status: "respondeu", proxima_em: null };
     } else if (data.acao === "fechou") {
-      evento = { ...base, acao: "fechou" };
+      evento = { ...base, etapa: await etapaDoUltimoEnvio(context, r), acao: "fechou" };
       patch = { status: "fechou", proxima_em: null };
     } else if (data.acao === "perdido") {
-      evento = { ...base, acao: "perdido", detalhe: data.motivo };
+      evento = { ...base, etapa: await etapaDoUltimoEnvio(context, r), acao: "perdido", detalhe: data.motivo };
       patch = { status: "perdido", proxima_em: null, motivo_perda: data.motivo };
     } else {
       const prox = agendarProxima("follow_up", agora)!; // recomeça no D+1, amanhã
