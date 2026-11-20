@@ -9,6 +9,8 @@ const ROUTE_TO_ADMIN_SECTION: [string, string][] = [
   ["/retomar", "cadencia"],
   ["/scripts", "messages"],
   ["/assistente", "marciana"],
+  ["/copiloto", "cerebro"],
+  ["/raiox", "cerebro"],
   ["/simulador-ia", "perfis"],
   ["/contatos", "contatos"],
   ["/biblioteca", "imagelibrary"],

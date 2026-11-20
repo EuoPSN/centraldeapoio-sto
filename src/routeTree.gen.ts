@@ -19,6 +19,7 @@ import { Route as AuthenticatedBibliotecaRouteImport } from './routes/_authentic
 import { Route as AuthenticatedChecklistRouteImport } from './routes/_authenticated/checklist'
 import { Route as AuthenticatedConhecimentoRouteImport } from './routes/_authenticated/conhecimento'
 import { Route as AuthenticatedContatosRouteImport } from './routes/_authenticated/contatos'
+import { Route as AuthenticatedCopilotoRouteImport } from './routes/_authenticated/copiloto'
 import { Route as AuthenticatedCriarScriptRouteImport } from './routes/_authenticated/criar-script'
 import { Route as AuthenticatedCrmLeadsRouteImport } from './routes/_authenticated/crm-leads'
 import { Route as AuthenticatedCrmProspeccaoRouteImport } from './routes/_authenticated/crm-prospeccao'
@@ -28,6 +29,7 @@ import { Route as AuthenticatedMeusRelatoriosRouteImport } from './routes/_authe
 import { Route as AuthenticatedMotorDecisaoRouteImport } from './routes/_authenticated/motor-decisao'
 import { Route as AuthenticatedPrecosRouteImport } from './routes/_authenticated/precos'
 import { Route as AuthenticatedProblemasRouteImport } from './routes/_authenticated/problemas'
+import { Route as AuthenticatedRaioxRouteImport } from './routes/_authenticated/raiox'
 import { Route as AuthenticatedRankingRouteImport } from './routes/_authenticated/ranking'
 import { Route as AuthenticatedRetomarRouteImport } from './routes/_authenticated/retomar'
 import { Route as AuthenticatedSimuladorIaRouteImport } from './routes/_authenticated/simulador-ia'
@@ -104,6 +106,11 @@ const AuthenticatedContatosRoute = AuthenticatedContatosRouteImport.update({
   path: '/contatos',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCopilotoRoute = AuthenticatedCopilotoRouteImport.update({
+  id: '/copiloto',
+  path: '/copiloto',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedCriarScriptRoute =
   AuthenticatedCriarScriptRouteImport.update({
     id: '/criar-script',
@@ -152,6 +159,11 @@ const AuthenticatedPrecosRoute = AuthenticatedPrecosRouteImport.update({
 const AuthenticatedProblemasRoute = AuthenticatedProblemasRouteImport.update({
   id: '/problemas',
   path: '/problemas',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedRaioxRoute = AuthenticatedRaioxRouteImport.update({
+  id: '/raiox',
+  path: '/raiox',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedRankingRoute = AuthenticatedRankingRouteImport.update({
@@ -306,6 +318,7 @@ export interface FileRoutesByFullPath {
   '/checklist': typeof AuthenticatedChecklistRoute
   '/conhecimento': typeof AuthenticatedConhecimentoRoute
   '/contatos': typeof AuthenticatedContatosRoute
+  '/copiloto': typeof AuthenticatedCopilotoRoute
   '/criar-script': typeof AuthenticatedCriarScriptRoute
   '/crm-leads': typeof AuthenticatedCrmLeadsRoute
   '/crm-prospeccao': typeof AuthenticatedCrmProspeccaoRoute
@@ -315,6 +328,7 @@ export interface FileRoutesByFullPath {
   '/motor-decisao': typeof AuthenticatedMotorDecisaoRoute
   '/precos': typeof AuthenticatedPrecosRoute
   '/problemas': typeof AuthenticatedProblemasRoute
+  '/raiox': typeof AuthenticatedRaioxRoute
   '/ranking': typeof AuthenticatedRankingRoute
   '/retomar': typeof AuthenticatedRetomarRoute
   '/simulador-ia': typeof AuthenticatedSimuladorIaRoute
@@ -349,6 +363,7 @@ export interface FileRoutesByTo {
   '/checklist': typeof AuthenticatedChecklistRoute
   '/conhecimento': typeof AuthenticatedConhecimentoRoute
   '/contatos': typeof AuthenticatedContatosRoute
+  '/copiloto': typeof AuthenticatedCopilotoRoute
   '/criar-script': typeof AuthenticatedCriarScriptRoute
   '/crm-leads': typeof AuthenticatedCrmLeadsRoute
   '/crm-prospeccao': typeof AuthenticatedCrmProspeccaoRoute
@@ -358,6 +373,7 @@ export interface FileRoutesByTo {
   '/motor-decisao': typeof AuthenticatedMotorDecisaoRoute
   '/precos': typeof AuthenticatedPrecosRoute
   '/problemas': typeof AuthenticatedProblemasRoute
+  '/raiox': typeof AuthenticatedRaioxRoute
   '/ranking': typeof AuthenticatedRankingRoute
   '/retomar': typeof AuthenticatedRetomarRoute
   '/simulador-ia': typeof AuthenticatedSimuladorIaRoute
@@ -396,6 +412,7 @@ export interface FileRoutesById {
   '/_authenticated/checklist': typeof AuthenticatedChecklistRoute
   '/_authenticated/conhecimento': typeof AuthenticatedConhecimentoRoute
   '/_authenticated/contatos': typeof AuthenticatedContatosRoute
+  '/_authenticated/copiloto': typeof AuthenticatedCopilotoRoute
   '/_authenticated/criar-script': typeof AuthenticatedCriarScriptRoute
   '/_authenticated/crm-leads': typeof AuthenticatedCrmLeadsRoute
   '/_authenticated/crm-prospeccao': typeof AuthenticatedCrmProspeccaoRoute
@@ -405,6 +422,7 @@ export interface FileRoutesById {
   '/_authenticated/motor-decisao': typeof AuthenticatedMotorDecisaoRoute
   '/_authenticated/precos': typeof AuthenticatedPrecosRoute
   '/_authenticated/problemas': typeof AuthenticatedProblemasRoute
+  '/_authenticated/raiox': typeof AuthenticatedRaioxRoute
   '/_authenticated/ranking': typeof AuthenticatedRankingRoute
   '/_authenticated/retomar': typeof AuthenticatedRetomarRoute
   '/_authenticated/simulador-ia': typeof AuthenticatedSimuladorIaRoute
@@ -444,6 +462,7 @@ export interface FileRouteTypes {
     | '/checklist'
     | '/conhecimento'
     | '/contatos'
+    | '/copiloto'
     | '/criar-script'
     | '/crm-leads'
     | '/crm-prospeccao'
@@ -453,6 +472,7 @@ export interface FileRouteTypes {
     | '/motor-decisao'
     | '/precos'
     | '/problemas'
+    | '/raiox'
     | '/ranking'
     | '/retomar'
     | '/simulador-ia'
@@ -487,6 +507,7 @@ export interface FileRouteTypes {
     | '/checklist'
     | '/conhecimento'
     | '/contatos'
+    | '/copiloto'
     | '/criar-script'
     | '/crm-leads'
     | '/crm-prospeccao'
@@ -496,6 +517,7 @@ export interface FileRouteTypes {
     | '/motor-decisao'
     | '/precos'
     | '/problemas'
+    | '/raiox'
     | '/ranking'
     | '/retomar'
     | '/simulador-ia'
@@ -533,6 +555,7 @@ export interface FileRouteTypes {
     | '/_authenticated/checklist'
     | '/_authenticated/conhecimento'
     | '/_authenticated/contatos'
+    | '/_authenticated/copiloto'
     | '/_authenticated/criar-script'
     | '/_authenticated/crm-leads'
     | '/_authenticated/crm-prospeccao'
@@ -542,6 +565,7 @@ export interface FileRouteTypes {
     | '/_authenticated/motor-decisao'
     | '/_authenticated/precos'
     | '/_authenticated/problemas'
+    | '/_authenticated/raiox'
     | '/_authenticated/ranking'
     | '/_authenticated/retomar'
     | '/_authenticated/simulador-ia'
@@ -650,6 +674,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedContatosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/copiloto': {
+      id: '/_authenticated/copiloto'
+      path: '/copiloto'
+      fullPath: '/copiloto'
+      preLoaderRoute: typeof AuthenticatedCopilotoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/criar-script': {
       id: '/_authenticated/criar-script'
       path: '/criar-script'
@@ -711,6 +742,13 @@ declare module '@tanstack/react-router' {
       path: '/problemas'
       fullPath: '/problemas'
       preLoaderRoute: typeof AuthenticatedProblemasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/raiox': {
+      id: '/_authenticated/raiox'
+      path: '/raiox'
+      fullPath: '/raiox'
+      preLoaderRoute: typeof AuthenticatedRaioxRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/ranking': {
@@ -921,6 +959,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedChecklistRoute: typeof AuthenticatedChecklistRoute
   AuthenticatedConhecimentoRoute: typeof AuthenticatedConhecimentoRoute
   AuthenticatedContatosRoute: typeof AuthenticatedContatosRoute
+  AuthenticatedCopilotoRoute: typeof AuthenticatedCopilotoRoute
   AuthenticatedCriarScriptRoute: typeof AuthenticatedCriarScriptRoute
   AuthenticatedCrmLeadsRoute: typeof AuthenticatedCrmLeadsRoute
   AuthenticatedCrmProspeccaoRoute: typeof AuthenticatedCrmProspeccaoRoute
@@ -930,6 +969,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMotorDecisaoRoute: typeof AuthenticatedMotorDecisaoRoute
   AuthenticatedPrecosRoute: typeof AuthenticatedPrecosRoute
   AuthenticatedProblemasRoute: typeof AuthenticatedProblemasRoute
+  AuthenticatedRaioxRoute: typeof AuthenticatedRaioxRoute
   AuthenticatedRankingRoute: typeof AuthenticatedRankingRoute
   AuthenticatedRetomarRoute: typeof AuthenticatedRetomarRoute
   AuthenticatedSimuladorIaRoute: typeof AuthenticatedSimuladorIaRoute
@@ -958,6 +998,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedChecklistRoute: AuthenticatedChecklistRoute,
   AuthenticatedConhecimentoRoute: AuthenticatedConhecimentoRoute,
   AuthenticatedContatosRoute: AuthenticatedContatosRoute,
+  AuthenticatedCopilotoRoute: AuthenticatedCopilotoRoute,
   AuthenticatedCriarScriptRoute: AuthenticatedCriarScriptRoute,
   AuthenticatedCrmLeadsRoute: AuthenticatedCrmLeadsRoute,
   AuthenticatedCrmProspeccaoRoute: AuthenticatedCrmProspeccaoRoute,
@@ -967,6 +1008,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMotorDecisaoRoute: AuthenticatedMotorDecisaoRoute,
   AuthenticatedPrecosRoute: AuthenticatedPrecosRoute,
   AuthenticatedProblemasRoute: AuthenticatedProblemasRoute,
+  AuthenticatedRaioxRoute: AuthenticatedRaioxRoute,
   AuthenticatedRankingRoute: AuthenticatedRankingRoute,
   AuthenticatedRetomarRoute: AuthenticatedRetomarRoute,
   AuthenticatedSimuladorIaRoute: AuthenticatedSimuladorIaRoute,

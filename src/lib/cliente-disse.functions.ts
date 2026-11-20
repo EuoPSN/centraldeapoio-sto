@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isAdminUser } from "@/lib/authz";
-import { chatCompletion } from "@/lib/ai-gateway.server";
+import { chamarIAJson, consumirUso, montarInstrucoes } from "@/lib/cerebro.server";
 import { CLIENTE_DISSE_MODEL } from "@/lib/ai-models";
 import {
   CasoUsoSchema, ETAPAS, ITEM_TIPOS, ObjecaoConteudoSchema, PLANOS,
@@ -31,22 +31,21 @@ function check<T>(r: { data: T; error: { message: string } | null }): T {
 // IA
 // ---------------------------------------------------------------------------
 
+// As regras fixas (pagamento, "não é plano de saúde", não inventar dados…) e os
+// blocos marcados para esta ferramenta vêm do Cérebro (montarInstrucoes).
 const CONTEXTO_NEGOCIO = `Contexto: venda B2C do Cartão de TODOS pelo WhatsApp (Ribeirão das Neves e região).
-Funil do CRM: Novo lead → Lead qualificado → Proposta enviada → Fechamento → Venda concluída.
-Pagamento: somente cartão de crédito ou cartão de débito.
-Nunca escreva "não é plano de saúde" em mensagem para cliente.
-Nunca invente preço, carência, regra ou benefício: só use o que estiver no contexto enviado.`;
+Funil do CRM: Novo lead → Lead qualificado → Proposta enviada → Fechamento → Venda concluída.`;
+
+async function instrucoes(): Promise<string> {
+  return (await montarInstrucoes("cliente_disse", CONTEXTO_NEGOCIO)).texto;
+}
 
 async function perguntarJson(system: string, user: string, temperature = 0.2): Promise<unknown> {
-  const raw = await chatCompletion({
+  return chamarIAJson({
     model: CLIENTE_DISSE_MODEL,
     temperature,
     messages: [{ role: "system", content: system }, { role: "user", content: user }],
   });
-  const clean = raw.replace(/```json|```/g, "").trim();
-  const start = clean.search(/[[{]/);
-  if (start < 0) throw new Error("Resposta da IA sem JSON.");
-  return JSON.parse(clean.slice(start));
 }
 
 // ---------------------------------------------------------------------------
@@ -120,7 +119,8 @@ export const classificarFala = createServerFn({ method: "POST" })
     const objecoes = (check(obj) ?? []) as { id: string; nome: string; exemplos_de_fala: string[] }[];
     const fech = (check(itens) ?? []) as { id: string; tipo: string; etapa: string; titulo: string; exemplos_de_fala: string[] }[];
 
-    const system = `${CONTEXTO_NEGOCIO}
+    await consumirUso(context, "cliente_disse");
+    const system = `${await instrucoes()}
 
 Você classifica a fala de um cliente no WhatsApp. Compare com a lista de OBJEÇÕES, SINAIS DE COMPRA e TRAVAMENTOS aprovados abaixo e devolva só os que de fato aparecem na fala.
 - Uma fala pode ter várias objeções. Ordene na ordem em que o atendente deve tratar (ordem 1 = primeiro) e explique em uma frase curta por que a primeira vem antes (motivo_ordem, só no item de ordem 1).
@@ -199,13 +199,12 @@ export const sugerirRespostaObjecao = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<ObjecaoConteudo> => {
     const fala = removerDadosPessoais(data.fala);
     const { data: obj } = await db(context).from("objecoes").select("nome").eq("status", "publicada");
-    const system = `${CONTEXTO_NEGOCIO}
+    const system = `${await instrucoes()}
 
 Você escreve uma SUGESTÃO de resposta para uma objeção nova de cliente, que o atendente vai conferir antes de usar.
 Regras obrigatórias:
 - Português do Brasil, tom acolhedor de WhatsApp, frases simples.
 - Sem valores em reais, carências, regras ou benefícios que não estejam neste contexto. Se precisar citar um número, use "X".
-- Nunca escreva "não é plano de saúde".
 - Cada ângulo com no máximo 3 frases.
 - leituras: 2 ou 3 possíveis intenções do cliente, cada uma com uma pergunta curta para confirmar.
 - angulos: exatamente 3, tipos "logico", "emocional" e "prova" (rotulo curto, ex.: "a conta").

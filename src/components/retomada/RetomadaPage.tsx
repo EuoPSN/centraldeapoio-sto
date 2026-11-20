@@ -434,7 +434,12 @@ function Detalhe({ r, base, onAtualizada, onProximo, lista }: {
             {r.status === "perdido" && r.motivo_perda ? ` · ${r.motivo_perda}` : ""}
           </p>
           {!voltando ? (
-            <OutlineButton className="mt-3 h-9" onClick={() => setVoltando(true)}>Voltar para a fila</OutlineButton>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <OutlineButton className="h-9" onClick={() => setVoltando(true)}>Voltar para a fila</OutlineButton>
+              {r.status === "perdido" && (
+                <OutlineButton className="h-9" onClick={() => navigate({ to: "/raiox", search: { retomada: r.id } })}>Fazer Raio-X desta venda</OutlineButton>
+              )}
+            </div>
           ) : (
             <div className="mt-3">
               <Overline>Onde parou agora?</Overline>

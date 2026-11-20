@@ -9,11 +9,13 @@ import { cn } from "@/lib/utils";
 // Padrão de seção do Admin: lista à esquerda e painel de edição fixo à direita.
 
 export function AdminListDetail({
-  title, subtitle, actions, filters, search, onSearch, children, panel,
+  title, subtitle, actions, belowHeader, filters, search, onSearch, children, panel,
 }: {
   title: string;
   subtitle?: string;
   actions?: ReactNode;
+  /** Entre o título e os filtros (ex.: abas da seção). */
+  belowHeader?: ReactNode;
   filters?: ReactNode;
   search?: string;
   onSearch?: (v: string) => void;
@@ -30,6 +32,7 @@ export function AdminListDetail({
           </div>
           {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
         </div>
+        {belowHeader && <div className="mt-4">{belowHeader}</div>}
         {(filters || onSearch) && (
           <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap gap-1.5">{filters}</div>

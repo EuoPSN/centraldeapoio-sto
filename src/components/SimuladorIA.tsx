@@ -383,7 +383,7 @@ Avalie se a ÚLTIMA mensagem do atendente atende esse critério, considerando ta
         { role: "system", content: EVAL_PROMPT },
         { role: "user", content: conversa }
       ];
-      const { content } = await avaliarAI({ data: { messages: payload, model: SIMULATOR_EVALUATION_MODEL } });
+      const { content } = await avaliarAI({ data: { messages: payload, model: SIMULATOR_EVALUATION_MODEL, ferramenta: "simulador" } });
       return content;
     },
     onSuccess: async (result) => {
