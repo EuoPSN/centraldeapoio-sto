@@ -7,6 +7,7 @@ import { GoldButton, TopbarBreadcrumb } from "@/components/scripts/shared";
 import { CopyText, ErroDiscreto, Overline } from "@/components/cliente-disse/shared";
 import { apagarImagens, ConversaCard, useConversa } from "@/components/copiloto/ConversaCard";
 import { UsoAviso, UsoContador } from "@/components/copiloto/UsoContador";
+import { BaixarInteligenciaLink } from "@/components/copiloto/BaixarInteligencia";
 import { COPILOTO_BASE_KEY } from "@/components/copiloto/CopilotoPage";
 import { fazerRaiox, getCopiloto, getRetomadaParaRaiox } from "@/lib/copiloto.functions";
 import { ERRO_ANALISE, type RaioxResposta, type UsoStatus } from "@/lib/cerebro";
@@ -72,7 +73,10 @@ export function RaioxPage({ retomadaId }: { retomadaId?: string }) {
           <h1 className="text-2xl font-medium leading-8 text-ink">Raio-X da venda</h1>
           <p className="text-[14px] text-ink-muted">{subtitulo}</p>
         </div>
-        <UsoContador uso={uso} />
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <BaixarInteligenciaLink />
+          <UsoContador uso={uso} />
+        </div>
       </div>
 
       {!r && (

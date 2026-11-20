@@ -8,6 +8,7 @@ import { CopyText, DashedTag, ErroDiscreto, GoldPill, Overline } from "@/compone
 import { AdicionarRetomada } from "@/components/retomada/AdicionarRetomada";
 import { apagarImagens, ConversaCard, useConversa } from "@/components/copiloto/ConversaCard";
 import { UsoAviso, UsoContador } from "@/components/copiloto/UsoContador";
+import { BaixarInteligenciaLink } from "@/components/copiloto/BaixarInteligencia";
 import { analisarConversaCopiloto, getCopiloto } from "@/lib/copiloto.functions";
 import { ERRO_ANALISE, ETAPA_FUNIL_NOME, type UsoStatus } from "@/lib/cerebro";
 import { PONTO_LISTA } from "@/lib/retomada";
@@ -64,7 +65,10 @@ export function CopilotoPage() {
           <h1 className="text-2xl font-medium leading-8 text-ink">Copiloto</h1>
           <p className="text-[14px] text-ink-muted">Cole o print ou anexe a conversa exportada. Ele sugere a próxima mensagem.</p>
         </div>
-        <UsoContador uso={uso} />
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <BaixarInteligenciaLink />
+          <UsoContador uso={uso} />
+        </div>
       </div>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
