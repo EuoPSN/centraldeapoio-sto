@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Bell, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
@@ -23,7 +23,12 @@ import { useAvisosPermissao } from "@/components/retomada/Avisos";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { EnviarConversaDialog, FICHAS_RETOMADAS_KEY } from "@/components/biblioteca/EnviarConversaDialog";
+import { getFichasDasRetomadas } from "@/lib/fichas.functions";
+import { DIAS_PARA_ENVIAR } from "@/lib/fichas";
 import { cn } from "@/lib/utils";
+
+type FichasDasRetomadas = Record<string, { status: string; motivo_recusa: string | null }>;
 
 type Visao = "hoje" | "fila" | "respondidos" | "encerrados";
 const VISAO_LABEL: Record<Visao, string> = { hoje: "Hoje", fila: "Na fila", respondidos: "Respondidos", encerrados: "Encerrados" };
@@ -36,6 +41,10 @@ export function RetomadaPage() {
   const qc = useQueryClient();
   const [visao, setVisao] = useState<Visao>("hoje");
   const [selId, setSelId] = useState<string | null>(null);
+  // Janela "Enviar esta conversa para a biblioteca" (abre depois de "Fechou").
+  const [envioPara, setEnvioPara] = useState<Retomada | null>(null);
+  const fichasFn = useServerFn(getFichasDasRetomadas);
+  const fichas = useQuery({ queryKey: FICHAS_RETOMADAS_KEY, queryFn: () => fichasFn({}), staleTime: 30_000 });
 
   const agora = new Date();
   const hoje = diaBR(agora);
@@ -146,7 +155,7 @@ export function RetomadaPage() {
 
         <div className="min-w-0 border-t border-line lg:border-t-0">
           {base && sel ? (
-            <Detalhe key={sel.id} r={sel} base={base} onAtualizada={atualizar} onProximo={(id) => setSelId(id)} lista={visiveis} />
+            <Detalhe key={sel.id} r={sel} base={base} onAtualizada={atualizar} onProximo={(id) => setSelId(id)} lista={visiveis} fichas={fichas.data ?? {}} onEnviarConversa={setEnvioPara} />
           ) : (
             !q.isLoading && visiveis.length === 0 && visao === "hoje" ? null : (
               <p className="px-6 py-10 text-[14px] text-ink-muted">Escolha um cliente na lista.</p>
@@ -154,6 +163,15 @@ export function RetomadaPage() {
           )}
         </div>
       </div>
+
+      <EnviarConversaDialog
+        aberto={!!envioPara}
+        onFechar={() => setEnvioPara(null)}
+        retomadaId={envioPara?.id ?? null}
+        atendente={base?.atendente ?? ""}
+        titulo="Fechou! 🎉 Quer enviar esta conversa para a biblioteca?"
+        descricao="Ela ajuda os colegas que travam na mesma objeção. Seu nome aparece como autoria e o Paulo aprova antes de publicar."
+      />
     </div>
   );
 }
@@ -282,8 +300,9 @@ function achaMensagem(base: RetomadaBase, r: Retomada): CadenciaMensagem | null 
   return base.mensagens.find((m) => m.ponto_parada === ponto && m.etapa === r.etapa_atual) ?? null;
 }
 
-function Detalhe({ r, base, onAtualizada, onProximo, lista }: {
+function Detalhe({ r, base, onAtualizada, onProximo, lista, fichas, onEnviarConversa }: {
   r: Retomada; base: RetomadaBase; onAtualizada: (r: Retomada) => void; onProximo: (id: string | null) => void; lista: Retomada[];
+  fichas: FichasDasRetomadas; onEnviarConversa: (r: Retomada) => void;
 }) {
   const navigate = useNavigate();
   const acaoFn = useServerFn(acaoRetomada);
@@ -323,7 +342,7 @@ function Detalhe({ r, base, onAtualizada, onProximo, lista }: {
         toast.success(novo.proxima_em ? `Enviei registrado. Próximo ${ETAPA_LABEL[novo.etapa_atual]} em ${fmtDiaMes(novo.proxima_em)}.` : "Enviei registrado. Sem resposta em 2 dias, o cliente esfria.");
         passarAdiante(r.id);
       } else if (d.acao === "respondeu") { toast.success("Respondeu. Saiu da lista do dia."); passarAdiante(r.id); }
-      else if (d.acao === "fechou") { toast.success("Fechou!"); passarAdiante(r.id); }
+      else if (d.acao === "fechou") { toast.success("Fechou!"); passarAdiante(r.id); onEnviarConversa(novo); }
       else if (d.acao === "perdido") { toast.success("Marcado como perdido."); setPerdendo(false); passarAdiante(r.id); }
       else { toast.success("Voltou para a fila. Recomeça no D+1, amanhã."); setVoltando(false); }
     },
@@ -433,6 +452,7 @@ function Detalhe({ r, base, onAtualizada, onProximo, lista }: {
             {STATUS_LABEL[r.status]}
             {r.status === "perdido" && r.motivo_perda ? ` · ${r.motivo_perda}` : ""}
           </p>
+          {r.status === "fechou" && <ConversaNaBiblioteca r={r} ficha={fichas[r.id]} onEnviar={() => onEnviarConversa(r)} />}
           {!voltando ? (
             <div className="mt-3 flex flex-wrap gap-2">
               <OutlineButton className="h-9" onClick={() => setVoltando(true)}>Voltar para a fila</OutlineButton>
@@ -457,6 +477,25 @@ function Detalhe({ r, base, onAtualizada, onProximo, lista }: {
 
       <p className="mt-4 text-[12.5px] text-ink-muted">O número some quando o cliente sai da fila ou em 30 dias. Só você vê o número.</p>
     </article>
+  );
+}
+
+/** No ticket fechado: situação da ficha ou o link para enviar (só nos 7 dias depois da venda). */
+function ConversaNaBiblioteca({ r, ficha, onEnviar }: { r: Retomada; ficha?: { status: string; motivo_recusa: string | null }; onEnviar: () => void }) {
+  const dentroDoPrazo = Date.now() - new Date(r.updated_at).getTime() <= DIAS_PARA_ENVIAR * 86_400_000;
+  if (ficha?.status === "enviada") return <p className="mt-2 text-[13.5px] font-semibold text-gold-text">Enviada para aprovação</p>;
+  if (ficha?.status === "publicada") return <p className="mt-2 text-[13.5px] font-semibold text-gold-text">Publicada na biblioteca. Obrigado!</p>;
+  const recusada = ficha?.status === "recusada";
+  if (!dentroDoPrazo && !recusada) return null;
+  return (
+    <div className="mt-2 space-y-1">
+      {recusada && <p className="text-[13.5px] text-ink-muted">O Paulo não publicou{ficha?.motivo_recusa ? `: ${ficha.motivo_recusa}` : "."}</p>}
+      {dentroDoPrazo && (
+        <button type="button" onClick={onEnviar} className="text-[13.5px] font-semibold text-gold-text hover:underline">
+          Enviar conversa para a biblioteca
+        </button>
+      )}
+    </div>
   );
 }
 

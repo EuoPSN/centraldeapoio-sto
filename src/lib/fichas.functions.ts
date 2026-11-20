@@ -351,3 +351,11 @@ export async function votosPorFicha(supabase: unknown): Promise<Map<string, { ut
   }
   return m;
 }
+
+/** Objeções publicadas (listas de escolha das fichas e filtros). */
+export const listObjecoesPublicadas = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<{ id: string; nome: string }[]> => {
+    const rows = check(await db(context).from("objecoes").select("id, nome").eq("status", "publicada").order("prioridade").order("nome")) ?? [];
+    return rows as { id: string; nome: string }[];
+  });
