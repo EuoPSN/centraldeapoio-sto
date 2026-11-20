@@ -32,7 +32,7 @@ interface FlowPath { id: string; name: string; category_id: string | null; branc
 type ScriptDraft = { title: string; content: string; shortcut: string; internal_note: string; selected: boolean };
 type AutoStage = { name: string; messages: any[] };
 
-export function MessagesTab() {
+export function MessagesTab({ defaultTab = "biblioteca" }: { defaultTab?: "biblioteca" | "fluxo" } = {}) {
   const list = useServerFn(listMessages);
   const upsert = useServerFn(upsertMessage);
   const del = useServerFn(deleteMessage);
@@ -566,7 +566,7 @@ As etapas devem vir na ordem certa de uso. Sem markdown, sem texto fora do JSON.
 
   return (
     <div className="space-y-4">
-      <Tabs defaultValue="biblioteca">
+      <Tabs defaultValue={defaultTab}>
         <TabsList>
           <TabsTrigger value="biblioteca">Biblioteca</TabsTrigger>
           <TabsTrigger value="fluxo">Fluxo de Atendimento</TabsTrigger>
