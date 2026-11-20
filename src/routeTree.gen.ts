@@ -13,7 +13,6 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as PendenteRouteImport } from './routes/pendente'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
-import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAmorSaudeRouteImport } from './routes/_authenticated/amor-saude'
 import { Route as AuthenticatedAssistenteRouteImport } from './routes/_authenticated/assistente'
 import { Route as AuthenticatedBibliotecaRouteImport } from './routes/_authenticated/biblioteca'
@@ -34,6 +33,7 @@ import { Route as AuthenticatedSimuladorIaRouteImport } from './routes/_authenti
 import { Route as AuthenticatedSugestoesRouteImport } from './routes/_authenticated/sugestoes'
 import { Route as AuthenticatedTreinamentosRouteImport } from './routes/_authenticated/treinamentos'
 import { Route as AuthenticatedTutoriaisRouteImport } from './routes/_authenticated/tutoriais'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedAdminKeyRouteImport } from './routes/_authenticated/admin.$key'
 import { Route as AuthenticatedAjudaIndexRouteImport } from './routes/_authenticated/ajuda.index'
 import { Route as AuthenticatedAjudaNovidadesRouteImport } from './routes/_authenticated/ajuda.novidades'
@@ -69,11 +69,6 @@ const PendenteRoute = PendenteRouteImport.update({
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAmorSaudeRoute = AuthenticatedAmorSaudeRouteImport.update({
@@ -184,10 +179,15 @@ const AuthenticatedTutoriaisRoute = AuthenticatedTutoriaisRouteImport.update({
   path: '/tutoriais',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAdminKeyRoute = AuthenticatedAdminKeyRouteImport.update({
-  id: '/$key',
-  path: '/$key',
-  getParentRoute: () => AuthenticatedAdminRoute,
+  id: '/admin/$key',
+  path: '/admin/$key',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAjudaIndexRoute = AuthenticatedAjudaIndexRouteImport.update({
   id: '/ajuda/',
@@ -287,7 +287,6 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
   '/pendente': typeof PendenteRoute
-  '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/amor-saude': typeof AuthenticatedAmorSaudeRouteWithChildren
   '/assistente': typeof AuthenticatedAssistenteRoute
   '/biblioteca': typeof AuthenticatedBibliotecaRoute
@@ -320,6 +319,7 @@ export interface FileRoutesByFullPath {
   '/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
   '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
   '/api/public/message-image': typeof ApiPublicMessageImageRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
   '/ajuda/': typeof AuthenticatedAjudaIndexRoute
   '/amor-saude/': typeof AuthenticatedAmorSaudeIndexRoute
   '/scripts/': typeof AuthenticatedScriptsIndexRoute
@@ -329,7 +329,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/pendente': typeof PendenteRoute
-  '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/assistente': typeof AuthenticatedAssistenteRoute
   '/biblioteca': typeof AuthenticatedBibliotecaRoute
   '/checklist': typeof AuthenticatedChecklistRoute
@@ -362,6 +361,7 @@ export interface FileRoutesByTo {
   '/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
   '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
   '/api/public/message-image': typeof ApiPublicMessageImageRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
   '/ajuda': typeof AuthenticatedAjudaIndexRoute
   '/amor-saude': typeof AuthenticatedAmorSaudeIndexRoute
   '/scripts': typeof AuthenticatedScriptsIndexRoute
@@ -373,7 +373,6 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/pendente': typeof PendenteRoute
-  '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/amor-saude': typeof AuthenticatedAmorSaudeRouteWithChildren
   '/_authenticated/assistente': typeof AuthenticatedAssistenteRoute
   '/_authenticated/biblioteca': typeof AuthenticatedBibliotecaRoute
@@ -407,6 +406,7 @@ export interface FileRoutesById {
   '/_authenticated/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
   '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
   '/api/public/message-image': typeof ApiPublicMessageImageRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/ajuda/': typeof AuthenticatedAjudaIndexRoute
   '/_authenticated/amor-saude/': typeof AuthenticatedAmorSaudeIndexRoute
   '/_authenticated/scripts/': typeof AuthenticatedScriptsIndexRoute
@@ -419,7 +419,6 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/pendente'
-    | '/admin'
     | '/amor-saude'
     | '/assistente'
     | '/biblioteca'
@@ -452,6 +451,7 @@ export interface FileRouteTypes {
     | '/scripts/biblioteca'
     | '/api/public/knowledge-file'
     | '/api/public/message-image'
+    | '/admin/'
     | '/ajuda/'
     | '/amor-saude/'
     | '/scripts/'
@@ -461,7 +461,6 @@ export interface FileRouteTypes {
   to:
     | '/auth'
     | '/pendente'
-    | '/admin'
     | '/assistente'
     | '/biblioteca'
     | '/checklist'
@@ -494,6 +493,7 @@ export interface FileRouteTypes {
     | '/scripts/biblioteca'
     | '/api/public/knowledge-file'
     | '/api/public/message-image'
+    | '/admin'
     | '/ajuda'
     | '/amor-saude'
     | '/scripts'
@@ -504,7 +504,6 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/pendente'
-    | '/_authenticated/admin'
     | '/_authenticated/amor-saude'
     | '/_authenticated/assistente'
     | '/_authenticated/biblioteca'
@@ -538,6 +537,7 @@ export interface FileRouteTypes {
     | '/_authenticated/scripts/biblioteca'
     | '/api/public/knowledge-file'
     | '/api/public/message-image'
+    | '/_authenticated/admin/'
     | '/_authenticated/ajuda/'
     | '/_authenticated/amor-saude/'
     | '/_authenticated/scripts/'
@@ -581,13 +581,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/admin': {
-      id: '/_authenticated/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/amor-saude': {
@@ -730,12 +723,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTutoriaisRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/$key': {
       id: '/_authenticated/admin/$key'
-      path: '/$key'
+      path: '/admin/$key'
       fullPath: '/admin/$key'
       preLoaderRoute: typeof AuthenticatedAdminKeyRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/ajuda/': {
       id: '/_authenticated/ajuda/'
@@ -852,17 +852,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AuthenticatedAdminRouteChildren {
-  AuthenticatedAdminKeyRoute: typeof AuthenticatedAdminKeyRoute
-}
-
-const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
-  AuthenticatedAdminKeyRoute: AuthenticatedAdminKeyRoute,
-}
-
-const AuthenticatedAdminRouteWithChildren =
-  AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
-
 interface AuthenticatedAmorSaudeRouteChildren {
   AuthenticatedAmorSaudeClinicasRoute: typeof AuthenticatedAmorSaudeClinicasRoute
   AuthenticatedAmorSaudeConsultasRoute: typeof AuthenticatedAmorSaudeConsultasRoute
@@ -887,7 +876,6 @@ const AuthenticatedAmorSaudeRouteWithChildren =
   )
 
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedAmorSaudeRoute: typeof AuthenticatedAmorSaudeRouteWithChildren
   AuthenticatedAssistenteRoute: typeof AuthenticatedAssistenteRoute
   AuthenticatedBibliotecaRoute: typeof AuthenticatedBibliotecaRoute
@@ -909,11 +897,13 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTreinamentosRoute: typeof AuthenticatedTreinamentosRoute
   AuthenticatedTutoriaisRoute: typeof AuthenticatedTutoriaisRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedAdminKeyRoute: typeof AuthenticatedAdminKeyRoute
   AuthenticatedAjudaNovidadesRoute: typeof AuthenticatedAjudaNovidadesRoute
   AuthenticatedAjudaProblemasRoute: typeof AuthenticatedAjudaProblemasRoute
   AuthenticatedAjudaProcedimentosRoute: typeof AuthenticatedAjudaProcedimentosRoute
   AuthenticatedAjudaSugestoesRoute: typeof AuthenticatedAjudaSugestoesRoute
   AuthenticatedScriptsBibliotecaRoute: typeof AuthenticatedScriptsBibliotecaRoute
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAjudaIndexRoute: typeof AuthenticatedAjudaIndexRoute
   AuthenticatedScriptsIndexRoute: typeof AuthenticatedScriptsIndexRoute
   AuthenticatedScriptsFluxoFluxoRoute: typeof AuthenticatedScriptsFluxoFluxoRoute
@@ -921,7 +911,6 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedAmorSaudeRoute: AuthenticatedAmorSaudeRouteWithChildren,
   AuthenticatedAssistenteRoute: AuthenticatedAssistenteRoute,
   AuthenticatedBibliotecaRoute: AuthenticatedBibliotecaRoute,
@@ -943,11 +932,13 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedTreinamentosRoute: AuthenticatedTreinamentosRoute,
   AuthenticatedTutoriaisRoute: AuthenticatedTutoriaisRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedAdminKeyRoute: AuthenticatedAdminKeyRoute,
   AuthenticatedAjudaNovidadesRoute: AuthenticatedAjudaNovidadesRoute,
   AuthenticatedAjudaProblemasRoute: AuthenticatedAjudaProblemasRoute,
   AuthenticatedAjudaProcedimentosRoute: AuthenticatedAjudaProcedimentosRoute,
   AuthenticatedAjudaSugestoesRoute: AuthenticatedAjudaSugestoesRoute,
   AuthenticatedScriptsBibliotecaRoute: AuthenticatedScriptsBibliotecaRoute,
+  AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedAjudaIndexRoute: AuthenticatedAjudaIndexRoute,
   AuthenticatedScriptsIndexRoute: AuthenticatedScriptsIndexRoute,
   AuthenticatedScriptsFluxoFluxoRoute: AuthenticatedScriptsFluxoFluxoRoute,

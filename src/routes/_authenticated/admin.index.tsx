@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdminTopBar, AdminSectionIcon, PendingDot, useAdminSections, useAdminPendingCounts } from "@/components/admin/AdminShell";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/_authenticated/admin")({
+export const Route = createFileRoute("/_authenticated/admin/")({
   // Links antigos usavam ?aba=<tab_key> pra abrir uma seção direto (ex.: os
   // cards de pendência da Início). Mantém funcionando, só que redirecionando
   // pra rota nova /admin/<tab_key>.
