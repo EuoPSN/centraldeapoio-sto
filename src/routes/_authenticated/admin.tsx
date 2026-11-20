@@ -1,13 +1,14 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect, type ComponentType } from "react";
+import { Fragment, useState, useEffect, type ComponentType } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   listContent, upsertContent, deleteContent,
   listScripts, upsertScript, deleteScript,
   listPricing, upsertPricing, deletePricing, setPricingItemUnidades,
 } from "@/lib/content.functions";
+import { getAjudaFeedbackSummary } from "@/lib/ajuda.functions";
 import {
   listUsers, promoteUser, setUserActive, createUser, resetUserPassword, deleteUser,
   getStats, adminListConversations, updateUserBirthdate, updateUserDisplayName,
@@ -474,8 +475,11 @@ function ContentTab() {
   const list = useServerFn(listContent);
   const upsert = useServerFn(upsertContent);
   const del = useServerFn(deleteContent);
+  const feedbackSummaryFn = useServerFn(getAjudaFeedbackSummary);
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["content", section], queryFn: () => list({ data: { section } }) });
+  const feedbackQ = useQuery({ queryKey: ["ajuda-feedback-summary"], queryFn: () => feedbackSummaryFn({}) });
+  const [feedbackOpenId, setFeedbackOpenId] = useState<string | null>(null);
 
   const [edit, setEdit] = useState<null | { id?: string; category: string; title: string; content: string; link_externo?: string; link_label?: string }>(null);
 
@@ -496,7 +500,7 @@ function ContentTab() {
           <SelectTrigger className="w-60"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="problemas">Problemas Técnicos</SelectItem>
-            <SelectItem value="tutoriais">Tutoriais</SelectItem>
+            <SelectItem value="tutoriais">Procedimentos do atendimento</SelectItem>
           </SelectContent>
         </Select>
         <Button size="sm" className="gap-2" onClick={() => setEdit({ category: "", title: "", content: "", link_externo: "", link_label: "" })}>
@@ -506,18 +510,51 @@ function ContentTab() {
 
       <Card className="overflow-hidden">
         <Table>
-          <TableHeader><TableRow><TableHead>Categoria</TableHead><TableHead>Título</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>Categoria</TableHead><TableHead>Título</TableHead><TableHead>Isso ajudou?</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
           <TableBody>
-            {(q.data ?? []).map((c: { id: string; category: string | null; title: string; content: string; link_externo: string | null; link_label: string | null }) => (
-              <TableRow key={c.id}>
-                <TableCell><Badge variant="secondary">{c.category || "—"}</Badge></TableCell>
-                <TableCell className="font-medium">{c.title}</TableCell>
-                <TableCell className="text-right space-x-1">
-                  <Button size="icon" variant="ghost" onClick={() => setEdit({ id: c.id, category: c.category ?? "", title: c.title, content: c.content, link_externo: c.link_externo ?? "", link_label: c.link_label ?? "" })}><Pencil className="h-4 w-4" /></Button>
-                  <Button size="icon" variant="ghost" onClick={() => confirm("Excluir?") && delMut.mutate(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                </TableCell>
-              </TableRow>
-            ))}
+            {(q.data ?? []).map((c: { id: string; category: string | null; title: string; content: string; link_externo: string | null; link_label: string | null }) => {
+              const fb = (feedbackQ.data as Record<string, { sim: number; nao: number; recentesNao: { data: string; pessoa: string }[] }> | undefined)?.[c.id];
+              const open = feedbackOpenId === c.id;
+              return (
+                <Fragment key={c.id}>
+                  <TableRow>
+                    <TableCell><Badge variant="secondary">{c.category || "—"}</Badge></TableCell>
+                    <TableCell className="font-medium">{c.title}</TableCell>
+                    <TableCell>
+                      {fb && (fb.sim > 0 || fb.nao > 0) ? (
+                        <button
+                          type="button"
+                          onClick={() => setFeedbackOpenId(open ? null : c.id)}
+                          className="text-sm text-muted-foreground underline-offset-2 hover:underline"
+                        >
+                          {fb.sim} sim · {fb.nao} não
+                        </button>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right space-x-1">
+                      <Button size="icon" variant="ghost" onClick={() => setEdit({ id: c.id, category: c.category ?? "", title: c.title, content: c.content, link_externo: c.link_externo ?? "", link_label: c.link_label ?? "" })}><Pencil className="h-4 w-4" /></Button>
+                      <Button size="icon" variant="ghost" onClick={() => confirm("Excluir?") && delMut.mutate(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </TableCell>
+                  </TableRow>
+                  {open && fb && fb.recentesNao.length > 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="bg-muted/30">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">"Não" mais recentes</p>
+                        <ul className="space-y-0.5">
+                          {fb.recentesNao.map((r, i) => (
+                            <li key={i} className="text-sm text-muted-foreground">
+                              {new Date(r.data).toLocaleDateString("pt-BR")} — {r.pessoa}
+                            </li>
+                          ))}
+                        </ul>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </Fragment>
+              );
+            })}
           </TableBody>
         </Table>
       </Card>

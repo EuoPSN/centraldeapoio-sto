@@ -22,6 +22,7 @@ const Input = z.object({
   title: z.string().min(3).max(160),
   description: z.string().min(5).max(2000),
   category: z.string().min(1).default("sugestao"),
+  content_item_id: z.string().uuid().nullable().optional(),
 });
 
 export const createSuggestion = createServerFn({ method: "POST" })

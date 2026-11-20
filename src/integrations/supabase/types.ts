@@ -229,6 +229,41 @@ export type Database = {
         }
         Relationships: []
       }
+      ajuda_feedback: {
+        Row: {
+          content_item_id: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+          util: boolean
+        }
+        Insert: {
+          content_item_id: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          util: boolean
+        }
+        Update: {
+          content_item_id?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          util?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ajuda_feedback_content_item_id_fkey"
+            columns: ["content_item_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_conversations: {
         Row: {
           created_at: string
@@ -650,6 +685,35 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      content_item_views: {
+        Row: {
+          content_item_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          content_item_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          content_item_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_item_views_content_item_id_fkey"
+            columns: ["content_item_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       decision_edges: {
         Row: {
@@ -2043,6 +2107,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          ajuda_novidades_vistas_em: string | null
           cargo: string | null
           created_at: string
           data_nascimento: string | null
@@ -2058,6 +2123,7 @@ export type Database = {
           xp_problemas: number
         }
         Insert: {
+          ajuda_novidades_vistas_em?: string | null
           cargo?: string | null
           created_at?: string
           data_nascimento?: string | null
@@ -2073,6 +2139,7 @@ export type Database = {
           xp_problemas?: number
         }
         Update: {
+          ajuda_novidades_vistas_em?: string | null
           cargo?: string | null
           created_at?: string
           data_nascimento?: string | null
@@ -2496,6 +2563,7 @@ export type Database = {
         Row: {
           admin_response: string | null
           category: string
+          content_item_id: string | null
           created_at: string
           description: string
           id: string
@@ -2507,6 +2575,7 @@ export type Database = {
         Insert: {
           admin_response?: string | null
           category?: string
+          content_item_id?: string | null
           created_at?: string
           description: string
           id?: string
@@ -2518,6 +2587,7 @@ export type Database = {
         Update: {
           admin_response?: string | null
           category?: string
+          content_item_id?: string | null
           created_at?: string
           description?: string
           id?: string
@@ -2526,7 +2596,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "suggestions_content_item_id_fkey"
+            columns: ["content_item_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       themes: {
         Row: {
