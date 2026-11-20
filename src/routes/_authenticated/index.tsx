@@ -8,6 +8,7 @@ import { listHomepageMessages } from "@/lib/homepage.functions";
 import { getMyChecklistToday, getChecklistSummaryForDate } from "@/lib/checklist.functions";
 import { getAdminPendencias } from "@/lib/home.functions";
 import { openGlobalSearch } from "@/components/GlobalSearch";
+import { useRetomadaContagem } from "@/components/retomada/hooks";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -114,6 +115,8 @@ function Home() {
         checklist={checklist}
       />
 
+      <RetomadasHoje />
+
       {/* Altura reservada para todos: a linha de pendências entra sem empurrar a página. */}
       <div className="flex min-h-[3.25rem] items-center px-1 pt-1">
         {meQ.isLoading ? <SkeletonBar className="h-3.5 w-[26rem] max-w-full bg-surface-2" /> : isAdmin && <PendenciasLine />}
@@ -121,6 +124,22 @@ function Home() {
 
       <CentralSearch />
     </div>
+  );
+}
+
+// Logo abaixo da faixa: quantas retomadas pedem atenção hoje (some quando for zero).
+function RetomadasHoje() {
+  const n = useRetomadaContagem().data?.total ?? 0;
+  if (n <= 0) return null;
+  return (
+    <p className="mt-3 flex flex-wrap items-baseline gap-x-3 px-1 text-[14px] leading-6 text-ink">
+      <span>
+        Você tem <strong className="font-semibold">{n}</strong> {n === 1 ? "retomada" : "retomadas"} hoje
+      </span>
+      <Link to="/retomar" className="font-medium text-gold-text underline-offset-4 hover:underline focus-visible:underline">
+        Abrir <span aria-hidden>→</span>
+      </Link>
+    </p>
   );
 }
 

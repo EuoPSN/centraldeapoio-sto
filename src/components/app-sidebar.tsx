@@ -17,6 +17,7 @@ import { OmniaLockup, OmniaSymbol } from "@/components/OmniaLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { listNavItems } from "@/lib/settings.functions";
 import { getAjudaNovidadesStatus } from "@/lib/ajuda.functions";
+import { useRetomadaContagem } from "@/components/retomada/hooks";
 import { cn } from "@/lib/utils";
 
 // Menu lateral da OMNIA Apoio, em sanfona.
@@ -36,6 +37,7 @@ const GROUPS: GroupDef[] = [
     key: "atendimento", label: "Atendimento", icon: Headset,
     pages: [
       { route: "/scripts", label: "Scripts" },
+      { route: "/retomar", label: "Retomar hoje" },
       { route: "/amor-saude", label: "Amor Saúde", aliases: ["/precos"] },
       { route: "/contatos", label: "Contatos e Endereços" },
       { route: "/biblioteca", label: "Biblioteca", aliases: ["/imagens"] },
@@ -123,6 +125,7 @@ export function AppSidebar({ isAdmin, email, displayName, role }: { isAdmin: boo
   const hasNovidades = (novidadesQ.data?.unseenCount ?? 0) > 0;
   const { data: adminPending } = useAdminPendingCounts(isAdmin);
   const adminPendingTotal = isAdmin ? adminPending?.total ?? 0 : 0;
+  const retomadaHoje = useRetomadaContagem().data?.total ?? 0;
   const { state, isMobile } = useSidebar();
   const collapsed = state === "collapsed" && !isMobile;
 
@@ -237,6 +240,7 @@ export function AppSidebar({ isAdmin, email, displayName, role }: { isAdmin: boo
                       {g.pages.map((p, i) => {
                         const active = isActive(p.route);
                         const showAdminPending = p.route === "/admin" && adminPendingTotal > 0;
+                        const showRetomada = p.route === "/retomar" && retomadaHoje > 0;
                         return (
                           <li key={p.route} className="omnia-menu-item relative" style={{ animationDelay: `${i * 30}ms` }}>
                             {active && <span aria-hidden className="absolute -left-[3.5px] top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-gold" />}
@@ -250,6 +254,11 @@ export function AppSidebar({ isAdmin, email, displayName, role }: { isAdmin: boo
                               )}
                             >
                               <span className="truncate">{p.label}</span>
+                              {showRetomada && (
+                                <span aria-label={`${retomadaHoje} retomadas hoje`} className="grid h-4 min-w-4 shrink-0 place-items-center rounded-full bg-gold px-1 text-[10px] font-semibold text-on-gold">
+                                  {retomadaHoje}
+                                </span>
+                              )}
                               {showAdminPending && (
                                 <span aria-label={`${adminPendingTotal} pendências`} className="grid h-4 min-w-4 shrink-0 place-items-center rounded-full bg-gold px-1 text-[10px] font-semibold text-on-gold">
                                   {adminPendingTotal}
