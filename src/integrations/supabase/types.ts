@@ -110,6 +110,41 @@ export type Database = {
         }
         Relationships: []
       }
+      ajuda_feedback: {
+        Row: {
+          content_item_id: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+          util: boolean
+        }
+        Insert: {
+          content_item_id: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          util: boolean
+        }
+        Update: {
+          content_item_id?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          util?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ajuda_feedback_content_item_id_fkey"
+            columns: ["content_item_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_settings: {
         Row: {
           accent_color: string | null
@@ -228,41 +263,6 @@ export type Database = {
           title?: string
         }
         Relationships: []
-      }
-      ajuda_feedback: {
-        Row: {
-          content_item_id: string
-          created_at: string
-          id: string
-          updated_at: string
-          user_id: string
-          util: boolean
-        }
-        Insert: {
-          content_item_id: string
-          created_at?: string
-          id?: string
-          updated_at?: string
-          user_id: string
-          util: boolean
-        }
-        Update: {
-          content_item_id?: string
-          created_at?: string
-          id?: string
-          updated_at?: string
-          user_id?: string
-          util?: boolean
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ajuda_feedback_content_item_id_fkey"
-            columns: ["content_item_id"]
-            isOneToOne: false
-            referencedRelation: "content_items"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       chat_conversations: {
         Row: {
@@ -560,6 +560,66 @@ export type Database = {
           },
         ]
       }
+      cliente_disse_uso: {
+        Row: {
+          angulo: string | null
+          created_at: string
+          fechamento_item_id: string | null
+          id: string
+          objecao_id: string | null
+          user_id: string
+        }
+        Insert: {
+          angulo?: string | null
+          created_at?: string
+          fechamento_item_id?: string | null
+          id?: string
+          objecao_id?: string | null
+          user_id?: string
+        }
+        Update: {
+          angulo?: string | null
+          created_at?: string
+          fechamento_item_id?: string | null
+          id?: string
+          objecao_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_disse_uso_fechamento_item_id_fkey"
+            columns: ["fechamento_item_id"]
+            isOneToOne: false
+            referencedRelation: "fechamento_itens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_disse_uso_objecao_id_fkey"
+            columns: ["objecao_id"]
+            isOneToOne: false
+            referencedRelation: "objecoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      config_economia: {
+        Row: {
+          mensalidade: number | null
+          plano: string
+          updated_at: string
+        }
+        Insert: {
+          mensalidade?: number | null
+          plano: string
+          updated_at?: string
+        }
+        Update: {
+          mensalidade?: number | null
+          plano?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contatos_enderecos: {
         Row: {
           atende_tambem: string[]
@@ -641,6 +701,35 @@ export type Database = {
         }
         Relationships: []
       }
+      content_item_views: {
+        Row: {
+          content_item_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          content_item_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          content_item_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_item_views_content_item_id_fkey"
+            columns: ["content_item_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_items: {
         Row: {
           category: string | null
@@ -685,35 +774,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      content_item_views: {
-        Row: {
-          content_item_id: string
-          created_at: string
-          id: string
-          user_id: string
-        }
-        Insert: {
-          content_item_id: string
-          created_at?: string
-          id?: string
-          user_id: string
-        }
-        Update: {
-          content_item_id?: string
-          created_at?: string
-          id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "content_item_views_content_item_id_fkey"
-            columns: ["content_item_id"]
-            isOneToOne: false
-            referencedRelation: "content_items"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       decision_edges: {
         Row: {
@@ -916,9 +976,11 @@ export type Database = {
           nome: string
           observacoes: string | null
           position: number
+          preco_particular_medio: number | null
           preparo: string | null
           preparo_itens: string[]
           tipo: string
+          usar_na_economia: boolean
           use_count: number
         }
         Insert: {
@@ -932,9 +994,11 @@ export type Database = {
           nome: string
           observacoes?: string | null
           position?: number
+          preco_particular_medio?: number | null
           preparo?: string | null
           preparo_itens?: string[]
           tipo?: string
+          usar_na_economia?: boolean
           use_count?: number
         }
         Update: {
@@ -948,10 +1012,96 @@ export type Database = {
           nome?: string
           observacoes?: string | null
           position?: number
+          preco_particular_medio?: number | null
           preparo?: string | null
           preparo_itens?: string[]
           tipo?: string
+          usar_na_economia?: boolean
           use_count?: number
+        }
+        Relationships: []
+      }
+      fechamento_casos: {
+        Row: {
+          created_at: string
+          dependentes: number
+          etapa: string
+          id: string
+          plano: string | null
+          primeiro_nome: string
+          retomar_em: string | null
+          updated_at: string
+          user_id: string
+          usos: Json
+        }
+        Insert: {
+          created_at?: string
+          dependentes?: number
+          etapa?: string
+          id?: string
+          plano?: string | null
+          primeiro_nome?: string
+          retomar_em?: string | null
+          updated_at?: string
+          user_id?: string
+          usos?: Json
+        }
+        Update: {
+          created_at?: string
+          dependentes?: number
+          etapa?: string
+          id?: string
+          plano?: string | null
+          primeiro_nome?: string
+          retomar_em?: string | null
+          updated_at?: string
+          user_id?: string
+          usos?: Json
+        }
+        Relationships: []
+      }
+      fechamento_itens: {
+        Row: {
+          created_at: string
+          etapa: string
+          evite: string | null
+          exemplos_de_fala: string[]
+          id: string
+          mensagem: string | null
+          ordem: number
+          passos: string[]
+          status: string
+          tipo: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          etapa: string
+          evite?: string | null
+          exemplos_de_fala?: string[]
+          id?: string
+          mensagem?: string | null
+          ordem?: number
+          passos?: string[]
+          status?: string
+          tipo: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          etapa?: string
+          evite?: string | null
+          exemplos_de_fala?: string[]
+          id?: string
+          mensagem?: string | null
+          ordem?: number
+          passos?: string[]
+          status?: string
+          tipo?: string
+          titulo?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1795,6 +1945,104 @@ export type Database = {
         }
         Relationships: []
       }
+      objecoes: {
+        Row: {
+          angulos: Json
+          autor_id: string | null
+          created_at: string
+          evite_dizer: string | null
+          exemplos_de_fala: string[]
+          id: string
+          leituras: Json
+          nome: string
+          pergunta_avancar: string | null
+          prioridade: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          angulos?: Json
+          autor_id?: string | null
+          created_at?: string
+          evite_dizer?: string | null
+          exemplos_de_fala?: string[]
+          id?: string
+          leituras?: Json
+          nome: string
+          pergunta_avancar?: string | null
+          prioridade?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          angulos?: Json
+          autor_id?: string | null
+          created_at?: string
+          evite_dizer?: string | null
+          exemplos_de_fala?: string[]
+          id?: string
+          leituras?: Json
+          nome?: string
+          pergunta_avancar?: string | null
+          prioridade?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      objecoes_pendentes: {
+        Row: {
+          created_at: string
+          fala_exemplo: string
+          falas_parecidas: string[]
+          id: string
+          objecao_id: string | null
+          ocorrencias: number
+          ocorrencias_em: string[]
+          respostas_atendentes: Json
+          status: string
+          sugerida_por: string | null
+          sugestao_ia: Json | null
+          ultima_ocorrencia: string
+        }
+        Insert: {
+          created_at?: string
+          fala_exemplo: string
+          falas_parecidas?: string[]
+          id?: string
+          objecao_id?: string | null
+          ocorrencias?: number
+          ocorrencias_em?: string[]
+          respostas_atendentes?: Json
+          status?: string
+          sugerida_por?: string | null
+          sugestao_ia?: Json | null
+          ultima_ocorrencia?: string
+        }
+        Update: {
+          created_at?: string
+          fala_exemplo?: string
+          falas_parecidas?: string[]
+          id?: string
+          objecao_id?: string | null
+          ocorrencias?: number
+          ocorrencias_em?: string[]
+          respostas_atendentes?: Json
+          status?: string
+          sugerida_por?: string | null
+          sugestao_ia?: Json | null
+          ultima_ocorrencia?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "objecoes_pendentes_objecao_id_fkey"
+            columns: ["objecao_id"]
+            isOneToOne: false
+            referencedRelation: "objecoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pdf_library_items: {
         Row: {
           category_id: string | null
@@ -1910,8 +2158,10 @@ export type Database = {
           para_quem: string | null
           particular_price: number | null
           position: number
+          preco_particular_medio: number | null
           specialty: string
           updated_at: string
+          usar_na_economia: boolean
           use_count: number
         }
         Insert: {
@@ -1927,8 +2177,10 @@ export type Database = {
           para_quem?: string | null
           particular_price?: number | null
           position?: number
+          preco_particular_medio?: number | null
           specialty: string
           updated_at?: string
+          usar_na_economia?: boolean
           use_count?: number
         }
         Update: {
@@ -1944,8 +2196,10 @@ export type Database = {
           para_quem?: string | null
           particular_price?: number | null
           position?: number
+          preco_particular_medio?: number | null
           specialty?: string
           updated_at?: string
+          usar_na_economia?: boolean
           use_count?: number
         }
         Relationships: []
@@ -2079,6 +2333,8 @@ export type Database = {
           nome: string
           observacoes: string | null
           position: number
+          preco_particular_medio: number | null
+          usar_na_economia: boolean
           use_count: number
         }
         Insert: {
@@ -2090,6 +2346,8 @@ export type Database = {
           nome: string
           observacoes?: string | null
           position?: number
+          preco_particular_medio?: number | null
+          usar_na_economia?: boolean
           use_count?: number
         }
         Update: {
@@ -2101,6 +2359,8 @@ export type Database = {
           nome?: string
           observacoes?: string | null
           position?: number
+          preco_particular_medio?: number | null
+          usar_na_economia?: boolean
           use_count?: number
         }
         Relationships: []
@@ -2787,6 +3047,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cliente_disse_contagens: {
+        Args: { _dias?: number }
+        Returns: {
+          angulo: string
+          objecao_id: string
+          total: number
+        }[]
+      }
       increment_amor_saude_use: {
         Args: { item_id: string; item_tipo: string }
         Returns: undefined
@@ -2799,6 +3067,8 @@ export type Database = {
         Args: { msg_id: string }
         Returns: undefined
       }
+      limpar_fechamento_casos: { Args: never; Returns: number }
+      marcar_ajuda_novidades_vistas: { Args: never; Returns: undefined }
       match_knowledge: {
         Args: { match_count?: number; query_embedding: string }
         Returns: {
