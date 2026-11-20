@@ -4,8 +4,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronDown, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import {
-  concluirCaso, listMeusCasos, retomarCasoDepois, salvarCaso,
+  concluirCaso, listMeusCasos, salvarCaso,
 } from "@/lib/cliente-disse.functions";
+import { criarRetomadaDeCaso } from "@/lib/retomada.functions";
+import { RETOMADA_BASE_KEY, RETOMADA_CONTAGEM_KEY } from "@/components/retomada/hooks";
 import {
   ETAPA_LABEL, PLANOS, PLANO_LABEL, SUBETAPAS, brl, calcularEconomia, preencherTemplate, textoEconomia, usoLabel,
   type Caso, type CasoEtapa, type CasoUso, type Etapa, type FechamentoItem, type ItemAmor,
@@ -48,7 +50,7 @@ export function FecharTab({
   const listFn = useServerFn(listMeusCasos);
   const salvarFn = useServerFn(salvarCaso);
   const concluirFn = useServerFn(concluirCaso);
-  const retomarFn = useServerFn(retomarCasoDepois);
+  const retomarFn = useServerFn(criarRetomadaDeCaso);
   const casosQ = useQuery({ queryKey: CASOS_KEY, queryFn: () => listFn({}) });
   const casos = casosQ.data ?? [];
 
@@ -129,10 +131,14 @@ export function FecharTab({
   });
 
   const retomar = useMutation({
-    mutationFn: (id: string) => retomarFn({ data: { id, data: hojeISO(1) } }),
+    // Cria um ticket em "Retomar hoje" (origem fechamento, travou no fechamento, D+1 amanhã).
+    mutationFn: (id: string) => retomarFn({ data: { caso_id: id } }),
     onSuccess: () => {
       setDraft((d) => ({ ...d, retomar_em: hojeISO(1) }));
       qc.invalidateQueries({ queryKey: CASOS_KEY });
+      qc.invalidateQueries({ queryKey: RETOMADA_BASE_KEY });
+      qc.invalidateQueries({ queryKey: RETOMADA_CONTAGEM_KEY });
+      toast.success("Guardado em “Retomar hoje” para amanhã.");
     },
     onError: () => toast.error("Não consegui guardar agora."),
   });
@@ -361,7 +367,7 @@ export function FecharTab({
                   <OutlineButton className="h-9 text-[14px]" onClick={() => retomar.mutate(draft.id!)} disabled={retomar.isPending}>
                     Retomar depois
                   </OutlineButton>
-                  <span className="text-[13px] text-ink-muted">fica em “Meus casos em aberto” para amanhã</span>
+                  <span className="text-[13px] text-ink-muted">vira um cliente em “Retomar hoje” para amanhã</span>
                 </>
               )}
             </div>

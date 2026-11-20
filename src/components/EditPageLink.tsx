@@ -6,6 +6,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 const ROUTE_TO_ADMIN_SECTION: [string, string][] = [
   ["/amor-saude", "pricing"],
   ["/scripts/cliente-disse", "objecoes"],
+  ["/retomar", "cadencia"],
   ["/scripts", "messages"],
   ["/assistente", "marciana"],
   ["/simulador-ia", "perfis"],
