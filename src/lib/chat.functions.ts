@@ -1,7 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { isAdminUser } from "@/lib/authz";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { chatCompletion, generateEmbedding } from "./ai-gateway.server";
+import { generateEmbedding } from "./ai-gateway.server";
+import { chamarIA, consumirUso, montarInstrucoes } from "./cerebro.server";
 import { z } from "zod";
 import { ADMIN_ASSISTANT_MODEL, MARCIANA_CHAT_MODEL } from "@/lib/ai-models";
 
@@ -222,6 +223,9 @@ export const sendMessage = createServerFn({ method: "POST" })
     if (convErr || !conv) throw new Error("Conversa não encontrada");
     if (conv.user_id !== context.userId) throw new Error("Sem permissão");
 
+    // Limite diário da MarcIAna (padrão: sem limite; o Admin define em Cérebro → Limites de uso).
+    await consumirUso(context, "marciana");
+
     // 2) Salva mensagem do usuário
     const { error: insErr } = await context.supabase.from("chat_messages").insert({
       conversation_id: data.conversationId,
@@ -303,8 +307,9 @@ const { data: settings } = await supabaseAdmin
     if (semBase) {
       reply = "Não encontrei essa informação na base de conhecimento. Peça para um administrador cadastrar esse conteúdo em **Conhecimento → Base de Conhecimento IA** e tente novamente.";
     } else {
+        const cerebro = (await montarInstrucoes("marciana")).texto;
         const augmentedSystem = `${systemPrompt}
-${essentialFacts ? `\nFATOS ESSENCIAIS (sempre corretos e atualizados — em caso de conflito com qualquer outra fonte abaixo, estes prevalecem):\n${essentialFacts}\n` : ""}
+${cerebro ? `\n${cerebro}\n` : ""}${essentialFacts ? `\nFATOS ESSENCIAIS (sempre corretos e atualizados — em caso de conflito com qualquer outra fonte abaixo, estes prevalecem):\n${essentialFacts}\n` : ""}
 ${foundAny ? `\nFONTES DA BASE DE CONHECIMENTO (conteúdo real recuperado para esta pergunta — use isto para responder):\n${ragContext}\n` : ""}
 REGRAS:
 - Os "FATOS ESSENCIAIS" acima (quando presentes) são a fonte mais confiável que existe — priorize-os sobre qualquer fonte buscada abaixo em caso de conflito, e pode responder com base neles mesmo sem outra fonte relevante.
@@ -319,7 +324,7 @@ REGRAS:
 - Evite repetir a pergunta do usuário de volta antes de responder, e evite começar toda resposta com a mesma estrutura (ex: sempre "De acordo com...").
 - Não encha a resposta com ressalvas desnecessárias — vá direto ao que o atendente precisa saber.`;
 
-      reply = await chatCompletion({
+      reply = await chamarIA({
         model,
         temperature: 0.35,
         messages: [
@@ -400,8 +405,12 @@ export const generateClientMessage = createServerFn({ method: "POST" })
       .single();
     const model = settings?.model ?? MARCIANA_CHAT_MODEL;
 
+    await consumirUso(context, "mensagem_cliente");
+    const cerebro = (await montarInstrucoes("mensagem_cliente")).texto;
     const respostaBase = stripLegacySources(msg.content);
-    const prompt = `Reescreva a resposta abaixo (dada a um atendente do Cartão de TODOS) como uma mensagem curta para enviar ao CLIENTE pelo WhatsApp.
+    const prompt = `${cerebro}
+
+Reescreva a resposta abaixo (dada a um atendente do Cartão de TODOS) como uma mensagem curta para enviar ao CLIENTE pelo WhatsApp.
 
 Regras obrigatórias:
 - Tom acolhedor, no estilo da marca Cartão de TODOS.
@@ -409,7 +418,6 @@ Regras obrigatórias:
 - Pode usar no máximo 1 emoji.
 - Termine com uma pergunta que avance a conversa com o cliente.
 - Sem jargão interno (não fale como se fosse para outro atendente).
-- NUNCA diga "não é plano de saúde".
 - Não invente valores, prazos ou condições que não estejam no texto abaixo.
 
 Resposta original (para o atendente):
@@ -419,7 +427,7 @@ ${respostaBase}
 
 Responda apenas com a mensagem para o cliente, sem introdução, sem aspas, sem markdown.`;
 
-    const clienteMensagem = (await chatCompletion({
+    const clienteMensagem = (await chamarIA({
       model,
       temperature: 0.4,
       messages: [{ role: "system", content: prompt }, { role: "user", content: "Gere a mensagem." }],
@@ -536,7 +544,7 @@ ${partes.join("\n")}
 
 Responda apenas com a lista de fatos essenciais (e eventuais conflitos), sem introdução, sem título, sem markdown de cabeçalho.`;
 
-    const content = await chatCompletion({
+    const content = await chamarIA({
       model: ADMIN_ASSISTANT_MODEL,
       temperature: 0.1,
       messages: [{ role: "system", content: prompt }, { role: "user", content: "Gere a lista." }],

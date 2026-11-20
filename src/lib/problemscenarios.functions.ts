@@ -184,12 +184,17 @@ export const evaluateProblemScenario = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
     z.object({ scenario_id: z.string().uuid(), transcript: z.string() }).parse(d)
   )
-  .handler(async ({ data }) => {
-    const [s, clientKnowledge] = await Promise.all([
+  .handler(async ({ data, context }) => {
+    const { chamarIA, consumirUso, montarInstrucoes } = await import("@/lib/cerebro.server");
+    await consumirUso(context, "simulador");
+    const [s, clientKnowledge, cerebro] = await Promise.all([
       loadScenarioServerSide(data.scenario_id),
       loadClientKnowledge(),
+      montarInstrucoes("simulador"),
     ]);
-    const evalPrompt = `Você é um avaliador especialista em atendimentos de suporte do Cartão de Todos.
+    const evalPrompt = `${cerebro.texto}
+
+Você é um avaliador especialista em atendimentos de suporte do Cartão de Todos.
 
 O QUE REALMENTE ACONTECEU COM O CLIENTE: ${s.enredo}
 PERFIL DO CLIENTE: ${faixaEtariaGuidance(s.faixa_etaria)}
@@ -214,8 +219,7 @@ Responda APENAS com um JSON válido, sem texto extra, sem markdown, neste format
 }
 Os arrays dentro de "trechos" devem ter o mesmo tamanho dos arrays correspondentes (pontos_fortes/pontos_melhoria/erros), na mesma ordem — um trecho (ou null) para cada item.`;
 
-    const { chatCompletion } = await import("@/lib/ai-gateway.server");
-    const reply = await chatCompletion({
+    const reply = await chamarIA({
       model: SIMULATOR_EVALUATION_MODEL,
       messages: [{ role: "system", content: evalPrompt }, { role: "user", content: data.transcript }],
       temperature: 0.3,
