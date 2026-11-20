@@ -35,6 +35,7 @@ export function CopilotoPage() {
         caminhos = await conversa.subirImagens();
         return await analisarFn({ data: {
           texto: conversa.txt?.preparada.texto ?? "",
+          ultima_mensagem: conversa.txt?.preparada.ultimaMensagem ?? null,
           caminhos,
           primeiro_nome_cliente: conversa.txt?.preparada.primeiroNomeCliente ?? null,
         } });

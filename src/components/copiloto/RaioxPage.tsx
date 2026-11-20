@@ -40,6 +40,7 @@ export function RaioxPage({ retomadaId }: { retomadaId?: string }) {
         caminhos = await conversa.subirImagens();
         return await raioxFn({ data: {
           texto: conversa.txt?.preparada.texto ?? "",
+          ultima_mensagem: conversa.txt?.preparada.ultimaMensagem ?? null,
           caminhos,
           primeiro_nome_cliente: conversa.txt?.preparada.primeiroNomeCliente ?? ret.data?.primeiro_nome ?? null,
           tempo_resposta: conversa.txt?.preparada.tempoResposta ?? null,
