@@ -15,10 +15,12 @@ import {
 import { cn } from "@/lib/utils";
 
 export function ObjecoesTab({
-  base, falaInicial, onAbrirFechar,
+  base, falaInicial, objecaoInicial, onAbrirFechar,
 }: {
   base: ClienteDisseBase | undefined;
   falaInicial?: string;
+  /** Vinda da Biblioteca: abre direto a resposta desta objeção (sem análise de IA). */
+  objecaoInicial?: string;
   onAbrirFechar: (etapa: Etapa, travamentoId?: string) => void;
 }) {
   const classificar = useServerFn(classificarFala);
@@ -67,6 +69,16 @@ export function ObjecoesTab({
     mut.mutate(falaInicial.trim());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [falaInicial, base]);
+
+  // Objeção pré-selecionada (link da Biblioteca): mostra a resposta aprovada sem chamar a IA.
+  const objRef = useRef(false);
+  useEffect(() => {
+    if (objRef.current || !objecaoInicial || !base) return;
+    objRef.current = true;
+    if (!base.objecoes.some((o) => o.id === objecaoInicial)) return;
+    setResultado({ itens: [{ tipo: "objecao", id: objecaoInicial, ordem: 1, motivo_ordem: null }], nova: false, pendente_id: null });
+    setAberto(0);
+  }, [objecaoInicial, base]);
 
   const objecoes = (resultado?.itens ?? [])
     .filter((i) => i.tipo === "objecao")

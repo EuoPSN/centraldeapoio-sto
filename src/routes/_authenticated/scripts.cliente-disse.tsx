@@ -6,7 +6,7 @@ import { FecharTab } from "@/components/cliente-disse/FecharTab";
 import { useClienteDisseBase } from "@/components/cliente-disse/shared";
 
 type Aba = "objecoes" | "fechar";
-interface Search { aba?: Aba; fala?: string; etapa?: Etapa; travamento?: string }
+interface Search { aba?: Aba; fala?: string; etapa?: Etapa; travamento?: string; objecao?: string }
 
 const str = (v: unknown) => (typeof v === "string" && v.trim() ? v : undefined);
 
@@ -16,6 +16,7 @@ export const Route = createFileRoute("/_authenticated/scripts/cliente-disse")({
     fala: str(s.fala)?.slice(0, 2000),
     etapa: (ETAPAS as readonly string[]).includes(String(s.etapa)) ? (s.etapa as Etapa) : undefined,
     travamento: str(s.travamento),
+    objecao: str(s.objecao)?.slice(0, 60),
   }),
   component: ClienteDissePage,
 });
@@ -52,7 +53,7 @@ function ClienteDissePage() {
 
       {/* As duas abas ficam montadas para não perder o que foi digitado ao trocar. */}
       <div hidden={aba !== "objecoes"}>
-        <ObjecoesTab base={base.data} falaInicial={search.fala} onAbrirFechar={abrirFechar} />
+        <ObjecoesTab base={base.data} falaInicial={search.fala} objecaoInicial={search.objecao} onAbrirFechar={abrirFechar} />
       </div>
       <div hidden={aba !== "fechar"}>
         <FecharTab base={base.data} etapaInicial={search.etapa} travamentoInicial={search.travamento} />

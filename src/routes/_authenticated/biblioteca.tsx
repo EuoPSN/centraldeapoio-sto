@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Pill } from "@/components/Pill";
 import { useState, useMemo, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -13,7 +13,23 @@ import { DownloadImageButton } from "@/components/DownloadImageButton";
 import { Search, Image as ImageIcon, FileText } from "lucide-react";
 import { SkeletonCard } from "@/components/ui/skeleton-card";
 
+import { ConversasQueFecharam, type FiltrosConversas } from "@/components/biblioteca/ConversasQueFecharam";
+import { PERFIL_TAGS, PLANOS_FICHA } from "@/lib/fichas";
+import { PONTOS } from "@/lib/retomada";
+
+type Aba = "materiais" | "conversas";
+interface Search extends FiltrosConversas { aba?: Aba }
+const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.slice(0, 60) : undefined);
+
 export const Route = createFileRoute("/_authenticated/biblioteca")({
+  validateSearch: (s: Record<string, unknown>): Search => ({
+    aba: s.aba === "conversas" ? "conversas" : s.aba === "materiais" ? "materiais" : undefined,
+    objecao: str(s.objecao),
+    ponto: (PONTOS as readonly string[]).includes(String(s.ponto)) ? (s.ponto as FiltrosConversas["ponto"]) : undefined,
+    plano: (PLANOS_FICHA as readonly string[]).includes(String(s.plano)) ? String(s.plano) : undefined,
+    perfil: PERFIL_TAGS.some((t) => t.id === s.perfil) ? (s.perfil as FiltrosConversas["perfil"]) : undefined,
+    ficha: str(s.ficha),
+  }),
   component: Page,
 });
 
@@ -40,22 +56,45 @@ function useReloadKeyOnTabReturn() {
 }
 
 function Page() {
+  const search = Route.useSearch();
+  const navigate = useNavigate({ from: "/biblioteca" });
+  const aba: Aba = search.aba ?? "materiais";
+  const { aba: _aba, ...filtros } = search;
+
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7">
-      <header className="mb-5">
-        <h1 className="text-2xl font-medium">Imagens</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">Biblioteca de imagens e PDFs pra uso no atendimento (exames, especialidades, planos...).</p>
+      <header className="mb-4">
+        <h1 className="text-2xl font-medium">Biblioteca</h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">Imagens, PDFs e casos reais da equipe.</p>
       </header>
 
-      <Tabs defaultValue="imagens">
-        <TabsList className="mb-6">
-          <TabsTrigger value="imagens" className="gap-1.5"><ImageIcon className="h-4 w-4" /> Imagens</TabsTrigger>
-          <TabsTrigger value="pdfs" className="gap-1.5"><FileText className="h-4 w-4" /> PDFs</TabsTrigger>
+      <Tabs value={aba} onValueChange={(v) => navigate({ search: v === "conversas" ? { aba: "conversas" } : {}, replace: true })}>
+        <TabsList className="mb-4">
+          <TabsTrigger value="materiais">Materiais</TabsTrigger>
+          <TabsTrigger value="conversas">Conversas que fecharam</TabsTrigger>
         </TabsList>
-        <TabsContent value="imagens"><ImagensSubPage /></TabsContent>
-        <TabsContent value="pdfs"><PdfsSubPage /></TabsContent>
+        <TabsContent value="materiais"><Materiais /></TabsContent>
+        <TabsContent value="conversas">
+          <ConversasQueFecharam
+            filtros={filtros}
+            onFiltros={(f) => navigate({ search: { aba: "conversas", ...f }, replace: true })}
+          />
+        </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+function Materiais() {
+  return (
+    <Tabs defaultValue="imagens">
+      <TabsList className="mb-6">
+        <TabsTrigger value="imagens" className="gap-1.5"><ImageIcon className="h-4 w-4" /> Imagens</TabsTrigger>
+        <TabsTrigger value="pdfs" className="gap-1.5"><FileText className="h-4 w-4" /> PDFs</TabsTrigger>
+      </TabsList>
+      <TabsContent value="imagens"><ImagensSubPage /></TabsContent>
+      <TabsContent value="pdfs"><PdfsSubPage /></TabsContent>
+    </Tabs>
   );
 }
 
