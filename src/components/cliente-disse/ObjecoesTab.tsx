@@ -12,6 +12,7 @@ import { GoldButton, OutlineButton, SkeletonLine } from "@/components/scripts/sh
 import {
   CopyText, DashedTag, ErroDiscreto, GoldPill, Overline, useRegistrarUso, type ClienteDisseBase,
 } from "@/components/cliente-disse/shared";
+import { CasosParecidos } from "@/components/biblioteca/CasosParecidos";
 import { cn } from "@/lib/utils";
 
 export function ObjecoesTab({
@@ -155,6 +156,8 @@ export function ObjecoesTab({
                 contagens={base?.contagens[atual.obj.id] ?? {}}
               />
             )}
+
+            {objecoes.length > 0 && <CasosParecidos objecaoIds={objecoes.map((o) => o.obj.id)} />}
 
             {!resultado.nova && objecoes.length === 0 && !extraItem && (
               <p className="text-[14px] text-ink-muted">Não encontrei objeção nessa fala.</p>
