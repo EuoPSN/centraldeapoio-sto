@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useMemo } from "react";
-import { ArrowRight, AudioLines, Phone, Quote } from "lucide-react";
+import { ArrowRight, AudioLines, MessageCircleQuestion, Phone, Quote } from "lucide-react";
 import { HubCard, HubSearchField } from "@/components/HubCard";
 import {
   TopbarBreadcrumb, buildFlows, useFlowData, useMessageCategories, useMessages, SkeletonLine,
@@ -49,7 +49,7 @@ function ScriptsHub() {
         Mensagens prontas, o passo a passo do atendimento e roteiros para falar com o cliente.
       </p>
 
-      <div className="mt-11 grid w-full grid-cols-1 justify-center gap-4 min-[560px]:grid-cols-[repeat(2,232px)] min-[1060px]:grid-cols-[repeat(4,232px)]">
+      <div className="mt-11 grid w-full grid-cols-1 justify-center gap-4 min-[560px]:grid-cols-[repeat(2,232px)] min-[820px]:grid-cols-[repeat(3,232px)] min-[1100px]:grid-cols-[repeat(5,200px)]">
         <HubCard
           to="/scripts/fluxo"
           icon={ArrowRight}
@@ -65,6 +65,13 @@ function ScriptsHub() {
           title="Biblioteca de mensagens"
           text="Todas as mensagens prontas, por categoria."
           footer={messages.isLoading ? <SkeletonLine className="h-3.5 w-24" /> : `${messages.rows.length} ${messages.rows.length === 1 ? "mensagem" : "mensagens"}`}
+        />
+        <HubCard
+          to="/scripts/cliente-disse"
+          icon={MessageCircleQuestion}
+          title="O cliente disse…"
+          text="Cole a fala do cliente e receba a resposta aprovada para a objeção."
+          footer="Objeções e fechamento"
         />
         <HubCard icon={Phone} title="Scripts de ligação" text="Roteiro da ligação com respostas para cada objeção." badge="Em breve" soon />
         <HubCard icon={AudioLines} title="Roteiros de áudio" text="O texto de como falar e um áudio de exemplo." badge="Em breve" soon />

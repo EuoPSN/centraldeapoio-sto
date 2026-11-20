@@ -37,3 +37,9 @@ export const ADMIN_ASSISTANT_MODEL = "google/gemini-2.5-flash";
 
 /** Embeddings da busca semântica (1536 dimensões). */
 export const EMBEDDING_MODEL = "openai/text-embedding-3-small";
+
+/**
+ * "O cliente disse…" (Scripts): classificar a fala do cliente, sugerir resposta
+ * para objeção nova e agrupar falas parecidas na fila do Admin.
+ */
+export const CLIENTE_DISSE_MODEL = "google/gemini-2.5-flash";
