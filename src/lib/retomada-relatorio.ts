@@ -7,9 +7,9 @@ import type { DadosRelatorio } from "@/lib/retomada.functions";
 //
 // NUNCA entram no arquivo: telefone e fala do cliente.
 
-type Cel = string | number | null;
-interface Coluna { nome: string; significado: string; valores: string; largura?: number }
-interface Aba { nome: string; tabela: string; colunas: Coluna[]; linhas: Cel[][] }
+export type Cel = string | number | null;
+export interface Coluna { nome: string; significado: string; valores: string; largura?: number }
+export interface Aba { nome: string; tabela: string; colunas: Coluna[]; linhas: Cel[][] }
 
 const BRT = 3 * 3600_000;
 /** "AAAA-MM-DD HH:MM" em Brasília. */
@@ -258,11 +258,16 @@ function montarLeiaMe(d: DadosRelatorio): Cel[][] {
 
 /** Monta o .xlsx (ArrayBuffer). Funciona no navegador e no Node. */
 export async function montarRelatorioXlsx(d: DadosRelatorio): Promise<ArrayBuffer> {
+  return abasParaXlsx(montarAbas(d), d.exportadoEm);
+}
+
+/** Escreve as abas como Tabelas do Excel (compartilhado com o relatório de inteligência). */
+export async function abasParaXlsx(abas: Aba[], exportadoEm: string, abasComQuebra: string[] = ["LEIA-ME", "Mensagens"]): Promise<ArrayBuffer> {
   const ExcelJS = (await import("exceljs")).default;
   const wb = new ExcelJS.Workbook();
   wb.creator = "OMNIA Apoio";
-  wb.created = new Date(d.exportadoEm);
-  for (const aba of montarAbas(d)) {
+  wb.created = new Date(exportadoEm);
+  for (const aba of abas) {
     const ws = wb.addWorksheet(aba.nome, { views: [{ state: "frozen", ySplit: 1 }] });
     aba.colunas.forEach((c, i) => { ws.getColumn(i + 1).width = c.largura ?? 16; });
     // Tabela do Excel com filtro. Sem linhas, uma linha vazia para a tabela existir.
@@ -276,7 +281,7 @@ export async function montarRelatorioXlsx(d: DadosRelatorio): Promise<ArrayBuffe
       columns: aba.colunas.map((c) => ({ name: c.nome, filterButton: true })),
       rows: linhas,
     });
-    if (aba.nome === "LEIA-ME" || aba.nome === "Mensagens") {
+    if (abasComQuebra.includes(aba.nome)) {
       ws.eachRow((row) => row.eachCell((cell) => { cell.alignment = { vertical: "top", wrapText: true }; }));
     }
   }

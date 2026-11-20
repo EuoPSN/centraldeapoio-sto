@@ -18,6 +18,7 @@ import { MarcianaEye } from "@/components/marciana/MarcianaEye";
 import {
   AdminListDetail, DeleteLink, FieldLabel, FilterPill, ListRow, PanelEmpty, PanelHeader, TagsField, inputCls,
 } from "@/components/admin/AdminListDetail";
+import { BaixarInteligenciaAdmin } from "@/components/copiloto/BaixarInteligencia";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 
@@ -590,6 +591,7 @@ export function RaioxEquipeTab() {
   const painel = q.data ? (
     <div>
       <PanelHeader overline={vendedor ? "Vendedor" : "Equipe"} title={vendedor ? vendedor.nome : "Toda a equipe"} />
+      <div className="-mt-1 mb-5"><BaixarInteligenciaAdmin /></div>
       <Padroes p={vendedor ?? q.data.equipe} />
       {vendedor && (
         <div className="mt-6 border-t border-line pt-4">

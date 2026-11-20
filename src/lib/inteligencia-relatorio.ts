@@ -1,0 +1,298 @@
+import { removerDadosPessoais } from "@/lib/cliente-disse";
+import { abasParaXlsx, isoBR, type Aba, type Cel, type Coluna } from "@/lib/retomada-relatorio";
+
+// Relatório Excel da Inteligência (Raio-X + uso do Copiloto e das outras IAs),
+// feito para ser lido por pessoas e por IA. Mesmo padrão do relatório de retomadas:
+// 1 linha de cabeçalho por aba, sem células mescladas, sem linhas em branco, datas
+// ISO "AAAA-MM-DD HH:MM" (Brasília), vocabulário fixo, cada aba uma Tabela do Excel.
+//
+// NUNCA entram no arquivo: telefone, e-mail, nome do cliente e fala do cliente.
+// Do Raio-X só saem campos do lado do atendente e de padrões. Ficam de fora:
+// onde_perdeu (descrição, fala do cliente e fala do atendente), a explicação de
+// cada técnica que faltou e a descrição do hábito, porque podem citar o cliente.
+
+// ---------------------------------------------------------------------------
+// Dados (já limpos no servidor; o navegador nunca recebe os campos que ficam de fora)
+// ---------------------------------------------------------------------------
+
+export interface RaioxLinha {
+  data_hora: string;
+  user_id: string;
+  etapa: string | null;
+  /** Só o nome da técnica (sem a explicação). */
+  tecnicas: string[];
+  reescrita_original: string;
+  reescrita_sugerida: string;
+  erros: { errado: string; certo: string; regra: string }[];
+  habito: string;
+  veio_de_retomada: boolean;
+}
+
+export interface UsoLinha { dia: string; user_id: string; ferramenta: string; quantidade: number; limite_diario: number | null }
+
+export interface DadosInteligencia {
+  de: string;
+  ate: string;
+  escopo: "atendente" | "equipe";
+  exportadoPor: string;
+  exportadoEm: string;
+  atendentes: Record<string, string>;
+  raiox: RaioxLinha[];
+  uso: UsoLinha[];
+  /** Etapas do funil do Cérebro (tabela funil_etapas). */
+  funil: { etapa: string; nome: string; definicao: string; sinais: string[] }[];
+  /** Títulos dos blocos do Cérebro (para normalizar o nome das técnicas). */
+  blocosCerebro: { chave: string; titulo: string }[];
+}
+
+// ---------------------------------------------------------------------------
+// Limpeza de texto escrito pelo atendente
+// ---------------------------------------------------------------------------
+
+const SAUDACAO = /(?<![\p{L}\d])(oi|oie|olá|ola|bom dia|boa tarde|boa noite|e aí|e ai|opa)([,!.]?\s+)(\p{L}{3,})/giu;
+const NAO_E_NOME = new Set(["tudo", "td", "bem", "como", "gente", "pessoal", "senhor", "senhora", "sr", "sra", "tudo"]);
+const semAcento = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+const temAcento = (s: string) => s !== s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+const escapar = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** Tira telefone, CPF, e-mail e o primeiro nome do cliente de um texto do atendente.
+ * Sem o nome conhecido, troca também o nome que vem logo depois de uma saudação
+ * ("Oi Carla" → "Oi [cliente]"). É uma proteção em camadas, não uma garantia total. */
+export function limparTextoExport(t: string, primeiroNome?: string | null): string {
+  let r = removerDadosPessoais(String(t ?? ""));
+  const n = (primeiroNome ?? "").trim();
+  if (n.length >= 3) r = r.replace(new RegExp(`(?<![\\p{L}\\d])${escapar(n)}(?![\\p{L}\\d])`, "giu"), "[cliente]");
+  r = r.replace(SAUDACAO, (m, s: string, sep: string, nome: string) =>
+    /^\p{Lu}/u.test(nome) && !NAO_E_NOME.has(semAcento(nome)) ? `${s}${sep}[cliente]` : m);
+  return r.replace(/\s+/g, " ").trim();
+}
+
+// ---------------------------------------------------------------------------
+// Vocabulário das técnicas (Cérebro): "SPIN · Implicação", "Voss · Pergunta calibrada"
+// ---------------------------------------------------------------------------
+
+const CURTO: Record<string, string> = { spin_selling: "SPIN", chris_voss: "Voss" };
+
+function prefixosDoCerebro(blocos: DadosInteligencia["blocosCerebro"]): Map<string, string> {
+  const m = new Map<string, string>();
+  for (const b of blocos) {
+    const curto = CURTO[b.chave];
+    if (!curto) continue;
+    m.set(semAcento(curto), curto);
+    m.set(semAcento(b.titulo), curto);
+  }
+  for (const [chave, curto] of Object.entries(CURTO)) m.set(semAcento(chave.replace(/_/g, " ")), curto);
+  return m;
+}
+
+const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+
+/** Leva o nome da técnica ao formato "Livro · Técnica" do Cérebro. */
+export function normalizarTecnica(bruto: string, blocos: DadosInteligencia["blocosCerebro"] = []): string {
+  const t = String(bruto ?? "").replace(/\s+/g, " ").trim();
+  if (!t) return "";
+  const prefixos = prefixosDoCerebro(blocos);
+  const partes = t.split(/\s*[·|:–—/-]\s*/).filter(Boolean);
+  if (partes.length >= 2) {
+    const livro = prefixos.get(semAcento(partes[0])) ?? partes[0];
+    return `${livro} · ${cap(partes.slice(1).join(" ").toLowerCase())}`;
+  }
+  // "SPIN Implicação" sem separador: prefixo conhecido seguido da técnica.
+  const sa = semAcento(t);
+  for (const [chave, livro] of [...prefixos.entries()].sort((a, b) => b[0].length - a[0].length)) {
+    if (sa.startsWith(`${chave} `)) return `${livro} · ${cap(t.slice(chave.length).trim().toLowerCase())}`;
+  }
+  return cap(t);
+}
+
+// ---------------------------------------------------------------------------
+// Colunas (dicionário)
+// ---------------------------------------------------------------------------
+
+const ETAPAS = "novo_lead | lead_qualificado | proposta_enviada | fechamento | venda_concluida | vazio";
+const FERRAMENTAS = "copiloto | raiox | marciana | cliente_disse | mensagem_cliente | retomada | simulador";
+
+const C = {
+  raiox: [
+    { nome: "data_hora", significado: "Quando o Raio-X foi feito.", valores: "AAAA-MM-DD HH:MM", largura: 17 },
+    { nome: "atendente", significado: "Atendente que fez o Raio-X.", valores: "nome do atendente", largura: 16 },
+    { nome: "etapa", significado: "Etapa do funil do Cérebro em que a venda se perdeu.", valores: ETAPAS, largura: 18 },
+    { nome: "tecnica_que_faltou", significado: "Técnicas de venda que faltaram, no vocabulário do Cérebro. Mais de uma: separadas por \" | \".", valores: "Livro · Técnica, ex.: SPIN · Implicação | Voss · Pergunta calibrada; vazio se nenhuma", largura: 40 },
+    { nome: "mensagem_original", significado: "Mensagem escrita pelo atendente (sem telefone, e-mail nem nome do cliente).", valores: "texto livre ou vazio", largura: 50 },
+    { nome: "mensagem_sugerida", significado: "Reescrita sugerida pelo Raio-X para a mesma mensagem.", valores: "texto livre", largura: 50 },
+    { nome: "erro_de_escrita", significado: "Trechos errados na escrita do atendente. Mais de um: separados por \" | \", na mesma ordem de correcao.", valores: "texto livre ou vazio", largura: 36 },
+    { nome: "correcao", significado: "Forma certa de cada erro_de_escrita, na mesma ordem.", valores: "texto livre ou vazio", largura: 36 },
+    { nome: "habito_para_treinar", significado: "Título do hábito que o atendente deve treinar (a descrição não entra no arquivo).", valores: "texto curto", largura: 40 },
+    { nome: "veio_de_retomada", significado: "sim se o Raio-X foi aberto a partir de um ticket perdido da retomada.", valores: "sim | não", largura: 15 },
+  ],
+  tecnicas: [
+    { nome: "atendente", significado: "Atendente.", valores: "nome do atendente", largura: 16 },
+    { nome: "tecnica", significado: "Técnica que faltou, normalizada pelo vocabulário do Cérebro.", valores: "Livro · Técnica", largura: 40 },
+    { nome: "quantidade", significado: "Em quantos Raio-X do atendente essa técnica faltou (cada Raio-X conta uma vez).", valores: "número inteiro", largura: 12 },
+    { nome: "percentual_dos_raiox_do_atendente", significado: "quantidade ÷ total de Raio-X do atendente no período, em percentual.", valores: "0 a 100, uma casa decimal", largura: 22 },
+  ],
+  erros: [
+    { nome: "atendente", significado: "Atendente.", valores: "nome do atendente", largura: 16 },
+    { nome: "tipo_de_erro", significado: "Regra de escrita quebrada, como o Raio-X classificou.", valores: "texto curto; sem_classificacao se o Raio-X não informou", largura: 32 },
+    { nome: "exemplo_errado", significado: "Exemplo mais frequente do trecho errado nesse tipo.", valores: "texto livre", largura: 36 },
+    { nome: "exemplo_certo", significado: "Correção do exemplo acima.", valores: "texto livre", largura: 36 },
+    { nome: "quantidade", significado: "Quantas vezes esse tipo de erro apareceu nos Raio-X do atendente.", valores: "número inteiro", largura: 12 },
+  ],
+  uso: [
+    { nome: "data", significado: "Dia do uso (Brasília).", valores: "AAAA-MM-DD", largura: 12 },
+    { nome: "atendente", significado: "Atendente que usou.", valores: "nome do atendente", largura: 16 },
+    { nome: "ferramenta", significado: "Ferramenta de IA usada.", valores: FERRAMENTAS, largura: 18 },
+    { nome: "quantidade", significado: "Quantas vezes o atendente usou a ferramenta nesse dia.", valores: "número inteiro", largura: 12 },
+    { nome: "limite_diario", significado: "Limite diário atual da ferramenta (ia_limites) somado às liberações extras do Admin válidas no dia (ia_limites_extra). Vazio = sem limite. Usa o limite configurado hoje, não o histórico.", valores: "número inteiro ou vazio", largura: 14 },
+    { nome: "bateu_limite", significado: "sim se quantidade chegou ao limite_diario naquele dia.", valores: "sim | não", largura: 13 },
+  ],
+} satisfies Record<string, Coluna[]>;
+
+const LEIA_ME_COLUNAS: Coluna[] = [
+  { nome: "secao", significado: "Bloco do guia.", valores: "", largura: 22 },
+  { nome: "item", significado: "Nome do que está sendo explicado.", valores: "", largura: 34 },
+  { nome: "descricao", significado: "Explicação.", valores: "", largura: 90 },
+  { nome: "valores_possiveis", significado: "Valores aceitos (vocabulário fixo).", valores: "", largura: 60 },
+];
+
+// ---------------------------------------------------------------------------
+// Abas
+// ---------------------------------------------------------------------------
+
+const pct = (n: number, d: number): number | null => (d > 0 ? Math.round((n / d) * 1000) / 10 : null);
+const sn = (b: boolean) => (b ? "sim" : "não");
+const ptBR = (a: string, b: string) => a.localeCompare(b, "pt-BR");
+
+export function montarAbasInteligencia(d: DadosInteligencia): Aba[] {
+  const nomeAt = (id: string) => d.atendentes[id] ?? "";
+  const ordenados = [...d.raiox].sort((a, b) => a.data_hora.localeCompare(b.data_hora));
+
+  // Mesma técnica com e sem acento vira um nome só (o mais frequente; no empate, o acentuado).
+  const variantes = new Map<string, Map<string, number>>();
+  for (const r of ordenados) for (const t of r.tecnicas) {
+    const n = normalizarTecnica(t, d.blocosCerebro);
+    if (!n) continue;
+    const m = variantes.get(semAcento(n)) ?? variantes.set(semAcento(n), new Map()).get(semAcento(n))!;
+    m.set(n, (m.get(n) ?? 0) + 1);
+  }
+  const nomeFinal = new Map<string, string>();
+  for (const [k, m] of variantes) {
+    nomeFinal.set(k, [...m.entries()].sort((a, b) => b[1] - a[1] || Number(temAcento(b[0])) - Number(temAcento(a[0])) || ptBR(a[0], b[0]))[0][0]);
+  }
+
+  // Cada Raio-X já passa pela limpeza e pela normalização aqui, uma vez só.
+  const tratados = ordenados.map((r) => {
+    const tecnicas = [...new Set(r.tecnicas.map((t) => normalizarTecnica(t, d.blocosCerebro)).filter(Boolean).map((n) => nomeFinal.get(semAcento(n)) ?? n))];
+    const erros = r.erros.map((e) => ({
+      errado: limparTextoExport(e.errado), certo: limparTextoExport(e.certo), regra: limparTextoExport(e.regra),
+    }));
+    return { r, atendente: nomeAt(r.user_id), tecnicas, erros };
+  });
+
+  const raioxLinhas: Cel[][] = tratados.map(({ r, atendente, tecnicas, erros }) => [
+    isoBR(r.data_hora), atendente, r.etapa ?? "", tecnicas.join(" | "),
+    limparTextoExport(r.reescrita_original), limparTextoExport(r.reescrita_sugerida),
+    erros.map((e) => e.errado).join(" | "), erros.map((e) => e.certo).join(" | "),
+    limparTextoExport(r.habito), sn(r.veio_de_retomada),
+  ]);
+
+  // Técnicas que faltam (por atendente)
+  const totalPorAt = new Map<string, number>();
+  const tecPorAt = new Map<string, Map<string, number>>();
+  for (const t of tratados) {
+    totalPorAt.set(t.atendente, (totalPorAt.get(t.atendente) ?? 0) + 1);
+    const m = tecPorAt.get(t.atendente) ?? tecPorAt.set(t.atendente, new Map()).get(t.atendente)!;
+    for (const k of t.tecnicas) m.set(k, (m.get(k) ?? 0) + 1);
+  }
+  const tecLinhas: Cel[][] = [];
+  for (const [at, m] of [...tecPorAt.entries()].sort((a, b) => ptBR(a[0], b[0]))) {
+    for (const [tec, n] of [...m.entries()].sort((a, b) => b[1] - a[1] || ptBR(a[0], b[0]))) {
+      tecLinhas.push([at, tec, n, pct(n, totalPorAt.get(at) ?? 0)]);
+    }
+  }
+
+  // Erros de escrita (por atendente e tipo)
+  type G = { n: number; ex: Map<string, { errado: string; certo: string; n: number }> };
+  const errPorAt = new Map<string, Map<string, G>>();
+  for (const t of tratados) {
+    for (const e of t.erros) {
+      const tipo = e.regra || "sem_classificacao";
+      const porTipo = errPorAt.get(t.atendente) ?? errPorAt.set(t.atendente, new Map()).get(t.atendente)!;
+      const g = porTipo.get(tipo.toLowerCase()) ?? porTipo.set(tipo.toLowerCase(), { n: 0, ex: new Map() }).get(tipo.toLowerCase())!;
+      g.n++;
+      const ch = `${e.errado}→${e.certo}`;
+      const ex = g.ex.get(ch) ?? g.ex.set(ch, { errado: e.errado, certo: e.certo, n: 0 }).get(ch)!;
+      ex.n++;
+    }
+  }
+  const errLinhas: Cel[][] = [];
+  for (const [at, porTipo] of [...errPorAt.entries()].sort((a, b) => ptBR(a[0], b[0]))) {
+    for (const [tipo, g] of [...porTipo.entries()].sort((a, b) => b[1].n - a[1].n || ptBR(a[0], b[0]))) {
+      const melhor = [...g.ex.values()].sort((a, b) => b.n - a.n || ptBR(a.errado, b.errado))[0];
+      errLinhas.push([at, tipo, melhor.errado, melhor.certo, g.n]);
+    }
+  }
+
+  // Uso da IA
+  const usoLinhas: Cel[][] = [...d.uso]
+    .sort((a, b) => a.dia.localeCompare(b.dia) || ptBR(nomeAt(a.user_id), nomeAt(b.user_id)) || a.ferramenta.localeCompare(b.ferramenta))
+    .map((u) => [u.dia, nomeAt(u.user_id), u.ferramenta, u.quantidade, u.limite_diario, sn(u.limite_diario != null && u.quantidade >= u.limite_diario)]);
+
+  return [
+    { nome: "LEIA-ME", tabela: "tbl_leia_me", colunas: LEIA_ME_COLUNAS, linhas: montarLeiaMe(d) },
+    { nome: "Raio-X", tabela: "tbl_raiox", colunas: C.raiox, linhas: raioxLinhas },
+    { nome: "Tecnicas_que_faltam", tabela: "tbl_tecnicas_que_faltam", colunas: C.tecnicas, linhas: tecLinhas },
+    { nome: "Erros_de_escrita", tabela: "tbl_erros_de_escrita", colunas: C.erros, linhas: errLinhas },
+    { nome: "Uso_da_IA", tabela: "tbl_uso_da_ia", colunas: C.uso, linhas: usoLinhas },
+  ];
+}
+
+function montarLeiaMe(d: DadosInteligencia): Cel[][] {
+  const r: Cel[][] = [];
+  const add = (secao: string, item: string, descricao: string, valores = "") => r.push([secao, item, descricao, valores]);
+
+  add("arquivo", "o_que_e", "Relatório de inteligência da OMNIA Apoio (Cartão de TODOS): resultados do Raio-X das vendas perdidas e uso das ferramentas de IA (Copiloto e outras). Feito para ser analisado por pessoas ou por IA.");
+  add("arquivo", "periodo", `De ${d.de} até ${d.ate} (datas de Brasília, ambas inclusas). O período máximo é de 90 dias.`);
+  add("arquivo", "escopo", d.escopo === "equipe" ? "Equipe inteira (ou o atendente filtrado no Admin)." : "Somente os dados do atendente que exportou.", "atendente | equipe");
+  add("arquivo", "exportado_por", d.exportadoPor);
+  add("arquivo", "exportado_em", isoBR(d.exportadoEm), "AAAA-MM-DD HH:MM");
+  add("arquivo", "privacidade", "Telefone, e-mail, nome do cliente e fala do cliente nunca entram neste arquivo. Do Raio-X só saem campos do lado do atendente e de padrões: etapa, técnica que faltou, mensagem original e sugerida, erros de escrita e hábito para treinar.");
+  add("arquivo", "formato", "Cada aba é uma tabela com 1 linha de cabeçalho, sem células mescladas e sem linhas em branco. Datas em AAAA-MM-DD HH:MM (horário de Brasília). Os valores usam sempre o vocabulário descrito abaixo. Quando um campo traz mais de um valor, eles vêm separados por \" | \".");
+
+  add("ferramentas", "copiloto", "Lê a conversa colada ou exportada e sugere a próxima mensagem do atendente. Não guarda a conversa nem o que foi copiado; só registra uso (quem, qual ferramenta, quando).", "copiloto");
+  add("ferramentas", "raiox", "Analisa uma venda perdida: onde se perdeu, o que faltou de técnica, como responder melhor, erros de escrita e um hábito para treinar. Guarda só o resultado, por 90 dias, sem dados do cliente.", "raiox");
+  add("ferramentas", "marciana", "Assistente de dúvidas do atendimento.", "marciana");
+  add("ferramentas", "cliente_disse", "Ajuda a responder objeções do cliente.", "cliente_disse");
+  add("ferramentas", "mensagem_cliente", "Escreve mensagens para o cliente.", "mensagem_cliente");
+  add("ferramentas", "retomada", "Mensagens da cadência de retomada.", "retomada");
+  add("ferramentas", "simulador", "Treino de conversa com clientes simulados.", "simulador");
+
+  add("limites", "copiloto_nao_guarda", "O Copiloto não guarda a conversa nem o que foi copiado; só registra uso. Por isso este arquivo não tem o conteúdo das conversas do Copiloto.");
+  add("limites", "raiox_90_dias", "O Raio-X guarda só o resultado, por 90 dias, sem dados do cliente. Resultados mais antigos já foram apagados.");
+  add("limites", "uso_35_dias", "O registro de uso (aba Uso_da_IA) é apagado após 35 dias: em períodos maiores, só os últimos 35 dias têm linhas.");
+  add("limites", "tecnica_no_vocabulario", "Os nomes das técnicas são normalizados para o formato Livro · Técnica do Cérebro. Nomes fora do vocabulário ficam como o Raio-X escreveu.");
+  add("limites", "limite_diario", "limite_diario usa o limite configurado hoje no Admin; não há histórico de mudanças de limite. Administradores não têm limite (campo vazio).");
+  add("limites", "campos_de_fora", "Ficam fora do arquivo, por poderem citar o cliente: onde_perdeu (descrição, fala do cliente e fala do atendente), a explicação de cada técnica que faltou e a descrição do hábito.");
+
+  d.funil.forEach((f, i) => {
+    const def = f.definicao.trim() || "(definição ainda não preenchida no Cérebro)";
+    const sinais = f.sinais.length ? ` Sinais: ${f.sinais.join("; ")}.` : "";
+    add("funil_do_cerebro", `${i + 1}. ${f.nome}`, `${def}${sinais}`, f.etapa);
+  });
+
+  for (const [aba, cols] of [["Raio-X", C.raiox], ["Tecnicas_que_faltam", C.tecnicas], ["Erros_de_escrita", C.erros], ["Uso_da_IA", C.uso]] as const) {
+    for (const c of cols) add("dicionario_de_colunas", `${aba}.${c.nome}`, c.significado, c.valores);
+  }
+  return r;
+}
+
+/** Monta o .xlsx (ArrayBuffer). Funciona no navegador e no Node. */
+export async function montarRelatorioInteligenciaXlsx(d: DadosInteligencia): Promise<ArrayBuffer> {
+  return abasParaXlsx(montarAbasInteligencia(d), d.exportadoEm, ["LEIA-ME"]);
+}
+
+export function nomeArquivoInteligencia(d: DadosInteligencia, atendente?: string | null): string {
+  const quem = (d.escopo === "equipe" ? atendente || "equipe" : d.exportadoPor || "atendente")
+    .normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "").toLowerCase() || "atendente";
+  return `omnia-inteligencia_${quem}_${d.de}_a_${d.ate}.xlsx`;
+}
