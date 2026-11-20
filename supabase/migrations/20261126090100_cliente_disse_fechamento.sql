@@ -1,4 +1,4 @@
--- Fase A · bloco 1 · "O cliente disse…" — 2/5: fechamento (itens e casos).
+-- Fase A · bloco 1 · "O cliente disse…" — 2/6: fechamento (itens e casos).
 -- Idempotente.
 
 -- ------------------------------------------------------------

@@ -1,4 +1,4 @@
--- Fase A · bloco 1 · "O cliente disse…" — 4/5: registro de uso (cada "Copiar").
+-- Fase A · bloco 1 · "O cliente disse…" — 4/6: registro de uso (cada "Copiar").
 -- Idempotente.
 
 CREATE TABLE IF NOT EXISTS public.cliente_disse_uso (

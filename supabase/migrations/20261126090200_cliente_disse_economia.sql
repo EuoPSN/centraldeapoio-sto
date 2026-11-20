@@ -1,4 +1,4 @@
--- Fase A · bloco 1 · "O cliente disse…" — 3/5: cálculo de economia.
+-- Fase A · bloco 1 · "O cliente disse…" — 3/6: cálculo de economia.
 -- Idempotente.
 
 -- Mensalidade de cada plano (uma linha por plano).

@@ -1,4 +1,4 @@
--- Fase A · bloco 1 · "O cliente disse…" — 1/5: objeções e fila de objeções novas.
+-- Fase A · bloco 1 · "O cliente disse…" — 1/6: objeções e fila de objeções novas.
 -- Idempotente: pode rodar de novo sem duplicar nada.
 
 -- ------------------------------------------------------------

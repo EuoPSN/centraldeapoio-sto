@@ -1,4 +1,4 @@
--- Fase A · bloco 1 · "O cliente disse…" — 5/5: base inicial (tudo em rascunho).
+-- Fase A · bloco 1 · "O cliente disse…" — 5/6: base inicial (tudo em rascunho).
 -- docs/fase-a/base-bloco1.json não existe: entram só as 5 objeções com nome e
 -- exemplos de fala e as subetapas do fechamento com título, sem textos inventados.
 -- O Paulo preenche e publica pelo Admin. Idempotente (não duplica pelo nome/título).
