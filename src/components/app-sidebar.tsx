@@ -43,7 +43,11 @@ const GROUPS: GroupDef[] = [
       { route: "/biblioteca", label: "Biblioteca", aliases: ["/imagens"] },
     ],
   },
-  { key: "inteligencia", label: "Inteligência", icon: MarcianaEyeIcon, pages: [{ route: "/assistente", label: "MarcIAna" }] },
+  { key: "inteligencia", label: "Inteligência", icon: MarcianaEyeIcon, pages: [
+    { route: "/assistente", label: "MarcIAna" },
+    { route: "/copiloto", label: "Copiloto" },
+    { route: "/raiox", label: "Raio-X" },
+  ] },
   {
     key: "treino", label: "Treino e evolução", icon: GraduationCap,
     pages: [

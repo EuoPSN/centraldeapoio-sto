@@ -190,16 +190,23 @@ export async function statusUso(ctx: Ctx, ferramenta: Ferramenta): Promise<UsoSt
   }
 }
 
-/** Confere o limite e registra o uso (sem guardar conteúdo). Lança a mensagem
- * pronta para a tela quando o limite do dia foi atingido. */
-export async function consumirUso(ctx: Ctx, ferramenta: Ferramenta): Promise<UsoStatus> {
-  const st = await statusUso(ctx, ferramenta);
-  if (st.bloqueado) throw new Error(mensagemLimite(ferramenta));
+/** Registra um uso (sem guardar conteúdo). Falha silenciosa: não derruba a ferramenta. */
+export async function registrarUso(ctx: Ctx, ferramenta: Ferramenta): Promise<void> {
   try {
-    await db(ctx).from("ia_uso").insert({ user_id: ctx.userId, ferramenta });
+    const r = await db(ctx).from("ia_uso").insert({ user_id: ctx.userId, ferramenta });
+    if (r?.error) throw new Error(r.error.message);
   } catch (err) {
     console.error("Não consegui registrar o uso de IA:", err);
   }
+}
+
+/** Confere o limite e registra o uso. Lança a mensagem pronta para a tela quando
+ * o limite do dia foi atingido. Para ferramentas que só contam uso com sucesso
+ * (Copiloto, Raio-X), use `statusUso` antes e `registrarUso` depois. */
+export async function consumirUso(ctx: Ctx, ferramenta: Ferramenta): Promise<UsoStatus> {
+  const st = await statusUso(ctx, ferramenta);
+  if (st.bloqueado) throw new Error(mensagemLimite(ferramenta));
+  await registrarUso(ctx, ferramenta);
   return calcularUso(ferramenta, st.usado + 1, st.limite);
 }
 

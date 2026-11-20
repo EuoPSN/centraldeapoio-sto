@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -13,8 +13,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { inputCls } from "@/components/admin/AdminListDetail";
 
 /** Botão "+ Adicionar à retomada" com o painel de cadastro. */
-export function AdicionarRetomada({ onCriada }: { onCriada?: (r: Retomada) => void }) {
-  const [open, setOpen] = useState(false);
+export function AdicionarRetomada({ onCriada, inicial, trigger }: {
+  onCriada?: (r: Retomada) => void;
+  /** Dados que já vêm preenchidos (ex.: do Copiloto). O telefone nunca vem daqui. */
+  inicial?: { nome?: string | null; ponto?: Ponto | null };
+  /** Botão que abre o painel (padrão: "+ Adicionar à retomada"). */
+  trigger?: ReactNode;
+}) {
+  const [open, setOpenState] = useState(false);
   const [nome, setNome] = useState("");
   const [tel, setTel] = useState("");
   const [ponto, setPonto] = useState<Ponto>("nao_respondeu_primeira");
@@ -22,6 +28,14 @@ export function AdicionarRetomada({ onCriada }: { onCriada?: (r: Retomada) => vo
   const [obs, setObs] = useState("");
   const fn = useServerFn(criarRetomada);
   const qc = useQueryClient();
+
+  const setOpen = (v: boolean) => {
+    if (v && inicial) {
+      setNome((inicial.nome ?? "").slice(0, 40));
+      if (inicial.ponto) setPonto(inicial.ponto);
+    }
+    setOpenState(v);
+  };
 
   const reset = () => { setNome(""); setTel(""); setPonto("nao_respondeu_primeira"); setQuando("amanha"); setObs(""); };
 
@@ -43,7 +57,7 @@ export function AdicionarRetomada({ onCriada }: { onCriada?: (r: Retomada) => vo
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <GoldButton className="h-11 px-5">+ Adicionar à retomada</GoldButton>
+        {trigger ?? <GoldButton className="h-11 px-5">+ Adicionar à retomada</GoldButton>}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[min(440px,calc(100vw-2rem))] rounded-2xl border-line bg-surface p-5 shadow-xl">
         <form
