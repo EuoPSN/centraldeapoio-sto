@@ -3,7 +3,8 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isAdminUser } from "@/lib/authz";
 import { diaBR, inicioDiaBR, somarDias } from "@/lib/retomada";
-import { limparTextoExport, type DadosInteligencia, type RaioxLinha, type UsoLinha } from "@/lib/inteligencia-relatorio";
+import { limparTextoExport, type AquecimentoLinha, type DadosInteligencia, type MapaDominioLinha, type RaioxLinha, type UsoLinha } from "@/lib/inteligencia-relatorio";
+import { CONFIG_AQUECIMENTO_PADRAO, calcularNivel } from "@/lib/aquecimento";
 
 // Relatório Excel da Inteligência: dados do Raio-X e do uso das IAs.
 //
@@ -79,7 +80,10 @@ export const getDadosInteligencia = createServerFn({ method: "POST" })
       return q;
     });
 
-    const ids = [...new Set([context.userId, ...brutoRaiox.map((r) => r.user_id), ...brutoUso.map((u) => u.user_id)])];
+    // Aquecimento e Mapa de domínio. Se a migração do bloco 2 ainda não rodou, o relatório sai sem essas abas.
+    const aq = await lerAquecimento(s, { ini, fim, filtroUser, equipeToda: equipe && !data.atendente_id, ehAdmin, userId: context.userId });
+
+    const ids = [...new Set([context.userId, ...brutoRaiox.map((r) => r.user_id), ...brutoUso.map((u) => u.user_id), ...(aq?.usuarios ?? [])])];
     const atendentes: Record<string, string> = {};
     if (ids.length) {
       const perfis = check(await s.from("profiles").select("id, display_name, email").in("id", ids)) as { id: string; display_name: string | null; email: string | null }[];
@@ -128,11 +132,79 @@ export const getDadosInteligencia = createServerFn({ method: "POST" })
       exportadoPor: atendentes[context.userId] ?? "",
       exportadoEm: new Date().toISOString(),
       atendentes, raiox, uso,
+      ...(aq ? { aquecimento: aq.linhas, mapa: aq.mapa, aquecimentoConfig: aq.config } : {}),
       funil: ((funil.data ?? []) as { etapa: string; nome: string; definicao: string | null; sinais: string[] | null }[])
         .map((f) => ({ etapa: f.etapa, nome: f.nome, definicao: f.definicao ?? "", sinais: f.sinais ?? [] })),
       blocosCerebro: (blocos.data ?? []) as { chave: string; titulo: string }[],
     };
   });
+
+/** Respostas do aquecimento no período e nível por tema (janela de domínio terminada no fim do período).
+ * Só acerto e nota: o texto digitado nunca foi guardado. O atendente só lê as próprias linhas (RLS e filtro). */
+async function lerAquecimento(
+  s: any,
+  o: { ini: string; fim: string; filtroUser: string | null; equipeToda: boolean; ehAdmin: boolean; userId: string },
+): Promise<{ linhas: AquecimentoLinha[]; mapa: MapaDominioLinha[]; usuarios: string[]; config: NonNullable<DadosInteligencia["aquecimentoConfig"]> } | null> {
+  try {
+    const cfgR = await s.from("aquecimento_config").select("nota_acerto, janela_dominio_dias, min_respostas, limiar_dominando").eq("id", 1).maybeSingle();
+    if (cfgR.error) throw new Error(cfgR.error.message);
+    const cfg = {
+      nota_acerto: Number(cfgR.data?.nota_acerto ?? CONFIG_AQUECIMENTO_PADRAO.nota_acerto),
+      janela_dominio_dias: Number(cfgR.data?.janela_dominio_dias ?? CONFIG_AQUECIMENTO_PADRAO.janela_dominio_dias),
+      min_respostas: Number(cfgR.data?.min_respostas ?? CONFIG_AQUECIMENTO_PADRAO.min_respostas),
+      limiar_dominando: Number(cfgR.data?.limiar_dominando ?? CONFIG_AQUECIMENTO_PADRAO.limiar_dominando),
+    };
+    const janelaIni = new Date(new Date(o.fim).getTime() - cfg.janela_dominio_dias * 86400_000).toISOString();
+    const de = janelaIni < o.ini ? janelaIni : o.ini;
+
+    const brutas = await lerTudo<{ sessao_id: string; user_id: string; tema_id: string | null; tipo: string; acertou: boolean; nota: number | null; created_at: string }>((a, b) => {
+      let q = s.from("aquecimento_respostas").select("sessao_id, user_id, tema_id, tipo, acertou, nota, created_at")
+        .gte("created_at", de).lt("created_at", o.fim).order("created_at").order("id").range(a, b);
+      if (o.filtroUser) q = q.eq("user_id", o.filtroUser);
+      return q;
+    });
+    const temasR = check(await s.from("dominio_temas").select("id, nome, ativo, ordem").order("ordem")) as { id: string; nome: string; ativo: boolean }[];
+    const nomeTema = new Map(temasR.map((t) => [t.id, t.nome]));
+
+    const noPeriodo = brutas.filter((r) => r.created_at >= o.ini);
+    const sessIds = [...new Set(noPeriodo.map((r) => r.sessao_id))];
+    const tipoSessao = new Map<string, string>();
+    for (let i = 0; i < sessIds.length; i += 200) {
+      const rows = check(await s.from("aquecimento_sessoes").select("id, tipo").in("id", sessIds.slice(i, i + 200))) as { id: string; tipo: string }[];
+      for (const r of rows ?? []) tipoSessao.set(r.id, r.tipo);
+    }
+    const linhas: AquecimentoLinha[] = noPeriodo.map((r) => ({
+      data_hora: r.created_at, user_id: r.user_id, tema: r.tema_id ? nomeTema.get(r.tema_id) ?? "" : "", tipo_cartao: r.tipo,
+      tipo_sessao: tipoSessao.get(r.sessao_id) ?? "diaria", acertou: r.acertou, nota: r.nota,
+    }));
+
+    // Quem entra no mapa: a equipe toda (Admin sem filtro) ou só a pessoa filtrada / o próprio atendente.
+    let usuarios: string[];
+    if (o.equipeToda) {
+      const [perfis, admins] = await Promise.all([s.from("profiles").select("id"), s.from("user_roles").select("user_id").eq("role", "admin")]);
+      const adm = new Set(((check(admins) ?? []) as { user_id: string }[]).map((r) => r.user_id));
+      usuarios = ((check(perfis) ?? []) as { id: string }[]).map((p) => p.id).filter((id) => !adm.has(id));
+    } else {
+      usuarios = [o.filtroUser ?? o.userId];
+    }
+    usuarios = [...new Set([...usuarios, ...brutas.map((r) => r.user_id)])];
+
+    const ativos = temasR.filter((t) => t.ativo);
+    const noJanela = brutas.filter((r) => r.created_at >= janelaIni);
+    const mapa: MapaDominioLinha[] = [];
+    for (const u of usuarios) {
+      for (const t of ativos) {
+        const rs = noJanela.filter((r) => r.user_id === u && r.tema_id === t.id);
+        const acertos = rs.filter((r) => r.acertou).length;
+        mapa.push({ user_id: u, tema: t.nome, nivel: calcularNivel(rs.length, acertos, cfg), respostas: rs.length, acertos });
+      }
+    }
+    return { linhas, mapa, usuarios, config: cfg };
+  } catch (err) {
+    console.error("Aquecimento indisponível no relatório (migração pendente?):", err);
+    return null;
+  }
+}
 
 async function adminClient() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

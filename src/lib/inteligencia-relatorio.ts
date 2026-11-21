@@ -30,6 +30,25 @@ export interface RaioxLinha {
 
 export interface UsoLinha { dia: string; user_id: string; ferramenta: string; quantidade: number; limite_diario: number | null }
 
+/** Uma resposta do aquecimento (nunca o texto digitado: ele não existe no banco). */
+export interface AquecimentoLinha {
+  data_hora: string;
+  user_id: string;
+  tema: string;
+  tipo_cartao: string;
+  tipo_sessao: string;
+  acertou: boolean;
+  nota: number | null;
+}
+/** Nível de um atendente em um tema (janela de domínio terminada no fim do período). */
+export interface MapaDominioLinha {
+  user_id: string;
+  tema: string;
+  nivel: string;
+  respostas: number;
+  acertos: number;
+}
+
 export interface DadosInteligencia {
   de: string;
   ate: string;
@@ -39,6 +58,11 @@ export interface DadosInteligencia {
   atendentes: Record<string, string>;
   raiox: RaioxLinha[];
   uso: UsoLinha[];
+  /** Fase B · bloco 2: aquecimento e mapa de domínio (ausentes se a migração ainda não rodou). */
+  aquecimento?: AquecimentoLinha[];
+  mapa?: MapaDominioLinha[];
+  /** Regras do mapa e do acerto (aquecimento_config), para o LEIA-ME. */
+  aquecimentoConfig?: { nota_acerto: number; janela_dominio_dias: number; min_respostas: number; limiar_dominando: number };
   /** Etapas do funil do Cérebro (tabela funil_etapas). */
   funil: { etapa: string; nome: string; definicao: string; sinais: string[] }[];
   /** Títulos dos blocos do Cérebro (para normalizar o nome das técnicas). */
@@ -110,7 +134,7 @@ export function normalizarTecnica(bruto: string, blocos: DadosInteligencia["bloc
 // ---------------------------------------------------------------------------
 
 const ETAPAS = "novo_lead | lead_qualificado | proposta_enviada | fechamento | venda_concluida | vazio";
-const FERRAMENTAS = "copiloto | raiox | marciana | cliente_disse | mensagem_cliente | retomada | simulador";
+const FERRAMENTAS = "copiloto | raiox | marciana | cliente_disse | mensagem_cliente | retomada | simulador | biblioteca | aquecimento";
 
 const C = {
   raiox: [
@@ -137,6 +161,21 @@ const C = {
     { nome: "exemplo_errado", significado: "Exemplo mais frequente do trecho errado nesse tipo.", valores: "texto livre", largura: 36 },
     { nome: "exemplo_certo", significado: "Correção do exemplo acima.", valores: "texto livre", largura: 36 },
     { nome: "quantidade", significado: "Quantas vezes esse tipo de erro apareceu nos Raio-X do atendente.", valores: "número inteiro", largura: 12 },
+  ],
+  aquecimento: [
+    { nome: "data_hora", significado: "Quando o cartão foi respondido.", valores: "AAAA-MM-DD HH:MM", largura: 17 },
+    { nome: "atendente", significado: "Atendente que respondeu.", valores: "nome do atendente", largura: 16 },
+    { nome: "tema", significado: "Tema de domínio do exercício.", valores: "nome do tema (ex.: Planos, Objeções)", largura: 20 },
+    { nome: "tipo_do_cartao", significado: "Tipo do exercício.", valores: "multipla_escolha | escrita | habito", largura: 18 },
+    { nome: "tipo_da_sessao", significado: "diaria = aquecimento do dia (conta para a adesão). tema = treino de um tema pelo Meu mapa (conta para o mapa, não para a adesão).", valores: "diaria | tema", largura: 16 },
+    { nome: "resultado", significado: "Múltipla escolha e hábito: acertou ou errou. Escrita (corrigida por IA): a nota de 0 a 10; acerta quem tira nota igual ou acima da nota de acerto.", valores: "acertou | errou | nota_0 a nota_10", largura: 14 },
+  ],
+  mapa: [
+    { nome: "atendente", significado: "Atendente.", valores: "nome do atendente", largura: 16 },
+    { nome: "tema", significado: "Tema de domínio.", valores: "nome do tema", largura: 20 },
+    { nome: "nivel", significado: "Nível do atendente no tema na janela de domínio que termina no fim do período.", valores: "nao_testado | aprendendo | dominando", largura: 14 },
+    { nome: "respostas_na_janela", significado: "Respostas do atendente nesse tema dentro da janela.", valores: "número inteiro", largura: 18 },
+    { nome: "acertos", significado: "Quantas dessas respostas foram acertos.", valores: "número inteiro", largura: 10 },
   ],
   uso: [
     { nome: "data", significado: "Dia do uso (Brasília).", valores: "AAAA-MM-DD", largura: 12 },
@@ -238,12 +277,22 @@ export function montarAbasInteligencia(d: DadosInteligencia): Aba[] {
     .sort((a, b) => a.dia.localeCompare(b.dia) || ptBR(nomeAt(a.user_id), nomeAt(b.user_id)) || a.ferramenta.localeCompare(b.ferramenta))
     .map((u) => [u.dia, nomeAt(u.user_id), u.ferramenta, u.quantidade, u.limite_diario, sn(u.limite_diario != null && u.quantidade >= u.limite_diario)]);
 
+  // Aquecimento e Mapa de domínio (Fase B · bloco 2): só acerto e nota, nunca o texto digitado.
+  const aqLinhas: Cel[][] = [...(d.aquecimento ?? [])]
+    .sort((a, b) => a.data_hora.localeCompare(b.data_hora) || ptBR(nomeAt(a.user_id), nomeAt(b.user_id)))
+    .map((a) => [isoBR(a.data_hora), nomeAt(a.user_id), a.tema, a.tipo_cartao, a.tipo_sessao, a.nota != null ? `nota_${a.nota}` : a.acertou ? "acertou" : "errou"]);
+  const mapaLinhas: Cel[][] = [...(d.mapa ?? [])]
+    .sort((a, b) => ptBR(nomeAt(a.user_id), nomeAt(b.user_id)) || ptBR(a.tema, b.tema))
+    .map((m) => [nomeAt(m.user_id), m.tema, m.nivel, m.respostas, m.acertos]);
+
   return [
     { nome: "LEIA-ME", tabela: "tbl_leia_me", colunas: LEIA_ME_COLUNAS, linhas: montarLeiaMe(d) },
     { nome: "Raio-X", tabela: "tbl_raiox", colunas: C.raiox, linhas: raioxLinhas },
     { nome: "Tecnicas_que_faltam", tabela: "tbl_tecnicas_que_faltam", colunas: C.tecnicas, linhas: tecLinhas },
     { nome: "Erros_de_escrita", tabela: "tbl_erros_de_escrita", colunas: C.erros, linhas: errLinhas },
     { nome: "Uso_da_IA", tabela: "tbl_uso_da_ia", colunas: C.uso, linhas: usoLinhas },
+    ...(d.aquecimento ? [{ nome: "Aquecimento", tabela: "tbl_aquecimento", colunas: C.aquecimento, linhas: aqLinhas }] : []),
+    ...(d.mapa ? [{ nome: "Mapa_de_dominio", tabela: "tbl_mapa_de_dominio", colunas: C.mapa, linhas: mapaLinhas }] : []),
   ];
 }
 
@@ -266,6 +315,8 @@ function montarLeiaMe(d: DadosInteligencia): Cel[][] {
   add("ferramentas", "mensagem_cliente", "Escreve mensagens para o cliente.", "mensagem_cliente");
   add("ferramentas", "retomada", "Mensagens da cadência de retomada.", "retomada");
   add("ferramentas", "simulador", "Treino de conversa com clientes simulados.", "simulador");
+  add("ferramentas", "biblioteca", "Monta a ficha de aprendizado de uma conversa de venda fechada.", "biblioteca");
+  add("ferramentas", "aquecimento", "Corrige as respostas escritas do aquecimento de 5 minutos (nota de 0 a 10). Só o resultado é guardado.", "aquecimento");
 
   add("limites", "copiloto_nao_guarda", "O Copiloto não guarda a conversa nem o que foi copiado; só registra uso. Por isso este arquivo não tem o conteúdo das conversas do Copiloto.");
   add("limites", "raiox_90_dias", "O Raio-X guarda só o resultado, por 90 dias, sem dados do cliente. Resultados mais antigos já foram apagados.");
@@ -274,13 +325,29 @@ function montarLeiaMe(d: DadosInteligencia): Cel[][] {
   add("limites", "limite_diario", "limite_diario usa o limite configurado hoje no Admin; não há histórico de mudanças de limite. Administradores não têm limite (campo vazio).");
   add("limites", "campos_de_fora", "Ficam fora do arquivo, por poderem citar o cliente: onde_perdeu (descrição, fala do cliente e fala do atendente), a explicação de cada técnica que faltou e a descrição do hábito.");
 
+  if (d.aquecimento) {
+    const c = d.aquecimentoConfig;
+    add("aquecimento", "o_que_e", "Treino diário de 3 cartões (produto, objeção e hábito de escrita). A aba Aquecimento tem uma linha por cartão respondido; a aba Mapa_de_dominio tem o nível de cada atendente por tema.");
+    add("aquecimento", "privacidade", "O texto que o atendente digitou nos cartões nunca é guardado, nem a frase de feedback da IA: só o acerto e, nas respostas escritas, a nota. Por isso nenhum texto digitado entra neste arquivo.");
+    add("aquecimento", "cartao_pulado", "Cartão pulado não gera linha e não conta como erro.");
+    if (c) {
+      add("aquecimento", "nota_de_acerto", `Resposta escrita acerta com nota igual ou acima de ${c.nota_acerto}.`, `${c.nota_acerto}`);
+      add("mapa_de_dominio", "regra_do_nivel", `Janela de ${c.janela_dominio_dias} dias terminada no fim do período. Menos de ${c.min_respostas} respostas no tema = nao_testado; acertos ÷ respostas igual ou acima de ${Math.round(c.limiar_dominando * 100)}% = dominando; entre os dois = aprendendo.`, "nao_testado | aprendendo | dominando");
+    }
+    add("mapa_de_dominio", "so_aquecimento", "O nível vem só das respostas do aquecimento: as avaliações do Simulador não têm tema ligado e não entram no cálculo.");
+    add("mapa_de_dominio", "sem_ranking", "O aquecimento não entra no Ranking.");
+  }
+
   d.funil.forEach((f, i) => {
     const def = f.definicao.trim() || "(definição ainda não preenchida no Cérebro)";
     const sinais = f.sinais.length ? ` Sinais: ${f.sinais.join("; ")}.` : "";
     add("funil_do_cerebro", `${i + 1}. ${f.nome}`, `${def}${sinais}`, f.etapa);
   });
 
-  for (const [aba, cols] of [["Raio-X", C.raiox], ["Tecnicas_que_faltam", C.tecnicas], ["Erros_de_escrita", C.erros], ["Uso_da_IA", C.uso]] as const) {
+  const abasDic: (readonly [string, Coluna[]])[] = [["Raio-X", C.raiox], ["Tecnicas_que_faltam", C.tecnicas], ["Erros_de_escrita", C.erros], ["Uso_da_IA", C.uso]];
+  if (d.aquecimento) abasDic.push(["Aquecimento", C.aquecimento]);
+  if (d.mapa) abasDic.push(["Mapa_de_dominio", C.mapa]);
+  for (const [aba, cols] of abasDic) {
     for (const c of cols) add("dicionario_de_colunas", `${aba}.${c.nome}`, c.significado, c.valores);
   }
   return r;
