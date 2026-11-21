@@ -3,6 +3,7 @@ import { chamar } from "../lib/api";
 import { identificarConversa, lerConversaAberta } from "../lib/conteudo";
 import { carregarHashesIgnorados, voltarALer } from "../lib/ignorados";
 import { registrarEvento } from "../lib/eventos";
+import { registrarResultado } from "../lib/diagnostico-estado";
 import { numeroMascarado } from "../lib/numeros";
 import { sanitizarMensagens, ultimaFalaDoCliente } from "../lib/sanitizar";
 import { CONFIG } from "../config";
@@ -25,7 +26,7 @@ export interface ContextoConversa { nome: string; numero: string; ultimaFala: st
 type Fase =
   | { t: "inicial" }
   | { t: "lendo"; passo: string }
-  | { t: "erro"; motivo: string; naoLe: boolean; ignorado?: { nome: string; numero: string } }
+  | { t: "erro"; motivo: string; naoLe: boolean; codigo?: string; ignorado?: { nome: string; numero: string } }
   | { t: "proposta"; nome: string; numero: string; campos: CamposForm; original: CamposForm; consulta: Consulta; objecoes: string[] }
   | { t: "salvo"; r: Salvo };
 
@@ -33,6 +34,18 @@ const paraForm = (p: Proposta): CamposForm => ({
   etapa_funil: p.etapa_funil, ponto_parada: p.ponto_parada, plano: p.plano, dependentes: p.dependentes == null ? "" : String(p.dependentes),
   observacao: p.observacao, quando: p.quando_retomar,
 });
+
+function tituloDoErro(f: { codigo?: string; naoLe: boolean; ignorado?: unknown }): string {
+  if (f.ignorado) return "Este contato está ignorado";
+  if (f.codigo === "sem_content_script") return "A Omnia não está ativa nesta aba";
+  if (f.codigo === "sem_conversa") return "Nenhuma conversa aberta";
+  return f.naoLe ? "Não li esta conversa" : "Não consegui ler esta conversa";
+}
+
+/** O link "Ver diagnóstico" aparece quando a causa pode ser layout/seletor (não grupo, ignorado nem pausa). */
+function comLinkDiagnostico(codigo?: string): boolean {
+  return !!codigo && !["grupo", "ignorado", "pausada", "erro_servidor"].includes(codigo);
+}
 
 /** Diferença (de → para) entre o ticket que já existe e o que está no formulário. */
 export function diferencas(existente: TicketDTO, c: CamposForm): Mudanca[] {
@@ -48,7 +61,7 @@ export function diferencas(existente: TicketDTO, c: CamposForm): Mudanca[] {
 }
 
 export function ConversaAba({
-  usuarioId, bloqueio, aviso, onSalvo, onContexto, onIgnorar, onAbrirClienteDisse, reiniciar,
+  usuarioId, bloqueio, aviso, onSalvo, onContexto, onIgnorar, onAbrirClienteDisse, onAbrirDiagnostico, reiniciar,
 }: {
   usuarioId: string;
   /** Mensagem de status vinda de fora (ex.: "Contato ignorado"). */
@@ -59,6 +72,7 @@ export function ConversaAba({
   onContexto: (c: ContextoConversa | null) => void;
   onIgnorar: (c: { nome: string; numero: string }) => void;
   onAbrirClienteDisse: () => void;
+  onAbrirDiagnostico: () => void;
   reiniciar: number;
 }) {
   const [fase, setFase] = useState<Fase>({ t: "inicial" });
@@ -71,19 +85,24 @@ export function ConversaAba({
     setErroSalvar(null);
     onContexto(null);
     setFase({ t: "lendo", passo: "Conferindo a conversa aberta…" });
+    const falhar = (motivo: string, naoLe: boolean, codigo: string, ignorado?: { nome: string; numero: string }) => {
+      registrarResultado(codigo, motivo); // sem conteúdo da conversa: só o código e o texto fixo do motivo
+      setFase({ t: "erro", motivo, naoLe, codigo, ignorado });
+    };
     const id = await identificarConversa();
-    if (!id.ok) return setFase({ t: "erro", motivo: id.motivo, naoLe: id.naoLe });
+    if (!id.ok) return falhar(id.motivo, id.naoLe, id.codigo ?? "falha");
 
     const hashes = await carregarHashesIgnorados();
     setFase({ t: "lendo", passo: "Lendo as mensagens que estão na tela…" });
     const lida = await lerConversaAberta(usuarioId, hashes);
-    if (!lida.ok) return setFase({ t: "erro", motivo: lida.motivo, naoLe: lida.naoLe, ignorado: lida.motivo.includes("ignorado") ? { nome: id.id.nome, numero: id.id.numero } : undefined });
+    if (!lida.ok) return falhar(lida.motivo, lida.naoLe, lida.codigo ?? "falha", lida.codigo === "ignorado" ? { nome: id.id.nome, numero: id.id.numero } : undefined);
+    registrarResultado("leitura_ok", "Conversa individual confirmada e mensagens lidas.");
     const { nome, numero, mensagens } = lida.conversa;
     void registrarEvento(usuarioId, "leitura");
 
     // 1ª camada de sanitização: antes de enviar qualquer coisa. O telefone NÃO vai para a IA.
     const limpas = sanitizarMensagens(mensagens, { nome });
-    if (!limpas.length) return setFase({ t: "erro", motivo: "Não há mensagens de texto para ler nesta conversa.", naoLe: false });
+    if (!limpas.length) return falhar("Não há mensagens de texto para ler nesta conversa.", false, "sem_mensagens_de_texto");
     const ultimaFala = ultimaFalaDoCliente(limpas);
     onContexto({ nome, numero, ultimaFala, ponto: null });
 
@@ -92,7 +111,7 @@ export function ConversaAba({
       chamar<{ proposta: Proposta }>("ler-conversa", { mensagens: limpas.map(({ de, texto, hora }) => ({ de, texto, hora })) }),
       numero ? chamar<Consulta>("ticket", { op: "consultar", numero }) : Promise.resolve(null),
     ]);
-    if (!prop.ok) return setFase({ t: "erro", motivo: prop.erro, naoLe: false });
+    if (!prop.ok) { registrarResultado("erro_servidor", "A Omnia não conseguiu montar a proposta."); return setFase({ t: "erro", motivo: prop.erro, naoLe: false, codigo: "erro_servidor" }); }
     const consulta: Consulta = cons && cons.ok ? cons.dados : { existente: null, historico: [], outroAtendente: false };
     const campos = paraForm(prop.dados.proposta);
     onContexto({ nome, numero, ultimaFala, ponto: campos.ponto_parada });
@@ -123,8 +142,11 @@ export function ConversaAba({
         {fase.t === "inicial" && aviso && <p className="aviso" role="status">{aviso}</p>}
         {fase.t === "erro" && (
           <div className="aviso" role="alert">
-            <strong>{fase.ignorado ? "Este contato está ignorado" : fase.naoLe ? "Não li esta conversa" : "Não consegui ler esta conversa"}</strong>
+            <strong>{tituloDoErro(fase)}</strong>
             <p style={{ margin: "4px 0 0" }}>{fase.motivo}</p>
+            {comLinkDiagnostico(fase.codigo) && (
+              <button className="pilula" style={{ marginTop: 6 }} onClick={onAbrirDiagnostico}>Ver diagnóstico</button>
+            )}
             {fase.ignorado && <button className="pilula" style={{ marginTop: 6 }} onClick={() => voltarALerContato(fase.ignorado!)}>Voltar a ler</button>}
           </div>
         )}

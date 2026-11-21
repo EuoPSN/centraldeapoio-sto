@@ -4,6 +4,7 @@
 //  3. repassa pedidos do painel ao content script da aba ativa (que só existe no WhatsApp Web).
 import { CHAVES, estaPausada } from "./lib/armazenamento";
 import type { PedidoViaBackground } from "./lib/mensagens";
+import { MOTIVO_SEM_CONTENT_SCRIPT } from "./lib/textos";
 
 async function atualizarIcone() {
   const pausada = await estaPausada();
@@ -25,20 +26,23 @@ chrome.storage.onChanged.addListener((mudancas, area) => {
 chrome.runtime.onMessage.addListener((msg: PedidoViaBackground, _sender, responder) => {
   if (msg?.para !== "content") return false;
   (async () => {
+    let dominio = "indisponível"; // sem a permissão "tabs", o Chrome só revela a URL se o content script responder
     try {
       if (await estaPausada()) {
-        responder({ ok: false, motivo: "A extensão está pausada." });
+        responder({ ok: false, motivo: "A extensão está pausada.", naoLe: true, codigo: "pausada" });
         return;
       }
       const [aba] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
       if (!aba?.id) {
-        responder({ ok: false, motivo: "Abra o WhatsApp Web nesta janela." });
+        responder({ ok: false, motivo: MOTIVO_SEM_CONTENT_SCRIPT, naoLe: false, codigo: "sem_content_script", dominio: "indisponível" });
         return;
       }
+      try { if (aba.url) dominio = new URL(aba.url).hostname; } catch { /* mantém indisponível */ }
       const r = await chrome.tabs.sendMessage(aba.id, msg.pedido);
+      if (!r) throw new Error("sem resposta");
       responder(r);
     } catch {
-      responder({ ok: false, motivo: "Abra o WhatsApp Web (web.whatsapp.com) nesta aba e tente de novo." });
+      responder({ ok: false, motivo: MOTIVO_SEM_CONTENT_SCRIPT, naoLe: false, codigo: "sem_content_script", dominio });
     }
   })();
   return true; // resposta assíncrona

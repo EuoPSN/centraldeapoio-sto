@@ -17,19 +17,24 @@ export const SELETORES = {
   painelConversa: [
     "#main", // id estável há anos
     '[data-testid="conversation-panel-wrapper"]', // fallback por data-testid
+    '[data-testid="conversation-panel-body"]', // fallback: corpo do painel (se o #main perder o id)
   ],
 
   /** Cabeçalho da conversa (nome do contato/grupo, subtítulo). */
   cabecalho: [
     "#main header", // <header> dentro do painel
     '[data-testid="conversation-header"]',
+    '[data-testid="conversation-info-header"]', // fallback: bloco clicável com nome + subtítulo
+    "header", // fallback genérico: qualquer <header> dentro do painel (o painel já exclui a lista lateral)
     '[role="banner"]',
   ],
 
   /** Textos do cabeçalho: o primeiro é o nome; os demais formam o subtítulo (online, participantes…). */
   textosCabecalho: [
     "span[title]", // o WhatsApp põe o texto completo também no atributo title
+    '[data-testid="conversation-info-header-chat-title"]', // fallback: título da conversa por data-testid
     'span[dir="auto"]',
+    "[title]", // último recurso: qualquer elemento com title dentro do cabeçalho
   ],
 
   /** Ícones do cabeçalho/avatar (data-icon). Usados só para detectar grupo, comunidade, lista e Status. */
@@ -37,6 +42,32 @@ export const SELETORES = {
 
   /** Cada mensagem carregada na tela. O data-id traz "true_/false_" + id do chat + id da mensagem. */
   mensagem: ["[data-id]"],
+
+  /** Fallback quando as mensagens perdem o data-id: a direção vem da classe message-in/message-out
+   * (classes semânticas, não ofuscadas). Sem data-id não há id do chat: a decisão de "individual"
+   * então depende só dos sinais do cabeçalho e das mensagens (ver detectarGrupo). */
+  mensagemSemId: [".message-in", ".message-out"],
+
+  /** Nome do remetente exibido numa mensagem RECEBIDA: padrão de grupo. */
+  remetenteNaMensagem: [
+    '[data-testid="author"]',
+    '[data-testid="msg-author"]',
+    '[data-testid*="author"]', // fallback: qualquer testid com "author"
+    'span[dir="auto"][aria-label$=":"]', // o WhatsApp rotula o nome do remetente como "Nome:"
+  ],
+
+  /** Rótulos/áreas de grupo, comunidade ou lista de participantes dentro do painel. */
+  sinaisDeGrupoNoPainel: [
+    '[data-testid*="group"]',
+    '[data-testid*="community"]',
+    '[data-testid*="participant"]',
+    '[aria-label*="participantes" i]',
+    '[aria-label*="participants" i]',
+    '[aria-label*="dados do grupo" i]',
+    '[aria-label*="group info" i]',
+    '[aria-label*="comunidade" i]',
+    '[aria-label*="community" i]',
+  ],
 
   /** Dentro da mensagem: bloco copiável, com data-pre-plain-text "[14:32, 21/11/2026] Nome: ". */
   blocoCopiavel: ["[data-pre-plain-text]", ".copyable-text"],

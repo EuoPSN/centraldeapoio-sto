@@ -36,7 +36,7 @@ describe("content script: pausa e contatos ignorados", () => {
   it("contato ignorado: nunca é lido, mesmo com clique", async () => {
     const hash = await hashContato("u1", chaveDoContato({ nome: "Marlene R.", numero: "5531991234567" }));
     const r = await pedir({ tipo: "omnia:ler", usuarioId: "u1", hashesIgnorados: [hash] });
-    expect(r).toEqual({ ok: false, motivo: "Este contato está ignorado.", naoLe: true });
+    expect(r).toEqual({ ok: false, motivo: "Este contato está ignorado.", naoLe: true, codigo: "ignorado" });
   });
   it("hash de outro usuário não bloqueia", async () => {
     const hash = await hashContato("u2", chaveDoContato({ nome: "Marlene R.", numero: "5531991234567" }));
