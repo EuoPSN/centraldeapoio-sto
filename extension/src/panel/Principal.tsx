@@ -88,6 +88,7 @@ export function Principal({ usuarioId, email, onSair }: { usuarioId: string; ema
               onContexto={setContexto}
               onIgnorar={ignorar}
               onAbrirClienteDisse={() => setVista("cliente_disse")}
+              onAbrirDiagnostico={() => setVista("diagnostico")}
               reiniciar={reiniciar}
             />
           </div>
