@@ -14,8 +14,14 @@ import { SkeletonCard } from "@/components/ui/skeleton-card";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/treinamentos")({
+  // ?busca=<tema>: abre a página já com o tema na busca (vem do Mapa da equipe, no Admin).
+  validateSearch: (s: Record<string, unknown>): { busca?: string } => ({
+    busca: typeof s.busca === "string" && s.busca.trim() ? s.busca.trim().slice(0, 80) : undefined,
+  }),
   component: Page,
 });
+
+const norm = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 interface ModuleRow {
   id: string; titulo: string; descricao: string | null; pdf_path: string | null; pdf_name: string | null; pdf_url: string | null;
@@ -47,6 +53,13 @@ function Page() {
   const modules = (modQ.data ?? []) as ModuleRow[];
   const quizzes = (quizQ.data ?? []) as QuizRow[];
   const [activeQuiz, setActiveQuiz] = useState<QuizRow | null>(null);
+  const { busca: buscaInicial } = Route.useSearch();
+  const [busca, setBusca] = useState(buscaInicial ?? "");
+  useEffect(() => { setBusca(buscaInicial ?? ""); }, [buscaInicial]);
+  const termo = norm(busca.trim());
+  const visiveis = modules
+    .map((m, idx) => ({ m, idx }))
+    .filter(({ m }) => !termo || norm(`${m.titulo} ${m.descricao ?? ""}`).includes(termo));
 
   const quizForModule = (moduleId: string) => quizzes.find((q) => q.training_module_id === moduleId);
   const quizzesAvulsos = quizzes.filter((q) => !q.training_module_id);
@@ -60,13 +73,26 @@ function Page() {
         <p className="mt-0.5 text-sm text-muted-foreground">Currículo de treinamento e simulados da equipe.</p>
       </header>
 
+      <input
+        type="search"
+        value={busca}
+        onChange={(e) => setBusca(e.target.value)}
+        placeholder="Buscar treinamento…"
+        aria-label="Buscar treinamento"
+        className="mb-5 h-10 w-full max-w-sm rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-gold"
+      />
+
       {loading && <div className="grid gap-4 sm:grid-cols-2"><SkeletonCard /><SkeletonCard /></div>}
       {!loading && modules.length === 0 && (
         <Card className="p-10 text-center"><p className="text-muted-foreground">Nenhum módulo de treinamento cadastrado ainda.</p></Card>
       )}
 
+      {!loading && modules.length > 0 && visiveis.length === 0 && (
+        <Card className="p-8 text-center"><p className="text-muted-foreground">Nenhum treinamento com "{busca.trim()}". Limpe a busca para ver todos.</p></Card>
+      )}
+
       <div className="space-y-5">
-        {modules.map((m, idx) => {
+        {visiveis.map(({ m, idx }) => {
           const quiz = quizForModule(m.id);
           return (
             <Card key={m.id} className="p-5">

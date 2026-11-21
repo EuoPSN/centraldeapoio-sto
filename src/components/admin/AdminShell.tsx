@@ -39,6 +39,7 @@ import { CadenciaAdminTab, MotivosPerdaAdminTab } from "@/components/admin/Retom
 import { CerebroAdminTab, RaioxEquipeTab } from "@/components/admin/CerebroAdmin";
 import { MensagensVendemAdminTab } from "@/components/admin/MensagensVendemAdmin";
 import { ConversasEnviadasAdminTab } from "@/components/admin/ConversasEnviadasAdmin";
+import { MapaEquipeTab, BancoExerciciosTab, AquecimentoAdminTab } from "@/components/admin/AquecimentoAdmin";
 
 // Ordem dos grupos na entrada, no seletor e em "Organização das abas".
 export const ADMIN_GROUP_ORDER = ["Atendimento", "Inteligência", "Treino", "Central de Ajuda", "Equipe e sistema"];
@@ -77,6 +78,9 @@ export const ADMIN_TAB_COMPONENTS: Record<string, ComponentType> = {
   simuladorresultados: SimulatorResultsTab,
   treinamentos: TreinamentosTab,
   checklist: ChecklistTab,
+  mapaequipe: MapaEquipeTab,
+  bancoexercicios: BancoExerciciosTab,
+  aquecimentoadmin: AquecimentoAdminTab,
 
   procedimentos: ProcedimentosTab,
   problemastecnicos: ProblemasTecnicosTab,

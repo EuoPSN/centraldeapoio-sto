@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { contarAtendentesAtrasados } from "@/lib/retomada.functions";
 import { contarFichasNovas } from "@/lib/biblioteca.functions";
 import { contarSugestoesPendentes } from "@/lib/mensagens-vendem.functions";
+import { contarExerciciosParaAprovar } from "@/lib/aquecimento-admin.functions";
 
 async function requireAdmin(ctx: { supabase: unknown; userId: string }) {
   const s = ctx.supabase as { rpc: (n: string, p: unknown) => Promise<{ data: boolean | null }> };
@@ -134,6 +135,19 @@ export const getAdminPendingCounts = createServerFn({ method: "GET" })
         context: sugestoes > 0 ? "Com sugestão de nova versão" : "Tudo em dia",
         count: sugestoes,
         href: "/admin/mensagensvendem",
+      });
+    }
+
+    // 2e) Fase B bloco 2: exercícios do aquecimento (rascunhos da IA) esperando a sua aprovação.
+    {
+      const count = await contarExerciciosParaAprovar(db).catch(() => 0);
+      bySection.bancoexercicios = count;
+      items.push({
+        key: "bancoexercicios",
+        title: "Exercícios para aprovar",
+        context: count > 0 ? "Rascunhos da IA no Banco de exercícios" : "Tudo em dia",
+        count,
+        href: "/admin/bancoexercicios",
       });
     }
 
