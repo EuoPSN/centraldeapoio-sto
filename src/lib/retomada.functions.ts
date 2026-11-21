@@ -251,7 +251,8 @@ async function etapaDoUltimoEnvio(ctx: Ctx, r: Retomada): Promise<EtapaRetomada>
 }
 
 const AcaoInput = z.discriminatedUnion("acao", [
-  z.object({ acao: z.literal("enviei"), id: UUID }),
+  // `versao`: o atendente enviou a versão anterior ("Ver outra versão →") em vez da atual.
+  z.object({ acao: z.literal("enviei"), id: UUID, versao: z.number().int().min(1).optional() }),
   z.object({ acao: z.literal("respondeu"), id: UUID }),
   z.object({ acao: z.literal("fechou"), id: UUID }),
   z.object({ acao: z.literal("perdido"), id: UUID, motivo: z.string().trim().min(1).max(120) }),
@@ -275,7 +276,14 @@ export const acaoRetomada = createServerFn({ method: "POST" })
       if (r.status !== "fila") throw new Error("Este cliente não está na fila.");
       const m = await mensagemDoSlot(context, r);
       const usou = (await eventosDaEtapa(context, r)).some((e) => e.acao === "copiou");
-      evento = { ...base, acao: "enviei", mensagem_id: m?.id ?? null, mensagem_versao: m?.versao ?? null, usou_recomendada: usou };
+      // Versão anterior: só vale se existir de verdade (o Admin guarda as versões antigas).
+      let versao = m?.versao ?? null;
+      if (m && data.versao && data.versao < m.versao) {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { data: v } = await (supabaseAdmin as any).from("cadencia_mensagens_versoes").select("versao").eq("mensagem_id", m.id).eq("versao", data.versao).maybeSingle();
+        if (v) versao = data.versao;
+      }
+      evento = { ...base, acao: "enviei", mensagem_id: m?.id ?? null, mensagem_versao: versao, usou_recomendada: usou };
       const prox = agendarProxima(r.etapa_atual, agora);
       patch = prox
         ? { etapa_atual: prox.etapa, proxima_em: prox.em.toISOString() }
@@ -490,6 +498,12 @@ export interface DadosRelatorio {
   versoes: Linha[];
   objecoes: { data_hora: string; atendente: string; objecao: string; angulo_copiado: string; objecao_nova: boolean }[];
   atendentes: Record<string, string>;
+  /** Só no arquivo da equipe (Admin): desempenho por mensagem e versão no período. Vazio no arquivo do atendente. */
+  desempenho: Linha[];
+  /** Só no arquivo da equipe: mínimo de envios para ter selo (para o LEIA-ME). */
+  minEnvios: number;
+  /** Fichas da Biblioteca: as publicadas e, no arquivo do atendente, as dele. Nunca telefone, nome nem fala do cliente. */
+  biblioteca: Linha[];
 }
 
 /** Atendente: só os próprios tickets. Admin: todos, com filtro opcional de atendente. */
@@ -558,7 +572,47 @@ export const getDadosRelatorio = createServerFn({ method: "POST" })
       for (const r of (pend.data ?? []) as { objecao_id: string | null }[]) if (r.objecao_id) vieramDaFila.add(r.objecao_id);
     }
 
+    // Mensagens que vendem (só equipe): enviadas, responderam, fecharam e selo por versão, no período do relatório.
+    let desempenho: Linha[] = [];
+    let minEnvios = 10;
+    if (equipe) {
+      const dp = await s.rpc("mensagens_desempenho", { periodo_dias: null, _de: ini, _ate: fim });
+      if (dp.error) console.error("Desempenho das mensagens indisponível (migração pendente?):", dp.error.message);
+      else desempenho = (dp.data ?? []) as Linha[];
+      const cfg = await s.from("config_mensagens_vendem").select("min_envios").eq("id", 1).maybeSingle();
+      if (cfg.data?.min_envios) minEnvios = Number(cfg.data.min_envios);
+    }
+
+    // Biblioteca: fichas publicadas (e as do próprio atendente, em qualquer estado). Admin com filtro de atendente: só as dele.
+    let biblioteca: Linha[] = [];
+    {
+      let qFi = s.from("conversas_fichas").select("id, autor_id, objecao_rotulo, ponto_parada, plano, perfil_cliente, onde_travou, o_que_fez, mensagem_chave, dias_ate_fechar, status, publicada_em, created_at");
+      qFi = equipe ? qFi.eq("status", "publicada") : qFi.or(`status.eq.publicada,autor_id.eq.${context.userId}`);
+      if (equipe && filtroUser) qFi = qFi.eq("autor_id", filtroUser);
+      const fi = await qFi.order("created_at", { ascending: true }).limit(2000);
+      if (fi.error) console.error("Fichas da biblioteca indisponíveis (migração pendente?):", fi.error.message);
+      else biblioteca = (fi.data ?? []) as Linha[];
+      const autoresFicha = [...new Set(biblioteca.map((f) => String(f.autor_id)))].filter((id) => !atendentes[id]);
+      if (autoresFicha.length) {
+        // Só o primeiro nome do autor, lido com a chave de serviço (profiles é restrito).
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { data: perfis } = await (supabaseAdmin as any).from("profiles").select("id, display_name, email").in("id", autoresFicha);
+        for (const p of (perfis ?? []) as { id: string; display_name: string | null; email: string }[]) atendentes[p.id] = (p.display_name?.trim() || p.email.split("@")[0]).split(/\s+/)[0];
+      }
+      if (equipe && biblioteca.length) {
+        const votos = await s.from("conversas_fichas_feedback").select("ficha_id, util").in("ficha_id", biblioteca.map((f) => String(f.id)));
+        const cont = new Map<string, { u: number; n: number }>();
+        for (const v of (votos.data ?? []) as { ficha_id: string; util: boolean }[]) {
+          const c = cont.get(v.ficha_id) ?? { u: 0, n: 0 };
+          if (v.util) c.u++; else c.n++;
+          cont.set(v.ficha_id, c);
+        }
+        biblioteca = biblioteca.map((f) => ({ ...f, uteis: cont.get(String(f.id))?.u ?? 0, nao_uteis: cont.get(String(f.id))?.n ?? 0 }));
+      }
+    }
+
     return {
+      desempenho, minEnvios, biblioteca,
       de: data.de, ate: data.ate, escopo: equipe ? "equipe" : "atendente",
       exportadoPor: await nomeDoAtendente(context),
       exportadoEm: new Date().toISOString(),

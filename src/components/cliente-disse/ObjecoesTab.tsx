@@ -1,3 +1,4 @@
+import { CasosParecidos } from "@/components/biblioteca/CasosParecidos";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
@@ -147,6 +148,8 @@ export function ObjecoesTab({
             {!resultado.nova && objecoes.length === 0 && !extraItem && (
               <p className="text-[14px] text-ink-muted">Não encontrei objeção nessa fala.</p>
             )}
+
+            {objecoes.length > 0 && <CasosParecidos objecaoIds={objecoes.map((o) => o.obj.id)} />}
 
             {extraItem && objecoes.length > 0 && (
               <p className="text-[13.5px] text-ink-muted">

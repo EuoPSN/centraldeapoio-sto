@@ -18,8 +18,13 @@ import { ChoicePill, CopyText, Overline } from "@/components/cliente-disse/share
 import { AdicionarRetomada } from "@/components/retomada/AdicionarRetomada";
 import { AudioExemplo } from "@/components/retomada/AudioExemplo";
 import { BaixarRelatorioButton } from "@/components/retomada/BaixarRelatorio";
-import { RETOMADA_BASE_KEY, RETOMADA_CONTAGEM_KEY, useRetomadaBase } from "@/components/retomada/hooks";
+import { RETOMADA_BASE_KEY, RETOMADA_CONTAGEM_KEY, useMensagensSelo, useRetomadaBase } from "@/components/retomada/hooks";
+import { SeloLinha } from "@/components/retomada/SeloMensagem";
+import { ROTULO_VERSAO_ANTERIOR } from "@/lib/mensagens-vendem";
 import { useAvisosPermissao } from "@/components/retomada/Avisos";
+import { EnviarConversaDialog } from "@/components/biblioteca/EnviarConversaDialog";
+import { useFichasDasRetomadas } from "@/components/biblioteca/hooks";
+import { DIAS_PARA_ENVIAR } from "@/lib/biblioteca";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -36,6 +41,9 @@ export function RetomadaPage() {
   const qc = useQueryClient();
   const [visao, setVisao] = useState<Visao>("hoje");
   const [selId, setSelId] = useState<string | null>(null);
+  // "Fechou!" abre a janela de envio da conversa. Fica aqui (e não no detalhe) porque o
+  // detalhe troca de ticket logo depois de gravar o status.
+  const [enviarDe, setEnviarDe] = useState<{ id: string; primeiro_nome: string } | null>(null);
 
   const agora = new Date();
   const hoje = diaBR(agora);
@@ -146,7 +154,7 @@ export function RetomadaPage() {
 
         <div className="min-w-0 border-t border-line lg:border-t-0">
           {base && sel ? (
-            <Detalhe key={sel.id} r={sel} base={base} onAtualizada={atualizar} onProximo={(id) => setSelId(id)} lista={visiveis} />
+            <Detalhe key={sel.id} r={sel} base={base} onAtualizada={atualizar} onProximo={(id) => setSelId(id)} lista={visiveis} onEnviarConversa={setEnviarDe} />
           ) : (
             !q.isLoading && visiveis.length === 0 && visao === "hoje" ? null : (
               <p className="px-6 py-10 text-[14px] text-ink-muted">Escolha um cliente na lista.</p>
@@ -154,6 +162,14 @@ export function RetomadaPage() {
           )}
         </div>
       </div>
+      {base && (
+        <EnviarConversaDialog
+          open={!!enviarDe}
+          onOpenChange={(v) => { if (!v) setEnviarDe(null); }}
+          atendente={base.atendente}
+          retomada={enviarDe ?? undefined}
+        />
+      )}
     </div>
   );
 }
@@ -282,9 +298,16 @@ function achaMensagem(base: RetomadaBase, r: Retomada): CadenciaMensagem | null 
   return base.mensagens.find((m) => m.ponto_parada === ponto && m.etapa === r.etapa_atual) ?? null;
 }
 
-function Detalhe({ r, base, onAtualizada, onProximo, lista }: {
+function Detalhe({ r, base, onAtualizada, onProximo, lista, onEnviarConversa }: {
   r: Retomada; base: RetomadaBase; onAtualizada: (r: Retomada) => void; onProximo: (id: string | null) => void; lista: Retomada[];
+  onEnviarConversa: (r: { id: string; primeiro_nome: string }) => void;
 }) {
+  const fichas = useFichasDasRetomadas();
+  const fichaDoTicket = fichas.data?.[r.id];
+  const seloQ = useMensagensSelo();
+  const [verAnterior, setVerAnterior] = useState(false);
+  const diasDesdeFechar = (Date.now() - new Date(r.updated_at).getTime()) / 86400_000;
+  const podeEnviarConversa = r.status === "fechou" && !fichaDoTicket && diasDesdeFechar <= DIAS_PARA_ENVIAR;
   const navigate = useNavigate();
   const acaoFn = useServerFn(acaoRetomada);
   const copiouFn = useServerFn(registrarCopiouRetomada);
@@ -305,8 +328,13 @@ function Detalhe({ r, base, onAtualizada, onProximo, lista }: {
     recomendadaFn({ data: { id: r.id } }).catch(() => undefined);
   }, [r.id, r.etapa_atual, naFila, recomendadaFn]);
 
-  const texto = msg && !semTexto(msg.texto)
-    ? montarMensagem(msg.texto, { nome: r.primeiro_nome, atendente: base.atendente, caso, observacao: r.observacao })
+  const seloMsg = msg ? seloQ.data?.selos.find((s) => s.origem === "cadencia" && s.mensagem_id === msg.id && s.versao === msg.versao) ?? null : null;
+  // "Ver outra versão →" só existe quando uma versão anterior da mesma mensagem tem o selo "Funciona bem".
+  const anterior = msg ? seloQ.data?.anteriores.find((a) => a.mensagem_id === msg.id) ?? null : null;
+  const mostrandoAnterior = verAnterior && !!anterior;
+  const textoBase = mostrandoAnterior ? anterior.texto : msg?.texto ?? "";
+  const texto = msg && !semTexto(textoBase)
+    ? montarMensagem(textoBase, { nome: r.primeiro_nome, atendente: base.atendente, caso, observacao: r.observacao })
     : "";
   const etapaTxt = ETAPA_LABEL[r.etapa_atual];
 
@@ -323,7 +351,7 @@ function Detalhe({ r, base, onAtualizada, onProximo, lista }: {
         toast.success(novo.proxima_em ? `Enviei registrado. Próximo ${ETAPA_LABEL[novo.etapa_atual]} em ${fmtDiaMes(novo.proxima_em)}.` : "Enviei registrado. Sem resposta em 2 dias, o cliente esfria.");
         passarAdiante(r.id);
       } else if (d.acao === "respondeu") { toast.success("Respondeu. Saiu da lista do dia."); passarAdiante(r.id); }
-      else if (d.acao === "fechou") { toast.success("Fechou!"); passarAdiante(r.id); }
+      else if (d.acao === "fechou") { toast.success("Fechou!"); onEnviarConversa({ id: r.id, primeiro_nome: r.primeiro_nome }); passarAdiante(r.id); }
       else if (d.acao === "perdido") { toast.success("Marcado como perdido."); setPerdendo(false); passarAdiante(r.id); }
       else { toast.success("Voltou para a fila. Recomeça no D+1, amanhã."); setVoltando(false); }
     },
@@ -384,7 +412,11 @@ function Detalhe({ r, base, onAtualizada, onProximo, lista }: {
         <>
           <div className="mt-4 rounded-xl bg-surface-2 px-5 py-4">
             <div className="flex items-center justify-between gap-3">
-              <Overline>{msg?.canal === "audio" ? `Roteiro do áudio (até 30 s) · ${etapaTxt}` : `Mensagem do ${etapaTxt}`}</Overline>
+              <Overline>
+                {mostrandoAnterior
+                  ? ROTULO_VERSAO_ANTERIOR
+                  : `${msg?.canal === "audio" ? `Roteiro do áudio (até 30 s) · ${etapaTxt}` : `Mensagem do ${etapaTxt}`}${msg ? ` · versão ${msg.versao}` : ""}`}
+              </Overline>
               {texto && <CopyText text={texto} variant="link" onCopied={copiou} />}
             </div>
             {texto ? (
@@ -392,7 +424,21 @@ function Detalhe({ r, base, onAtualizada, onProximo, lista }: {
             ) : (
               <p className="mt-2 text-[14px] text-ink-muted">Esta mensagem ainda não foi publicada. Fale com o administrador para escrever a cadência.</p>
             )}
+            {texto && (
+              <SeloLinha selo={mostrandoAnterior ? "funciona_bem" : seloMsg?.selo ?? null} envios={mostrandoAnterior ? 0 : seloMsg?.envios ?? 0}>
+                {anterior && (
+                  <button type="button" onClick={() => setVerAnterior((v) => !v)} className="text-[13.5px] font-semibold text-gold-text hover:underline">
+                    {mostrandoAnterior ? "← Voltar à versão atual" : "Ver outra versão →"}
+                  </button>
+                )}
+              </SeloLinha>
+            )}
           </div>
+          {texto && (seloMsg?.selo || (seloMsg?.envios ?? 0) > 0) && (
+            <p className="mt-2 text-[12.5px] text-ink-muted">
+              O selo só aparece depois de {seloQ.data?.min_envios ?? 10} envios da mensagem na equipe. Os percentuais ficam só com o Paulo.
+            </p>
+          )}
 
           {msg?.canal === "audio" && (
             <div className="mt-3 space-y-2">
@@ -405,7 +451,7 @@ function Detalhe({ r, base, onAtualizada, onProximo, lista }: {
 
           {!perdendo ? (
             <div className="mt-4 flex flex-wrap items-center gap-2">
-              <GoldButton className="h-11 px-6" onClick={() => acao.mutate({ acao: "enviei", id: r.id })} disabled={acao.isPending}>Enviei</GoldButton>
+              <GoldButton className="h-11 px-6" onClick={() => acao.mutate({ acao: "enviei", id: r.id, versao: mostrandoAnterior ? anterior.versao : undefined })} disabled={acao.isPending}>Enviei</GoldButton>
               <OutlineButton className="h-10" onClick={() => acao.mutate({ acao: "respondeu", id: r.id })} disabled={acao.isPending}>Respondeu</OutlineButton>
               <OutlineButton className="h-10" onClick={() => acao.mutate({ acao: "fechou", id: r.id })} disabled={acao.isPending}>Fechou</OutlineButton>
               <OutlineButton className="h-10" onClick={() => setPerdendo(true)} disabled={acao.isPending}>Perdido</OutlineButton>
@@ -433,6 +479,18 @@ function Detalhe({ r, base, onAtualizada, onProximo, lista }: {
             {STATUS_LABEL[r.status]}
             {r.status === "perdido" && r.motivo_perda ? ` · ${r.motivo_perda}` : ""}
           </p>
+          {r.status === "fechou" && fichaDoTicket && (
+            <p className="mt-2 text-[13.5px] leading-5 text-ink-muted">
+              {fichaDoTicket.status === "enviada" && "Enviada para aprovação"}
+              {fichaDoTicket.status === "publicada" && "Conversa publicada na biblioteca. Obrigada!"}
+              {fichaDoTicket.status === "recusada" && `Conversa não publicada${fichaDoTicket.motivo_recusa ? `: ${fichaDoTicket.motivo_recusa}` : "."}`}
+            </p>
+          )}
+          {podeEnviarConversa && (
+            <button type="button" onClick={() => onEnviarConversa({ id: r.id, primeiro_nome: r.primeiro_nome })} className="mt-2 text-[14px] font-semibold text-gold-text hover:underline">
+              Enviar conversa para a biblioteca
+            </button>
+          )}
           {!voltando ? (
             <div className="mt-3 flex flex-wrap gap-2">
               <OutlineButton className="h-9" onClick={() => setVoltando(true)}>Voltar para a fila</OutlineButton>

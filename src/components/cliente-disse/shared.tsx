@@ -18,8 +18,8 @@ export type ClienteDisseBase = NonNullable<ReturnType<typeof useClienteDisseBase
 export function useRegistrarUso() {
   const fn = useServerFn(registrarUsoClienteDisse);
   const qc = useQueryClient();
-  return (data: { objecao_id?: string; fechamento_item_id?: string; angulo?: string }) => {
-    fn({ data: { objecao_id: data.objecao_id ?? null, fechamento_item_id: data.fechamento_item_id ?? null, angulo: data.angulo ?? null } })
+  return (data: { objecao_id?: string; fechamento_item_id?: string; angulo?: string; caso_id?: string | null }) => {
+    fn({ data: { objecao_id: data.objecao_id ?? null, fechamento_item_id: data.fechamento_item_id ?? null, angulo: data.angulo ?? null, caso_id: data.caso_id ?? null } })
       .then(() => qc.invalidateQueries({ queryKey: BASE_KEY }))
       .catch(() => undefined);
   };

@@ -5,6 +5,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { MarcianaEye } from "@/components/marciana/MarcianaEye";
 import { TopbarBreadcrumb } from "@/components/scripts/shared";
 import { CopyText, DashedTag, ErroDiscreto, GoldPill, Overline } from "@/components/cliente-disse/shared";
+import { CasosParecidos } from "@/components/biblioteca/CasosParecidos";
 import { AdicionarRetomada } from "@/components/retomada/AdicionarRetomada";
 import { apagarImagens, ConversaCard, useConversa } from "@/components/copiloto/ConversaCard";
 import { UsoAviso, UsoContador } from "@/components/copiloto/UsoContador";
@@ -108,6 +109,8 @@ export function CopilotoPage() {
                 <Opcao titulo="Direta · puxa o próximo passo" texto={r.opcao_direta.texto} porque={r.opcao_direta.porque} />
                 <Opcao titulo="Consultiva · aprofunda" texto={r.opcao_consultiva.texto} porque={r.opcao_consultiva.porque} />
               </div>
+
+              <CasosParecidos compacto objecaoIds={r.objecoes.map((o) => o.id)} ponto={r.ponto_parada_sugerido} />
 
               <div className="grid gap-4 md:grid-cols-2">
                 {r.objecoes.length > 0 ? (

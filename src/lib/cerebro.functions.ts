@@ -68,7 +68,7 @@ export const salvarCerebroBloco = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({
     id: UUID,
     conteudo: z.string().max(60000).optional(),
-    ferramentas: z.array(FerramentaZ).max(7),
+    ferramentas: z.array(FerramentaZ).max(8),
     ativo: z.boolean().default(true),
   }).parse(d))
   .handler(async ({ data, context }) => {
@@ -166,7 +166,7 @@ export const testarCerebro = createServerFn({ method: "POST" })
     conversa: z.string().trim().min(1).max(8000),
     chave: z.string().min(1).max(60),
     conteudo: z.string().max(60000),
-    ferramentas: z.array(FerramentaZ).max(7),
+    ferramentas: z.array(FerramentaZ).max(8),
   }).parse(d))
   .handler(async ({ data, context }) => {
     await requireAdmin(context);

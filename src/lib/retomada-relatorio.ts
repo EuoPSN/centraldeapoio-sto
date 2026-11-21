@@ -71,6 +71,32 @@ const C = {
     { nome: "publicada_em", significado: "Quando esta versão foi publicada.", valores: "AAAA-MM-DD HH:MM", largura: 17 },
     { nome: "substituida_em", significado: "Quando outra versão tomou o lugar desta. Vazio = é a versão atual.", valores: "AAAA-MM-DD HH:MM ou vazio", largura: 17 },
   ],
+  /** Só no arquivo da equipe: desempenho de cada versão (Mensagens que vendem). */
+  mensagensDesempenho: [
+    { nome: "enviadas", significado: "Quantos Enviei foram registrados com esta versão no período.", valores: "número inteiro", largura: 10 },
+    { nome: "responderam", significado: "Dos Enviei desta versão, quantos tiveram resposta ou fechamento. A resposta conta para a última mensagem marcada como Enviei antes dela.", valores: "número inteiro", largura: 12 },
+    { nome: "fecharam", significado: "Dos Enviei desta versão, quantos terminaram em fechamento.", valores: "número inteiro", largura: 10 },
+    { nome: "pct_responderam", significado: "responderam ÷ enviadas, em percentual.", valores: "0 a 100, uma casa decimal; vazio se enviadas = 0", largura: 14 },
+    { nome: "pct_fecharam", significado: "fecharam ÷ enviadas, em percentual.", valores: "0 a 100, uma casa decimal; vazio se enviadas = 0", largura: 13 },
+    { nome: "selo", significado: "Selo que o atendente vê. Sem selo abaixo do mínimo de envios.", valores: "funciona_bem | vale_testar_outra | vazio", largura: 18 },
+  ],
+  biblioteca: [
+    { nome: "id_ficha", significado: "Identificador curto da ficha.", valores: "8 caracteres", largura: 11 },
+    { nome: "autor", significado: "Atendente que enviou a conversa que fechou.", valores: "primeiro nome", largura: 14 },
+    { nome: "objecao", significado: "Objeção da ficha (rótulo). A fala do cliente NÃO é guardada.", valores: "texto", largura: 24 },
+    { nome: "parou_em", significado: "Ponto de parada da conversa antes de fechar.", valores: PONTOS, largura: 24 },
+    { nome: "plano", significado: "Plano vendido.", valores: "Prata | Ouro | Diamante | outro", largura: 10 },
+    { nome: "perfil", significado: "Perfil do cliente em poucas palavras (sem nome).", valores: "texto curto", largura: 30 },
+    { nome: "onde_travou", significado: "Resumo de onde o cliente travou (sem citar a fala dele).", valores: "texto", largura: 50 },
+    { nome: "o_que_fez", significado: "Passos que o atendente fez, numerados.", valores: "texto", largura: 60 },
+    { nome: "mensagem_chave", significado: "Mensagem do atendente que mais ajudou a fechar ([nome] no lugar do nome do cliente).", valores: "texto", largura: 60 },
+    { nome: "dias_ate_fechar", significado: "Dias entre a primeira e a última mensagem da conversa.", valores: "número inteiro", largura: 14 },
+    { nome: "estado", significado: "Estado da ficha. No arquivo do atendente aparecem as publicadas e as dele.", valores: "publicada | enviada | recusada", largura: 11 },
+  ],
+  bibliotecaVotos: [
+    { nome: "uteis", significado: "Quantas pessoas marcaram Isso ajudou. Só no arquivo da equipe.", valores: "número inteiro", largura: 9 },
+    { nome: "nao_uteis", significado: "Quantas pessoas marcaram Não ajudou. Só no arquivo da equipe.", valores: "número inteiro", largura: 11 },
+  ],
   resumo: [
     { nome: "tipo_resumo", significado: "Qual leitura a linha traz.", valores: "ponto_parada_etapa | atendente", largura: 18 },
     { nome: "ponto_parada", significado: "Só em ponto_parada_etapa.", valores: PONTOS, largura: 24 },
@@ -103,15 +129,37 @@ export function montarAbas(d: DadosRelatorio): Aba[] {
   const usadas = new Set(d.eventos.filter((e) => e.mensagem_id).map((e) => `${e.mensagem_id}:${e.mensagem_versao}`));
   const codigoDe = new Map<string, string>();
   const msgLinhas: Cel[][] = [];
+  const equipe = d.escopo === "equipe";
+  // Desempenho por (mensagem, versão): só no arquivo da equipe. Atendente nunca recebe percentuais.
+  const desemp = new Map(d.desempenho.filter((x) => x.origem === "cadencia").map((x) => [`${x.mensagem_id}:${x.versao}`, x]));
+  const colsDesemp = (id: unknown, versao: unknown): Cel[] => {
+    if (!equipe) return [];
+    const x = desemp.get(`${id}:${versao}`);
+    const env = Number(x?.enviadas ?? 0), resp = Number(x?.responderam ?? 0), fech = Number(x?.fecharam ?? 0);
+    return [env, resp, fech, pct(resp, env), pct(fech, env), str(x?.selo)];
+  };
+  // Versões com envio no período aparecem mesmo que não tenham sido "usadas" por outro motivo.
+  const comEnvio = new Set(d.desempenho.filter((x) => x.origem === "cadencia").map((x) => `${x.mensagem_id}:${x.versao}`));
   for (const m of d.mensagens) {
     codigoDe.set(str(m.id), str(m.codigo));
-    msgLinhas.push([str(m.codigo), Number(m.versao), str(m.ponto_parada), str(m.etapa), str(m.canal), str(m.papel), str(m.texto), str(m.por_que), isoBR(m.publicada_em as string), ""]);
+    msgLinhas.push([str(m.codigo), Number(m.versao), str(m.ponto_parada), str(m.etapa), str(m.canal), str(m.papel), str(m.texto), str(m.por_que), isoBR(m.publicada_em as string), "", ...colsDesemp(m.id, m.versao)]);
   }
   for (const v of d.versoes) {
-    if (!usadas.has(`${v.mensagem_id}:${v.versao}`)) continue;
-    msgLinhas.push([str(v.codigo), Number(v.versao), str(v.ponto_parada), str(v.etapa), str(v.canal), str(v.papel), str(v.texto), str(v.por_que), isoBR(v.publicada_em as string), isoBR(v.substituida_em as string)]);
+    if (!usadas.has(`${v.mensagem_id}:${v.versao}`) && !comEnvio.has(`${v.mensagem_id}:${v.versao}`)) continue;
+    msgLinhas.push([str(v.codigo), Number(v.versao), str(v.ponto_parada), str(v.etapa), str(v.canal), str(v.papel), str(v.texto), str(v.por_que), isoBR(v.publicada_em as string), isoBR(v.substituida_em as string), ...colsDesemp(v.mensagem_id, v.versao)]);
   }
   msgLinhas.sort((a, b) => str(a[0]).localeCompare(str(b[0])) || Number(a[1]) - Number(b[1]));
+
+  // Biblioteca: fichas publicadas (e as do próprio atendente). Nunca telefone, nome nem fala do cliente.
+  const biLinhas: Cel[][] = d.biblioteca.map((f) => {
+    const passos = Array.isArray(f.o_que_fez) ? (f.o_que_fez as unknown as string[]) : [];
+    return [
+      str(f.id).slice(0, 8), nomeAt(f.autor_id), str(f.objecao_rotulo), str(f.ponto_parada), str(f.plano), str(f.perfil_cliente), str(f.onde_travou),
+      passos.map((p, i) => `${i + 1}. ${p}`).join("\n"), str(f.mensagem_chave),
+      f.dias_ate_fechar == null ? null : Number(f.dias_ate_fechar), str(f.status),
+      ...(equipe ? [Number(f.uteis ?? 0), Number(f.nao_uteis ?? 0)] : []),
+    ];
+  });
 
   // Eventos
   const eventos = [...d.eventos].sort((a, b) => str(a.created_at).localeCompare(str(b.created_at)));
@@ -189,7 +237,8 @@ export function montarAbas(d: DadosRelatorio): Aba[] {
     { nome: "LEIA-ME", tabela: "tbl_leia_me", colunas: LEIA_ME_COLUNAS, linhas: leiaMe },
     { nome: "Clientes", tabela: "tbl_clientes", colunas: C.clientes, linhas: clLinhas },
     { nome: "Eventos", tabela: "tbl_eventos", colunas: C.eventos, linhas: evLinhas },
-    { nome: "Mensagens", tabela: "tbl_mensagens", colunas: C.mensagens, linhas: msgLinhas },
+    { nome: "Mensagens", tabela: "tbl_mensagens", colunas: equipe ? [...C.mensagens, ...C.mensagensDesempenho] : C.mensagens, linhas: msgLinhas },
+    { nome: "Biblioteca", tabela: "tbl_biblioteca", colunas: equipe ? [...C.biblioteca, ...C.bibliotecaVotos] : C.biblioteca, linhas: biLinhas },
     { nome: "Resumo", tabela: "tbl_resumo", colunas: C.resumo, linhas: rsLinhas },
     { nome: "Objeções", tabela: "tbl_objecoes", colunas: C.objecoes, linhas: obLinhas },
   ];
@@ -248,9 +297,13 @@ function montarLeiaMe(d: DadosRelatorio): Cel[][] {
 
   add("limites", "usou_recomendada", "usou_recomendada = sim significa que o atendente copiou a mensagem da etapa antes de clicar Enviei. A Omnia não vê se o texto foi editado no WhatsApp: sim não garante que a mensagem foi enviada igual.", "sim | não");
   add("limites", "objecao_nova", "Na aba Objeções, objecao_nova = sim quando a objeção foi aprovada a partir da fila de objeções novas (só aparece no arquivo da equipe).", "sim | não");
+  add("mensagens_que_vendem", "selo", `Cada versão de mensagem recebe um selo calculado sobre a taxa de resposta (responderam ÷ enviadas). Sem selo abaixo de ${d.minEnvios} envios. funciona_bem: taxa igual ou maior que a média da etapa (todas as versões do mesmo ponto de parada e etapa). vale_testar_outra: taxa menor que o limite configurado da média. Sem selo no meio.`, "funciona_bem | vale_testar_outra | vazio");
+  add("mensagens_que_vendem", "atribuicao", "Uma resposta ou um fechamento conta para a última mensagem marcada como Enviei daquela retomada antes do evento (um voltou_fila entre os dois zera a ligação). Só o arquivo da equipe traz enviadas, responderam, fecharam, percentuais e selo; o arquivo do atendente não traz percentuais.");
+  add("mensagens_que_vendem", "fechar_com_este_cliente", "As mensagens do Fechar com este cliente não aparecem neste arquivo; os números delas ficam no Admin (Mensagens que vendem).");
+  add("biblioteca", "o_que_e", "Aba Biblioteca: fichas de aprendizado das Conversas que fecharam. Só a ficha é guardada; a conversa original, nomes, telefones e falas do cliente não. No arquivo do atendente entram as fichas publicadas e as dele; uteis e nao_uteis só vêm no arquivo da equipe.");
   add("limites", "versoes", "A aba Mensagens traz a versão atual de cada mensagem usada no período e as versões antigas que foram usadas. Use codigo_mensagem + versao para ligar com a aba Eventos.");
 
-  for (const [aba, cols] of [["Clientes", C.clientes], ["Eventos", C.eventos], ["Mensagens", C.mensagens], ["Resumo", C.resumo], ["Objeções", C.objecoes]] as const) {
+  for (const [aba, cols] of [["Clientes", C.clientes], ["Eventos", C.eventos], ["Mensagens", d.escopo === "equipe" ? [...C.mensagens, ...C.mensagensDesempenho] : C.mensagens], ["Biblioteca", d.escopo === "equipe" ? [...C.biblioteca, ...C.bibliotecaVotos] : C.biblioteca], ["Resumo", C.resumo], ["Objeções", C.objecoes]] as const) {
     for (const c of cols) add("dicionario_de_colunas", `${aba}.${c.nome}`, c.significado, c.valores);
   }
   return r;
@@ -262,7 +315,7 @@ export async function montarRelatorioXlsx(d: DadosRelatorio): Promise<ArrayBuffe
 }
 
 /** Escreve as abas como Tabelas do Excel (compartilhado com o relatório de inteligência). */
-export async function abasParaXlsx(abas: Aba[], exportadoEm: string, abasComQuebra: string[] = ["LEIA-ME", "Mensagens"]): Promise<ArrayBuffer> {
+export async function abasParaXlsx(abas: Aba[], exportadoEm: string, abasComQuebra: string[] = ["LEIA-ME", "Mensagens", "Biblioteca"]): Promise<ArrayBuffer> {
   const ExcelJS = (await import("exceljs")).default;
   const wb = new ExcelJS.Workbook();
   wb.creator = "OMNIA Apoio";
