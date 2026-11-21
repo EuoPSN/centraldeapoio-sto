@@ -321,7 +321,7 @@ export function FecharTab({
                 <CopyText
                   variant="link"
                   text={mensagemCompleta}
-                  onCopied={() => mensagemEtapa && registrar({ fechamento_item_id: mensagemEtapa.id })}
+                  onCopied={() => mensagemEtapa && registrar({ fechamento_item_id: mensagemEtapa.id, caso_id: draft.id })}
                 />
               )}
             </div>
@@ -351,7 +351,7 @@ export function FecharTab({
                   </ChoicePill>
                 ))}
               </div>
-              {travSel && <TravamentoBox item={travSel} caso={draft} economia={economia} onCopied={() => registrar({ fechamento_item_id: travSel.id })} />}
+              {travSel && <TravamentoBox item={travSel} caso={draft} economia={economia} onCopied={() => registrar({ fechamento_item_id: travSel.id, caso_id: draft.id })} />}
             </div>
           )}
 

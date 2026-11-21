@@ -251,7 +251,8 @@ async function etapaDoUltimoEnvio(ctx: Ctx, r: Retomada): Promise<EtapaRetomada>
 }
 
 const AcaoInput = z.discriminatedUnion("acao", [
-  z.object({ acao: z.literal("enviei"), id: UUID }),
+  // `versao`: o atendente enviou a versão anterior ("Ver outra versão →") em vez da atual.
+  z.object({ acao: z.literal("enviei"), id: UUID, versao: z.number().int().min(1).optional() }),
   z.object({ acao: z.literal("respondeu"), id: UUID }),
   z.object({ acao: z.literal("fechou"), id: UUID }),
   z.object({ acao: z.literal("perdido"), id: UUID, motivo: z.string().trim().min(1).max(120) }),
@@ -275,7 +276,14 @@ export const acaoRetomada = createServerFn({ method: "POST" })
       if (r.status !== "fila") throw new Error("Este cliente não está na fila.");
       const m = await mensagemDoSlot(context, r);
       const usou = (await eventosDaEtapa(context, r)).some((e) => e.acao === "copiou");
-      evento = { ...base, acao: "enviei", mensagem_id: m?.id ?? null, mensagem_versao: m?.versao ?? null, usou_recomendada: usou };
+      // Versão anterior: só vale se existir de verdade (o Admin guarda as versões antigas).
+      let versao = m?.versao ?? null;
+      if (m && data.versao && data.versao < m.versao) {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { data: v } = await (supabaseAdmin as any).from("cadencia_mensagens_versoes").select("versao").eq("mensagem_id", m.id).eq("versao", data.versao).maybeSingle();
+        if (v) versao = data.versao;
+      }
+      evento = { ...base, acao: "enviei", mensagem_id: m?.id ?? null, mensagem_versao: versao, usou_recomendada: usou };
       const prox = agendarProxima(r.etapa_atual, agora);
       patch = prox
         ? { etapa_atual: prox.etapa, proxima_em: prox.em.toISOString() }

@@ -258,9 +258,19 @@ export const registrarUsoClienteDisse = createServerFn({ method: "POST" })
     objecao_id: z.string().uuid().nullable().default(null),
     fechamento_item_id: z.string().uuid().nullable().default(null),
     angulo: z.string().max(40).nullable().default(null),
+    /** Caso de "Fechar com este cliente" em que a mensagem foi copiada (para "levou ao fechamento"). */
+    caso_id: z.string().uuid().nullable().default(null),
   }).refine((v) => v.objecao_id || v.fechamento_item_id).parse(d))
   .handler(async ({ data, context }) => {
-    check(await db(context).from("cliente_disse_uso").insert({ ...data, user_id: context.userId }));
+    const { caso_id, ...uso } = data;
+    check(await db(context).from("cliente_disse_uso").insert({ ...uso, user_id: context.userId }));
+    // Mensagens que vendem: cada "Copiar" do Fechar com este cliente. Falha aqui não derruba o "Copiar".
+    if (data.fechamento_item_id) {
+      const r = await db(context).from("mensagens_usos").insert({
+        user_id: context.userId, origem: "fechamento", item_id: data.fechamento_item_id, caso_id,
+      });
+      if (r?.error) console.error("Uso da mensagem não registrado (migração pendente?):", r.error.message);
+    }
     return { ok: true };
   });
 
@@ -303,6 +313,9 @@ export const concluirCaso = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
+    // Antes de apagar o caso: as mensagens copiadas nele "levaram ao fechamento".
+    const marca = await db(context).rpc("mensagens_usos_marcar_fechamento", { _caso_id: data.id });
+    if (marca?.error) console.error("Fechamento não marcado nas mensagens (migração pendente?):", marca.error.message);
     check(await db(context).from("fechamento_casos").delete().eq("id", data.id).eq("user_id", context.userId));
     return { ok: true };
   });
