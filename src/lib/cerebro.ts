@@ -8,7 +8,7 @@ import { removerDadosPessoais } from "@/lib/cliente-disse";
 // Ferramentas que usam o Cérebro
 // ---------------------------------------------------------------------------
 
-export const FERRAMENTAS = ["marciana", "cliente_disse", "mensagem_cliente", "retomada", "copiloto", "raiox", "simulador", "biblioteca", "aquecimento"] as const;
+export const FERRAMENTAS = ["marciana", "cliente_disse", "mensagem_cliente", "retomada", "copiloto", "raiox", "simulador", "biblioteca", "aquecimento", "extensao"] as const;
 export type Ferramenta = (typeof FERRAMENTAS)[number];
 
 export const FERRAMENTA_LABEL: Record<Ferramenta, string> = {
@@ -21,11 +21,12 @@ export const FERRAMENTA_LABEL: Record<Ferramenta, string> = {
   simulador: "Simulador",
   biblioteca: "Biblioteca",
   aquecimento: "Aquecimento",
+  extensao: "Extensão",
 };
 
 /** Colunas mostradas no Admin ("Quem usa o quê"). A "Mensagem para o cliente"
  * faz parte da MarcIAna: marcar uma marca a outra. */
-export const FERRAMENTAS_COLUNAS = ["marciana", "cliente_disse", "retomada", "copiloto", "raiox", "simulador", "biblioteca", "aquecimento"] as const;
+export const FERRAMENTAS_COLUNAS = ["marciana", "cliente_disse", "retomada", "copiloto", "raiox", "simulador", "biblioteca", "aquecimento", "extensao"] as const;
 export type FerramentaColuna = (typeof FERRAMENTAS_COLUNAS)[number];
 
 export function ferramentasDaColuna(c: FerramentaColuna): Ferramenta[] {
@@ -157,6 +158,7 @@ export function calcularUso(ferramenta: Ferramenta, usado: number, limite: numbe
 }
 
 export function mensagemLimite(ferramenta: Ferramenta): string {
+  if (ferramenta === "extensao") return "Você chegou ao limite de leituras da extensão por hoje. Ela volta amanhã, à meia-noite, ou peça ao Paulo para liberar mais. As outras ferramentas da Omnia seguem normais.";
   return `Você chegou ao limite de hoje do ${FERRAMENTA_LABEL[ferramenta]}. Volta amanhã ou peça ao Paulo para liberar mais.`;
 }
 

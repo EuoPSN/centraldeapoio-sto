@@ -54,6 +54,7 @@ const CONTEXTO_PADRAO: Record<Ferramenta, ContextoOmnia[]> = {
   raiox: ["mensalidades"],
   biblioteca: ["objecoes"],
   aquecimento: [],
+  extensao: [],
 };
 
 interface DadosCerebro {

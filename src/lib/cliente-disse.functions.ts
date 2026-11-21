@@ -109,47 +109,50 @@ export type Classificacao = z.infer<typeof ClassificacaoSchema> & { pendente_id:
 export const classificarFala = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ fala: z.string().trim().min(1).max(2000) }).parse(d))
-  .handler(async ({ data, context }): Promise<Classificacao> => {
-    const s = db(context);
-    const fala = removerDadosPessoais(data.fala);
-    const [obj, itens] = await Promise.all([
-      s.from("objecoes").select("id, nome, exemplos_de_fala").eq("status", "publicada"),
-      s.from("fechamento_itens").select("id, tipo, etapa, titulo, exemplos_de_fala").eq("status", "publicada").in("tipo", ["sinal", "travamento"]),
-    ]);
-    const objecoes = (check(obj) ?? []) as { id: string; nome: string; exemplos_de_fala: string[] }[];
-    const fech = (check(itens) ?? []) as { id: string; tipo: string; etapa: string; titulo: string; exemplos_de_fala: string[] }[];
+  .handler(async ({ data, context }): Promise<Classificacao> => classificarFalaCore(context, data.fala));
 
-    await consumirUso(context, "cliente_disse");
-    const system = `${await instrucoes()}
+/** Classifica a fala do cliente (conta 1 uso de "O cliente disse…"). Também usada pela extensão do Chrome. */
+export async function classificarFalaCore(context: Ctx, falaBruta: string): Promise<Classificacao> {
+  const s = db(context);
+  const fala = removerDadosPessoais(falaBruta);
+  const [obj, itens] = await Promise.all([
+    s.from("objecoes").select("id, nome, exemplos_de_fala").eq("status", "publicada"),
+    s.from("fechamento_itens").select("id, tipo, etapa, titulo, exemplos_de_fala").eq("status", "publicada").in("tipo", ["sinal", "travamento"]),
+  ]);
+  const objecoes = (check(obj) ?? []) as { id: string; nome: string; exemplos_de_fala: string[] }[];
+  const fech = (check(itens) ?? []) as { id: string; tipo: string; etapa: string; titulo: string; exemplos_de_fala: string[] }[];
+
+  await consumirUso(context, "cliente_disse");
+  const system = `${await instrucoes()}
 
 Você classifica a fala de um cliente no WhatsApp. Compare com a lista de OBJEÇÕES, SINAIS DE COMPRA e TRAVAMENTOS aprovados abaixo e devolva só os que de fato aparecem na fala.
 - Uma fala pode ter várias objeções. Ordene na ordem em que o atendente deve tratar (ordem 1 = primeiro) e explique em uma frase curta por que a primeira vem antes (motivo_ordem, só no item de ordem 1).
 - Use SOMENTE ids da lista. Nunca invente id.
 - "nova": true quando a fala traz uma objeção que não corresponde a nenhuma objeção da lista. Se não houver nenhuma objeção, sinal ou travamento, devolva itens vazio e nova conforme o caso.
 Responda APENAS com JSON no formato: {"itens":[{"tipo":"objecao|sinal|travamento","id":"...","ordem":1,"motivo_ordem":"..."}],"nova":false}`;
-    const user = JSON.stringify({
-      fala,
-      objecoes: objecoes.map((o) => ({ id: o.id, nome: o.nome, exemplos: o.exemplos_de_fala })),
-      sinais_de_compra: fech.filter((f) => f.tipo === "sinal").map((f) => ({ id: f.id, titulo: f.titulo, etapa: f.etapa, exemplos: f.exemplos_de_fala })),
-      travamentos: fech.filter((f) => f.tipo === "travamento").map((f) => ({ id: f.id, titulo: f.titulo, etapa: f.etapa, exemplos: f.exemplos_de_fala })),
-    });
-
-    const parsed = ClassificacaoSchema.parse(await perguntarJson(system, user));
-    const valid = new Set<string>([
-      ...objecoes.map((o) => `objecao:${o.id}`),
-      ...fech.map((f) => `${f.tipo}:${f.id}`),
-    ]);
-    const seen = new Set<string>();
-    const out = parsed.itens
-      .filter((i) => valid.has(`${i.tipo}:${i.id}`) && !seen.has(i.id) && seen.add(i.id))
-      .sort((a, b) => a.ordem - b.ordem)
-      .map((i, idx) => ({ ...i, ordem: idx + 1, motivo_ordem: i.motivo_ordem ?? null }));
-    const nova = parsed.nova;
-
-    let pendente_id: string | null = null;
-    if (nova) pendente_id = await registrarPendente(fala, context.userId).catch(() => null);
-    return { itens: out, nova, pendente_id };
+  const user = JSON.stringify({
+    fala,
+    objecoes: objecoes.map((o) => ({ id: o.id, nome: o.nome, exemplos: o.exemplos_de_fala })),
+    sinais_de_compra: fech.filter((f) => f.tipo === "sinal").map((f) => ({ id: f.id, titulo: f.titulo, etapa: f.etapa, exemplos: f.exemplos_de_fala })),
+    travamentos: fech.filter((f) => f.tipo === "travamento").map((f) => ({ id: f.id, titulo: f.titulo, etapa: f.etapa, exemplos: f.exemplos_de_fala })),
   });
+
+  const parsed = ClassificacaoSchema.parse(await perguntarJson(system, user));
+  const valid = new Set<string>([
+    ...objecoes.map((o) => `objecao:${o.id}`),
+    ...fech.map((f) => `${f.tipo}:${f.id}`),
+  ]);
+  const seen = new Set<string>();
+  const out = parsed.itens
+    .filter((i) => valid.has(`${i.tipo}:${i.id}`) && !seen.has(i.id) && seen.add(i.id))
+    .sort((a, b) => a.ordem - b.ordem)
+    .map((i, idx) => ({ ...i, ordem: idx + 1, motivo_ordem: i.motivo_ordem ?? null }));
+  const nova = parsed.nova;
+
+  let pendente_id: string | null = null;
+  if (nova) pendente_id = await registrarPendente(fala, context.userId).catch(() => null);
+  return { itens: out, nova, pendente_id };
+}
 
 /** Põe a fala na fila de objeções novas, somando a um grupo parecido quando houver. */
 async function registrarPendente(fala: string, _userId: string): Promise<string> {
@@ -196,10 +199,13 @@ Responda APENAS com JSON: {"grupo_id": "..." | null}`,
 export const sugerirRespostaObjecao = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ fala: z.string().trim().min(1).max(2000), pendente_id: z.string().uuid().nullable() }).parse(d))
-  .handler(async ({ data, context }): Promise<ObjecaoConteudo> => {
-    const fala = removerDadosPessoais(data.fala);
-    const { data: obj } = await db(context).from("objecoes").select("nome").eq("status", "publicada");
-    const system = `${await instrucoes()}
+  .handler(async ({ data, context }): Promise<ObjecaoConteudo> => sugerirRespostaCore(context, data.fala, data.pendente_id));
+
+/** Sugestão da IA para objeção nova (não aprovada). Também usada pela extensão do Chrome. */
+export async function sugerirRespostaCore(context: Ctx, falaBruta: string, pendenteId: string | null): Promise<ObjecaoConteudo> {
+  const fala = removerDadosPessoais(falaBruta);
+  const { data: obj } = await db(context).from("objecoes").select("nome").eq("status", "publicada");
+  const system = `${await instrucoes()}
 
 Você escreve uma SUGESTÃO de resposta para uma objeção nova de cliente, que o atendente vai conferir antes de usar.
 Regras obrigatórias:
@@ -210,19 +216,19 @@ Regras obrigatórias:
 - angulos: exatamente 3, tipos "logico", "emocional" e "prova" (rotulo curto, ex.: "a conta").
 Responda APENAS com JSON:
 {"nome":"...","exemplos_de_fala":["..."],"leituras":[{"titulo":"...","pergunta":"..."}],"angulos":[{"tipo":"logico","rotulo":"...","texto":"..."},{"tipo":"emocional","rotulo":"...","texto":"..."},{"tipo":"prova","rotulo":"...","texto":"..."}],"pergunta_avancar":"...","evite_dizer":"..."}`;
-    const user = JSON.stringify({ fala, objecoes_ja_aprovadas: ((obj ?? []) as { nome: string }[]).map((o) => o.nome) });
-    const raw = (await perguntarJson(system, user, 0.5)) as Record<string, unknown>;
-    const sug = ObjecaoConteudoSchema.parse({
-      ...raw,
-      exemplos_de_fala: Array.isArray(raw.exemplos_de_fala) && raw.exemplos_de_fala.length ? raw.exemplos_de_fala : [fala],
-    });
-    sug.angulos = sug.angulos.map((an) => ({ ...an, texto: an.texto.replace(/n[ãa]o [ée] plano de sa[úu]de/gi, "").trim() }));
-    if (data.pendente_id) {
-      const a = await admin();
-      await a.from("objecoes_pendentes").update({ sugestao_ia: sug }).eq("id", data.pendente_id).is("sugestao_ia", null);
-    }
-    return sug;
+  const user = JSON.stringify({ fala, objecoes_ja_aprovadas: ((obj ?? []) as { nome: string }[]).map((o) => o.nome) });
+  const raw = (await perguntarJson(system, user, 0.5)) as Record<string, unknown>;
+  const sug = ObjecaoConteudoSchema.parse({
+    ...raw,
+    exemplos_de_fala: Array.isArray(raw.exemplos_de_fala) && raw.exemplos_de_fala.length ? raw.exemplos_de_fala : [fala],
   });
+  sug.angulos = sug.angulos.map((an) => ({ ...an, texto: an.texto.replace(/n[ãa]o [ée] plano de sa[úu]de/gi, "").trim() }));
+  if (pendenteId) {
+    const a = await admin();
+    await a.from("objecoes_pendentes").update({ sugestao_ia: sug }).eq("id", pendenteId).is("sugestao_ia", null);
+  }
+  return sug;
+}
 
 /** "Enviar para o Paulo": marca quem sugeriu (prioriza o grupo na fila). */
 export const enviarObjecaoParaPaulo = createServerFn({ method: "POST" })

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as PendenteRouteImport } from './routes/pendente'
+import { Route as PrivacidadeExtensaoRouteImport } from './routes/privacidade-extensao'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedAmorSaudeRouteImport } from './routes/_authenticated/amor-saude'
 import { Route as AuthenticatedAquecimentoRouteImport } from './routes/_authenticated/aquecimento'
@@ -54,6 +55,9 @@ import { Route as AuthenticatedAmorSaudeOdontologiaRouteImport } from './routes/
 import { Route as AuthenticatedScriptsIndexRouteImport } from './routes/_authenticated/scripts.index'
 import { Route as AuthenticatedScriptsBibliotecaRouteImport } from './routes/_authenticated/scripts.biblioteca'
 import { Route as AuthenticatedScriptsClienteDisseRouteImport } from './routes/_authenticated/scripts.cliente-disse'
+import { Route as ApiExtensaoClienteDisseRouteImport } from './routes/api/extensao/cliente-disse'
+import { Route as ApiExtensaoLerConversaRouteImport } from './routes/api/extensao/ler-conversa'
+import { Route as ApiExtensaoTicketRouteImport } from './routes/api/extensao/ticket'
 import { Route as ApiPublicKnowledgeFileRouteImport } from './routes/api/public/knowledge-file'
 import { Route as ApiPublicMessageImageRouteImport } from './routes/api/public/message-image'
 import { Route as AuthenticatedScriptsFluxoIndexRouteImport } from './routes/_authenticated/scripts.fluxo.index'
@@ -71,6 +75,11 @@ const AuthRoute = AuthRouteImport.update({
 const PendenteRoute = PendenteRouteImport.update({
   id: '/pendente',
   path: '/pendente',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacidadeExtensaoRoute = PrivacidadeExtensaoRouteImport.update({
+  id: '/privacidade-extensao',
+  path: '/privacidade-extensao',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
@@ -304,6 +313,21 @@ const AuthenticatedScriptsClienteDisseRoute =
     path: '/scripts/cliente-disse',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiExtensaoClienteDisseRoute = ApiExtensaoClienteDisseRouteImport.update({
+  id: '/api/extensao/cliente-disse',
+  path: '/api/extensao/cliente-disse',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiExtensaoLerConversaRoute = ApiExtensaoLerConversaRouteImport.update({
+  id: '/api/extensao/ler-conversa',
+  path: '/api/extensao/ler-conversa',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiExtensaoTicketRoute = ApiExtensaoTicketRouteImport.update({
+  id: '/api/extensao/ticket',
+  path: '/api/extensao/ticket',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicKnowledgeFileRoute = ApiPublicKnowledgeFileRouteImport.update({
   id: '/api/public/knowledge-file',
   path: '/api/public/knowledge-file',
@@ -331,6 +355,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
   '/pendente': typeof PendenteRoute
+  '/privacidade-extensao': typeof PrivacidadeExtensaoRoute
   '/amor-saude': typeof AuthenticatedAmorSaudeRouteWithChildren
   '/aquecimento': typeof AuthenticatedAquecimentoRoute
   '/assistente': typeof AuthenticatedAssistenteRoute
@@ -368,6 +393,9 @@ export interface FileRoutesByFullPath {
   '/amor-saude/odontologia': typeof AuthenticatedAmorSaudeOdontologiaRoute
   '/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
   '/scripts/cliente-disse': typeof AuthenticatedScriptsClienteDisseRoute
+  '/api/extensao/cliente-disse': typeof ApiExtensaoClienteDisseRoute
+  '/api/extensao/ler-conversa': typeof ApiExtensaoLerConversaRoute
+  '/api/extensao/ticket': typeof ApiExtensaoTicketRoute
   '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
   '/api/public/message-image': typeof ApiPublicMessageImageRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
@@ -380,6 +408,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/pendente': typeof PendenteRoute
+  '/privacidade-extensao': typeof PrivacidadeExtensaoRoute
   '/aquecimento': typeof AuthenticatedAquecimentoRoute
   '/assistente': typeof AuthenticatedAssistenteRoute
   '/biblioteca': typeof AuthenticatedBibliotecaRoute
@@ -417,6 +446,9 @@ export interface FileRoutesByTo {
   '/amor-saude/odontologia': typeof AuthenticatedAmorSaudeOdontologiaRoute
   '/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
   '/scripts/cliente-disse': typeof AuthenticatedScriptsClienteDisseRoute
+  '/api/extensao/cliente-disse': typeof ApiExtensaoClienteDisseRoute
+  '/api/extensao/ler-conversa': typeof ApiExtensaoLerConversaRoute
+  '/api/extensao/ticket': typeof ApiExtensaoTicketRoute
   '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
   '/api/public/message-image': typeof ApiPublicMessageImageRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
@@ -431,6 +463,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/pendente': typeof PendenteRoute
+  '/privacidade-extensao': typeof PrivacidadeExtensaoRoute
   '/_authenticated/amor-saude': typeof AuthenticatedAmorSaudeRouteWithChildren
   '/_authenticated/aquecimento': typeof AuthenticatedAquecimentoRoute
   '/_authenticated/assistente': typeof AuthenticatedAssistenteRoute
@@ -469,6 +502,9 @@ export interface FileRoutesById {
   '/_authenticated/amor-saude/odontologia': typeof AuthenticatedAmorSaudeOdontologiaRoute
   '/_authenticated/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
   '/_authenticated/scripts/cliente-disse': typeof AuthenticatedScriptsClienteDisseRoute
+  '/api/extensao/cliente-disse': typeof ApiExtensaoClienteDisseRoute
+  '/api/extensao/ler-conversa': typeof ApiExtensaoLerConversaRoute
+  '/api/extensao/ticket': typeof ApiExtensaoTicketRoute
   '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
   '/api/public/message-image': typeof ApiPublicMessageImageRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
@@ -484,6 +520,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/pendente'
+    | '/privacidade-extensao'
     | '/amor-saude'
     | '/aquecimento'
     | '/assistente'
@@ -521,6 +558,9 @@ export interface FileRouteTypes {
     | '/amor-saude/odontologia'
     | '/scripts/biblioteca'
     | '/scripts/cliente-disse'
+    | '/api/extensao/cliente-disse'
+    | '/api/extensao/ler-conversa'
+    | '/api/extensao/ticket'
     | '/api/public/knowledge-file'
     | '/api/public/message-image'
     | '/admin/'
@@ -533,6 +573,7 @@ export interface FileRouteTypes {
   to:
     | '/auth'
     | '/pendente'
+    | '/privacidade-extensao'
     | '/aquecimento'
     | '/assistente'
     | '/biblioteca'
@@ -570,6 +611,9 @@ export interface FileRouteTypes {
     | '/amor-saude/odontologia'
     | '/scripts/biblioteca'
     | '/scripts/cliente-disse'
+    | '/api/extensao/cliente-disse'
+    | '/api/extensao/ler-conversa'
+    | '/api/extensao/ticket'
     | '/api/public/knowledge-file'
     | '/api/public/message-image'
     | '/admin'
@@ -583,6 +627,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/pendente'
+    | '/privacidade-extensao'
     | '/_authenticated/amor-saude'
     | '/_authenticated/aquecimento'
     | '/_authenticated/assistente'
@@ -621,6 +666,9 @@ export interface FileRouteTypes {
     | '/_authenticated/amor-saude/odontologia'
     | '/_authenticated/scripts/biblioteca'
     | '/_authenticated/scripts/cliente-disse'
+    | '/api/extensao/cliente-disse'
+    | '/api/extensao/ler-conversa'
+    | '/api/extensao/ticket'
     | '/api/public/knowledge-file'
     | '/api/public/message-image'
     | '/_authenticated/admin/'
@@ -635,6 +683,10 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   PendenteRoute: typeof PendenteRoute
+  PrivacidadeExtensaoRoute: typeof PrivacidadeExtensaoRoute
+  ApiExtensaoClienteDisseRoute: typeof ApiExtensaoClienteDisseRoute
+  ApiExtensaoLerConversaRoute: typeof ApiExtensaoLerConversaRoute
+  ApiExtensaoTicketRoute: typeof ApiExtensaoTicketRoute
   ApiPublicKnowledgeFileRoute: typeof ApiPublicKnowledgeFileRoute
   ApiPublicMessageImageRoute: typeof ApiPublicMessageImageRoute
 }
@@ -660,6 +712,13 @@ declare module '@tanstack/react-router' {
       path: '/pendente'
       fullPath: '/pendente'
       preLoaderRoute: typeof PendenteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacidade-extensao': {
+      id: '/privacidade-extensao'
+      path: '/privacidade-extensao'
+      fullPath: '/privacidade-extensao'
+      preLoaderRoute: typeof PrivacidadeExtensaoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/': {
@@ -956,6 +1015,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedScriptsClienteDisseRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/extensao/cliente-disse': {
+      id: '/api/extensao/cliente-disse'
+      path: '/api/extensao/cliente-disse'
+      fullPath: '/api/extensao/cliente-disse'
+      preLoaderRoute: typeof ApiExtensaoClienteDisseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/extensao/ler-conversa': {
+      id: '/api/extensao/ler-conversa'
+      path: '/api/extensao/ler-conversa'
+      fullPath: '/api/extensao/ler-conversa'
+      preLoaderRoute: typeof ApiExtensaoLerConversaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/extensao/ticket': {
+      id: '/api/extensao/ticket'
+      path: '/api/extensao/ticket'
+      fullPath: '/api/extensao/ticket'
+      preLoaderRoute: typeof ApiExtensaoTicketRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/knowledge-file': {
       id: '/api/public/knowledge-file'
       path: '/api/public/knowledge-file'
@@ -1101,6 +1181,10 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   PendenteRoute: PendenteRoute,
+  PrivacidadeExtensaoRoute: PrivacidadeExtensaoRoute,
+  ApiExtensaoClienteDisseRoute: ApiExtensaoClienteDisseRoute,
+  ApiExtensaoLerConversaRoute: ApiExtensaoLerConversaRoute,
+  ApiExtensaoTicketRoute: ApiExtensaoTicketRoute,
   ApiPublicKnowledgeFileRoute: ApiPublicKnowledgeFileRoute,
   ApiPublicMessageImageRoute: ApiPublicMessageImageRoute,
 }

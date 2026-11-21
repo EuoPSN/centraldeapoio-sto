@@ -112,9 +112,13 @@ const NovaRetomada = z.object({
   observacao: z.string().max(500).default("").transform((v) => removerDadosPessoais(v).trim()),
   ponto_parada: PontoZ,
   quando: z.enum(QUANDO.map((q) => q.id) as [string, ...string[]]).default("amanha"),
+  // Campos extras (extensão do Chrome): opcionais, não mudam a criação manual.
+  etapa_funil: z.enum(["novo_lead", "lead_qualificado", "proposta_enviada", "fechamento", "venda_concluida"]).nullish(),
+  plano: z.enum(["Prata", "Ouro", "Diamante"]).nullish(),
+  dependentes: z.number().int().min(0).max(20).nullish(),
 });
 
-async function inserirRetomada(
+export async function inserirRetomada(
   ctx: Ctx,
   d: z.infer<typeof NovaRetomada>,
   extra: { origem: "manual" | "fechamento" | "extensao"; subetapa_fechamento?: string | null; fechamento_caso_id?: string | null },
@@ -126,6 +130,9 @@ async function inserirRetomada(
     primeiro_nome: d.primeiro_nome,
     telefone: d.telefone,
     observacao: d.observacao,
+    etapa_funil: d.etapa_funil ?? null,
+    plano: d.plano ?? null,
+    dependentes: d.dependentes ?? null,
     ponto_parada: d.ponto_parada,
     ponto_parada_inicial: d.ponto_parada,
     subetapa_fechamento: extra.subetapa_fechamento ?? null,
@@ -168,7 +175,12 @@ export const criarRetomadaDeCaso = createServerFn({ method: "POST" })
     return r;
   });
 
-/** Entrada para a futura extensão do Chrome (sem interface agora). Cria o ticket com origem "extensao". */
+/** Cria o ticket da extensão do Chrome (origem "extensao"). Usada pela função abaixo e por /api/extensao/ticket. */
+export async function criarTicketExterno(ctx: Ctx, d: z.infer<typeof NovaRetomada>): Promise<Retomada> {
+  return inserirRetomada(ctx, d, { origem: "extensao" });
+}
+
+/** Entrada para a extensão do Chrome. Cria o ticket com origem "extensao". */
 export const criarRetomadaExterna = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({
@@ -177,15 +189,18 @@ export const criarRetomadaExterna = createServerFn({ method: "POST" })
     observacao: z.string().max(500).optional(),
     ponto_parada_sugerido: PontoZ.default("nao_respondeu_primeira"),
     quando: z.enum(QUANDO.map((q) => q.id) as [string, ...string[]]).default("amanha"),
+    etapa_funil: NovaRetomada.shape.etapa_funil,
+    plano: NovaRetomada.shape.plano,
+    dependentes: NovaRetomada.shape.dependentes,
   }).parse(d))
   .handler(async ({ data, context }) =>
-    inserirRetomada(
+    criarTicketExterno(
       context,
       NovaRetomada.parse({
         primeiro_nome: data.nome, telefone: data.telefone ?? null, observacao: data.observacao ?? "",
         ponto_parada: data.ponto_parada_sugerido, quando: data.quando,
+        etapa_funil: data.etapa_funil, plano: data.plano, dependentes: data.dependentes,
       }),
-      { origem: "extensao" },
     ),
   );
 
