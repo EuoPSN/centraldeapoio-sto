@@ -9,6 +9,7 @@ import { getMe } from "@/lib/content.functions";
 import { touchLastSeen } from "@/lib/dashboard.functions";
 import { ThemeController, ThemeToggle } from "@/components/ThemeController";
 import { HelpButton } from "@/components/HelpButton";
+import { TourProvider } from "@/components/tour/TourProvider";
 import { EditPageLink } from "@/components/EditPageLink";
 import { AvisosFollowUp } from "@/components/retomada/Avisos";
 import { AvisosAquecimento } from "@/components/aquecimento/Avisos";
@@ -60,37 +61,39 @@ function AppLayout() {
         defaultOpen={startOpen}
         style={{ "--sidebar-width": "16.5rem", "--sidebar-width-icon": "5.5rem" } as CSSProperties}
       >
-        <AppSidebar
-          isAdmin={isAdmin}
-          email={data?.email ?? ""}
-          displayName={profile?.display_name ?? ""}
-          role={isAdmin ? "Admin" : profile?.cargo || "Atendente"}
-        />
+        <TourProvider>
+          <AppSidebar
+            isAdmin={isAdmin}
+            email={data?.email ?? ""}
+            displayName={profile?.display_name ?? ""}
+            role={isAdmin ? "Admin" : profile?.cargo || "Atendente"}
+          />
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 flex h-(--topbar-h) items-center justify-between gap-3 border-b border-line bg-background px-3 sm:px-5">
-            <SidebarTrigger
-              aria-label="Abrir ou recolher o menu"
-              className="h-9 w-9 text-ink-muted hover:bg-accent hover:text-ink [&_svg]:stroke-[1.5]"
-            />
-            {/* Trilha de navegação: as páginas que têm uma preenchem este espaço (TopbarBreadcrumb). */}
-            <nav id="topbar-breadcrumb" aria-label="Você está em" className="flex min-w-0 flex-1 items-center" />
-            <div className="flex shrink-0 items-center gap-2.5">
-              <EditPageLink isAdmin={isAdmin} />
-              <HelpButton />
-              <ThemeToggle />
-            </div>
-          </header>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <header className="sticky top-0 z-30 flex h-(--topbar-h) items-center justify-between gap-3 border-b border-line bg-background px-3 sm:px-5">
+              <SidebarTrigger
+                aria-label="Abrir ou recolher o menu"
+                className="h-9 w-9 text-ink-muted hover:bg-accent hover:text-ink [&_svg]:stroke-[1.5]"
+              />
+              {/* Trilha de navegação: as páginas que têm uma preenchem este espaço (TopbarBreadcrumb). */}
+              <nav id="topbar-breadcrumb" aria-label="Você está em" className="flex min-w-0 flex-1 items-center" />
+              <div className="flex shrink-0 items-center gap-2.5">
+                <EditPageLink isAdmin={isAdmin} />
+                <HelpButton />
+                <ThemeToggle />
+              </div>
+            </header>
 
-          <main key={pathname} className="min-w-0 flex-1 page-transition">
-            <Outlet />
-          </main>
-        </div>
+            <main key={pathname} className="min-w-0 flex-1 page-transition">
+              <Outlet />
+            </main>
+          </div>
 
-        <GlobalSearch />
-        <AvisosFollowUp />
-        <AvisosAquecimento />
-        <AvisosMudancas />
+          <GlobalSearch />
+          <AvisosFollowUp />
+          <AvisosAquecimento />
+          <AvisosMudancas />
+        </TourProvider>
       </SidebarProvider>
     </ThemeController>
   );
