@@ -68,8 +68,8 @@ export interface NovidadeView {
 export interface StatusMudancas {
   pendentes: number;
   mais_antiga: { id: string; title: string } | null;
-  /** Urgentes pendentes, para a notificação do Chrome. */
-  urgentes: { id: string; title: string; lembrete_em: string | null }[];
+  /** Pendentes que podem virar notificação do Chrome: as urgentes e as que o Admin lembrou. */
+  avisos: { id: string; title: string; tipo: TipoMudanca; lembrete_em: string | null }[];
 }
 
-export const STATUS_MUDANCAS_VAZIO: StatusMudancas = { pendentes: 0, mais_antiga: null, urgentes: [] };
+export const STATUS_MUDANCAS_VAZIO: StatusMudancas = { pendentes: 0, mais_antiga: null, avisos: [] };

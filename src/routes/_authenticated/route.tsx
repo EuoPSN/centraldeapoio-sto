@@ -12,6 +12,7 @@ import { HelpButton } from "@/components/HelpButton";
 import { EditPageLink } from "@/components/EditPageLink";
 import { AvisosFollowUp } from "@/components/retomada/Avisos";
 import { AvisosAquecimento } from "@/components/aquecimento/Avisos";
+import { AvisosMudancas } from "@/components/novidades/Avisos";
 import { useEffect, type CSSProperties } from "react";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -89,6 +90,7 @@ function AppLayout() {
         <GlobalSearch />
         <AvisosFollowUp />
         <AvisosAquecimento />
+        <AvisosMudancas />
       </SidebarProvider>
     </ThemeController>
   );

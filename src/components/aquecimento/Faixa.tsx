@@ -1,8 +1,10 @@
 import { Link } from "@tanstack/react-router";
+import { cn } from "@/lib/utils";
 import { useStatusAquecimento } from "@/components/aquecimento/hooks";
 
-/** Faixa do Início: aquecimento do dia pronto ou, depois de feito, uma linha discreta. */
-export function AquecimentoFaixa() {
+/** Faixa do Início: aquecimento do dia pronto ou, depois de feito, uma linha discreta.
+ * `contornada`: sem fundo dourado, quando há a faixa de mudança importante acima dela. */
+export function AquecimentoFaixa({ contornada = false }: { contornada?: boolean }) {
   const { data } = useStatusAquecimento();
   if (!data || !data.disponivel) return null;
 
@@ -17,7 +19,10 @@ export function AquecimentoFaixa() {
   return (
     <section
       aria-label="Aquecimento de hoje"
-      className="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-xl border border-gold/50 bg-surface-2 px-5 py-4"
+      className={cn(
+        "mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-xl border px-5 py-4",
+        contornada ? "border-line bg-surface" : "border-gold/50 bg-surface-2",
+      )}
     >
       <div className="min-w-0">
         <p className="text-[16px] font-semibold leading-6 text-ink">Seu aquecimento de hoje está pronto · 5 minutos</p>
@@ -25,7 +30,10 @@ export function AquecimentoFaixa() {
       </div>
       <Link
         to="/aquecimento"
-        className="inline-flex h-10 shrink-0 items-center rounded-lg bg-gold px-[18px] text-[15px] font-semibold text-on-gold transition-[filter] hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        className={cn(
+          "inline-flex h-10 shrink-0 items-center rounded-lg px-[18px] text-[15px] transition-[filter] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+          contornada ? "border border-line-strong font-medium text-ink hover:bg-accent" : "bg-gold font-semibold text-on-gold hover:brightness-105",
+        )}
       >
         Começar
       </Link>

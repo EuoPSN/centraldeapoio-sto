@@ -9,6 +9,8 @@ import { getMyChecklistToday, getChecklistSummaryForDate } from "@/lib/checklist
 import { getAdminPendencias } from "@/lib/home.functions";
 import { openGlobalSearch } from "@/components/GlobalSearch";
 import { useRetomadaContagem } from "@/components/retomada/hooks";
+import { MudancaFaixa } from "@/components/novidades/Faixa";
+import { useStatusMudancas } from "@/components/novidades/hooks";
 import { AquecimentoFaixa } from "@/components/aquecimento/Faixa";
 import { cn } from "@/lib/utils";
 
@@ -105,6 +107,7 @@ function Home() {
     : pickHomeMessage((homeMsgQ.data ?? []) as HomeMessageRow[], profile?.data_nascimento);
 
   const checklist = useMyChecklist();
+  const temMudanca = (useStatusMudancas().data?.pendentes ?? 0) > 0;
 
   return (
     <div className="mx-auto w-full max-w-[1400px] px-4 pb-16 pt-5 sm:px-6 lg:px-10 lg:pt-7">
@@ -118,7 +121,9 @@ function Home() {
 
       <RetomadasHoje />
 
-      <AquecimentoFaixa />
+      <MudancaFaixa />
+
+      <AquecimentoFaixa contornada={temMudanca} />
 
       {/* Altura reservada para todos: a linha de pendências entra sem empurrar a página. */}
       <div className="flex min-h-[3.25rem] items-center px-1 pt-1">

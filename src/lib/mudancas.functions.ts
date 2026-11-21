@@ -74,7 +74,7 @@ export const getStatusMudancas = createServerFn({ method: "GET" })
       return {
         pendentes: pend.length,
         mais_antiga: pend[0] ? { id: pend[0].id, title: pend[0].title } : null,
-        urgentes: pend.filter((e) => e.tipo === "urgente").map((e) => ({ id: e.id, title: e.title, lembrete_em: e.lembrete_em })),
+        avisos: pend.filter((e) => e.tipo === "urgente" || e.lembrete_em).map((e) => ({ id: e.id, title: e.title, tipo: e.tipo, lembrete_em: e.lembrete_em })),
       };
     } catch (err) {
       // Migração pendente: a Omnia segue sem a faixa.
