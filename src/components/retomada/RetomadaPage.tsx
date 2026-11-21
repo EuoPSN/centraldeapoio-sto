@@ -20,6 +20,9 @@ import { AudioExemplo } from "@/components/retomada/AudioExemplo";
 import { BaixarRelatorioButton } from "@/components/retomada/BaixarRelatorio";
 import { RETOMADA_BASE_KEY, RETOMADA_CONTAGEM_KEY, useRetomadaBase } from "@/components/retomada/hooks";
 import { useAvisosPermissao } from "@/components/retomada/Avisos";
+import { EnviarConversaDialog } from "@/components/biblioteca/EnviarConversaDialog";
+import { useFichasDasRetomadas } from "@/components/biblioteca/hooks";
+import { DIAS_PARA_ENVIAR } from "@/lib/biblioteca";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -36,6 +39,9 @@ export function RetomadaPage() {
   const qc = useQueryClient();
   const [visao, setVisao] = useState<Visao>("hoje");
   const [selId, setSelId] = useState<string | null>(null);
+  // "Fechou!" abre a janela de envio da conversa. Fica aqui (e não no detalhe) porque o
+  // detalhe troca de ticket logo depois de gravar o status.
+  const [enviarDe, setEnviarDe] = useState<{ id: string; primeiro_nome: string } | null>(null);
 
   const agora = new Date();
   const hoje = diaBR(agora);
@@ -146,7 +152,7 @@ export function RetomadaPage() {
 
         <div className="min-w-0 border-t border-line lg:border-t-0">
           {base && sel ? (
-            <Detalhe key={sel.id} r={sel} base={base} onAtualizada={atualizar} onProximo={(id) => setSelId(id)} lista={visiveis} />
+            <Detalhe key={sel.id} r={sel} base={base} onAtualizada={atualizar} onProximo={(id) => setSelId(id)} lista={visiveis} onEnviarConversa={setEnviarDe} />
           ) : (
             !q.isLoading && visiveis.length === 0 && visao === "hoje" ? null : (
               <p className="px-6 py-10 text-[14px] text-ink-muted">Escolha um cliente na lista.</p>
@@ -154,6 +160,14 @@ export function RetomadaPage() {
           )}
         </div>
       </div>
+      {base && (
+        <EnviarConversaDialog
+          open={!!enviarDe}
+          onOpenChange={(v) => { if (!v) setEnviarDe(null); }}
+          atendente={base.atendente}
+          retomada={enviarDe ?? undefined}
+        />
+      )}
     </div>
   );
 }
@@ -282,9 +296,14 @@ function achaMensagem(base: RetomadaBase, r: Retomada): CadenciaMensagem | null 
   return base.mensagens.find((m) => m.ponto_parada === ponto && m.etapa === r.etapa_atual) ?? null;
 }
 
-function Detalhe({ r, base, onAtualizada, onProximo, lista }: {
+function Detalhe({ r, base, onAtualizada, onProximo, lista, onEnviarConversa }: {
   r: Retomada; base: RetomadaBase; onAtualizada: (r: Retomada) => void; onProximo: (id: string | null) => void; lista: Retomada[];
+  onEnviarConversa: (r: { id: string; primeiro_nome: string }) => void;
 }) {
+  const fichas = useFichasDasRetomadas();
+  const fichaDoTicket = fichas.data?.[r.id];
+  const diasDesdeFechar = (Date.now() - new Date(r.updated_at).getTime()) / 86400_000;
+  const podeEnviarConversa = r.status === "fechou" && !fichaDoTicket && diasDesdeFechar <= DIAS_PARA_ENVIAR;
   const navigate = useNavigate();
   const acaoFn = useServerFn(acaoRetomada);
   const copiouFn = useServerFn(registrarCopiouRetomada);
@@ -323,7 +342,7 @@ function Detalhe({ r, base, onAtualizada, onProximo, lista }: {
         toast.success(novo.proxima_em ? `Enviei registrado. Próximo ${ETAPA_LABEL[novo.etapa_atual]} em ${fmtDiaMes(novo.proxima_em)}.` : "Enviei registrado. Sem resposta em 2 dias, o cliente esfria.");
         passarAdiante(r.id);
       } else if (d.acao === "respondeu") { toast.success("Respondeu. Saiu da lista do dia."); passarAdiante(r.id); }
-      else if (d.acao === "fechou") { toast.success("Fechou!"); passarAdiante(r.id); }
+      else if (d.acao === "fechou") { toast.success("Fechou!"); onEnviarConversa({ id: r.id, primeiro_nome: r.primeiro_nome }); passarAdiante(r.id); }
       else if (d.acao === "perdido") { toast.success("Marcado como perdido."); setPerdendo(false); passarAdiante(r.id); }
       else { toast.success("Voltou para a fila. Recomeça no D+1, amanhã."); setVoltando(false); }
     },
@@ -433,6 +452,18 @@ function Detalhe({ r, base, onAtualizada, onProximo, lista }: {
             {STATUS_LABEL[r.status]}
             {r.status === "perdido" && r.motivo_perda ? ` · ${r.motivo_perda}` : ""}
           </p>
+          {r.status === "fechou" && fichaDoTicket && (
+            <p className="mt-2 text-[13.5px] leading-5 text-ink-muted">
+              {fichaDoTicket.status === "enviada" && "Enviada para aprovação"}
+              {fichaDoTicket.status === "publicada" && "Conversa publicada na biblioteca. Obrigada!"}
+              {fichaDoTicket.status === "recusada" && `Conversa não publicada${fichaDoTicket.motivo_recusa ? `: ${fichaDoTicket.motivo_recusa}` : "."}`}
+            </p>
+          )}
+          {podeEnviarConversa && (
+            <button type="button" onClick={() => onEnviarConversa({ id: r.id, primeiro_nome: r.primeiro_nome })} className="mt-2 text-[14px] font-semibold text-gold-text hover:underline">
+              Enviar conversa para a biblioteca
+            </button>
+          )}
           {!voltando ? (
             <div className="mt-3 flex flex-wrap gap-2">
               <OutlineButton className="h-9" onClick={() => setVoltando(true)}>Voltar para a fila</OutlineButton>
