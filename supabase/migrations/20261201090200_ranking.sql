@@ -1,4 +1,4 @@
--- Fase B · bloco 3 — 3/4: Ranking de qualidade (pódios mensais). Idempotente.
+-- Fase B · bloco 3 — 3/3: Ranking de qualidade (pódios mensais). Idempotente.
 -- Cada atendente vê só os 3 primeiros e o próprio valor, nunca a posição de ninguém fora do top 3.
 -- O Admin vê a lista completa por ranking_admin. Os dados de retomada entram só como contagens.
 

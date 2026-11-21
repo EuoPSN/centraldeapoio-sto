@@ -66,7 +66,7 @@ function limitesDoMes(mes: string): { ini: string; fim: string } {
 
 /** Pontos do mês de cada atendente (ativo, não admin, não oculto no mês). Service role: o atendente
  * nunca lê as simulações dos outros, só recebe o resultado já reduzido ao top 3. */
-async function pontosTreino(mes: string, tipo: "atendimento" | "problema"): Promise<LinhaTreino[]> {
+export async function pontosTreino(mes: string, tipo: "atendimento" | "problema"): Promise<LinhaTreino[]> {
   const a = await adminDb();
   const { ini, fim } = limitesDoMes(mes);
   const [res, perfis, admins, ocultos] = await Promise.all([

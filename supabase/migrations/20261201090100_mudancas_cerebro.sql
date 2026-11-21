@@ -1,4 +1,4 @@
--- Fase B · bloco 3 — 2/4: bloco automático "Mudanças recentes" no Cérebro. Idempotente.
+-- Fase B · bloco 3 — 2/3: bloco automático "Mudanças recentes" no Cérebro. Idempotente.
 -- O texto é montado na hora, no servidor, a partir de changelog_entries (tipo importante ou urgente,
 -- publicada, "usar na IA" ligado, não incorporada ao Playbook, publicada nos últimos 30 dias).
 -- gerado = true: o Admin não edita o conteúdo nem a matriz "Quem usa o quê" desta linha.

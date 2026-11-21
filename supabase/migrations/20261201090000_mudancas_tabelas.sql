@@ -1,4 +1,4 @@
--- Fase B · bloco 3 — 1/4: Aviso de mudanças (Novidades com tipo e confirmação "Li e entendi").
+-- Fase B · bloco 3 — 1/3: Aviso de mudanças (Novidades com tipo e confirmação "Li e entendi").
 -- Idempotente. Não apaga dados: as entradas existentes viram tipo "informativa".
 
 -- ------------------------------------------------------------
