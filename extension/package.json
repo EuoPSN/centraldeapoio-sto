@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "zip": "tsx scripts/zip.ts",
-    "sync:sanitizar": "tsx scripts/sync-sanitizar.ts"
+    "sync:sanitizar": "tsx scripts/sync-sanitizar.ts",
+    "gerar:politica": "tsx scripts/gerar-politica.ts"
   },
   "dependencies": {
     "@fontsource-variable/montserrat": "^5.2.0",

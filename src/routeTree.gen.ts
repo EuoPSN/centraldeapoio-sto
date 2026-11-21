@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as PendenteRouteImport } from './routes/pendente'
+import { Route as PrivacidadeExtensaoRouteImport } from './routes/privacidade-extensao'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedAmorSaudeRouteImport } from './routes/_authenticated/amor-saude'
 import { Route as AuthenticatedAquecimentoRouteImport } from './routes/_authenticated/aquecimento'
@@ -74,6 +75,11 @@ const AuthRoute = AuthRouteImport.update({
 const PendenteRoute = PendenteRouteImport.update({
   id: '/pendente',
   path: '/pendente',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacidadeExtensaoRoute = PrivacidadeExtensaoRouteImport.update({
+  id: '/privacidade-extensao',
+  path: '/privacidade-extensao',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
@@ -349,6 +355,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
   '/pendente': typeof PendenteRoute
+  '/privacidade-extensao': typeof PrivacidadeExtensaoRoute
   '/amor-saude': typeof AuthenticatedAmorSaudeRouteWithChildren
   '/aquecimento': typeof AuthenticatedAquecimentoRoute
   '/assistente': typeof AuthenticatedAssistenteRoute
@@ -401,6 +408,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/pendente': typeof PendenteRoute
+  '/privacidade-extensao': typeof PrivacidadeExtensaoRoute
   '/aquecimento': typeof AuthenticatedAquecimentoRoute
   '/assistente': typeof AuthenticatedAssistenteRoute
   '/biblioteca': typeof AuthenticatedBibliotecaRoute
@@ -455,6 +463,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/pendente': typeof PendenteRoute
+  '/privacidade-extensao': typeof PrivacidadeExtensaoRoute
   '/_authenticated/amor-saude': typeof AuthenticatedAmorSaudeRouteWithChildren
   '/_authenticated/aquecimento': typeof AuthenticatedAquecimentoRoute
   '/_authenticated/assistente': typeof AuthenticatedAssistenteRoute
@@ -511,6 +520,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/pendente'
+    | '/privacidade-extensao'
     | '/amor-saude'
     | '/aquecimento'
     | '/assistente'
@@ -563,6 +573,7 @@ export interface FileRouteTypes {
   to:
     | '/auth'
     | '/pendente'
+    | '/privacidade-extensao'
     | '/aquecimento'
     | '/assistente'
     | '/biblioteca'
@@ -616,6 +627,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/pendente'
+    | '/privacidade-extensao'
     | '/_authenticated/amor-saude'
     | '/_authenticated/aquecimento'
     | '/_authenticated/assistente'
@@ -671,6 +683,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   PendenteRoute: typeof PendenteRoute
+  PrivacidadeExtensaoRoute: typeof PrivacidadeExtensaoRoute
   ApiExtensaoClienteDisseRoute: typeof ApiExtensaoClienteDisseRoute
   ApiExtensaoLerConversaRoute: typeof ApiExtensaoLerConversaRoute
   ApiExtensaoTicketRoute: typeof ApiExtensaoTicketRoute
@@ -699,6 +712,13 @@ declare module '@tanstack/react-router' {
       path: '/pendente'
       fullPath: '/pendente'
       preLoaderRoute: typeof PendenteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacidade-extensao': {
+      id: '/privacidade-extensao'
+      path: '/privacidade-extensao'
+      fullPath: '/privacidade-extensao'
+      preLoaderRoute: typeof PrivacidadeExtensaoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/': {
@@ -1161,6 +1181,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   PendenteRoute: PendenteRoute,
+  PrivacidadeExtensaoRoute: PrivacidadeExtensaoRoute,
   ApiExtensaoClienteDisseRoute: ApiExtensaoClienteDisseRoute,
   ApiExtensaoLerConversaRoute: ApiExtensaoLerConversaRoute,
   ApiExtensaoTicketRoute: ApiExtensaoTicketRoute,
