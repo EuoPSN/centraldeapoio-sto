@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { isAdminUser } from "@/lib/authz";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { contarAtendentesAtrasados } from "@/lib/retomada.functions";
+import { contarFichasNovas } from "@/lib/biblioteca.functions";
+import { contarSugestoesPendentes } from "@/lib/mensagens-vendem.functions";
 
 async function requireAdmin(ctx: { supabase: unknown; userId: string }) {
   const s = ctx.supabase as { rpc: (n: string, p: unknown) => Promise<{ data: boolean | null }> };
@@ -109,6 +111,29 @@ export const getAdminPendingCounts = createServerFn({ method: "GET" })
         context: atendentes > 0 ? `${tickets} ${tickets === 1 ? "retomada atrasada" : "retomadas atrasadas"} há mais de 1 dia` : "Tudo em dia",
         count: atendentes,
         href: "/admin/cadencia",
+      });
+    }
+
+    // 2d) Fase B: conversas novas para revisar e mensagens abaixo do esperado (se a migração
+    // ainda não rodou, não derruba as outras pendências).
+    {
+      const { total, primeira } = await contarFichasNovas(db).catch(() => ({ total: 0, primeira: null as string | null }));
+      bySection.conversasenviadas = total;
+      items.push({
+        key: "conversasenviadas",
+        title: "Conversas para revisar",
+        context: total > 0 && primeira ? `"${primeira}"` : "Tudo em dia",
+        count: total,
+        href: "/admin/conversasenviadas",
+      });
+      const sugestoes = await contarSugestoesPendentes(db).catch(() => 0);
+      bySection.mensagensvendem = sugestoes;
+      items.push({
+        key: "mensagensvendem",
+        title: "Mensagens abaixo do esperado",
+        context: sugestoes > 0 ? "Com sugestão de nova versão" : "Tudo em dia",
+        count: sugestoes,
+        href: "/admin/mensagensvendem",
       });
     }
 

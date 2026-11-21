@@ -37,6 +37,8 @@ import { PromoPlansTab } from "@/components/admin/PromoPlansTab";
 import { ObjecoesAdminTab, ObjecoesNovasTab, FechamentoAdminTab, EconomiaAdminTab } from "@/components/admin/ClienteDisseAdmin";
 import { CadenciaAdminTab, MotivosPerdaAdminTab } from "@/components/admin/RetomadaAdmin";
 import { CerebroAdminTab, RaioxEquipeTab } from "@/components/admin/CerebroAdmin";
+import { MensagensVendemAdminTab } from "@/components/admin/MensagensVendemAdmin";
+import { ConversasEnviadasAdminTab } from "@/components/admin/ConversasEnviadasAdmin";
 
 // Ordem dos grupos na entrada, no seletor e em "Organização das abas".
 export const ADMIN_GROUP_ORDER = ["Atendimento", "Inteligência", "Treino", "Central de Ajuda", "Equipe e sistema"];
@@ -60,6 +62,8 @@ export const ADMIN_TAB_COMPONENTS: Record<string, ComponentType> = {
   economia: EconomiaAdminTab,
   cadencia: CadenciaAdminTab,
   motivosperda: MotivosPerdaAdminTab,
+  mensagensvendem: MensagensVendemAdminTab,
+  conversasenviadas: ConversasEnviadasAdminTab,
 
   knowledge: KnowledgeTab,
   ai: AiTab,
