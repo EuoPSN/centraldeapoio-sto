@@ -461,6 +461,8 @@ export const aprovarPendente = createServerFn({ method: "POST" })
       title: `Nova resposta: cliente diz "${fala}"`,
       summary: `A objeção "${data.objecao.nome}" agora tem resposta aprovada em Scripts → O cliente disse…`,
       published: true,
+      tipo: "informativa",
+      origem: "auto",
     });
     return { ok: true, objecao_id: nova.id };
   });

@@ -9,7 +9,7 @@ import {
   type BlocoAdmin, type PadroesRaiox,
 } from "@/lib/cerebro.functions";
 import {
-  ETAPA_FUNIL_NOME, FERRAMENTAS, FERRAMENTAS_COLUNAS, FERRAMENTA_LABEL, alternarColuna, blocoVazio, colunaUsa, contarPalavras,
+  CHAVES_AUTOMATICAS, ETAPA_FUNIL_NOME, FERRAMENTAS, FERRAMENTAS_COLUNAS, FERRAMENTA_LABEL, alternarColuna, blocoVazio, colunaUsa, contarPalavras,
   type Ferramenta, type FunilEtapa, type PadraoEscritaItem, type RegraFixa,
 } from "@/lib/cerebro";
 import { GoldButton, OutlineButton, TextTabs } from "@/components/scripts/shared";
@@ -110,6 +110,7 @@ function SkillsTab({ tabs, irPara }: { tabs: ReactNode; irPara: (a: Aba) => void
                   <span className={cn("block truncate text-[15px] font-medium", b.ativo ? "text-ink" : "text-ink-muted")}>{b.titulo}</span>
                   <span className="block truncate text-[13px] text-ink-muted">{b.descricao_curta}</span>
                 </span>
+                {CHAVES_AUTOMATICAS.includes(b.chave) && <span className="shrink-0 rounded-full border border-gold/60 px-2 py-0.5 text-[11.5px] text-gold-text">automático</span>}
                 {!b.ativo && <span className="shrink-0 rounded-full border border-dashed border-line-strong px-2 py-0.5 text-[11.5px] text-ink-muted">Desligada</span>}
                 <span className="max-w-[48%] shrink-0"><PilulasFerramentas ferramentas={b.ferramentas} /></span>
               </ListRow>
@@ -129,7 +130,10 @@ function SkillsTab({ tabs, irPara }: { tabs: ReactNode; irPara: (a: Aba) => void
                 <tbody>
                   {blocos.map((b) => (
                     <tr key={b.id} className="border-t border-line">
-                      <th scope="row" className="py-2 pr-2 text-left font-normal text-ink">{b.titulo}</th>
+                      <th scope="row" className="py-2 pr-2 text-left font-normal text-ink">
+                        {b.titulo}
+                        {CHAVES_AUTOMATICAS.includes(b.chave) && <span className="ml-2 rounded-full border border-gold/60 px-1.5 py-px text-[11px] text-gold-text">automático</span>}
+                      </th>
                       {FERRAMENTAS_COLUNAS.map((c) => (
                         <td key={c} className="px-1 py-2 text-center">
                           {colunaUsa(b.ferramentas, c)
@@ -159,6 +163,7 @@ function SkillPainel({ bloco, draft, onChange, onSalvar, salvando, onFechar, irP
   const [testando, setTestando] = useState(false);
   const [conversa, setConversa] = useState("");
   const origem: Aba | null = bloco.chave === "padrao_escrita" ? "padrao" : bloco.chave === "etapas_funil" ? "etapas" : null;
+  const automatico = CHAVES_AUTOMATICAS.includes(bloco.chave);
   const texto = bloco.gerado ? bloco.conteudo_efetivo : draft.conteudo;
   const palavras = blocoVazio(texto) ? 0 : contarPalavras(texto);
 
@@ -178,6 +183,11 @@ function SkillPainel({ bloco, draft, onChange, onSalvar, salvando, onFechar, irP
       {bloco.gerado ? (
         <>
           <textarea id="cerebro-instrucoes" className={cn(inputCls, "min-h-[200px] bg-surface-2 text-ink-muted")} value={texto || "Ainda sem conteúdo."} readOnly rows={10} />
+          {automatico && (
+            <p className="mt-1.5 text-[13px] text-ink-muted">
+              Automático: montado na hora com as mudanças importantes e urgentes dos últimos 30 dias marcadas para a IA. Sai daqui quando a mudança é marcada como incorporada ao Playbook. Não é editável.
+            </p>
+          )}
           {origem && (
             <p className="mt-1.5 text-[13px] text-ink-muted">
               Gerado a partir da aba{" "}
@@ -198,7 +208,7 @@ function SkillPainel({ bloco, draft, onChange, onSalvar, salvando, onFechar, irP
       )}
 
       <FieldLabel>Usado por</FieldLabel>
-      <div className="flex flex-wrap gap-1.5">
+      <div className={cn("flex flex-wrap gap-1.5", automatico && "pointer-events-none opacity-60")} aria-disabled={automatico}>
         {FERRAMENTAS_COLUNAS.map((c) => (
           <ChoicePill key={c} active={colunaUsa(draft.ferramentas, c)} onClick={() => onChange({ ...draft, ferramentas: alternarColuna(draft.ferramentas, c) })}>
             {FERRAMENTA_LABEL[c]}
@@ -210,11 +220,11 @@ function SkillPainel({ bloco, draft, onChange, onSalvar, salvando, onFechar, irP
       <p className="text-[14px] text-ink-muted">≈ {palavras.toLocaleString("pt-BR")} palavras · blocos maiores gastam mais da cota de IA</p>
 
       <label className="mt-4 flex items-center gap-2 text-[14px] text-ink">
-        <Switch checked={draft.ativo} onCheckedChange={(v) => onChange({ ...draft, ativo: v })} /> Ligada (as ferramentas marcadas usam esta skill)
+        <Switch disabled={automatico} checked={draft.ativo} onCheckedChange={(v) => onChange({ ...draft, ativo: v })} /> Ligada (as ferramentas marcadas usam esta skill)
       </label>
 
       <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-line pt-4">
-        <GoldButton className="h-9 text-[14px]" onClick={onSalvar} disabled={salvando}>Salvar</GoldButton>
+        {!automatico && <GoldButton className="h-9 text-[14px]" onClick={onSalvar} disabled={salvando}>Salvar</GoldButton>}
         <OutlineButton className="h-9 text-[14px]" onClick={() => setTestando((v) => !v)}>Testar com uma conversa</OutlineButton>
       </div>
 

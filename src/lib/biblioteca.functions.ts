@@ -419,6 +419,8 @@ export const adminSalvarFicha = createServerFn({ method: "POST" })
         title: `Nova conversa que fechou: ${titulo}`,
         summary: `Mais um caso real na Biblioteca > Conversas que fecharam${autor ? `, por ${autor}` : ""}. Veja o que foi feito para vencer a objeção e copie a mensagem-chave.`,
         published: true,
+        tipo: "informativa",
+        origem: "auto",
       }).then(() => undefined, (e: unknown) => console.error("Não consegui criar a novidade:", e instanceof Error ? e.message : "erro"));
     }
     return { ok: true, ficha: toFicha(row, autor) };
