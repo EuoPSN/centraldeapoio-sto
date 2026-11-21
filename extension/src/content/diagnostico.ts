@@ -3,6 +3,7 @@
 import { SELETORES } from "./selectors";
 import { acharCabecalho, acharPainel, avaliarConversa, elementosDeMensagem, subtituloDoChat, textoDe, tituloDoCabecalho } from "./ler";
 import type { MetodoDirecao } from "./ler";
+import { lerDadosDoContato } from "./contato";
 
 export const VERSAO_FORMATO = 1;
 const NIVEIS = 4;
@@ -56,6 +57,8 @@ export interface Relatorio {
   };
   /** Forma mascarada do subtítulo (dígito→9, nome→[nome]) e quantos nomes separados por vírgula (0, 1 ou 2+). */
   subtitulo?: { forma: string; nomes: "0" | "1" | "2+" };
+  /** Aba "Dados do contato": nunca o número nem o nome; só a forma mascarada do texto em que o número foi achado. */
+  dados_do_contato?: { aba_detectada: boolean; seletor_que_decidiu: string | null; numero_encontrado: boolean; forma_do_texto: string };
   remetentes_distintos?: { recebidas: number; enviadas: number };
   observacoes?: string[];
   direcao?: { metodos: Record<MetodoDirecao, number>; autores_ignorados_em_citacao: number };
@@ -108,6 +111,11 @@ export function mascararSubtitulo(sub: string): { forma: string; nomes: "0" | "1
   return { forma, nomes: itens.length === 0 ? "0" : itens.length === 1 ? "1" : "2+" };
 }
 
+function dadosDoContatoParaDiagnostico(doc: Document): NonNullable<Relatorio["dados_do_contato"]> {
+  const d = lerDadosDoContato(doc);
+  return { aba_detectada: d.detectada, seletor_que_decidiu: d.seletor, numero_encontrado: !!d.numero, forma_do_texto: d.formaDoTexto };
+}
+
 const MAX_AMOSTRA = 5;
 
 function formasDosIdentificadores(painel: Element, msgEl: Element | null) {
@@ -134,7 +142,8 @@ function relatorioSeletores(doc: Document, painel: Element | null, cab: Element 
   return lista.map(([nome, sels]) => {
     let escopo: RelatorioSeletor["escopo"];
     let raiz: ParentNode;
-    if (nome === "painelConversa") { escopo = "documento"; raiz = doc; }
+    // A aba "Dados do contato" fica fora do painel da conversa: procurada no documento todo.
+    if (nome === "painelConversa" || nome === "dadosContato" || nome === "tituloDadosContato") { escopo = "documento"; raiz = doc; }
     else if (nome === "cabecalho") { escopo = painel ? "painel" : "documento (painel ausente)"; raiz = painel ?? doc; }
     else if (nome === "textosCabecalho" || nome === "iconesCabecalho" || nome === "subtituloChat") { escopo = "cabecalho"; raiz = cab ?? doc; }
     else { escopo = painel ? "painel" : "documento (painel ausente)"; raiz = painel ?? doc; }
@@ -244,6 +253,7 @@ export function montarDiagnostico(doc: Document, extra: { versao: string; domini
       arvore: resumir(areaDeMensagens(painel, msgs[0]?.el ?? null), 0, proibidas),
     },
     formas_dos_identificadores: formasDosIdentificadores(painel, msgs.find((m) => m.remetente)?.el ?? msgs[0]?.el ?? null),
+    dados_do_contato: dadosDoContatoParaDiagnostico(doc),
     subtitulo: mascararSubtitulo(subtituloDoChat(painel)),
     remetentes_distintos: a.remetentesDistintos,
     observacoes: a.observacoes,
