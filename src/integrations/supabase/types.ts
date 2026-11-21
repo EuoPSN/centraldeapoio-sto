@@ -1722,6 +1722,66 @@ export type Database = {
         }
         Relationships: []
       }
+      extensao_aceites: {
+        Row: {
+          aceito_em: string
+          id: string
+          user_id: string
+          versao: string
+        }
+        Insert: {
+          aceito_em?: string
+          id?: string
+          user_id?: string
+          versao: string
+        }
+        Update: {
+          aceito_em?: string
+          id?: string
+          user_id?: string
+          versao?: string
+        }
+        Relationships: []
+      }
+      extensao_eventos: {
+        Row: {
+          created_at: string
+          id: number
+          tipo: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          tipo: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          tipo?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      extensao_ignorados: {
+        Row: {
+          created_at: string
+          numero_hash: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          numero_hash: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          numero_hash?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       fechamento_casos: {
         Row: {
           created_at: string
@@ -3831,12 +3891,15 @@ export type Database = {
           codigo: string
           created_at: string
           d10_enviado_em: string | null
+          dependentes: number | null
           etapa_atual: string
+          etapa_funil: string | null
           fechamento_caso_id: string | null
           id: string
           motivo_perda: string | null
           observacao: string
           origem: string
+          plano: string | null
           ponto_parada: string
           ponto_parada_inicial: string
           primeiro_nome: string
@@ -3852,12 +3915,15 @@ export type Database = {
           codigo?: string
           created_at?: string
           d10_enviado_em?: string | null
+          dependentes?: number | null
           etapa_atual?: string
+          etapa_funil?: string | null
           fechamento_caso_id?: string | null
           id?: string
           motivo_perda?: string | null
           observacao?: string
           origem?: string
+          plano?: string | null
           ponto_parada: string
           ponto_parada_inicial: string
           primeiro_nome?: string
@@ -3873,12 +3939,15 @@ export type Database = {
           codigo?: string
           created_at?: string
           d10_enviado_em?: string | null
+          dependentes?: number | null
           etapa_atual?: string
+          etapa_funil?: string | null
           fechamento_caso_id?: string | null
           id?: string
           motivo_perda?: string | null
           observacao?: string
           origem?: string
+          plano?: string | null
           ponto_parada?: string
           ponto_parada_inicial?: string
           primeiro_nome?: string
@@ -4120,6 +4189,54 @@ export type Database = {
         }
         Relationships: []
       }
+      ticket_historico: {
+        Row: {
+          campo: string
+          created_at: string
+          id: string
+          origem: string
+          ticket_id: string
+          user_id: string
+          valor_anterior: string | null
+          valor_novo: string | null
+        }
+        Insert: {
+          campo: string
+          created_at?: string
+          id?: string
+          origem: string
+          ticket_id: string
+          user_id?: string
+          valor_anterior?: string | null
+          valor_novo?: string | null
+        }
+        Update: {
+          campo?: string
+          created_at?: string
+          id?: string
+          origem?: string
+          ticket_id?: string
+          user_id?: string
+          valor_anterior?: string | null
+          valor_novo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_historico_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "retomadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_historico_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "retomadas_admin"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_completions: {
         Row: {
           completed_at: string
@@ -4277,12 +4394,15 @@ export type Database = {
           codigo: string | null
           created_at: string | null
           d10_enviado_em: string | null
+          dependentes: number | null
           etapa_atual: string | null
+          etapa_funil: string | null
           fechamento_caso_id: string | null
           id: string | null
           motivo_perda: string | null
           observacao: string | null
           origem: string | null
+          plano: string | null
           ponto_parada: string | null
           ponto_parada_inicial: string | null
           primeiro_nome: string | null
@@ -4359,6 +4479,7 @@ export type Database = {
           total: number
         }[]
       }
+      chave_telefone: { Args: { _tel: string }; Returns: string }
       cliente_disse_contagens: {
         Args: { _dias?: number }
         Returns: {
@@ -4435,6 +4556,7 @@ export type Database = {
           versao: number
         }[]
       }
+      numero_com_outro_atendente: { Args: { _chave: string }; Returns: boolean }
       ranking_admin: {
         Args: { p_mes: string; p_podio: string }
         Returns: {
