@@ -55,3 +55,6 @@ export const BIBLIOTECA_FICHA_MODEL = "google/gemini-2.5-flash";
 
 /** Mensagens que vendem: sugere uma nova versão para uma mensagem da cadência com desempenho abaixo do esperado. */
 export const MENSAGEM_SUGESTAO_MODEL = "google/gemini-2.5-flash";
+
+/** Aquecimento: nota das respostas escritas e rascunhos de exercícios (sempre com revisão do Admin). */
+export const AQUECIMENTO_MODEL = "google/gemini-2.5-flash";
