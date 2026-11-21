@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Json } from "@/integrations/supabase/types";
 
-const xpForDifficulty = (difficulty: string, nota: number) => {
+export const xpForDifficulty = (difficulty: string, nota: number) => {
   const base: Record<string, number> = { facil: 10, medio: 20, dificil: 35, especialista: 50 };
   const multiplier = nota >= 70 ? 1 : nota >= 40 ? 0.6 : 0.3;
   return Math.round((base[difficulty] ?? 15) * multiplier);
@@ -298,15 +298,4 @@ export const getRankingPorPeriodo = createServerFn({ method: "POST" })
         melhor: s.melhor,
       }))
       .sort((a, b) => b.media - a.media || b.total - a.total);
-  });
-
-export const resetarXpTodos = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { error } = await context.supabase
-      .from("profiles")
-      .update({ xp: 0 })
-      .neq("id", "00000000-0000-0000-0000-000000000000");
-    if (error) throw error;
-    return { ok: true };
   });

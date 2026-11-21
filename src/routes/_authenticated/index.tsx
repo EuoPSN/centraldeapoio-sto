@@ -9,6 +9,7 @@ import { getMyChecklistToday, getChecklistSummaryForDate } from "@/lib/checklist
 import { getAdminPendencias } from "@/lib/home.functions";
 import { openGlobalSearch } from "@/components/GlobalSearch";
 import { useRetomadaContagem } from "@/components/retomada/hooks";
+import { DestaquesDoMes } from "@/components/ranking/Destaques";
 import { MudancaFaixa } from "@/components/novidades/Faixa";
 import { useStatusMudancas } from "@/components/novidades/hooks";
 import { AquecimentoFaixa } from "@/components/aquecimento/Faixa";
@@ -124,6 +125,8 @@ function Home() {
       <MudancaFaixa />
 
       <AquecimentoFaixa contornada={temMudanca} />
+
+      <DestaquesDoMes />
 
       {/* Altura reservada para todos: a linha de pendências entra sem empurrar a página. */}
       <div className="flex min-h-[3.25rem] items-center px-1 pt-1">
