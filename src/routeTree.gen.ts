@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as PendenteRouteImport } from './routes/pendente'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedAmorSaudeRouteImport } from './routes/_authenticated/amor-saude'
+import { Route as AuthenticatedAquecimentoRouteImport } from './routes/_authenticated/aquecimento'
 import { Route as AuthenticatedAssistenteRouteImport } from './routes/_authenticated/assistente'
 import { Route as AuthenticatedBibliotecaRouteImport } from './routes/_authenticated/biblioteca'
 import { Route as AuthenticatedChecklistRouteImport } from './routes/_authenticated/checklist'
@@ -25,6 +26,7 @@ import { Route as AuthenticatedCrmLeadsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedCrmProspeccaoRouteImport } from './routes/_authenticated/crm-prospeccao'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedFuncionariosRouteImport } from './routes/_authenticated/funcionarios'
+import { Route as AuthenticatedMeuMapaRouteImport } from './routes/_authenticated/meu-mapa'
 import { Route as AuthenticatedMeusRelatoriosRouteImport } from './routes/_authenticated/meus-relatorios'
 import { Route as AuthenticatedMotorDecisaoRouteImport } from './routes/_authenticated/motor-decisao'
 import { Route as AuthenticatedPrecosRouteImport } from './routes/_authenticated/precos'
@@ -80,6 +82,12 @@ const AuthenticatedAmorSaudeRoute = AuthenticatedAmorSaudeRouteImport.update({
   path: '/amor-saude',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAquecimentoRoute =
+  AuthenticatedAquecimentoRouteImport.update({
+    id: '/aquecimento',
+    path: '/aquecimento',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAssistenteRoute = AuthenticatedAssistenteRouteImport.update({
   id: '/assistente',
   path: '/assistente',
@@ -139,6 +147,11 @@ const AuthenticatedFuncionariosRoute =
     path: '/funcionarios',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedMeuMapaRoute = AuthenticatedMeuMapaRouteImport.update({
+  id: '/meu-mapa',
+  path: '/meu-mapa',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMeusRelatoriosRoute =
   AuthenticatedMeusRelatoriosRouteImport.update({
     id: '/meus-relatorios',
@@ -313,6 +326,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/pendente': typeof PendenteRoute
   '/amor-saude': typeof AuthenticatedAmorSaudeRouteWithChildren
+  '/aquecimento': typeof AuthenticatedAquecimentoRoute
   '/assistente': typeof AuthenticatedAssistenteRoute
   '/biblioteca': typeof AuthenticatedBibliotecaRoute
   '/checklist': typeof AuthenticatedChecklistRoute
@@ -324,6 +338,7 @@ export interface FileRoutesByFullPath {
   '/crm-prospeccao': typeof AuthenticatedCrmProspeccaoRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/funcionarios': typeof AuthenticatedFuncionariosRoute
+  '/meu-mapa': typeof AuthenticatedMeuMapaRoute
   '/meus-relatorios': typeof AuthenticatedMeusRelatoriosRoute
   '/motor-decisao': typeof AuthenticatedMotorDecisaoRoute
   '/precos': typeof AuthenticatedPrecosRoute
@@ -358,6 +373,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/pendente': typeof PendenteRoute
+  '/aquecimento': typeof AuthenticatedAquecimentoRoute
   '/assistente': typeof AuthenticatedAssistenteRoute
   '/biblioteca': typeof AuthenticatedBibliotecaRoute
   '/checklist': typeof AuthenticatedChecklistRoute
@@ -369,6 +385,7 @@ export interface FileRoutesByTo {
   '/crm-prospeccao': typeof AuthenticatedCrmProspeccaoRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/funcionarios': typeof AuthenticatedFuncionariosRoute
+  '/meu-mapa': typeof AuthenticatedMeuMapaRoute
   '/meus-relatorios': typeof AuthenticatedMeusRelatoriosRoute
   '/motor-decisao': typeof AuthenticatedMotorDecisaoRoute
   '/precos': typeof AuthenticatedPrecosRoute
@@ -407,6 +424,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/pendente': typeof PendenteRoute
   '/_authenticated/amor-saude': typeof AuthenticatedAmorSaudeRouteWithChildren
+  '/_authenticated/aquecimento': typeof AuthenticatedAquecimentoRoute
   '/_authenticated/assistente': typeof AuthenticatedAssistenteRoute
   '/_authenticated/biblioteca': typeof AuthenticatedBibliotecaRoute
   '/_authenticated/checklist': typeof AuthenticatedChecklistRoute
@@ -418,6 +436,7 @@ export interface FileRoutesById {
   '/_authenticated/crm-prospeccao': typeof AuthenticatedCrmProspeccaoRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/funcionarios': typeof AuthenticatedFuncionariosRoute
+  '/_authenticated/meu-mapa': typeof AuthenticatedMeuMapaRoute
   '/_authenticated/meus-relatorios': typeof AuthenticatedMeusRelatoriosRoute
   '/_authenticated/motor-decisao': typeof AuthenticatedMotorDecisaoRoute
   '/_authenticated/precos': typeof AuthenticatedPrecosRoute
@@ -457,6 +476,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/pendente'
     | '/amor-saude'
+    | '/aquecimento'
     | '/assistente'
     | '/biblioteca'
     | '/checklist'
@@ -468,6 +488,7 @@ export interface FileRouteTypes {
     | '/crm-prospeccao'
     | '/dashboard'
     | '/funcionarios'
+    | '/meu-mapa'
     | '/meus-relatorios'
     | '/motor-decisao'
     | '/precos'
@@ -502,6 +523,7 @@ export interface FileRouteTypes {
   to:
     | '/auth'
     | '/pendente'
+    | '/aquecimento'
     | '/assistente'
     | '/biblioteca'
     | '/checklist'
@@ -513,6 +535,7 @@ export interface FileRouteTypes {
     | '/crm-prospeccao'
     | '/dashboard'
     | '/funcionarios'
+    | '/meu-mapa'
     | '/meus-relatorios'
     | '/motor-decisao'
     | '/precos'
@@ -550,6 +573,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/pendente'
     | '/_authenticated/amor-saude'
+    | '/_authenticated/aquecimento'
     | '/_authenticated/assistente'
     | '/_authenticated/biblioteca'
     | '/_authenticated/checklist'
@@ -561,6 +585,7 @@ export interface FileRouteTypes {
     | '/_authenticated/crm-prospeccao'
     | '/_authenticated/dashboard'
     | '/_authenticated/funcionarios'
+    | '/_authenticated/meu-mapa'
     | '/_authenticated/meus-relatorios'
     | '/_authenticated/motor-decisao'
     | '/_authenticated/precos'
@@ -639,6 +664,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAmorSaudeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/aquecimento': {
+      id: '/_authenticated/aquecimento'
+      path: '/aquecimento'
+      fullPath: '/aquecimento'
+      preLoaderRoute: typeof AuthenticatedAquecimentoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/assistente': {
       id: '/_authenticated/assistente'
       path: '/assistente'
@@ -714,6 +746,13 @@ declare module '@tanstack/react-router' {
       path: '/funcionarios'
       fullPath: '/funcionarios'
       preLoaderRoute: typeof AuthenticatedFuncionariosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/meu-mapa': {
+      id: '/_authenticated/meu-mapa'
+      path: '/meu-mapa'
+      fullPath: '/meu-mapa'
+      preLoaderRoute: typeof AuthenticatedMeuMapaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/meus-relatorios': {
@@ -954,6 +993,7 @@ const AuthenticatedAmorSaudeRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAmorSaudeRoute: typeof AuthenticatedAmorSaudeRouteWithChildren
+  AuthenticatedAquecimentoRoute: typeof AuthenticatedAquecimentoRoute
   AuthenticatedAssistenteRoute: typeof AuthenticatedAssistenteRoute
   AuthenticatedBibliotecaRoute: typeof AuthenticatedBibliotecaRoute
   AuthenticatedChecklistRoute: typeof AuthenticatedChecklistRoute
@@ -965,6 +1005,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCrmProspeccaoRoute: typeof AuthenticatedCrmProspeccaoRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFuncionariosRoute: typeof AuthenticatedFuncionariosRoute
+  AuthenticatedMeuMapaRoute: typeof AuthenticatedMeuMapaRoute
   AuthenticatedMeusRelatoriosRoute: typeof AuthenticatedMeusRelatoriosRoute
   AuthenticatedMotorDecisaoRoute: typeof AuthenticatedMotorDecisaoRoute
   AuthenticatedPrecosRoute: typeof AuthenticatedPrecosRoute
@@ -993,6 +1034,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAmorSaudeRoute: AuthenticatedAmorSaudeRouteWithChildren,
+  AuthenticatedAquecimentoRoute: AuthenticatedAquecimentoRoute,
   AuthenticatedAssistenteRoute: AuthenticatedAssistenteRoute,
   AuthenticatedBibliotecaRoute: AuthenticatedBibliotecaRoute,
   AuthenticatedChecklistRoute: AuthenticatedChecklistRoute,
@@ -1004,6 +1046,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCrmProspeccaoRoute: AuthenticatedCrmProspeccaoRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFuncionariosRoute: AuthenticatedFuncionariosRoute,
+  AuthenticatedMeuMapaRoute: AuthenticatedMeuMapaRoute,
   AuthenticatedMeusRelatoriosRoute: AuthenticatedMeusRelatoriosRoute,
   AuthenticatedMotorDecisaoRoute: AuthenticatedMotorDecisaoRoute,
   AuthenticatedPrecosRoute: AuthenticatedPrecosRoute,

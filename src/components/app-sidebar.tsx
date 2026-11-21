@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { listNavItems } from "@/lib/settings.functions";
 import { getAjudaNovidadesStatus } from "@/lib/ajuda.functions";
 import { useRetomadaContagem } from "@/components/retomada/hooks";
+import { useStatusAquecimento } from "@/components/aquecimento/hooks";
 import { cn } from "@/lib/utils";
 
 // Menu lateral da OMNIA Apoio, em sanfona.
@@ -54,6 +55,8 @@ const GROUPS: GroupDef[] = [
       { route: "/simulador-ia", label: "Simulador IA" },
       { route: "/treinamentos", label: "Treinamentos" },
       { route: "/checklist", label: "Check-list" },
+      { route: "/aquecimento", label: "Aquecimento" },
+      { route: "/meu-mapa", label: "Meu mapa" },
       { route: "/ranking", label: "Ranking" },
     ],
   },
@@ -130,6 +133,8 @@ export function AppSidebar({ isAdmin, email, displayName, role }: { isAdmin: boo
   const { data: adminPending } = useAdminPendingCounts(isAdmin);
   const adminPendingTotal = isAdmin ? adminPending?.total ?? 0 : 0;
   const retomadaHoje = useRetomadaContagem().data?.total ?? 0;
+  const aq = useStatusAquecimento().data;
+  const aquecimentoPendente = !!aq && aq.disponivel && !aq.concluido_hoje;
   const { state, isMobile } = useSidebar();
   const collapsed = state === "collapsed" && !isMobile;
 
@@ -258,6 +263,9 @@ export function AppSidebar({ isAdmin, email, displayName, role }: { isAdmin: boo
                               )}
                             >
                               <span className="truncate">{p.label}</span>
+                              {p.route === "/aquecimento" && aquecimentoPendente && (
+                                <span role="img" aria-label="Aquecimento de hoje pendente" className="h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
+                              )}
                               {showRetomada && (
                                 <span aria-label={`${retomadaHoje} retomadas hoje`} className="grid h-4 min-w-4 shrink-0 place-items-center rounded-full bg-gold px-1 text-[10px] font-semibold text-on-gold">
                                   {retomadaHoje}
