@@ -52,6 +52,7 @@ const CONTEXTO_PADRAO: Record<Ferramenta, ContextoOmnia[]> = {
   simulador: [],
   copiloto: ["objecoes", "mensalidades", "amor_saude"],
   raiox: ["mensalidades"],
+  biblioteca: ["objecoes"],
 };
 
 interface DadosCerebro {
