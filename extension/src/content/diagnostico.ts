@@ -1,7 +1,8 @@
 // Relatório de diagnóstico da leitura. Descreve SÓ ESTRUTURA: nunca texto de nós, nomes de
 // contato, números nem mensagens. Só consulta o DOM (nada é clicado, rolado ou escrito).
 import { SELETORES } from "./selectors";
-import { acharCabecalho, acharPainel, avaliarConversa, elementosDeMensagem, textoDe } from "./ler";
+import { acharCabecalho, acharPainel, avaliarConversa, elementosDeMensagem, textoDe, tituloDoCabecalho } from "./ler";
+import type { MetodoDirecao } from "./ler";
 
 export const VERSAO_FORMATO = 1;
 const NIVEIS = 4;
@@ -47,6 +48,13 @@ export interface Relatorio {
   seletores: RelatorioSeletor[];
   cabecalho: { encontrado: boolean; arvore: NoResumido | null };
   area_de_mensagens: { total: number; recebidas: number; enviadas: number; arvore: NoResumido | null };
+  /** Só a FORMA mascarada dos identificadores (dígito→9, letra→a, nome→[nome]) e nomes de atributos. */
+  formas_dos_identificadores?: {
+    data_id: Record<string, number>;
+    data_pre_plain_text: Record<string, number>;
+    atributos_de_mensagem_de_texto: string[];
+  };
+  direcao?: { metodos: Record<MetodoDirecao, number>; autores_ignorados_em_citacao: number };
   deteccao: {
     sinais_de_grupo: Record<string, string>;
     verificacoes_positivas: Record<string, string>;
@@ -56,6 +64,54 @@ export interface Relatorio {
   };
   /** Preenchido pelo painel: motivo do último resultado de leitura nesta sessão do painel. */
   ultimo_resultado_no_painel?: { codigo: string; motivo: string } | null;
+}
+
+// ---------------------------------------------------------------------------
+// Forma mascarada de identificadores (sem nome, número nem texto)
+// ---------------------------------------------------------------------------
+
+const PRESERVADOS = new Set(["_", "@", ".", "[", "]", ",", ":", "/", " ", "-", "+"]);
+
+/** Dígito → 9, letra → a, preserva _ @ . [ ] , : / espaço - +; qualquer outro caractere vira "?". */
+export function mascarar(v: string): string {
+  let o = "";
+  for (const ch of v) {
+    if (/\p{Nd}/u.test(ch)) o += "9";
+    else if (/\p{L}/u.test(ch)) o += "a";
+    else if (PRESERVADOS.has(ch)) o += ch;
+    else o += "?";
+  }
+  return o;
+}
+
+/** data-pre-plain-text: "[hh:mm, dd/mm/aaaa] Nome: " → "[99:99, 99/99/9999] [nome]: ". */
+export function mascararPrePlain(v: string): string {
+  const m = /^(\[[^\]]*\]\s*)([\s\S]*?)(:\s*)$/.exec(v);
+  if (!m) return mascarar(v);
+  return `${mascarar(m[1])}[nome]${mascarar(m[3])}`;
+}
+
+function contarFormas(valores: string[], f: (v: string) => string): Record<string, number> {
+  const r: Record<string, number> = {};
+  for (const v of valores) { const k = f(v); r[k] = (r[k] ?? 0) + 1; }
+  return r;
+}
+
+const MAX_AMOSTRA = 5;
+
+function formasDosIdentificadores(painel: Element, msgEl: Element | null) {
+  const ids = Array.from(painel.querySelectorAll("[data-id]")).slice(0, MAX_AMOSTRA).map((e) => e.getAttribute("data-id") ?? "");
+  const pres = Array.from(painel.querySelectorAll("[data-pre-plain-text]")).slice(0, MAX_AMOSTRA).map((e) => e.getAttribute("data-pre-plain-text") ?? "");
+  const atributos = new Set<string>();
+  if (msgEl) {
+    const bloco = msgEl.matches("[data-pre-plain-text]") ? msgEl : msgEl.querySelector("[data-pre-plain-text]");
+    for (const e of [msgEl, bloco]) e?.getAttributeNames().forEach((n) => atributos.add(n.toLowerCase()));
+  }
+  return {
+    data_id: contarFormas(ids, mascarar),
+    data_pre_plain_text: contarFormas(pres, mascararPrePlain),
+    atributos_de_mensagem_de_texto: Array.from(atributos).sort(),
+  };
 }
 
 function contar(raiz: ParentNode, seletor: string): number {
@@ -134,7 +190,7 @@ function areaDeMensagens(painel: Element, primeira: Element | null): Element {
 export function montarDiagnostico(doc: Document, extra: { versao: string; dominio: string }): Relatorio {
   const painel = acharPainel(doc);
   const cab = painel ? acharCabecalho(painel) : null;
-  const msgs = painel ? elementosDeMensagem(painel) : [];
+  const msgs = painel ? elementosDeMensagem(painel, painel ? tituloDoCabecalho(painel) : "") : [];
   const proibidas = palavrasProibidas(cab);
 
   const base = {
@@ -164,7 +220,11 @@ export function montarDiagnostico(doc: Document, extra: { versao: string; domini
     cabecalho_sem_nome: "cabeçalho sem nome legível: não lê",
     sem_mensagens: "nenhuma mensagem encontrada: não lê",
     ids_de_chat_inconsistentes: "ids de chat contraditórios ou desconhecidos: não lê",
-    sem_verificacao_positiva: "nenhuma verificação positiva de conversa individual: não lê",
+    direcao_indefinida: "nenhum método decidiu a direção de alguma mensagem: não lê",
+    sem_mensagem_do_cliente: "só há mensagens enviadas: não dá para confirmar o contato: não lê",
+    remetente_ilegivel: "remetente das mensagens recebidas não pôde ser lido: não lê",
+    grupo_varios_remetentes: "mais de um remetente nas mensagens recebidas: parece grupo: não lê",
+    grupo_remetente_diferente_do_titulo: "remetente das recebidas diferente do título do cabeçalho: não lê",
     individual_confirmado: "conversa individual confirmada: lê",
   };
   return {
@@ -173,6 +233,8 @@ export function montarDiagnostico(doc: Document, extra: { versao: string; domini
       total: a.totalMensagens, recebidas: a.recebidas, enviadas: a.enviadas,
       arvore: resumir(areaDeMensagens(painel, msgs[0]?.el ?? null), 0, proibidas),
     },
+    formas_dos_identificadores: formasDosIdentificadores(painel, msgs.find((m) => m.remetente)?.el ?? msgs[0]?.el ?? null),
+    direcao: { metodos: a.metodosDeDirecao, autores_ignorados_em_citacao: a.autoresEmCitacao },
     deteccao: {
       sinais_de_grupo: a.sinais, verificacoes_positivas: a.positivas,
       decisao: a.veredito.tipo === "individual" ? "le" : "nao_le",
