@@ -8,7 +8,8 @@
     "build": "vite build && vite build --config vite.content.config.ts && tsx scripts/manifest.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "zip": "tsx scripts/zip.ts"
+    "zip": "tsx scripts/zip.ts",
+    "sync:sanitizar": "tsx scripts/sync-sanitizar.ts"
   },
   "dependencies": {
     "@fontsource-variable/montserrat": "^5.2.0",
