@@ -59,8 +59,12 @@ CREATE TRIGGER trg_changelog_publicada_em
 
 CREATE INDEX IF NOT EXISTS idx_changelog_tipo_publicada ON public.changelog_entries(tipo, published, publicada_em DESC);
 
--- A política "changelog_write_admin" (FOR ALL, só admin) e a leitura para autenticados
--- continuam valendo: INSERT/UPDATE/DELETE só do admin, SELECT para todos.
+-- Escrita: a política "changelog_write_admin" (FOR ALL, só admin) continua valendo.
+-- Leitura: atendente só enxerga o que está publicado (rascunho é do Admin).
+DROP POLICY IF EXISTS "changelog_read_auth" ON public.changelog_entries;
+CREATE POLICY "changelog_read_auth" ON public.changelog_entries
+  FOR SELECT TO authenticated
+  USING (published OR private.has_role(auth.uid(), 'admin'::app_role));
 
 -- ------------------------------------------------------------
 -- changelog_confirmacoes: "Li e entendi" (uma por pessoa por mudança)

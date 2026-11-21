@@ -29,6 +29,7 @@ import { Route as AuthenticatedFuncionariosRouteImport } from './routes/_authent
 import { Route as AuthenticatedMeuMapaRouteImport } from './routes/_authenticated/meu-mapa'
 import { Route as AuthenticatedMeusRelatoriosRouteImport } from './routes/_authenticated/meus-relatorios'
 import { Route as AuthenticatedMotorDecisaoRouteImport } from './routes/_authenticated/motor-decisao'
+import { Route as AuthenticatedNovidadesRouteImport } from './routes/_authenticated/novidades'
 import { Route as AuthenticatedPrecosRouteImport } from './routes/_authenticated/precos'
 import { Route as AuthenticatedProblemasRouteImport } from './routes/_authenticated/problemas'
 import { Route as AuthenticatedRaioxRouteImport } from './routes/_authenticated/raiox'
@@ -164,6 +165,11 @@ const AuthenticatedMotorDecisaoRoute =
     path: '/motor-decisao',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedNovidadesRoute = AuthenticatedNovidadesRouteImport.update({
+  id: '/novidades',
+  path: '/novidades',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPrecosRoute = AuthenticatedPrecosRouteImport.update({
   id: '/precos',
   path: '/precos',
@@ -341,6 +347,7 @@ export interface FileRoutesByFullPath {
   '/meu-mapa': typeof AuthenticatedMeuMapaRoute
   '/meus-relatorios': typeof AuthenticatedMeusRelatoriosRoute
   '/motor-decisao': typeof AuthenticatedMotorDecisaoRoute
+  '/novidades': typeof AuthenticatedNovidadesRoute
   '/precos': typeof AuthenticatedPrecosRoute
   '/problemas': typeof AuthenticatedProblemasRoute
   '/raiox': typeof AuthenticatedRaioxRoute
@@ -388,6 +395,7 @@ export interface FileRoutesByTo {
   '/meu-mapa': typeof AuthenticatedMeuMapaRoute
   '/meus-relatorios': typeof AuthenticatedMeusRelatoriosRoute
   '/motor-decisao': typeof AuthenticatedMotorDecisaoRoute
+  '/novidades': typeof AuthenticatedNovidadesRoute
   '/precos': typeof AuthenticatedPrecosRoute
   '/problemas': typeof AuthenticatedProblemasRoute
   '/raiox': typeof AuthenticatedRaioxRoute
@@ -439,6 +447,7 @@ export interface FileRoutesById {
   '/_authenticated/meu-mapa': typeof AuthenticatedMeuMapaRoute
   '/_authenticated/meus-relatorios': typeof AuthenticatedMeusRelatoriosRoute
   '/_authenticated/motor-decisao': typeof AuthenticatedMotorDecisaoRoute
+  '/_authenticated/novidades': typeof AuthenticatedNovidadesRoute
   '/_authenticated/precos': typeof AuthenticatedPrecosRoute
   '/_authenticated/problemas': typeof AuthenticatedProblemasRoute
   '/_authenticated/raiox': typeof AuthenticatedRaioxRoute
@@ -491,6 +500,7 @@ export interface FileRouteTypes {
     | '/meu-mapa'
     | '/meus-relatorios'
     | '/motor-decisao'
+    | '/novidades'
     | '/precos'
     | '/problemas'
     | '/raiox'
@@ -538,6 +548,7 @@ export interface FileRouteTypes {
     | '/meu-mapa'
     | '/meus-relatorios'
     | '/motor-decisao'
+    | '/novidades'
     | '/precos'
     | '/problemas'
     | '/raiox'
@@ -588,6 +599,7 @@ export interface FileRouteTypes {
     | '/_authenticated/meu-mapa'
     | '/_authenticated/meus-relatorios'
     | '/_authenticated/motor-decisao'
+    | '/_authenticated/novidades'
     | '/_authenticated/precos'
     | '/_authenticated/problemas'
     | '/_authenticated/raiox'
@@ -767,6 +779,13 @@ declare module '@tanstack/react-router' {
       path: '/motor-decisao'
       fullPath: '/motor-decisao'
       preLoaderRoute: typeof AuthenticatedMotorDecisaoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/novidades': {
+      id: '/_authenticated/novidades'
+      path: '/novidades'
+      fullPath: '/novidades'
+      preLoaderRoute: typeof AuthenticatedNovidadesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/precos': {
@@ -1008,6 +1027,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMeuMapaRoute: typeof AuthenticatedMeuMapaRoute
   AuthenticatedMeusRelatoriosRoute: typeof AuthenticatedMeusRelatoriosRoute
   AuthenticatedMotorDecisaoRoute: typeof AuthenticatedMotorDecisaoRoute
+  AuthenticatedNovidadesRoute: typeof AuthenticatedNovidadesRoute
   AuthenticatedPrecosRoute: typeof AuthenticatedPrecosRoute
   AuthenticatedProblemasRoute: typeof AuthenticatedProblemasRoute
   AuthenticatedRaioxRoute: typeof AuthenticatedRaioxRoute
@@ -1049,6 +1069,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMeuMapaRoute: AuthenticatedMeuMapaRoute,
   AuthenticatedMeusRelatoriosRoute: AuthenticatedMeusRelatoriosRoute,
   AuthenticatedMotorDecisaoRoute: AuthenticatedMotorDecisaoRoute,
+  AuthenticatedNovidadesRoute: AuthenticatedNovidadesRoute,
   AuthenticatedPrecosRoute: AuthenticatedPrecosRoute,
   AuthenticatedProblemasRoute: AuthenticatedProblemasRoute,
   AuthenticatedRaioxRoute: AuthenticatedRaioxRoute,
