@@ -92,6 +92,22 @@ export function contarPalavras(texto: string): number {
   return t ? t.split(/\s+/).length : 0;
 }
 
+/** Blocos montados na hora pelo servidor: o Admin não edita o conteúdo nem as ferramentas. */
+export const CHAVE_MUDANCAS_RECENTES = "mudancas_recentes";
+export const CHAVES_AUTOMATICAS: readonly string[] = [CHAVE_MUDANCAS_RECENTES];
+
+export interface MudancaRecente { title: string; summary: string; vale_a_partir: string | null }
+
+/** Texto do bloco "mudancas_recentes": "Mudança (vale a partir de DD/MM): título — resumo". */
+export function gerarMudancasRecentes(itens: readonly MudancaRecente[]): string {
+  const linhas = itens.map((m) => {
+    const resumo = m.summary.replace(/\s+/g, " ").trim().slice(0, 400);
+    const quando = m.vale_a_partir ? ` (vale a partir de ${m.vale_a_partir.slice(8, 10)}/${m.vale_a_partir.slice(5, 7)})` : "";
+    return `- Mudança${quando}: ${m.title.trim()}${resumo ? ` — ${resumo}` : ""}`;
+  });
+  return linhas.length ? `MUDANÇAS RECENTES NA EMPRESA (valem a partir da data indicada):\n${linhas.join("\n")}` : "";
+}
+
 /** Texto do bloco "padrao_escrita", gerado da tabela. */
 export function gerarPadraoEscrita(itens: PadraoEscritaItem[]): string {
   const ativos = itens.filter((i) => i.ativo).sort((a, b) => a.ordem - b.ordem);

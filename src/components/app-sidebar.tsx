@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   ChevronDown, ChevronUp, GraduationCap, Headset, Home, LayoutGrid, LifeBuoy, LogOut,
   PenLine, Search, Settings,
+  Newspaper,
 } from "lucide-react";
 import { MarcianaEyeIcon } from "@/components/marciana/MarcianaEye";
 import { useAdminPendingCounts } from "@/components/admin/AdminShell";
@@ -16,6 +17,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { OmniaLockup, OmniaSymbol } from "@/components/OmniaLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { listNavItems } from "@/lib/settings.functions";
+import { useStatusMudancas } from "@/components/novidades/hooks";
 import { getAjudaNovidadesStatus } from "@/lib/ajuda.functions";
 import { useRetomadaContagem } from "@/components/retomada/hooks";
 import { useStatusAquecimento } from "@/components/aquecimento/hooks";
@@ -134,6 +136,7 @@ export function AppSidebar({ isAdmin, email, displayName, role }: { isAdmin: boo
   const adminPendingTotal = isAdmin ? adminPending?.total ?? 0 : 0;
   const retomadaHoje = useRetomadaContagem().data?.total ?? 0;
   const aq = useStatusAquecimento().data;
+  const mudancasPendentes = (useStatusMudancas().data?.pendentes ?? 0) > 0;
   const aquecimentoPendente = !!aq && aq.disponivel && !aq.concluido_hoje;
   const { state, isMobile } = useSidebar();
   const collapsed = state === "collapsed" && !isMobile;
@@ -187,6 +190,12 @@ export function AppSidebar({ isAdmin, email, displayName, role }: { isAdmin: boo
         {collapsed ? (
           <nav aria-label="Menu" className="flex flex-col items-center gap-1.5">
             <RailButton label="Início" to="/" active={isActive("/")}><Home className="h-[18px] w-[18px]" {...ICON} /></RailButton>
+            <RailButton label={mudancasPendentes ? "Novidades (há mudança para confirmar)" : "Novidades"} to="/novidades" active={isActive("/novidades")}>
+              <span className="relative">
+                <Newspaper className="h-[18px] w-[18px]" {...ICON} />
+                {mudancasPendentes && <span aria-hidden className="absolute -right-1 -top-1 h-[7px] w-[7px] rounded-full bg-gold" />}
+              </span>
+            </RailButton>
             {groups.map((g) => {
               const active = g.key === currentGroup;
               return (
@@ -220,13 +229,26 @@ export function AppSidebar({ isAdmin, email, displayName, role }: { isAdmin: boo
               to="/"
               aria-current={isActive("/") ? "page" : undefined}
               className={cn(
-                "mb-3 flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-[15px] transition-colors",
+                "mb-1 flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-[15px] transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 isActive("/") ? "bg-sidebar-accent text-ink" : "text-ink hover:bg-sidebar-accent/70",
               )}
             >
               <Home className={cn("h-[18px] w-[18px]", isActive("/") ? "text-gold" : "text-ink-muted")} {...ICON} />
               Início
+            </Link>
+            <Link
+              to="/novidades"
+              aria-current={isActive("/novidades") ? "page" : undefined}
+              className={cn(
+                "mb-3 flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-[15px] transition-colors",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                isActive("/novidades") ? "bg-sidebar-accent text-ink" : "text-ink hover:bg-sidebar-accent/70",
+              )}
+            >
+              <Newspaper className={cn("h-[18px] w-[18px]", isActive("/novidades") ? "text-gold" : "text-ink-muted")} {...ICON} />
+              <span className="flex-1">Novidades</span>
+              {mudancasPendentes && <span role="img" aria-label="Mudança importante para confirmar" className="h-[7px] w-[7px] shrink-0 rounded-full bg-gold" />}
             </Link>
 
             {groups.map((g) => {

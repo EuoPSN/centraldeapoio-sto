@@ -132,6 +132,31 @@ function temasDoMaisFraco(temas: { id: string; ordem: number }[], mapa: MapaLinh
   }).map((t) => t.id);
 }
 
+/** Exercício ligado a uma mudança importante ou urgente publicada nos últimos 3 dias que a pessoa
+ * ainda não respondeu (em nenhuma sessão). Sem a migração das mudanças, devolve null. */
+async function exercicioDeMudancaPendente(ctx: Ctx, aprovados: ExRow[]): Promise<ExRow | null> {
+  try {
+    const s = db(ctx);
+    const desde3 = new Date(Date.now() - 3 * 86400_000).toISOString();
+    const { data, error } = await s.from("changelog_entries").select("exercicio_id, publicada_em")
+      .eq("published", true).in("tipo", ["importante", "urgente"]).not("exercicio_id", "is", null)
+      .gte("publicada_em", desde3).order("publicada_em", { ascending: false });
+    if (error) throw new Error(error.message);
+    const ids = ((data ?? []) as { exercicio_id: string }[]).map((r) => r.exercicio_id);
+    if (!ids.length) return null;
+    const resp = await s.from("aquecimento_respostas").select("exercicio_id").eq("user_id", ctx.userId).in("exercicio_id", ids);
+    const respondidos = new Set(((resp.error ? [] : (resp.data ?? [])) as { exercicio_id: string | null }[]).map((r) => r.exercicio_id));
+    for (const id of ids) {
+      const e = aprovados.find((x) => x.id === id && x.tipo === "multipla_escolha");
+      if (e && !respondidos.has(id)) return e;
+    }
+    return null;
+  } catch (err) {
+    console.error("Exercício de mudança indisponível:", err);
+    return null;
+  }
+}
+
 async function escolherCartoes(ctx: Ctx, cfg: ConfigAquecimento, opts: { total: number; temaId?: string; jaUsados: Set<string> }): Promise<{ ex: ExRow[]; temas: Map<string, string> }> {
   const s = db(ctx);
   const dia = diaBR(new Date());
@@ -168,9 +193,11 @@ async function escolherCartoes(ctx: Ctx, cfg: ConfigAquecimento, opts: { total: 
     return { ex: out, temas: nomes };
   }
 
-  // (1) Produto, múltipla escolha, do tema com pior nível.
+  // (1) Produto, múltipla escolha, do tema com pior nível. Antes dele: a pergunta de checagem de uma
+  // mudança importante publicada nos últimos 3 dias que a pessoa ainda não respondeu ocupa o cartão 1.
   const ordemTemas = temasDoMaisFraco(temas, mapa);
-  const mc = (() => {
+  const daMudanca = await exercicioDeMudancaPendente(ctx, todos);
+  const mc = daMudanca ?? (() => {
     for (const tid of ordemTemas) { const e = escolhe(todos.filter((x) => x.tipo === "multipla_escolha" && x.tema_id === tid && livre(x)), `mc${tid}`); if (e) return e; }
     return null;
   })();

@@ -49,6 +49,18 @@ export interface MapaDominioLinha {
   acertos: number;
 }
 
+/** Fase B · bloco 3: mudança importante ou urgente publicada no período (só o Admin recebe). */
+export interface MudancaLinha {
+  titulo: string; tipo: string; publicada_em: string; vale_a_partir: string | null;
+  confirmadas: number; total: number; pct_acerto: number | null;
+}
+/** "Li e entendi" de uma pessoa (o atendente só recebe as próprias). */
+export interface ConfirmacaoLinha { titulo: string; user_id: string; confirmado_em: string; acertou: boolean | null }
+/** Ranking do mês (só o Admin). */
+export interface RankingLinha { mes: string; podio: string; user_id: string; valor: number | null; posicao: number | null; entra: boolean }
+/** Ranking do atendente: só o próprio valor e o do mês anterior, sem posição. */
+export interface MeuRankingLinha { mes: string; podio: string; valor: number | null; valor_anterior: number | null }
+
 export interface DadosInteligencia {
   de: string;
   ate: string;
@@ -61,6 +73,11 @@ export interface DadosInteligencia {
   /** Fase B · bloco 2: aquecimento e mapa de domínio (ausentes se a migração ainda não rodou). */
   aquecimento?: AquecimentoLinha[];
   mapa?: MapaDominioLinha[];
+  /** Fase B · bloco 3 (ausentes se a migração ainda não rodou). */
+  mudancas?: MudancaLinha[];
+  confirmacoes?: ConfirmacaoLinha[];
+  ranking?: RankingLinha[];
+  meuRanking?: MeuRankingLinha[];
   /** Regras do mapa e do acerto (aquecimento_config), para o LEIA-ME. */
   aquecimentoConfig?: { nota_acerto: number; janela_dominio_dias: number; min_respostas: number; limiar_dominando: number };
   /** Etapas do funil do Cérebro (tabela funil_etapas). */
@@ -177,6 +194,35 @@ const C = {
     { nome: "respostas_na_janela", significado: "Respostas do atendente nesse tema dentro da janela.", valores: "número inteiro", largura: 18 },
     { nome: "acertos", significado: "Quantas dessas respostas foram acertos.", valores: "número inteiro", largura: 10 },
   ],
+  mudancas: [
+    { nome: "mudanca", significado: "Título da mudança importante ou urgente publicada no período.", valores: "texto livre", largura: 50 },
+    { nome: "tipo", significado: "Tipo da mudança.", valores: "importante | urgente", largura: 12 },
+    { nome: "publicada_em", significado: "Quando a mudança foi publicada.", valores: "AAAA-MM-DD HH:MM", largura: 17 },
+    { nome: "vale_a_partir", significado: "Data em que a mudança passa a valer. Vazio = já valia ao publicar.", valores: "AAAA-MM-DD ou vazio", largura: 14 },
+    { nome: "confirmadas", significado: "Atendentes ativos que já disseram Li e entendi.", valores: "número inteiro", largura: 12 },
+    { nome: "total_de_atendentes", significado: "Atendentes ativos hoje (administradores não contam).", valores: "número inteiro", largura: 18 },
+    { nome: "percentual_de_acerto", significado: "Das confirmações com pergunta de checagem, a % em que o atendente acertou. Vazio se a mudança não tem pergunta.", valores: "0 a 100, uma casa decimal, ou vazio", largura: 20 },
+  ],
+  confirmacoes: [
+    { nome: "mudanca", significado: "Título da mudança confirmada.", valores: "texto livre", largura: 50 },
+    { nome: "atendente", significado: "Atendente que confirmou.", valores: "nome do atendente", largura: 16 },
+    { nome: "confirmado_em", significado: "Quando disse Li e entendi.", valores: "AAAA-MM-DD HH:MM", largura: 17 },
+    { nome: "acertou_checagem", significado: "Se acertou a pergunta de checagem. Vazio quando a mudança não tem pergunta.", valores: "sim | não | vazio", largura: 16 },
+  ],
+  ranking: [
+    { nome: "mes", significado: "Mês do ranking (o ranking é mensal e zera no dia 1º).", valores: "AAAA-MM", largura: 10 },
+    { nome: "podio", significado: "Pódio.", valores: "constantes | respondidas | evoluiram | ensinam | treino", largura: 14 },
+    { nome: "atendente", significado: "Atendente.", valores: "nome do atendente", largura: 16 },
+    { nome: "valor", significado: "constantes e respondidas: percentual 0 a 100. evoluiram: variação percentual da nota sobre o mês anterior. ensinam: número de contribuições. treino: pontos do mês no Simulador (Atendimento).", valores: "número ou vazio", largura: 12 },
+    { nome: "posicao", significado: "Posição entre quem entra no pódio. Vazio se não entra. Só o Admin vê posições.", valores: "número inteiro ou vazio", largura: 10 },
+    { nome: "entra_no_podio", significado: "sim se tem o mínimo exigido (retomadas, simulações ou contribuições) para disputar.", valores: "sim | não", largura: 14 },
+  ],
+  meuRanking: [
+    { nome: "mes", significado: "Mês do ranking.", valores: "AAAA-MM", largura: 10 },
+    { nome: "podio", significado: "Pódio.", valores: "constantes | respondidas | evoluiram | ensinam | treino", largura: 14 },
+    { nome: "meu_valor", significado: "O seu valor no mês (mesma unidade do pódio). Sem número de posição.", valores: "número ou vazio", largura: 12 },
+    { nome: "valor_do_mes_anterior", significado: "O seu valor no mês anterior ao da linha.", valores: "número ou vazio", largura: 20 },
+  ],
   uso: [
     { nome: "data", significado: "Dia do uso (Brasília).", valores: "AAAA-MM-DD", largura: 12 },
     { nome: "atendente", significado: "Atendente que usou.", valores: "nome do atendente", largura: 16 },
@@ -285,6 +331,21 @@ export function montarAbasInteligencia(d: DadosInteligencia): Aba[] {
     .sort((a, b) => ptBR(nomeAt(a.user_id), nomeAt(b.user_id)) || ptBR(a.tema, b.tema))
     .map((m) => [nomeAt(m.user_id), m.tema, m.nivel, m.respostas, m.acertos]);
 
+  // Mudanças e Ranking (Fase B · bloco 3).
+  const mudLinhas: Cel[][] = [...(d.mudancas ?? [])]
+    .sort((a, b) => a.publicada_em.localeCompare(b.publicada_em) || ptBR(a.titulo, b.titulo))
+    .map((m) => [m.titulo, m.tipo, isoBR(m.publicada_em), m.vale_a_partir ?? "", m.confirmadas, m.total, m.pct_acerto]);
+  const confLinhas: Cel[][] = [...(d.confirmacoes ?? [])]
+    .sort((a, b) => a.confirmado_em.localeCompare(b.confirmado_em) || ptBR(nomeAt(a.user_id), nomeAt(b.user_id)))
+    .map((c) => [c.titulo, nomeAt(c.user_id), isoBR(c.confirmado_em), c.acertou == null ? "" : sn(c.acertou)]);
+  const mesAAAAMM = (m: string) => m.slice(0, 7);
+  const rankLinhas: Cel[][] = [...(d.ranking ?? [])]
+    .sort((a, b) => a.mes.localeCompare(b.mes) || a.podio.localeCompare(b.podio) || (a.posicao ?? 999) - (b.posicao ?? 999) || ptBR(nomeAt(a.user_id), nomeAt(b.user_id)))
+    .map((r) => [mesAAAAMM(r.mes), r.podio, nomeAt(r.user_id), r.valor, r.posicao, sn(r.entra)]);
+  const meuLinhas: Cel[][] = [...(d.meuRanking ?? [])]
+    .sort((a, b) => a.mes.localeCompare(b.mes) || a.podio.localeCompare(b.podio))
+    .map((r) => [mesAAAAMM(r.mes), r.podio, r.valor, r.valor_anterior]);
+
   return [
     { nome: "LEIA-ME", tabela: "tbl_leia_me", colunas: LEIA_ME_COLUNAS, linhas: montarLeiaMe(d) },
     { nome: "Raio-X", tabela: "tbl_raiox", colunas: C.raiox, linhas: raioxLinhas },
@@ -293,6 +354,10 @@ export function montarAbasInteligencia(d: DadosInteligencia): Aba[] {
     { nome: "Uso_da_IA", tabela: "tbl_uso_da_ia", colunas: C.uso, linhas: usoLinhas },
     ...(d.aquecimento ? [{ nome: "Aquecimento", tabela: "tbl_aquecimento", colunas: C.aquecimento, linhas: aqLinhas }] : []),
     ...(d.mapa ? [{ nome: "Mapa_de_dominio", tabela: "tbl_mapa_de_dominio", colunas: C.mapa, linhas: mapaLinhas }] : []),
+    ...(d.mudancas ? [{ nome: "Mudancas", tabela: "tbl_mudancas", colunas: C.mudancas, linhas: mudLinhas }] : []),
+    ...(d.confirmacoes ? [{ nome: "Confirmacoes", tabela: "tbl_confirmacoes", colunas: C.confirmacoes, linhas: confLinhas }] : []),
+    ...(d.ranking ? [{ nome: "Ranking", tabela: "tbl_ranking", colunas: C.ranking, linhas: rankLinhas }] : []),
+    ...(d.meuRanking ? [{ nome: "Meu_ranking", tabela: "tbl_meu_ranking", colunas: C.meuRanking, linhas: meuLinhas }] : []),
   ];
 }
 
@@ -338,6 +403,23 @@ function montarLeiaMe(d: DadosInteligencia): Cel[][] {
     add("mapa_de_dominio", "sem_ranking", "O aquecimento não entra no Ranking.");
   }
 
+  if (d.mudancas || d.confirmacoes) {
+    add("mudancas", "o_que_e", "Avisos de mudança da Omnia. Importante e urgente pedem o Li e entendi do atendente; informativa não pede. A aba Mudancas (só do Admin) resume cada mudança publicada no período; a aba Confirmacoes lista quem confirmou e quando.");
+    add("mudancas", "acerto_da_checagem", "Algumas mudanças têm uma pergunta de checagem (3 alternativas). O atendente vê a resposta certa e a explicação antes de confirmar; acertou_checagem registra se acertou. Vira também um cartão do aquecimento.");
+    add("mudancas", "privacidade", d.escopo === "equipe" ? "Equipe inteira: uma linha por confirmação." : "Somente as suas próprias confirmações.");
+  }
+  if (d.ranking || d.meuRanking) {
+    add("ranking", "o_que_e", "Ranking mensal de qualidade, zerado no dia 1º. Pódios: constantes, respondidas, evoluiram, ensinam e treino (pontos do Simulador). O aquecimento e o Raio-X não entram no ranking.");
+    add("ranking", "constantes", "% das etapas de retomada com prazo no mês enviadas no dia do prazo (primeiro Enviei até o fim do dia do prazo, horário de Brasília). Etapa = um passo da régua de uma retomada.", "0 a 100");
+    add("ranking", "respondidas", "Entre as retomadas com pelo menos um Enviei no mês, % em que o cliente respondeu ou fechou.", "0 a 100");
+    add("ranking", "evoluiram", "Variação % da nota média do Simulador no mês sobre o mês anterior; precisa de 3 simulações em cada mês e só entra quem melhorou.");
+    add("ranking", "ensinam", "Conversas publicadas na Biblioteca mais objeções aprovadas com crédito ao autor, no mês.");
+    add("ranking", "minimo", "Os pódios de porcentagem só contam quem tem o mínimo de retomadas no mês (padrão 15, definido no Admin).");
+    add("ranking", "privacidade", d.escopo === "equipe"
+      ? "Visão do Admin: lista completa com posições. O atendente vê só os 3 primeiros no site e, neste arquivo, só o próprio valor."
+      : "Aba Meu_ranking: só o seu valor e o do mês anterior, sem posição e sem dados de outras pessoas.");
+  }
+
   d.funil.forEach((f, i) => {
     const def = f.definicao.trim() || "(definição ainda não preenchida no Cérebro)";
     const sinais = f.sinais.length ? ` Sinais: ${f.sinais.join("; ")}.` : "";
@@ -347,6 +429,10 @@ function montarLeiaMe(d: DadosInteligencia): Cel[][] {
   const abasDic: (readonly [string, Coluna[]])[] = [["Raio-X", C.raiox], ["Tecnicas_que_faltam", C.tecnicas], ["Erros_de_escrita", C.erros], ["Uso_da_IA", C.uso]];
   if (d.aquecimento) abasDic.push(["Aquecimento", C.aquecimento]);
   if (d.mapa) abasDic.push(["Mapa_de_dominio", C.mapa]);
+  if (d.mudancas) abasDic.push(["Mudancas", C.mudancas]);
+  if (d.confirmacoes) abasDic.push(["Confirmacoes", C.confirmacoes]);
+  if (d.ranking) abasDic.push(["Ranking", C.ranking]);
+  if (d.meuRanking) abasDic.push(["Meu_ranking", C.meuRanking]);
   for (const [aba, cols] of abasDic) {
     for (const c of cols) add("dicionario_de_colunas", `${aba}.${c.nome}`, c.significado, c.valores);
   }

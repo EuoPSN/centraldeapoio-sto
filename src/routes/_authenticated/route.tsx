@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { GlobalSearch } from "@/components/GlobalSearch";
-import { ChangelogWidget } from "@/components/ChangelogWidget";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getMe } from "@/lib/content.functions";
@@ -13,6 +12,7 @@ import { HelpButton } from "@/components/HelpButton";
 import { EditPageLink } from "@/components/EditPageLink";
 import { AvisosFollowUp } from "@/components/retomada/Avisos";
 import { AvisosAquecimento } from "@/components/aquecimento/Avisos";
+import { AvisosMudancas } from "@/components/novidades/Avisos";
 import { useEffect, type CSSProperties } from "react";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -90,7 +90,7 @@ function AppLayout() {
         <GlobalSearch />
         <AvisosFollowUp />
         <AvisosAquecimento />
-        <ChangelogWidget />
+        <AvisosMudancas />
       </SidebarProvider>
     </ThemeController>
   );

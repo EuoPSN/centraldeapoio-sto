@@ -4,7 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isAdminUser } from "@/lib/authz";
 import { removerDadosPessoais } from "@/lib/cliente-disse";
 import {
-  ETAPAS_FUNIL, ETAPA_FUNIL_NOME, FERRAMENTAS, blocoVazio, contarPalavras, gerarEtapasFunil, gerarPadraoEscrita,
+  CHAVES_AUTOMATICAS, CHAVE_MUDANCAS_RECENTES, ETAPAS_FUNIL, ETAPA_FUNIL_NOME, FERRAMENTAS, blocoVazio, contarPalavras, gerarEtapasFunil, gerarMudancasRecentes, gerarPadraoEscrita,
   type CerebroBloco, type FunilEtapa, type PadraoEscritaItem, type RegraFixa,
 } from "@/lib/cerebro";
 import { diaBR, inicioDiaBR, somarDias } from "@/lib/retomada";
@@ -56,8 +56,10 @@ export const getCerebroAdmin = createServerFn({ method: "GET" })
     ]);
     const padrao = (check(p) ?? []) as PadraoEscritaItem[];
     const etapas = (check(e) ?? []) as FunilEtapa[];
+    const { lerMudancasRecentes } = await import("@/lib/cerebro.server");
+    const mudancas = await lerMudancasRecentes();
     const blocos = ((check(b) ?? []) as CerebroBloco[]).map((x) => {
-      const efetivo = x.chave === "padrao_escrita" ? gerarPadraoEscrita(padrao) : x.chave === "etapas_funil" ? gerarEtapasFunil(etapas) : x.conteudo;
+      const efetivo = x.chave === "padrao_escrita" ? gerarPadraoEscrita(padrao) : x.chave === "etapas_funil" ? gerarEtapasFunil(etapas) : x.chave === CHAVE_MUDANCAS_RECENTES ? gerarMudancasRecentes(mudancas) : x.conteudo;
       return { ...x, conteudo_efetivo: efetivo, palavras: blocoVazio(efetivo) ? 0 : contarPalavras(efetivo) };
     });
     return { blocos, regras: (check(r) ?? []) as RegraFixa[], padrao, etapas };
@@ -73,6 +75,8 @@ export const salvarCerebroBloco = createServerFn({ method: "POST" })
   }).parse(d))
   .handler(async ({ data, context }) => {
     await requireAdmin(context);
+    const { data: atual } = await db(context).from("cerebro_blocos").select("chave").eq("id", data.id).maybeSingle();
+    if (atual && CHAVES_AUTOMATICAS.includes(atual.chave)) throw new Error("Esta skill é automática: ela se monta sozinha a partir das mudanças publicadas.");
     const patch: Record<string, unknown> = { ferramentas: [...new Set(data.ferramentas)], ativo: data.ativo };
     if (data.conteudo !== undefined) patch.conteudo = data.conteudo;
     check(await db(context).from("cerebro_blocos").update(patch).eq("id", data.id));

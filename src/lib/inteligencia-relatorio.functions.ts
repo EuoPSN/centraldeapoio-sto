@@ -3,8 +3,9 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isAdminUser } from "@/lib/authz";
 import { diaBR, inicioDiaBR, somarDias } from "@/lib/retomada";
-import { limparTextoExport, type AquecimentoLinha, type DadosInteligencia, type MapaDominioLinha, type RaioxLinha, type UsoLinha } from "@/lib/inteligencia-relatorio";
+import { limparTextoExport, type AquecimentoLinha, type ConfirmacaoLinha, type DadosInteligencia, type MeuRankingLinha, type MudancaLinha, type RankingLinha, type MapaDominioLinha, type RaioxLinha, type UsoLinha } from "@/lib/inteligencia-relatorio";
 import { CONFIG_AQUECIMENTO_PADRAO, calcularNivel } from "@/lib/aquecimento";
+import { mesDe, PODIOS_QUALIDADE } from "@/lib/ranking";
 
 // Relatório Excel da Inteligência: dados do Raio-X e do uso das IAs.
 //
@@ -83,7 +84,11 @@ export const getDadosInteligencia = createServerFn({ method: "POST" })
     // Aquecimento e Mapa de domínio. Se a migração do bloco 2 ainda não rodou, o relatório sai sem essas abas.
     const aq = await lerAquecimento(s, { ini, fim, filtroUser, equipeToda: equipe && !data.atendente_id, ehAdmin, userId: context.userId });
 
-    const ids = [...new Set([context.userId, ...brutoRaiox.map((r) => r.user_id), ...brutoUso.map((u) => u.user_id), ...(aq?.usuarios ?? [])])];
+    // Mudanças e Ranking (Fase B · bloco 3). Sem a migração, o relatório sai sem essas abas.
+    const mud = await lerMudancas(s, { ini, fim, filtroUser, equipe, userId: context.userId });
+    const rk = await lerRanking(s, { de: data.de, ate: data.ate, equipe, filtroUser, userId: context.userId });
+
+    const ids = [...new Set([context.userId, ...brutoRaiox.map((r) => r.user_id), ...brutoUso.map((u) => u.user_id), ...(aq?.usuarios ?? []), ...(mud?.usuarios ?? []), ...(rk?.usuarios ?? [])])];
     const atendentes: Record<string, string> = {};
     if (ids.length) {
       const perfis = check(await s.from("profiles").select("id, display_name, email").in("id", ids)) as { id: string; display_name: string | null; email: string | null }[];
@@ -133,6 +138,8 @@ export const getDadosInteligencia = createServerFn({ method: "POST" })
       exportadoEm: new Date().toISOString(),
       atendentes, raiox, uso,
       ...(aq ? { aquecimento: aq.linhas, mapa: aq.mapa, aquecimentoConfig: aq.config } : {}),
+      ...(mud ? { confirmacoes: mud.confirmacoes, ...(mud.mudancas ? { mudancas: mud.mudancas } : {}) } : {}),
+      ...(rk ? (rk.ranking ? { ranking: rk.ranking } : { meuRanking: rk.meuRanking }) : {}),
       funil: ((funil.data ?? []) as { etapa: string; nome: string; definicao: string | null; sinais: string[] | null }[])
         .map((f) => ({ etapa: f.etapa, nome: f.nome, definicao: f.definicao ?? "", sinais: f.sinais ?? [] })),
       blocosCerebro: (blocos.data ?? []) as { chave: string; titulo: string }[],
@@ -202,6 +209,108 @@ async function lerAquecimento(
     return { linhas, mapa, usuarios, config: cfg };
   } catch (err) {
     console.error("Aquecimento indisponível no relatório (migração pendente?):", err);
+    return null;
+  }
+}
+
+/** Mudanças publicadas no período (só Admin) e confirmações (Admin: todas ou de um atendente; atendente:
+ * só as próprias). Nunca texto da mudança: só título, tipo, datas e contagens. */
+async function lerMudancas(
+  s: any,
+  o: { ini: string; fim: string; filtroUser: string | null; equipe: boolean; userId: string },
+): Promise<{ mudancas?: MudancaLinha[]; confirmacoes: ConfirmacaoLinha[]; usuarios: string[] } | null> {
+  try {
+    const entradas = check(await s.from("changelog_entries").select("id, title, tipo, publicada_em, vale_a_partir")
+      .eq("published", true).in("tipo", ["importante", "urgente"])) as { id: string; title: string; tipo: string; publicada_em: string | null; vale_a_partir: string | null }[];
+    const titulo = new Map(entradas.map((e) => [e.id, e.title]));
+
+    let mudancas: MudancaLinha[] | undefined;
+    if (o.equipe) {
+      const r = await s.rpc("changelog_resumo_confirmacoes");
+      if (r.error) throw new Error(r.error.message);
+      const resumo = new Map(((r.data ?? []) as { entry_id: string; total: number; confirmadas: number; acertos: number; com_checagem: number }[]).map((x) => [x.entry_id, x]));
+      mudancas = entradas
+        .filter((e) => e.publicada_em && e.publicada_em >= o.ini && e.publicada_em < o.fim)
+        .map((e) => {
+          const x = resumo.get(e.id);
+          return {
+            titulo: e.title, tipo: e.tipo, publicada_em: e.publicada_em as string, vale_a_partir: e.vale_a_partir,
+            confirmadas: x?.confirmadas ?? 0, total: x?.total ?? 0,
+            pct_acerto: x && x.com_checagem > 0 ? Math.round((x.acertos / x.com_checagem) * 1000) / 10 : null,
+          };
+        });
+    }
+
+    const brutas = await lerTudo<{ entry_id: string; user_id: string; confirmado_em: string; acertou_checagem: boolean | null }>((a, b) => {
+      let q = s.from("changelog_confirmacoes").select("entry_id, user_id, confirmado_em, acertou_checagem")
+        .gte("confirmado_em", o.ini).lt("confirmado_em", o.fim).order("confirmado_em").order("id").range(a, b);
+      if (o.filtroUser) q = q.eq("user_id", o.filtroUser);
+      return q;
+    });
+    const confirmacoes: ConfirmacaoLinha[] = brutas
+      .filter((c) => titulo.has(c.entry_id))
+      .map((c) => ({ titulo: titulo.get(c.entry_id)!, user_id: c.user_id, confirmado_em: c.confirmado_em, acertou: c.acertou_checagem }));
+    return { mudancas, confirmacoes, usuarios: [...new Set(confirmacoes.map((c) => c.user_id))] };
+  } catch (err) {
+    console.error("Mudanças indisponíveis no relatório (migração pendente?):", err);
+    return null;
+  }
+}
+
+/** Meses (AAAA-MM-01) que o período toca. O período máximo é de 90 dias: no máximo 4 meses. */
+function mesesDoPeriodo(de: string, ate: string): string[] {
+  const out: string[] = [];
+  for (let m = mesDe(de); m <= mesDe(ate) && out.length < 5; m = mesDe(m, 1)) out.push(m);
+  return out;
+}
+
+/** Ranking por mês. Admin: lista completa (com posição). Atendente: só o próprio valor e o do mês anterior. */
+async function lerRanking(
+  s: any,
+  o: { de: string; ate: string; equipe: boolean; filtroUser: string | null; userId: string },
+): Promise<{ ranking?: RankingLinha[]; meuRanking?: MeuRankingLinha[]; usuarios: string[] } | null> {
+  try {
+    const { pontosTreino } = await import("@/lib/ranking.functions");
+    const meses = mesesDoPeriodo(o.de, o.ate);
+    const hoje = mesDe(diaBR(new Date()));
+    const meses2 = meses.filter((m) => m <= hoje);
+
+    if (o.equipe) {
+      const ranking: RankingLinha[] = [];
+      for (const mes of meses2) {
+        for (const podio of PODIOS_QUALIDADE) {
+          const r = await s.rpc("ranking_admin", { p_mes: mes, p_podio: podio });
+          if (r.error) throw new Error(r.error.message);
+          for (const x of (r.data ?? []) as { user_id: string; valor: number | null; entra_no_podio: boolean; posicao: number | null }[]) {
+            ranking.push({ mes, podio, user_id: x.user_id, valor: x.valor == null ? null : Number(x.valor), posicao: x.posicao, entra: x.entra_no_podio });
+          }
+        }
+        (await pontosTreino(mes, "atendimento")).forEach((l, i) => {
+          ranking.push({ mes, podio: "treino", user_id: l.user_id, valor: l.pontos, posicao: l.pontos > 0 ? i + 1 : null, entra: l.pontos > 0 });
+        });
+      }
+      const filtrado = o.filtroUser ? ranking.filter((r) => r.user_id === o.filtroUser) : ranking;
+      return { ranking: filtrado, usuarios: [...new Set(filtrado.map((r) => r.user_id))] };
+    }
+
+    // Atendente: ranking_podios devolve só o próprio valor (mês e anterior), nunca a posição.
+    const meuRanking: MeuRankingLinha[] = [];
+    for (const mes of meses2) {
+      const r = await s.rpc("ranking_podios", { p_mes: mes });
+      if (r.error) throw new Error(r.error.message);
+      const podios = (r.data?.podios ?? {}) as Record<string, { meu: { valor: number | null } | null; anterior: number | null }>;
+      for (const podio of PODIOS_QUALIDADE) {
+        const p = podios[podio];
+        if (!p) continue;
+        meuRanking.push({ mes, podio, valor: p.meu?.valor == null ? null : Number(p.meu.valor), valor_anterior: p.anterior == null ? null : Number(p.anterior) });
+      }
+      const atual = (await pontosTreino(mes, "atendimento")).find((l) => l.user_id === o.userId);
+      const ant = (await pontosTreino(mesDe(mes, -1), "atendimento")).find((l) => l.user_id === o.userId);
+      meuRanking.push({ mes, podio: "treino", valor: atual?.pontos ?? null, valor_anterior: ant?.pontos ?? null });
+    }
+    return { meuRanking, usuarios: [] };
+  } catch (err) {
+    console.error("Ranking indisponível no relatório (migração pendente?):", err);
     return null;
   }
 }

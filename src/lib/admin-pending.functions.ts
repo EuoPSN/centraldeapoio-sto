@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { contarAtendentesAtrasados } from "@/lib/retomada.functions";
 import { contarFichasNovas } from "@/lib/biblioteca.functions";
 import { contarSugestoesPendentes } from "@/lib/mensagens-vendem.functions";
+import { contarMudancasSemConfirmar } from "@/lib/changelog.functions";
 import { contarExerciciosParaAprovar } from "@/lib/aquecimento-admin.functions";
 
 async function requireAdmin(ctx: { supabase: unknown; userId: string }) {
@@ -148,6 +149,19 @@ export const getAdminPendingCounts = createServerFn({ method: "GET" })
         context: count > 0 ? "Rascunhos da IA no Banco de exercícios" : "Tudo em dia",
         count,
         href: "/admin/bancoexercicios",
+      });
+    }
+
+    // 2f) Fase B bloco 3: mudanças importantes em vigor que ainda faltam confirmar.
+    {
+      const { total, primeira } = await contarMudancasSemConfirmar(db).catch(() => ({ total: 0, primeira: null as string | null }));
+      bySection.changelog = total;
+      items.push({
+        key: "changelog",
+        title: "Mudanças sem confirmar",
+        context: total > 0 && primeira ? primeira : "Tudo em dia",
+        count: total,
+        href: "/admin/changelog",
       });
     }
 

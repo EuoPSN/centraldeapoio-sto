@@ -12,8 +12,8 @@ import { isAdminUser } from "@/lib/authz";
 import { diaBR, inicioDiaBR } from "@/lib/retomada";
 import {
   CopilotoRespostaSchema, RaioxRespostaSchema, ETAPAS_FUNIL, ETAPA_FUNIL_NOME, REGRAS_FIXAS_PADRAO,
-  blocoVazio, calcularUso, contarPalavras, extrairJson, gerarEtapasFunil, gerarPadraoEscrita, limparTrecho, mensagemLimite,
-  type CopilotoResposta, type Ferramenta, type FunilEtapa, type PadraoEscritaItem, type RaioxResposta, type UsoStatus,
+  blocoVazio, CHAVE_MUDANCAS_RECENTES, calcularUso, contarPalavras, extrairJson, gerarEtapasFunil, gerarMudancasRecentes, gerarPadraoEscrita, limparTrecho, mensagemLimite,
+  type CopilotoResposta, type Ferramenta, type FunilEtapa, type MudancaRecente, type PadraoEscritaItem, type RaioxResposta, type UsoStatus,
 } from "@/lib/cerebro";
 
 async function adminDb() {
@@ -61,6 +61,25 @@ interface DadosCerebro {
   regras: string[];
   padrao: PadraoEscritaItem[];
   etapas: FunilEtapa[];
+  mudancas: MudancaRecente[];
+}
+
+/** Mudanças importantes/urgentes publicadas nos últimos 30 dias, marcadas "usar na IA" e ainda não
+ * incorporadas ao Playbook. Colunas novas: se a migração ainda não rodou, devolve lista vazia. */
+export async function lerMudancasRecentes(): Promise<MudancaRecente[]> {
+  try {
+    const a = await adminDb();
+    const desde = new Date(Date.now() - 30 * 86400_000).toISOString();
+    const { data, error } = await a.from("changelog_entries")
+      .select("title, summary, vale_a_partir")
+      .in("tipo", ["importante", "urgente"]).eq("published", true).eq("usar_na_ia", true).eq("incorporada", false)
+      .gte("publicada_em", desde).order("publicada_em", { ascending: false }).limit(20);
+    if (error) throw new Error(error.message);
+    return (data ?? []) as MudancaRecente[];
+  } catch (err) {
+    console.error("Mudanças recentes indisponíveis:", err);
+    return [];
+  }
 }
 
 /** Lê o Cérebro do banco. Se as tabelas ainda não existem (migração pendente) ou
@@ -68,11 +87,12 @@ interface DadosCerebro {
 async function carregarCerebro(): Promise<DadosCerebro | null> {
   try {
     const a = await adminDb();
-    const [b, r, p, e] = await Promise.all([
+    const [b, r, p, e, mudancas] = await Promise.all([
       a.from("cerebro_blocos").select("chave, titulo, conteudo, ferramentas, gerado, ativo, ordem").eq("ativo", true).order("ordem"),
       a.from("cerebro_regras_fixas").select("texto, ordem").eq("ativo", true).order("ordem"),
       a.from("padrao_escrita").select("*").eq("ativo", true).order("ordem"),
       a.from("funil_etapas").select("*").order("ordem"),
+      lerMudancasRecentes(),
     ]);
     if (b.error || r.error) throw new Error(b.error?.message ?? r.error?.message);
     return {
@@ -80,6 +100,7 @@ async function carregarCerebro(): Promise<DadosCerebro | null> {
       regras: ((r.data ?? []) as { texto: string }[]).map((x) => x.texto),
       padrao: (p.data ?? []) as PadraoEscritaItem[],
       etapas: (e.data ?? []) as FunilEtapa[],
+      mudancas,
     };
   } catch (err) {
     console.error("Cérebro indisponível; usando regras padrão:", err);
@@ -146,6 +167,7 @@ export async function montarInstrucoes(
       let corpo: string;
       if (b.chave === "padrao_escrita") corpo = gerarPadraoEscrita(dados.padrao);
       else if (b.chave === "etapas_funil") corpo = gerarEtapasFunil(dados.etapas);
+      else if (b.chave === CHAVE_MUDANCAS_RECENTES) corpo = gerarMudancasRecentes(dados.mudancas);
       else corpo = ov ? ov.conteudo : b.conteudo;
       if (blocoVazio(corpo)) continue;
       secoes.push(b.gerado ? corpo.trim() : `${b.titulo.toUpperCase()}:\n${corpo.trim()}`);

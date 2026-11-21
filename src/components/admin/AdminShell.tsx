@@ -26,7 +26,8 @@ import { ProblemScenariosTab } from "@/components/admin/ProblemScenariosTab";
 import { SimulatorResultsTab } from "@/components/admin/SimulatorResultsTab";
 import { TreinamentosTab } from "@/components/admin/TreinamentosTab";
 import { ChecklistTab } from "@/components/admin/ChecklistTab";
-import { ChangelogTab } from "@/components/admin/ChangelogTab";
+import { RankingAdminTab } from "@/components/admin/RankingAdmin";
+import { MudancasAdminTab } from "@/components/admin/MudancasAdmin";
 import { SuggestionsTab } from "@/components/admin/SuggestionsTab";
 import { UnidadesTab } from "@/components/admin/UnidadesTab";
 import { EquipeMenuTab } from "@/components/admin/EquipeMenuTab";
@@ -81,10 +82,11 @@ export const ADMIN_TAB_COMPONENTS: Record<string, ComponentType> = {
   mapaequipe: MapaEquipeTab,
   bancoexercicios: BancoExerciciosTab,
   aquecimentoadmin: AquecimentoAdminTab,
+  rankingadmin: RankingAdminTab,
 
   procedimentos: ProcedimentosTab,
   problemastecnicos: ProblemasTecnicosTab,
-  changelog: ChangelogTab,
+  changelog: MudancasAdminTab,
   suggestions: SuggestionsTab,
   content: ProcedimentosTab,
 
