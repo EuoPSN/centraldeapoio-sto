@@ -4237,6 +4237,27 @@ export type Database = {
           },
         ]
       }
+      tour_vistos: {
+        Row: {
+          tour_id: string
+          user_id: string
+          versao: number
+          visto_em: string
+        }
+        Insert: {
+          tour_id: string
+          user_id?: string
+          versao?: number
+          visto_em?: string
+        }
+        Update: {
+          tour_id?: string
+          user_id?: string
+          versao?: number
+          visto_em?: string
+        }
+        Relationships: []
+      }
       training_completions: {
         Row: {
           completed_at: string
