@@ -62,24 +62,100 @@ export function lerDataId(dataId: string | null): IdMensagem | null {
 function ehIndividual(chat: string) { return SUFIXO_INDIVIDUAL.some((s) => chat.endsWith(s)); }
 function ehNaoIndividual(chat: string) { return SUFIXO_NAO_INDIVIDUAL.some((s) => chat.includes(s)); }
 
-/** Mensagem na tela. `chat` é null quando o layout não traz data-id (fallback por classe). */
-export interface ElMensagem { el: Element; saiu: boolean; chat: string | null }
+/** Como a direção (recebida × enviada) de uma mensagem foi decidida. */
+export type MetodoDirecao = "data_id_antigo" | "remetente" | "icones_de_status" | "alinhamento" | "indefinida";
 
-export function elementosDeMensagem(painel: ParentNode): ElMensagem[] {
-  const comId: ElMensagem[] = [];
-  for (const e of todos(painel, SELETORES.mensagem)) {
-    const id = lerDataId(e.getAttribute("data-id"));
-    if (id) comId.push({ el: e, saiu: id.saiu, chat: id.chat });
+/** Mensagem na tela. `chat` é null quando o data-id não está no formato antigo; `saiu` é null
+ * quando nenhum método confiável decidiu a direção. */
+export interface ElMensagem { el: Element; saiu: boolean | null; chat: string | null; metodo: MetodoDirecao; remetente: string | null }
+
+const MOTIVO_REMETENTE_ILEGIVEL = "Não consegui identificar quem enviou as mensagens (formato novo do WhatsApp); por segurança a Omnia não lê.";
+export const MOTIVO_SEM_MENSAGEM_DO_CLIENTE = "Ainda não há mensagem do cliente nesta conversa.";
+export const MOTIVO_VARIOS_REMETENTES = "Há mais de um remetente nas mensagens recebidas: parece um grupo.";
+export const MOTIVO_REMETENTE_DIFERENTE = "O remetente das mensagens recebidas não é o contato do cabeçalho: pode ser um grupo. A Omnia não lê.";
+export const MOTIVO_DIRECAO = "Não consegui separar o que o cliente enviou do que você enviou; por segurança a Omnia não lê.";
+
+/** Normaliza nome para comparação: sem marcas invisíveis, caixa e espaços; telefone vira só dígitos. */
+export function normalizarNome(t: string): string {
+  const s = limpar(t).replace(/\s+/g, " ").toLowerCase();
+  return pareceTelefone(s) ? soDigitos(s) : s;
+}
+
+/** Elementos dentro de mensagem citada (não fazem parte do corpo da mensagem principal). */
+function citadasDe(raiz: ParentNode): Element[] { return qualquer(raiz, SELETORES.citada); }
+const dentroDeCitada = (n: Element, citadas: Element[]) => citadas.some((c) => c === n || c.contains(n));
+
+/** Bloco copiável do corpo da mensagem (ignora o que estiver dentro de citação). */
+function blocoDaMensagem(el: Element): Element | null {
+  const citadas = citadasDe(el);
+  return qualquer(el, SELETORES.blocoCopiavel).find((b) => !dentroDeCitada(b, citadas)) ?? null;
+}
+
+/** Remetente do data-pre-plain-text "[14:32, 21/11/2026] Nome: ". null se não for legível. */
+export function remetenteDe(el: Element): string | null {
+  const pre = blocoDaMensagem(el)?.getAttribute("data-pre-plain-text") ?? "";
+  const m = /\]\s*(.+?):\s*$/.exec(pre);
+  const nome = m?.[1]?.trim();
+  return nome ? normalizarNome(nome) : null;
+}
+
+function temTexto(el: Element): boolean {
+  return !!blocoDaMensagem(el) || qualquer(el, ['[data-testid="selectable-text"]', "span.selectable-text"]).length > 0;
+}
+
+/** Ícone de status (ticks) dentro de msg-meta: presença = mensagem enviada. null se não há msg-meta. */
+function statusDeEnvio(el: Element): boolean | null {
+  const metas = el.querySelectorAll('[data-testid="msg-meta"]');
+  if (!metas.length) return null;
+  return Array.from(metas).some((meta) =>
+    meta.querySelector('[data-icon^="msg-"]') ||
+    Array.from(meta.querySelectorAll("[aria-label]")).some((i) => RE_STATUS_ENVIO.test(i.getAttribute("aria-label") ?? "")));
+}
+const RE_STATUS_ENVIO = /\b(enviada|entregue|lida|pendente|sent|delivered|read|pending)\b/i;
+
+/** Alinhamento do balão em relação ao centro do painel. null se não der para decidir. */
+function porAlinhamento(el: Element, painel: Element): boolean | null {
+  const p = painel.getBoundingClientRect();
+  const r = el.getBoundingClientRect();
+  if (!p.width || !r.width) return null;
+  const dif = (r.left + r.width / 2) - (p.left + p.width / 2);
+  if (Math.abs(dif) < p.width * 0.05) return null;
+  return dif > 0;
+}
+
+/** Candidatas a mensagem: data-id e classes message-in/out que tenham texto, sem aninhadas. */
+function candidatas(painel: ParentNode): Element[] {
+  let lista = qualquer(painel, [...SELETORES.mensagem, ...SELETORES.mensagemSemId]).filter(temTexto);
+  if (!lista.length) {
+    // Sem data-id nem classes: cada bloco de texto copiável vira uma mensagem.
+    lista = qualquer(painel, SELETORES.blocoCopiavel).filter((b) => !b.parentElement?.closest("[data-pre-plain-text]"));
   }
-  if (comId.length) return comId;
-  // Fallback: sem data-id, a direção vem da classe message-in/message-out.
-  const out: ElMensagem[] = [];
-  for (const e of qualquer(painel, SELETORES.mensagemSemId)) {
-    const saiu = e.classList.contains("message-out");
-    if (saiu === e.classList.contains("message-in")) continue; // ambígua: ignora
-    out.push({ el: e, saiu, chat: null });
-  }
-  return out;
+  // Fica a mais externa quando uma contém outra (evita contar duas vezes).
+  return lista.filter((e) => !lista.some((o) => o !== e && o.contains(e)));
+}
+
+/** Mensagens na tela, com direção decidida por: 1) data-id antigo, 2) remetente do
+ * data-pre-plain-text, 3) ícones de status, 4) alinhamento. Para no primeiro sinal confiável. */
+export function elementosDeMensagem(painel: Element, titulo?: string): ElMensagem[] {
+  const els = candidatas(painel);
+  const remetentes = els.map(remetenteDe);
+  const tit = titulo ? normalizarNome(titulo) : "";
+  // Método 2 só vale se todo remetente diferente do título for um só (o atendente).
+  const distintos = new Set(remetentes.filter((r): r is string => !!r && r !== tit));
+  const remetenteServe = !!tit && distintos.size <= 1;
+
+  return els.map((el, i) => {
+    const remetente = remetentes[i];
+    const id = lerDataId(el.getAttribute("data-id"));
+    const base = { el, chat: id?.chat ?? null, remetente };
+    if (id) return { ...base, saiu: id.saiu, metodo: "data_id_antigo" as const };
+    if (remetenteServe && remetente) return { ...base, saiu: remetente !== tit, metodo: "remetente" as const };
+    const st = statusDeEnvio(el);
+    if (st !== null) return { ...base, saiu: st, metodo: "icones_de_status" as const };
+    const al = porAlinhamento(el, painel);
+    if (al !== null) return { ...base, saiu: al, metodo: "alinhamento" as const };
+    return { ...base, saiu: null, metodo: "indefinida" as const };
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -121,6 +197,9 @@ function lerCabecalho(painel: Element): Cabecalho | null {
   return { el: cab, nome, subtitulo: textos.slice(1).join(" · "), icones, presenca, rotuloDeGrupo };
 }
 
+/** Título (nome) da conversa no cabeçalho; "" se não achar. */
+export function tituloDoCabecalho(painel: Element): string { return lerCabecalho(painel)?.nome ?? ""; }
+
 /** Subtítulo que lista participantes ("Ana, Bruno, você") ou fala de grupo. */
 export function subtituloDeGrupo(sub: string): boolean {
   const t = sub.toLowerCase();
@@ -133,10 +212,10 @@ export function subtituloDeGrupo(sub: string): boolean {
 
 // ---------------------------------------------------------------------------
 // Detecção de grupo. Regra: na dúvida, NÃO lê.
-//   GRUPO     = qualquer sinal de grupo encontrado.
-//   INDIVIDUAL = cabeçalho + mensagens + nenhum sinal de grupo + ao menos uma verificação positiva
-//                + nenhuma contradição entre os ids de chat.
-//   resto     = dúvida (não lê).
+//   GRUPO      = qualquer sinal de grupo encontrado, ou remetentes diferentes nas recebidas.
+//   INDIVIDUAL = cabeçalho com nome + mensagens + nenhum sinal de grupo + TODAS as mensagens
+//                recebidas com o mesmo remetente, igual ao título do cabeçalho + direção decidida.
+//   resto      = dúvida (não lê).
 // ---------------------------------------------------------------------------
 
 export type SimNao = "sim" | "não";
@@ -153,15 +232,25 @@ export interface Avaliacao {
   sinais: Record<string, SimNao>;
   /** Cada verificação POSITIVA de individual: "sim" = confirmada. */
   positivas: Record<string, SimNao>;
+  /** Quantas mensagens cada método de direção decidiu. */
+  metodosDeDirecao: Record<MetodoDirecao, number>;
+  /** Elementos de autor ignorados por estarem dentro de mensagem citada. */
+  autoresEmCitacao: number;
 }
 
 const sn = (b: boolean): SimNao => (b ? "sim" : "não");
 
 export function avaliarConversa(painel: Element): Avaliacao {
   const cab = lerCabecalho(painel);
-  const msgs = elementosDeMensagem(painel);
-  const recebidasEl = msgs.filter((m) => !m.saiu);
+  const titulo = cab?.nome ?? "";
+  const tit = normalizarNome(titulo);
+  const msgs = elementosDeMensagem(painel, titulo);
+  const recebidasEl = msgs.filter((m) => m.saiu === false);
+  const enviadasEl = msgs.filter((m) => m.saiu === true);
+  const indefinidas = msgs.filter((m) => m.saiu === null).length;
   const chats = msgs.map((m) => m.chat).filter((c): c is string => c !== null);
+  const metodosDeDirecao: Record<MetodoDirecao, number> = { data_id_antigo: 0, remetente: 0, icones_de_status: 0, alinhamento: 0, indefinida: 0 };
+  for (const m of msgs) metodosDeDirecao[m.metodo]++;
 
   // --- Sinais de GRUPO (qualquer um basta) ---
   const todosDataIds = qualquer(painel, SELETORES.mensagem).map((e) => e.getAttribute("data-id") ?? "");
@@ -170,15 +259,21 @@ export function avaliarConversa(painel: Element): Avaliacao {
   const subtituloVariosNomes = !!cab && subtituloDeGrupo(cab.subtitulo);
   const rotulo = !!cab?.rotuloDeGrupo;
   const listaParticipantes = qualquer(painel, SELETORES.sinaisDeGrupoNoPainel).length > 0;
-  // Remetentes diferentes nas mensagens recebidas (data-pre-plain-text) ou nome do autor visível.
-  const remetentes = new Set<string>();
-  for (const m of recebidasEl) {
-    const pre = primeiro(m.el, SELETORES.blocoCopiavel)?.getAttribute("data-pre-plain-text") ?? "";
-    const quem = /\]\s*(.*?):\s*$/.exec(pre)?.[1]?.trim();
-    if (quem) remetentes.add(quem.toLowerCase());
+  // Nome do autor exibido no corpo da mensagem principal (o de mensagem citada não conta).
+  let autoresEmCitacao = 0;
+  let autorVisivel = false;
+  for (const m of msgs) {
+    const citadas = citadasDe(m.el);
+    for (const a of qualquer(m.el, SELETORES.remetenteNaMensagem)) {
+      if (dentroDeCitada(a, citadas)) autoresEmCitacao++; else autorVisivel = true;
+    }
   }
-  const autorVisivel = recebidasEl.some((m) => qualquer(m.el, SELETORES.remetenteNaMensagem).length > 0);
-  const remetenteNasMensagens = remetentes.size >= 2 || autorVisivel;
+  // Remetentes: 2+ nomes diferentes entre as recebidas, ou 2+ diferentes do título em toda a conversa
+  // (um individual só tem o contato e o atendente).
+  const rem = (l: ElMensagem[]) => new Set(l.map((m) => m.remetente).filter((r): r is string => !!r));
+  const recebidasSemTitulo = [...rem(recebidasEl)].filter((r) => r !== tit);
+  const variosRemetentes = rem(recebidasEl).size >= 2 || [...rem(msgs)].filter((r) => r !== tit).length >= 2;
+  const remetenteNasMensagens = variosRemetentes || autorVisivel;
 
   const sinais: Record<string, SimNao> = {
     sinal_id_do_chat_nao_individual: sn(idNaoIndividual),
@@ -191,25 +286,35 @@ export function avaliarConversa(painel: Element): Avaliacao {
 
   // --- Verificações POSITIVAS de individual ---
   const idsContraditorios = chats.length > 0 && (!chats.every(ehIndividual) || new Set(chats).size !== 1);
+  const remetentesLegiveis = recebidasEl.length > 0 && recebidasEl.every((m) => !!m.remetente);
+  const remetenteIgualTitulo = remetentesLegiveis && !!tit && recebidasEl.every((m) => m.remetente === tit);
   const positivas: Record<string, SimNao> = {
-    verif_id_do_chat_individual: sn(chats.length > 0 && !idsContraditorios),
+    verif_direcao_decidida_em_todas: sn(msgs.length > 0 && indefinidas === 0),
+    verif_ha_mensagem_do_cliente: sn(recebidasEl.length > 0),
+    verif_remetente_legivel_nas_recebidas: sn(remetentesLegiveis),
+    verif_remetente_igual_ao_titulo: sn(remetenteIgualTitulo),
     verif_subtitulo_de_presenca: sn(!!cab?.presenca),
-    // Ausência de remetente só vale com ao menos uma mensagem recebida visível (senão é vazio).
-    verif_sem_remetente_nas_recebidas: sn(recebidasEl.length > 0 && !remetenteNasMensagens),
   };
 
   const base = {
     cabecalhoEncontrado: !!cab, totalMensagens: msgs.length, recebidas: recebidasEl.length,
-    enviadas: msgs.length - recebidasEl.length, sinais, positivas,
+    enviadas: enviadasEl.length, sinais, positivas, metodosDeDirecao, autoresEmCitacao,
   };
-  const grupo = Object.values(sinais).includes("sim");
-  if (grupo) return { ...base, veredito: { tipo: "grupo", motivo: MOTIVO_GRUPO }, codigo: "grupo" };
-  const duvida = (codigo: string): Avaliacao => ({ ...base, veredito: { tipo: "duvida", motivo: MOTIVO_DUVIDA }, codigo });
+  const grupo = (codigo: string, motivo = MOTIVO_GRUPO): Avaliacao => ({ ...base, veredito: { tipo: "grupo", motivo }, codigo });
+  const duvida = (codigo: string, motivo = MOTIVO_DUVIDA): Avaliacao => ({ ...base, veredito: { tipo: "duvida", motivo }, codigo });
+
+  if (variosRemetentes && !idNaoIndividual && !icone && !subtituloVariosNomes && !rotulo && !listaParticipantes && !autorVisivel) {
+    return grupo("grupo_varios_remetentes", MOTIVO_VARIOS_REMETENTES);
+  }
+  if (Object.values(sinais).includes("sim")) return grupo("grupo");
   if (!cab) return duvida("cabecalho_nao_encontrado");
   if (!cab.nome) return duvida("cabecalho_sem_nome");
   if (!msgs.length) return duvida("sem_mensagens");
   if (idsContraditorios) return duvida("ids_de_chat_inconsistentes");
-  if (!Object.values(positivas).includes("sim")) return duvida("sem_verificacao_positiva");
+  if (indefinidas) return duvida("direcao_indefinida", MOTIVO_DIRECAO);
+  if (!recebidasEl.length) return duvida("sem_mensagem_do_cliente", MOTIVO_SEM_MENSAGEM_DO_CLIENTE);
+  if (!remetentesLegiveis) return duvida("remetente_ilegivel", MOTIVO_REMETENTE_ILEGIVEL);
+  if (recebidasSemTitulo.length) return grupo("grupo_remetente_diferente_do_titulo", MOTIVO_REMETENTE_DIFERENTE);
   return { ...base, veredito: { tipo: "individual" }, codigo: "individual_confirmado" };
 }
 
@@ -252,7 +357,7 @@ export function identificar(doc: Document): ResultadoIdentificar {
 // ---------------------------------------------------------------------------
 
 function horaEData(el: Element): { hora: string; data?: string } {
-  const pre = primeiro(el, SELETORES.blocoCopiavel)?.getAttribute("data-pre-plain-text") ?? "";
+  const pre = blocoDaMensagem(el)?.getAttribute("data-pre-plain-text") ?? "";
   const m = /\[\s*(\d{1,2}:\d{2})(?:\s*[AaPp][Mm])?\s*,\s*([^\]]+?)\s*\]/.exec(pre);
   if (m) return { hora: m[1], data: m[2] };
   for (const sel of SELETORES.horario) {
@@ -283,7 +388,9 @@ function temMidia(el: Element): boolean {
 
 export function lerMensagens(painel: Element, max = MAX_MENSAGENS): Mensagem[] {
   const out: Mensagem[] = [];
-  for (const { el, saiu } of elementosDeMensagem(painel)) {
+  const titulo = lerCabecalho(painel)?.nome ?? "";
+  for (const { el, saiu } of elementosDeMensagem(painel, titulo)) {
+    if (saiu === null) continue; // direção não decidida: nunca entra
     let texto = textoDaMensagem(el);
     if (temMidia(el)) texto = texto ? `[mídia] ${texto}` : "[mídia]";
     if (!texto) continue;

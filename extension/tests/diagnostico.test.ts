@@ -39,7 +39,7 @@ describe("diagnóstico: só estrutura, nunca conteúdo", () => {
 
   it("valores de atributos com nome ou dígitos longos viram [omitido:N]", () => {
     const rel = gerar(COM_DADOS);
-    const txt = JSON.stringify(rel);
+    const txt = JSON.stringify({ ...rel, formas_dos_identificadores: undefined }); // as formas mascaradas têm "9999" de propósito
     expect(txt).toContain("[omitido:");
     expect(txt).toContain("conversation-info-header"); // data-testid seguro aparece
     expect(txt).toContain("default-user"); // data-icon seguro aparece

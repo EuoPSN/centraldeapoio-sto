@@ -30,7 +30,7 @@ describe("leitura da conversa individual", () => {
   });
 
   it("lê no máximo as últimas 60 mensagens", async () => {
-    const muitas = Array.from({ length: 80 }, (_, i) => msg({ saiu: i % 2 === 0, texto: `mensagem ${i}` }, i)).join("");
+    const muitas = Array.from({ length: 80 }, (_, i) => msg({ saiu: i % 2 === 0, texto: `mensagem ${i}`, quem: i % 2 === 0 ? "Atendente" : "Cliente 2" }, i)).join("");
     abrir(pagina({ nome: "Cliente 2", mensagens: muitas }));
     const r = await lerConversa(document);
     expect(r.ok).toBe(true);
@@ -41,7 +41,7 @@ describe("leitura da conversa individual", () => {
   });
 
   it("nome exibido que é número vira número e nome vazio", () => {
-    abrir(pagina({ nome: "+55 31 99123-4567", mensagens: msg({ saiu: false, texto: "oi" }, 1) }));
+    abrir(pagina({ nome: "+55 31 99123-4567", mensagens: msg({ saiu: false, texto: "oi", quem: "+55 31 99123-4567" }, 1) }));
     expect(identificar(document)).toEqual({ ok: true, id: { nome: "", numero: "5531991234567" } });
   });
 
@@ -131,11 +131,11 @@ import { avaliarConversa } from "../src/content/ler";
 describe("detecção combinada (1b): sinais negativos + verificações positivas", () => {
   const av = (html: string) => { abrir(html); return avaliarConversa(acharPainel(document)!); };
 
-  it("individual sem subtítulo de presença continua individual (id do chat + sem remetente)", () => {
+  it("individual sem subtítulo de presença continua individual (remetente = título)", () => {
     const a = av(INDIVIDUAL_SEM_SUBTITULO);
     expect(a.veredito.tipo).toBe("individual");
     expect(a.positivas.verif_subtitulo_de_presenca).toBe("não");
-    expect(a.positivas.verif_id_do_chat_individual).toBe("sim");
+    expect(a.positivas.verif_remetente_igual_ao_titulo).toBe("sim");
   });
   it("individual com 'online' é individual", () => {
     const a = av(INDIVIDUAL_ONLINE);
@@ -163,10 +163,11 @@ describe("detecção combinada (1b): sinais negativos + verificações positivas
     expect(av(SEM_DATA_ID_COM_PRESENCA).veredito.tipo).toBe("individual");
     expect(av(SEM_DATA_ID_SEM_PRESENCA).veredito.tipo).toBe("individual");
   });
-  it("layout sem data-id e só mensagens enviadas, sem presença: ambíguo → não lê", () => {
+  it("layout sem data-id e só mensagens enviadas: não confirma o contato → não lê", () => {
     const a = av(SEM_DATA_ID_SO_ENVIADAS);
     expect(a.veredito.tipo).toBe("duvida");
-    expect(a.codigo).toBe("sem_verificacao_positiva");
+    expect(a.codigo).toBe("sem_mensagem_do_cliente");
+    expect(a.veredito).toMatchObject({ tipo: "duvida", motivo: "Ainda não há mensagem do cliente nesta conversa." });
   });
   it("layout sem data-id: direção vem da classe e a leitura funciona", async () => {
     abrir(SEM_DATA_ID_COM_PRESENCA);
