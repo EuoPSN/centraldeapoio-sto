@@ -7,12 +7,15 @@ import { EXTENSAO_MODEL } from "@/lib/ai-models";
 import { ETAPAS_FUNIL, ETAPA_FUNIL_NOME, mensagemLimite } from "@/lib/cerebro";
 import { PONTO_LISTA, PONTOS, QUANDO } from "@/lib/retomada";
 import {
-  ERRO_LER, LerConversaEntrada, TicketEntrada, acharTicketDoNumero, calcularMudancas, tentarProposta,
-  type LerConversaEntradaT, type Mudanca, type Proposta, type SalvarTicketEntradaT, type TicketDTO,
+  ERRO_LER, ClienteDisseEntrada, LerConversaEntrada, TicketEntrada, acharTicketDoNumero, calcularMudancas, tentarProposta,
+  type ClienteDisseResposta, type LerConversaEntradaT, type Mudanca, type Proposta, type SalvarTicketEntradaT, type TicketDTO,
 } from "@/lib/extensao";
-import { chaveNumero, montarTranscricao, numeroValido, primeiroNome, sanitizarMensagens, soDigitos } from "@/lib/extensao-sanitizar";
+import { chaveNumero, montarTranscricao, numeroValido, primeiroNome, sanitizarMensagens, sanitizarTexto, soDigitos } from "@/lib/extensao-sanitizar";
 import { agendarInicial } from "@/lib/retomada";
 import { criarTicketExterno } from "@/lib/retomada.functions";
+import { classificarFalaCore, sugerirRespostaCore } from "@/lib/cliente-disse.functions";
+import { casosParecidos } from "@/lib/biblioteca.functions";
+import { toFechamentoItem, toObjecao } from "@/lib/cliente-disse";
 
 export type CtxExt = { supabase: unknown; userId: string };
 
@@ -259,4 +262,68 @@ export async function salvarTicket(ctx: CtxExt, e: SalvarTicketEntradaT): Promis
   return { acao: "criado", ticket: paraDTO(lido), mudancas: [], outroAtendente: outro };
 }
 
-export { LerConversaEntrada, TicketEntrada };
+// ---------------------------------------------------------------------------
+// "O cliente disse…": usa a mesma função da página da Omnia (classificação + conteúdo aprovado)
+// ---------------------------------------------------------------------------
+
+const ehLimite = (m: string) => /^Você chegou ao limite/.test(m);
+
+export async function clienteDisseExtensao(ctx: CtxExt, e: { fala: string; ponto?: string | null }): Promise<ClienteDisseResposta> {
+  // 2ª camada de sanitização: o servidor nunca confia só no navegador.
+  const fala = sanitizarTexto(e.fala).slice(0, 2000);
+  if (!fala || /^\[mídia\]$/.test(fala)) throw new ErroExt(422, "A última fala do cliente não tem texto para analisar.", "sem_texto");
+
+  let cls;
+  try {
+    cls = await classificarFalaCore(ctx, fala);
+  } catch (err) {
+    const m = err instanceof Error ? err.message : "";
+    if (ehLimite(m)) throw new ErroExt(429, m, "limite");
+    throw new ErroExt(502, "Não consegui analisar a fala agora. Tente de novo.", "ia");
+  }
+
+  const s = db(ctx);
+  const objIds = cls.itens.filter((i) => i.tipo === "objecao").map((i) => i.id);
+  const outrosIds = cls.itens.filter((i) => i.tipo !== "objecao").map((i) => i.id);
+  const [objRows, itemRows] = await Promise.all([
+    objIds.length ? s.from("objecoes").select("*").eq("status", "publicada").in("id", objIds) : Promise.resolve({ data: [] }),
+    outrosIds.length ? s.from("fechamento_itens").select("*").eq("status", "publicada").in("id", outrosIds) : Promise.resolve({ data: [] }),
+  ]);
+  const objecoes = new Map(((objRows.data ?? []) as Record<string, unknown>[]).map((r) => { const o = toObjecao(r); return [o.id, o] as const; }));
+  const fech = new Map(((itemRows.data ?? []) as Record<string, unknown>[]).map((r) => { const o = toFechamentoItem(r); return [o.id, o] as const; }));
+
+  const itens = cls.itens.map((i) => ({ tipo: i.tipo, id: i.id, nome: i.tipo === "objecao" ? (objecoes.get(i.id)?.nome ?? "") : (fech.get(i.id)?.titulo ?? "") })).filter((i) => i.nome);
+
+  let objecao: ClienteDisseResposta["objecao"] = null;
+  const principal = objIds.map((id) => objecoes.get(id)).find(Boolean);
+  if (principal) {
+    objecao = { id: principal.id, nome: principal.nome, sugestao_ia: false, leituras: principal.leituras, angulos: principal.angulos.filter((a) => a.texto.trim()), pergunta_avancar: principal.pergunta_avancar, evite_dizer: principal.evite_dizer };
+  } else if (cls.nova && !fech.size) {
+    try {
+      const sug = await sugerirRespostaCore(ctx, fala, cls.pendente_id);
+      objecao = { id: null, nome: sug.nome || "Objeção nova", sugestao_ia: true, leituras: sug.leituras, angulos: sug.angulos.filter((a) => a.texto.trim()), pergunta_avancar: sug.pergunta_avancar, evite_dizer: sug.evite_dizer };
+    } catch {
+      objecao = null; // a classificação já valeu; sem sugestão agora
+    }
+  }
+  const item = [...fech.values()][0];
+  const item_mensagem = !objecao && item ? { titulo: item.titulo, mensagem: item.mensagem, passos: item.passos } : null;
+
+  let casos: ClienteDisseResposta["casos"] = [];
+  try {
+    const c = await casosParecidos(ctx, { objecao_ids: objIds, ponto: (e.ponto as never) ?? null } as never);
+    casos = c.fichas.map((f) => ({ titulo: f.titulo, mensagem_chave: f.mensagem_chave, por_que_funcionou: f.por_que_funcionou, dias_ate_fechar: f.dias_ate_fechar }));
+  } catch {
+    casos = []; // sem Biblioteca ainda: o painel só não mostra "Casos parecidos"
+  }
+  return { itens, objecao, item_mensagem, casos };
+}
+
+/** Cada "Copiar" conta como uso da objeção (igual à página da Omnia). */
+export async function registrarCopia(ctx: CtxExt, e: { objecao_id: string; angulo?: string | null }) {
+  const r = await db(ctx).from("cliente_disse_uso").insert({ objecao_id: e.objecao_id, angulo: e.angulo ?? null, user_id: ctx.userId });
+  if (r?.error) console.error("[extensao] uso não registrado:", r.error.message);
+  return { ok: true };
+}
+
+export { ClienteDisseEntrada, LerConversaEntrada, TicketEntrada };

@@ -25,3 +25,16 @@ describe("content script só lê", () => {
     });
   }
 });
+
+describe("o painel nunca escreve nem envia no WhatsApp", () => {
+  it("o content script só aceita pedidos de leitura (identificar e ler)", () => {
+    const codigo = readFileSync(resolve(__dirname, "../src/lib/mensagens.ts"), "utf8");
+    const tipos = Array.from(codigo.matchAll(/tipo: "(omnia:[a-z]+)"/g)).map((m) => m[1]);
+    expect(tipos.sort()).toEqual(["omnia:identificar", "omnia:ler"]);
+  });
+  it("copiar usa só a área de transferência do painel", () => {
+    const codigo = readFileSync(resolve(__dirname, "../src/panel/ClienteDisse.tsx"), "utf8");
+    expect(codigo).toMatch(/navigator\.clipboard\.writeText/);
+    expect(codigo).not.toMatch(/tabs\.sendMessage|omnia:escrever|omnia:enviar/);
+  });
+});

@@ -303,30 +303,38 @@ export const votarFicha = createServerFn({ method: "POST" })
   });
 
 /** Até 2 fichas publicadas parecidas: pela objeção detectada; sem objeção (ou sem caso), pelo ponto de parada. Sem IA. */
+const CasosParecidosEntrada = z.object({
+  objecao_ids: z.array(UUID).max(5).default([]),
+  ponto: z.enum(PONTOS).nullish(),
+});
+
 export const getCasosParecidos = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({
-    objecao_ids: z.array(UUID).max(5).default([]),
-    ponto: z.enum(PONTOS).nullish(),
-  }).parse(d))
-  .handler(async ({ data, context }): Promise<{ fichas: FichaPublica[]; filtro: { objecao?: string; ponto?: Ponto } }> => {
-    const s = db(context);
-    const base = () => s.from("conversas_fichas").select(COLS_PUBLICAS).eq("status", "publicada").order("publicada_em", { ascending: false });
-    let rows: Record<string, unknown>[] = [];
-    let filtro: { objecao?: string; ponto?: Ponto } = {};
-    if (data.objecao_ids.length) {
-      rows = (check(await base().in("objecao_id", data.objecao_ids).limit(20)) ?? []) as Record<string, unknown>[];
-      // Prefere a objeção principal (a primeira da lista), depois as demais.
-      const ordem = new Map(data.objecao_ids.map((id, i) => [id, i]));
-      rows.sort((a, b) => (ordem.get(String(a.objecao_id)) ?? 9) - (ordem.get(String(b.objecao_id)) ?? 9));
-      if (rows.length) filtro = { objecao: data.objecao_ids[0] };
-    }
-    if (!rows.length && data.ponto) {
-      rows = (check(await base().eq("ponto_parada", data.ponto).limit(20)) ?? []) as Record<string, unknown>[];
-      if (rows.length) filtro = { ponto: data.ponto };
-    }
-    return { fichas: await aPublicas(context, rows.slice(0, 2)), filtro };
-  });
+  .inputValidator((d: unknown) => CasosParecidosEntrada.parse(d))
+  .handler(async ({ data, context }) => casosParecidos(context, data));
+
+/** Mesma busca, para quem já tem o contexto (a extensão do Chrome). */
+export async function casosParecidos(
+  context: Ctx,
+  data: z.infer<typeof CasosParecidosEntrada>,
+): Promise<{ fichas: FichaPublica[]; filtro: { objecao?: string; ponto?: Ponto } }> {
+const s = db(context);
+  const base = () => s.from("conversas_fichas").select(COLS_PUBLICAS).eq("status", "publicada").order("publicada_em", { ascending: false });
+  let rows: Record<string, unknown>[] = [];
+  let filtro: { objecao?: string; ponto?: Ponto } = {};
+  if (data.objecao_ids.length) {
+    rows = (check(await base().in("objecao_id", data.objecao_ids).limit(20)) ?? []) as Record<string, unknown>[];
+    // Prefere a objeção principal (a primeira da lista), depois as demais.
+    const ordem = new Map(data.objecao_ids.map((id, i) => [id, i]));
+    rows.sort((a, b) => (ordem.get(String(a.objecao_id)) ?? 9) - (ordem.get(String(b.objecao_id)) ?? 9));
+    if (rows.length) filtro = { objecao: data.objecao_ids[0] };
+  }
+  if (!rows.length && data.ponto) {
+    rows = (check(await base().eq("ponto_parada", data.ponto).limit(20)) ?? []) as Record<string, unknown>[];
+    if (rows.length) filtro = { ponto: data.ponto };
+  }
+  return { fichas: await aPublicas(context, rows.slice(0, 2)), filtro };
+}
 
 // ---------------------------------------------------------------------------
 // Admin: Conversas enviadas

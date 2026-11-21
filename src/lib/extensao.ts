@@ -168,4 +168,28 @@ export function acharTicketDoNumero<T extends { telefone: string | null }>(ticke
   return tickets.find((t) => !!t.telefone && mesmoNumero(t.telefone, numero)) ?? null;
 }
 
+// ---------------------------------------------------------------------------
+// "O cliente disse…" no painel
+// ---------------------------------------------------------------------------
+
+export const ClienteDisseEntrada = z.discriminatedUnion("op", [
+  z.object({ op: z.literal("responder"), fala: z.string().max(2000), ponto: z.enum(PONTOS).nullish() }),
+  z.object({ op: z.literal("copiou"), objecao_id: z.string().uuid(), angulo: z.string().max(40).nullish() }),
+]);
+
+export interface ClienteDisseResposta {
+  /** O que a fala do cliente foi: objeções, sinais de compra ou travamentos já aprovados. */
+  itens: { tipo: "objecao" | "sinal" | "travamento"; id: string; nome: string }[];
+  /** Objeção principal, com o conteúdo aprovado (ou sugestão da IA, quando `sugestao_ia`). */
+  objecao: {
+    id: string | null; nome: string; sugestao_ia: boolean;
+    leituras: { titulo: string; pergunta: string }[];
+    angulos: { tipo: string; rotulo: string; texto: string }[];
+    pergunta_avancar: string | null; evite_dizer: string | null;
+  } | null;
+  /** Mensagem pronta de um sinal de compra ou travamento (quando não há objeção). */
+  item_mensagem: { titulo: string; mensagem: string | null; passos: string[] } | null;
+  casos: { titulo: string; mensagem_chave: string; por_que_funcionou: string; dias_ate_fechar: number | null }[];
+}
+
 export { ETAPAS_FUNIL, ETAPA_FUNIL_NOME };

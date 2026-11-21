@@ -20,7 +20,7 @@ interface Consulta { existente: TicketDTO | null; historico: Hist[]; outroAtende
 export interface Mudanca { campo: string; de: string | null; para: string | null }
 interface Salvo { acao: "criado" | "atualizado"; ticket: TicketDTO; mudancas: Mudanca[]; outroAtendente: boolean }
 
-export interface ContextoConversa { nome: string; numero: string; ultimaFala: string }
+export interface ContextoConversa { nome: string; numero: string; ultimaFala: string; ponto: string | null }
 
 type Fase =
   | { t: "inicial" }
@@ -82,7 +82,8 @@ export function ConversaAba({
     // 1ª camada de sanitização: antes de enviar qualquer coisa. O telefone NÃO vai para a IA.
     const limpas = sanitizarMensagens(mensagens, { nome });
     if (!limpas.length) return setFase({ t: "erro", motivo: "Não há mensagens de texto para ler nesta conversa.", naoLe: false });
-    onContexto({ nome, numero, ultimaFala: ultimaFalaDoCliente(limpas) });
+    const ultimaFala = ultimaFalaDoCliente(limpas);
+    onContexto({ nome, numero, ultimaFala, ponto: null });
 
     setFase({ t: "lendo", passo: "A Omnia está montando a proposta…" });
     const [prop, cons] = await Promise.all([
@@ -92,6 +93,7 @@ export function ConversaAba({
     if (!prop.ok) return setFase({ t: "erro", motivo: prop.erro, naoLe: false });
     const consulta: Consulta = cons && cons.ok ? cons.dados : { existente: null, historico: [], outroAtendente: false };
     const campos = paraForm(prop.dados.proposta);
+    onContexto({ nome, numero, ultimaFala, ponto: campos.ponto_parada });
     setFase({ t: "proposta", nome, numero, campos, original: campos, consulta, objecoes: prop.dados.proposta.objecoes_detectadas });
   }
 
