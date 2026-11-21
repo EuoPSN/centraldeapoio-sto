@@ -193,6 +193,231 @@ export type Database = {
         }
         Relationships: []
       }
+      aquecimento_config: {
+        Row: {
+          cartoes_por_dia: number
+          horarios: string[]
+          id: number
+          janela_dominio_dias: number
+          limiar_dominando: number
+          min_respostas: number
+          nota_acerto: number
+          updated_at: string
+        }
+        Insert: {
+          cartoes_por_dia?: number
+          horarios?: string[]
+          id?: number
+          janela_dominio_dias?: number
+          limiar_dominando?: number
+          min_respostas?: number
+          nota_acerto?: number
+          updated_at?: string
+        }
+        Update: {
+          cartoes_por_dia?: number
+          horarios?: string[]
+          id?: number
+          janela_dominio_dias?: number
+          limiar_dominando?: number
+          min_respostas?: number
+          nota_acerto?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      aquecimento_exercicios: {
+        Row: {
+          alternativas: Json
+          aprovado_por: string | null
+          contexto: string
+          created_at: string
+          criado_por: string
+          explicacao: string
+          fonte: string
+          habito_chave: string | null
+          id: string
+          objecao_id: string | null
+          pergunta: string
+          resposta_aprovada: string
+          status: string
+          tema_id: string
+          tipo: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          alternativas?: Json
+          aprovado_por?: string | null
+          contexto?: string
+          created_at?: string
+          criado_por?: string
+          explicacao?: string
+          fonte?: string
+          habito_chave?: string | null
+          id?: string
+          objecao_id?: string | null
+          pergunta: string
+          resposta_aprovada?: string
+          status?: string
+          tema_id: string
+          tipo: string
+          titulo?: string
+          updated_at?: string
+        }
+        Update: {
+          alternativas?: Json
+          aprovado_por?: string | null
+          contexto?: string
+          created_at?: string
+          criado_por?: string
+          explicacao?: string
+          fonte?: string
+          habito_chave?: string | null
+          id?: string
+          objecao_id?: string | null
+          pergunta?: string
+          resposta_aprovada?: string
+          status?: string
+          tema_id?: string
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aquecimento_exercicios_objecao_id_fkey"
+            columns: ["objecao_id"]
+            isOneToOne: false
+            referencedRelation: "objecoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aquecimento_exercicios_tema_id_fkey"
+            columns: ["tema_id"]
+            isOneToOne: false
+            referencedRelation: "dominio_temas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aquecimento_prefs: {
+        Row: {
+          notificar: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          notificar?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          notificar?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      aquecimento_respostas: {
+        Row: {
+          acertou: boolean
+          created_at: string
+          exercicio_id: string | null
+          id: string
+          nota: number | null
+          sessao_id: string
+          tema_id: string | null
+          tipo: string
+          user_id: string
+        }
+        Insert: {
+          acertou: boolean
+          created_at?: string
+          exercicio_id?: string | null
+          id?: string
+          nota?: number | null
+          sessao_id: string
+          tema_id?: string | null
+          tipo: string
+          user_id?: string
+        }
+        Update: {
+          acertou?: boolean
+          created_at?: string
+          exercicio_id?: string | null
+          id?: string
+          nota?: number | null
+          sessao_id?: string
+          tema_id?: string | null
+          tipo?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aquecimento_respostas_exercicio_id_fkey"
+            columns: ["exercicio_id"]
+            isOneToOne: false
+            referencedRelation: "aquecimento_exercicios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aquecimento_respostas_sessao_id_fkey"
+            columns: ["sessao_id"]
+            isOneToOne: false
+            referencedRelation: "aquecimento_sessoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aquecimento_respostas_tema_id_fkey"
+            columns: ["tema_id"]
+            isOneToOne: false
+            referencedRelation: "dominio_temas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aquecimento_sessoes: {
+        Row: {
+          concluida_em: string | null
+          data: string
+          id: string
+          iniciada_em: string
+          status: string
+          tema_id: string | null
+          tipo: string
+          user_id: string
+        }
+        Insert: {
+          concluida_em?: string | null
+          data?: string
+          id?: string
+          iniciada_em?: string
+          status?: string
+          tema_id?: string | null
+          tipo: string
+          user_id?: string
+        }
+        Update: {
+          concluida_em?: string | null
+          data?: string
+          id?: string
+          iniciada_em?: string
+          status?: string
+          tema_id?: string | null
+          tipo?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aquecimento_sessoes_tema_id_fkey"
+            columns: ["tema_id"]
+            isOneToOne: false
+            referencedRelation: "dominio_temas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cadencia_mensagens: {
         Row: {
           audio_exemplo_url: string | null
@@ -347,29 +572,218 @@ export type Database = {
           },
         ]
       }
+      cerebro_blocos: {
+        Row: {
+          ativo: boolean
+          chave: string
+          conteudo: string
+          descricao_curta: string
+          ferramentas: string[]
+          gerado: boolean
+          id: string
+          ordem: number
+          titulo: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          chave: string
+          conteudo?: string
+          descricao_curta?: string
+          ferramentas?: string[]
+          gerado?: boolean
+          id?: string
+          ordem?: number
+          titulo: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          chave?: string
+          conteudo?: string
+          descricao_curta?: string
+          ferramentas?: string[]
+          gerado?: boolean
+          id?: string
+          ordem?: number
+          titulo?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      cerebro_blocos_versoes: {
+        Row: {
+          ativo: boolean
+          bloco_id: string
+          chave: string
+          conteudo: string
+          ferramentas: string[]
+          id: string
+          salvo_em: string
+          salvo_por: string | null
+          substituida_em: string
+        }
+        Insert: {
+          ativo?: boolean
+          bloco_id: string
+          chave: string
+          conteudo: string
+          ferramentas?: string[]
+          id?: string
+          salvo_em: string
+          salvo_por?: string | null
+          substituida_em?: string
+        }
+        Update: {
+          ativo?: boolean
+          bloco_id?: string
+          chave?: string
+          conteudo?: string
+          ferramentas?: string[]
+          id?: string
+          salvo_em?: string
+          salvo_por?: string | null
+          substituida_em?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cerebro_blocos_versoes_bloco_id_fkey"
+            columns: ["bloco_id"]
+            isOneToOne: false
+            referencedRelation: "cerebro_blocos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cerebro_regras_fixas: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          ordem: number
+          texto: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          ordem?: number
+          texto: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          ordem?: number
+          texto?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      changelog_confirmacoes: {
+        Row: {
+          acertou_checagem: boolean | null
+          confirmado_em: string
+          entry_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          acertou_checagem?: boolean | null
+          confirmado_em?: string
+          entry_id: string
+          id?: string
+          user_id?: string
+        }
+        Update: {
+          acertou_checagem?: boolean | null
+          confirmado_em?: string
+          entry_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "changelog_confirmacoes_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "changelog_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       changelog_entries: {
         Row: {
           created_at: string
+          criada_por: string | null
+          exercicio_id: string | null
           id: string
+          incorporada: boolean
+          lembrete_em: string | null
+          link: string | null
+          origem: string
+          pergunta_checagem: Json | null
+          publicada_em: string | null
           published: boolean
           summary: string
+          tipo: string
           title: string
+          usar_na_ia: boolean
+          vale_a_partir: string | null
+          validade: string | null
         }
         Insert: {
           created_at?: string
+          criada_por?: string | null
+          exercicio_id?: string | null
           id?: string
+          incorporada?: boolean
+          lembrete_em?: string | null
+          link?: string | null
+          origem?: string
+          pergunta_checagem?: Json | null
+          publicada_em?: string | null
           published?: boolean
           summary: string
+          tipo?: string
           title: string
+          usar_na_ia?: boolean
+          vale_a_partir?: string | null
+          validade?: string | null
         }
         Update: {
           created_at?: string
+          criada_por?: string | null
+          exercicio_id?: string | null
           id?: string
+          incorporada?: boolean
+          lembrete_em?: string | null
+          link?: string | null
+          origem?: string
+          pergunta_checagem?: Json | null
+          publicada_em?: string | null
           published?: boolean
           summary?: string
+          tipo?: string
           title?: string
+          usar_na_ia?: boolean
+          vale_a_partir?: string | null
+          validade?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "changelog_entries_exercicio_id_fkey"
+            columns: ["exercicio_id"]
+            isOneToOne: false
+            referencedRelation: "aquecimento_exercicios"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       chat_conversations: {
         Row: {
@@ -727,6 +1141,30 @@ export type Database = {
         }
         Relationships: []
       }
+      config_mensagens_vendem: {
+        Row: {
+          id: number
+          limite_baixo: number
+          min_envios: number
+          ultima_verificacao: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          limite_baixo?: number
+          min_envios?: number
+          ultima_verificacao?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          limite_baixo?: number
+          min_envios?: number
+          ultima_verificacao?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contatos_enderecos: {
         Row: {
           atende_tambem: string[]
@@ -882,6 +1320,132 @@ export type Database = {
         }
         Relationships: []
       }
+      conversas_fichas: {
+        Row: {
+          aprovada_por: string | null
+          autor_id: string
+          created_at: string
+          dias_ate_fechar: number | null
+          fechou_em: string | null
+          id: string
+          mensagem_chave: string
+          motivo_recusa: string | null
+          o_que_fez: string[]
+          objecao_id: string | null
+          objecao_rotulo: string
+          onde_travou: string
+          perfil_cliente: string
+          plano: string
+          ponto_parada: string
+          por_que_funcionou: string
+          publicada_em: string | null
+          retomada_id: string | null
+          status: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          aprovada_por?: string | null
+          autor_id?: string
+          created_at?: string
+          dias_ate_fechar?: number | null
+          fechou_em?: string | null
+          id?: string
+          mensagem_chave?: string
+          motivo_recusa?: string | null
+          o_que_fez?: string[]
+          objecao_id?: string | null
+          objecao_rotulo?: string
+          onde_travou?: string
+          perfil_cliente?: string
+          plano?: string
+          ponto_parada: string
+          por_que_funcionou?: string
+          publicada_em?: string | null
+          retomada_id?: string | null
+          status?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Update: {
+          aprovada_por?: string | null
+          autor_id?: string
+          created_at?: string
+          dias_ate_fechar?: number | null
+          fechou_em?: string | null
+          id?: string
+          mensagem_chave?: string
+          motivo_recusa?: string | null
+          o_que_fez?: string[]
+          objecao_id?: string | null
+          objecao_rotulo?: string
+          onde_travou?: string
+          perfil_cliente?: string
+          plano?: string
+          ponto_parada?: string
+          por_que_funcionou?: string
+          publicada_em?: string | null
+          retomada_id?: string | null
+          status?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversas_fichas_objecao_id_fkey"
+            columns: ["objecao_id"]
+            isOneToOne: false
+            referencedRelation: "objecoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversas_fichas_retomada_id_fkey"
+            columns: ["retomada_id"]
+            isOneToOne: false
+            referencedRelation: "retomadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversas_fichas_retomada_id_fkey"
+            columns: ["retomada_id"]
+            isOneToOne: false
+            referencedRelation: "retomadas_admin"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversas_fichas_feedback: {
+        Row: {
+          created_at: string
+          ficha_id: string
+          motivo: string | null
+          user_id: string
+          util: boolean
+        }
+        Insert: {
+          created_at?: string
+          ficha_id: string
+          motivo?: string | null
+          user_id?: string
+          util: boolean
+        }
+        Update: {
+          created_at?: string
+          ficha_id?: string
+          motivo?: string | null
+          user_id?: string
+          util?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversas_fichas_feedback_ficha_id_fkey"
+            columns: ["ficha_id"]
+            isOneToOne: false
+            referencedRelation: "conversas_fichas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       decision_edges: {
         Row: {
           created_at: string | null
@@ -1010,6 +1574,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      dominio_temas: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string
+          id: string
+          nome: string
+          ordem: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string
+          id?: string
+          nome: string
+          ordem?: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string
+          id?: string
+          nome?: string
+          ordem?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       exame_clinicas: {
         Row: {
@@ -1480,6 +2074,33 @@ export type Database = {
         }
         Relationships: []
       }
+      funil_etapas: {
+        Row: {
+          definicao: string
+          etapa: string
+          nome: string
+          ordem: number
+          sinais: string[]
+          updated_at: string
+        }
+        Insert: {
+          definicao?: string
+          etapa: string
+          nome: string
+          ordem?: number
+          sinais?: string[]
+          updated_at?: string
+        }
+        Update: {
+          definicao?: string
+          etapa?: string
+          nome?: string
+          ordem?: number
+          sinais?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       homepage_messages: {
         Row: {
           ativo: boolean
@@ -1522,6 +2143,75 @@ export type Database = {
           subtitulo?: string | null
           tipo?: string
           titulo?: string
+        }
+        Relationships: []
+      }
+      ia_limites: {
+        Row: {
+          ferramenta: string
+          limite_diario: number | null
+          updated_at: string
+        }
+        Insert: {
+          ferramenta: string
+          limite_diario?: number | null
+          updated_at?: string
+        }
+        Update: {
+          ferramenta?: string
+          limite_diario?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ia_limites_extra: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          extra: number
+          ferramenta: string
+          id: string
+          user_id: string
+          valido_ate: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          extra: number
+          ferramenta: string
+          id?: string
+          user_id: string
+          valido_ate: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          extra?: number
+          ferramenta?: string
+          id?: string
+          user_id?: string
+          valido_ate?: string
+        }
+        Relationships: []
+      }
+      ia_uso: {
+        Row: {
+          created_at: string
+          ferramenta: string
+          id: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          ferramenta: string
+          id?: never
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          ferramenta?: string
+          id?: never
+          user_id?: string
         }
         Relationships: []
       }
@@ -1792,6 +2482,94 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      mensagens_sugestoes: {
+        Row: {
+          created_at: string
+          decidido_em: string | null
+          decidido_por: string | null
+          id: string
+          mensagem_id: string
+          por_que_mudar: string
+          status: string
+          texto_sugerido: string
+          versao_base: number
+          versao_criada: number | null
+        }
+        Insert: {
+          created_at?: string
+          decidido_em?: string | null
+          decidido_por?: string | null
+          id?: string
+          mensagem_id: string
+          por_que_mudar?: string
+          status?: string
+          texto_sugerido: string
+          versao_base: number
+          versao_criada?: number | null
+        }
+        Update: {
+          created_at?: string
+          decidido_em?: string | null
+          decidido_por?: string | null
+          id?: string
+          mensagem_id?: string
+          por_que_mudar?: string
+          status?: string
+          texto_sugerido?: string
+          versao_base?: number
+          versao_criada?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mensagens_sugestoes_mensagem_id_fkey"
+            columns: ["mensagem_id"]
+            isOneToOne: false
+            referencedRelation: "cadencia_mensagens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mensagens_usos: {
+        Row: {
+          caso_id: string | null
+          created_at: string
+          id: string
+          item_id: string
+          levou_fechamento: boolean
+          origem: string
+          user_id: string
+          versao: number | null
+        }
+        Insert: {
+          caso_id?: string | null
+          created_at?: string
+          id?: string
+          item_id: string
+          levou_fechamento?: boolean
+          origem?: string
+          user_id?: string
+          versao?: number | null
+        }
+        Update: {
+          caso_id?: string | null
+          created_at?: string
+          id?: string
+          item_id?: string
+          levou_fechamento?: boolean
+          origem?: string
+          user_id?: string
+          versao?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mensagens_usos_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "fechamento_itens"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       message_drafts: {
         Row: {
@@ -2176,6 +2954,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      padrao_escrita: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          exemplo_certo: string
+          exemplo_errado: string
+          id: string
+          item: string
+          ordem: number
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          exemplo_certo?: string
+          exemplo_errado?: string
+          id?: string
+          item: string
+          ordem?: number
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          exemplo_certo?: string
+          exemplo_errado?: string
+          id?: string
+          item?: string
+          ordem?: number
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       pdf_library_items: {
         Row: {
@@ -2761,6 +3575,144 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      raiox_resultados: {
+        Row: {
+          created_at: string
+          escrita: Json
+          etapa: string | null
+          faltou: Json
+          habito: Json
+          id: string
+          onde_perdeu: Json
+          reescrita: Json
+          retomada_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          escrita?: Json
+          etapa?: string | null
+          faltou?: Json
+          habito?: Json
+          id?: string
+          onde_perdeu?: Json
+          reescrita?: Json
+          retomada_id?: string | null
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          escrita?: Json
+          etapa?: string | null
+          faltou?: Json
+          habito?: Json
+          id?: string
+          onde_perdeu?: Json
+          reescrita?: Json
+          retomada_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raiox_resultados_retomada_id_fkey"
+            columns: ["retomada_id"]
+            isOneToOne: false
+            referencedRelation: "retomadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "raiox_resultados_retomada_id_fkey"
+            columns: ["retomada_id"]
+            isOneToOne: false
+            referencedRelation: "retomadas_admin"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ranking_config: {
+        Row: {
+          id: number
+          minimo_retomadas: number
+          periodo: string
+          podio_constantes: boolean
+          podio_ensinam: boolean
+          podio_evoluiram: boolean
+          podio_respondidas: boolean
+          podio_treino: boolean
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          minimo_retomadas?: number
+          periodo?: string
+          podio_constantes?: boolean
+          podio_ensinam?: boolean
+          podio_evoluiram?: boolean
+          podio_respondidas?: boolean
+          podio_treino?: boolean
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          minimo_retomadas?: number
+          periodo?: string
+          podio_constantes?: boolean
+          podio_ensinam?: boolean
+          podio_evoluiram?: boolean
+          podio_respondidas?: boolean
+          podio_treino?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ranking_hall: {
+        Row: {
+          created_at: string
+          id: string
+          mes: string
+          podio: string
+          posicao: number
+          user_id: string
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mes: string
+          podio: string
+          posicao: number
+          user_id: string
+          valor: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mes?: string
+          podio?: string
+          posicao?: number
+          user_id?: string
+          valor?: number
+        }
+        Relationships: []
+      }
+      ranking_ocultos: {
+        Row: {
+          created_at: string
+          mes: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          mes: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          mes?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       relatorio_prospeccao: {
         Row: {
@@ -3353,6 +4305,60 @@ export type Database = {
       }
     }
     Functions: {
+      _mensagens_calc: {
+        Args: { _ate?: string; _desde: string }
+        Returns: {
+          enviadas: number
+          etapa: string
+          fecharam: number
+          media_fechamento: number
+          media_resposta: number
+          mensagem_id: string
+          origem: string
+          ponto: string
+          responderam: number
+          selo: string
+          titulo: string
+          versao: number
+        }[]
+      }
+      aquecimento_adesao_semana: {
+        Args: never
+        Returns: {
+          dias: number
+          user_id: string
+        }[]
+      }
+      aquecimento_mapa_equipe: {
+        Args: never
+        Returns: {
+          acertos: number
+          nivel: string
+          respostas: number
+          tema_id: string
+          user_id: string
+        }[]
+      }
+      aquecimento_meu_mapa: {
+        Args: never
+        Returns: {
+          acertos: number
+          nivel: string
+          respostas: number
+          tema_id: string
+        }[]
+      }
+      changelog_resumo_confirmacoes: {
+        Args: never
+        Returns: {
+          acertos: number
+          com_checagem: number
+          confirmadas: number
+          entry_id: string
+          faltam_ids: string[]
+          total: number
+        }[]
+      }
       cliente_disse_contagens: {
         Args: { _dias?: number }
         Returns: {
@@ -3374,6 +4380,7 @@ export type Database = {
         Returns: undefined
       }
       limpar_fechamento_casos: { Args: never; Returns: number }
+      limpar_raiox: { Args: never; Returns: number }
       limpar_retomadas: { Args: never; Returns: number }
       marcar_ajuda_novidades_vistas: { Args: never; Returns: undefined }
       match_knowledge: {
@@ -3388,6 +4395,80 @@ export type Database = {
           title: string
         }[]
       }
+      mensagens_desempenho: {
+        Args: { _ate?: string; _de?: string; periodo_dias?: number }
+        Returns: {
+          enviadas: number
+          etapa: string
+          fecharam: number
+          media_fechamento: number
+          media_resposta: number
+          mensagem_id: string
+          origem: string
+          ponto: string
+          responderam: number
+          selo: string
+          titulo: string
+          versao: number
+        }[]
+      }
+      mensagens_selo: {
+        Args: never
+        Returns: {
+          envios: number
+          mensagem_id: string
+          origem: string
+          selo: string
+          versao: number
+        }[]
+      }
+      mensagens_usos_marcar_fechamento: {
+        Args: { _caso_id: string }
+        Returns: number
+      }
+      mensagens_versao_anterior: {
+        Args: never
+        Returns: {
+          canal: string
+          mensagem_id: string
+          texto: string
+          versao: number
+        }[]
+      }
+      ranking_admin: {
+        Args: { p_mes: string; p_podio: string }
+        Returns: {
+          entra_no_podio: boolean
+          nome: string
+          posicao: number
+          total: number
+          user_id: string
+          valor: number
+        }[]
+      }
+      ranking_calcular: {
+        Args: { p_mes: string }
+        Returns: {
+          nome: string
+          podio: string
+          posicao: number
+          qualifica: boolean
+          total: number
+          user_id: string
+          valor: number
+        }[]
+      }
+      ranking_fechar_mes: { Args: { p_mes: string }; Returns: undefined }
+      ranking_hall_campeoes: {
+        Args: { p_meses?: number }
+        Returns: {
+          mes: string
+          nome: string
+          podio: string
+          valor: number
+        }[]
+      }
+      ranking_podios: { Args: { p_mes: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "funcionario"
