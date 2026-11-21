@@ -67,6 +67,7 @@ function Page() {
 
       <TextTabs<Aba>
         label="Biblioteca"
+        dataTour="biblioteca-1"
         items={[{ id: "materiais", name: "Materiais" }, { id: "conversas", name: "Conversas que fecharam" }]}
         value={aba}
         onChange={setAba}
@@ -77,7 +78,7 @@ function Page() {
       ) : (
         <div className="mt-5">
           <Tabs defaultValue="imagens">
-            <TabsList className="mb-6">
+            <TabsList data-tour="biblioteca-2" className="mb-6">
               <TabsTrigger value="imagens" className="gap-1.5"><ImageIcon className="h-4 w-4" /> Imagens</TabsTrigger>
               <TabsTrigger value="pdfs" className="gap-1.5"><FileText className="h-4 w-4" /> PDFs</TabsTrigger>
             </TabsList>
@@ -115,18 +116,20 @@ function ImagensSubPage() {
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input className="pl-9" placeholder="Buscar por título ou pasta..." value={filter} onChange={(e) => setFilter(e.target.value)} />
+      <div data-tour="biblioteca-3">
+        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input className="pl-9" placeholder="Buscar por título ou pasta..." value={filter} onChange={(e) => setFilter(e.target.value)} />
+          </div>
         </div>
-      </div>
 
-      <div className="flex flex-wrap gap-2 mb-4">
-        <Pill active={activeFolder === "todas"} onClick={() => setActiveFolder("todas")}>Todas as pastas</Pill>
-        {folders.map(([id, name]) => (
-          <Pill key={id} active={activeFolder === id} onClick={() => setActiveFolder(id)}>{name}</Pill>
-        ))}
+        <div className="flex flex-wrap gap-2 mb-4">
+          <Pill active={activeFolder === "todas"} onClick={() => setActiveFolder("todas")}>Todas as pastas</Pill>
+          {folders.map(([id, name]) => (
+            <Pill key={id} active={activeFolder === id} onClick={() => setActiveFolder(id)}>{name}</Pill>
+          ))}
+        </div>
       </div>
 
       <p className="text-xs text-muted-foreground mb-3">{filtered.length} imagem(ns)</p>

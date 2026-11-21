@@ -199,7 +199,7 @@ function Page() {
       {tab === "meu" && (
         <div className="space-y-4">
           <div className="flex items-end gap-3 flex-wrap">
-            <div className="space-y-1">
+            <div data-tour="meus-relatorios-1" className="space-y-1">
               <Label className="text-xs text-muted-foreground">Data</Label>
               <Input type="date" value={data} max={hoje()}
                 onChange={(e) => setData(e.target.value)} className="w-44" />
@@ -212,7 +212,7 @@ function Page() {
           </div>
 
           <Card className="overflow-hidden">
-            <table className="w-full text-sm">
+            <table data-tour="meus-relatorios-2" className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/40 text-xs text-muted-foreground">
                   <th className="text-left p-3 w-32">Canal</th>
@@ -223,7 +223,7 @@ function Page() {
                 </tr>
               </thead>
               <tbody>
-                {CANAIS.map((canal) => (
+                {CANAIS.map((canal, i) => (
                   <tr key={canal} className="border-b hover:bg-muted/20">
                     <td className="p-3 font-medium">{canal}</td>
                     {(["tentativas", "oportunidades", "vendas"] as const).map((field) => (
@@ -240,7 +240,7 @@ function Page() {
                     <td className="p-3">
                       {!bloqueado && (
                         <Button size="sm" onClick={() => saveMut.mutate(canal)}
-                          disabled={saveMut.isPending} className="h-8 gap-1 text-xs w-full">
+                          data-tour={i === 0 ? "meus-relatorios-3" : undefined} disabled={saveMut.isPending} className="h-8 gap-1 text-xs w-full">
                           <Save className="h-3 w-3" /> Salvar
                         </Button>
                       )}

@@ -34,14 +34,14 @@ export function RankingPage({ abaInicial }: { abaInicial?: Aba }) {
   return (
     <div className="mx-auto w-full max-w-[1100px] px-4 pb-16 pt-6 sm:px-6 lg:pt-8">
       <TopbarBreadcrumb items={[{ label: "Treino e evolução" }, { label: "Ranking" }]} />
-      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+      <div data-tour="ranking-1" className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
         <h1 className="text-[28px] font-medium leading-9 text-ink">Ranking</h1>
         <p className="text-[14.5px] text-ink-muted">
           {mes ? `${capitalizar(nomeDoMes(mes))} · ` : ""}atualizado todo dia · só os 3 primeiros aparecem
         </p>
       </div>
 
-      <div role="tablist" aria-label="Ranking" className="mt-4 flex flex-wrap gap-x-6 border-b border-line">
+      <div role="tablist" aria-label="Ranking" data-tour="ranking-2" className="mt-4 flex flex-wrap gap-x-6 border-b border-line">
         {ABAS.map((a) => (
           <button
             key={a.id} type="button" role="tab" aria-selected={aba === a.id} onClick={() => setAba(a.id)}
@@ -96,9 +96,9 @@ function Podios({ dados, hall, onHall }: { dados: RankingPodios; hall: CampeaoHa
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      {cartoes.map((c) => (
+      {cartoes.map((c, i) => (
         <CartaoPodio
-          key={c.podio} podio={c.podio} dados={c.dados} minimo={dados.minimo_retomadas}
+          key={c.podio} ancora={i === 0} podio={c.podio} dados={c.dados} minimo={dados.minimo_retomadas}
           subtitulo={c.podio === "treino" ? `Pontos do mês · ${c.sub}` : PODIO_SUBTITULO[c.podio]}
           extra={c.podio === "treino" ? (
             <div role="tablist" aria-label="Tipo de treino" className="mt-2 flex gap-4">
@@ -115,7 +115,7 @@ function Podios({ dados, hall, onHall }: { dados: RankingPodios; hall: CampeaoHa
         />
       ))}
       {ultimoMes && (
-        <section className="rounded-xl border border-line bg-surface px-5 py-4" aria-label="Hall do mês">
+        <section data-tour="ranking-3" className="rounded-xl border border-line bg-surface px-5 py-4" aria-label="Hall do mês">
           <h2 className="text-[17px] font-semibold leading-6 text-ink">Hall do mês</h2>
           <p className="text-[13px] text-ink-muted">Quem liderou cada pódio em {nomeDoMes(ultimoMes)}</p>
           <ul className="mt-3 divide-y divide-line border-t border-line">
@@ -133,7 +133,7 @@ function Podios({ dados, hall, onHall }: { dados: RankingPodios; hall: CampeaoHa
   );
 }
 
-function CartaoPodio({ podio, dados, minimo, subtitulo, extra }: { podio: Podio; dados: PodioPessoal; minimo: number; subtitulo: string; extra?: React.ReactNode }) {
+function CartaoPodio({ podio, dados, minimo, subtitulo, extra, ancora }: { podio: Podio; dados: PodioPessoal; minimo: number; subtitulo: string; extra?: React.ReactNode; ancora?: boolean }) {
   const [aberto, setAberto] = useState(false);
   const meu = dados.meu;
   const porcentagem = podio === "constantes" || podio === "respondidas";
@@ -163,7 +163,7 @@ function CartaoPodio({ podio, dados, minimo, subtitulo, extra }: { podio: Podio;
         <p>
           <LinhaMinha podio={podio} meu={meu} anterior={dados.anterior} nivel={dados.nivel} minimo={minimo} />
         </p>
-        <button type="button" aria-expanded={aberto} onClick={() => setAberto(!aberto)} className="font-medium text-gold-text hover:underline">Como é calculado</button>
+        <button type="button" data-tour={ancora ? "ranking-4" : undefined} aria-expanded={aberto} onClick={() => setAberto(!aberto)} className="font-medium text-gold-text hover:underline">Como é calculado</button>
       </div>
       {aberto && <p className="mt-2 rounded-lg bg-surface-2 px-3 py-2 text-[13.5px] leading-5 text-ink">{PODIO_COMO[podio]}</p>}
     </section>

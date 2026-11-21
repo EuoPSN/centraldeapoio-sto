@@ -74,7 +74,7 @@ export function CopilotoPage() {
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
         <div>
-          <ConversaCard conversa={conversa} onAnalisar={() => analisar.mutate()} analisando={analisar.isPending} uso={uso}>
+          <ConversaCard dataTour="copiloto-1" conversa={conversa} onAnalisar={() => analisar.mutate()} analisando={analisar.isPending} uso={uso}>
             {erro && <div className="mt-2"><ErroDiscreto>{ERRO_ANALISE}</ErroDiscreto></div>}
           </ConversaCard>
           <UsoAviso uso={uso} />
@@ -105,16 +105,16 @@ export function CopilotoPage() {
                 )}
               </section>
 
-              <div className="grid gap-4 md:grid-cols-2">
+              <div data-tour="copiloto-2" className="grid gap-4 md:grid-cols-2">
                 <Opcao titulo="Direta · puxa o próximo passo" texto={r.opcao_direta.texto} porque={r.opcao_direta.porque} />
                 <Opcao titulo="Consultiva · aprofunda" texto={r.opcao_consultiva.texto} porque={r.opcao_consultiva.porque} />
               </div>
 
-              <CasosParecidos compacto objecaoIds={r.objecoes.map((o) => o.id)} ponto={r.ponto_parada_sugerido} />
+              <CasosParecidos dataTour="copiloto-3" compacto objecaoIds={r.objecoes.map((o) => o.id)} ponto={r.ponto_parada_sugerido} />
 
               <div className="grid gap-4 md:grid-cols-2">
                 {r.objecoes.length > 0 ? (
-                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl border border-line px-4 py-3">
+                  <div data-tour="copiloto-4" className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl border border-line px-4 py-3">
                     <p className="text-[14px] text-ink"><span className="font-semibold">Objeção encontrada:</span> {r.objecoes[0].nome}</p>
                     <button
                       type="button" className="text-[14px] font-semibold text-gold-text hover:underline"
@@ -131,7 +131,7 @@ export function CopilotoPage() {
                   </p>
                   <AdicionarRetomada
                     inicial={{ nome: nomeCliente, ponto: r.ponto_parada_sugerido }}
-                    trigger={<button type="button" className="text-[14px] font-semibold text-gold-text hover:underline">Adicionar à retomada →</button>}
+                    trigger={<button type="button" data-tour="copiloto-5" className="text-[14px] font-semibold text-gold-text hover:underline">Adicionar à retomada →</button>}
                   />
                 </div>
               </div>

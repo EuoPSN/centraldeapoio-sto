@@ -52,6 +52,7 @@ function ScriptsHub() {
       <div className="mt-11 grid w-full grid-cols-1 justify-center gap-4 min-[560px]:grid-cols-[repeat(2,232px)] min-[820px]:grid-cols-[repeat(3,232px)] min-[1100px]:grid-cols-[repeat(5,200px)]">
         <HubCard
           to="/scripts/fluxo"
+          dataTour="scripts-1"
           icon={ArrowRight}
           title="Fluxo de atendimento"
           text="A conversa etapa por etapa, da abordagem ao fechamento."
@@ -61,6 +62,7 @@ function ScriptsHub() {
         />
         <HubCard
           to="/scripts/biblioteca"
+          dataTour="scripts-2"
           icon={Quote}
           title="Biblioteca de mensagens"
           text="Todas as mensagens prontas, por categoria."
@@ -68,6 +70,7 @@ function ScriptsHub() {
         />
         <HubCard
           to="/scripts/cliente-disse"
+          dataTour="scripts-3"
           icon={MessageCircleQuestion}
           title="O cliente disse…"
           text="Cole a fala do cliente e receba a resposta aprovada para a objeção."
@@ -79,6 +82,7 @@ function ScriptsHub() {
 
       <HubSearchField
         scope="messages"
+        dataTour="scripts-4"
         label="Buscar mensagem"
         placeholder="Ou busque uma mensagem pelo nome, texto ou atalho (/lead)…"
       />

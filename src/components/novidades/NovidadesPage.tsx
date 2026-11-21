@@ -43,7 +43,7 @@ export function NovidadesPage() {
         <p className="text-[14.5px] text-ink-muted">O que mudou na Omnia e na empresa</p>
       </div>
 
-      <div role="tablist" aria-label="Filtrar novidades" className="mt-4 flex flex-wrap gap-x-6 border-b border-line">
+      <div role="tablist" aria-label="Filtrar novidades" data-tour="novidades-1" className="mt-4 flex flex-wrap gap-x-6 border-b border-line">
         {abas.map((a) => (
           <button
             key={a.id}
@@ -80,11 +80,17 @@ export function NovidadesPage() {
           <p className="rounded-xl border border-line bg-surface px-5 py-6 text-[14.5px] text-ink-muted">Nada por aqui ainda.</p>
         )}
 
-        {importantes.map((n) => <CartaoMudanca key={n.id} n={n} />)}
+        {importantes.map((n, i) =>
+          i === 0 ? (
+            <div key={n.id} data-tour="novidades-2"><CartaoMudanca n={n} /></div>
+          ) : (
+            <CartaoMudanca key={n.id} n={n} />
+          ),
+        )}
       </div>
 
       {informativas.length > 0 && aba !== "confirmar" && (
-        <section aria-label="Informativas" className="mt-8">
+        <section aria-label="Informativas" data-tour="novidades-3" className="mt-8">
           <h2 className="type-overline text-xs text-ink-muted">Informativas</h2>
           <ul className="mt-2 divide-y divide-line border-y border-line">
             {informativas.map((n) => (

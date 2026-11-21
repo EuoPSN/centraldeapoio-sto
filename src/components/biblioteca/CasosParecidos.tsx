@@ -9,11 +9,13 @@ import { cn } from "@/lib/utils";
 
 /** "Casos parecidos que fecharam": até 2 fichas publicadas, achadas só por etiquetas (sem chamada de IA).
  * Sem caso parecido, não mostra nada. */
-export function CasosParecidos({ objecaoIds, ponto, compacto, className }: {
+export function CasosParecidos({ objecaoIds, ponto, compacto, className, dataTour }: {
   objecaoIds: string[];
   ponto?: Ponto | null;
   compacto?: boolean;
   className?: string;
+  /** Âncora do tutorial da página (data-tour). */
+  dataTour?: string;
 }) {
   const fn = useServerFn(getCasosParecidos);
   const navigate = useNavigate();
@@ -30,7 +32,7 @@ export function CasosParecidos({ objecaoIds, ponto, compacto, className }: {
   const filtro = q.data?.filtro ?? {};
 
   return (
-    <section aria-label="Casos parecidos que fecharam" className={className}>
+    <section aria-label="Casos parecidos que fecharam" data-tour={dataTour} className={className}>
       <Overline>Casos parecidos que fecharam</Overline>
       <ul className={cn("mt-2", compacto ? "space-y-2" : "space-y-3")}>
         {fichas.map((f) => (

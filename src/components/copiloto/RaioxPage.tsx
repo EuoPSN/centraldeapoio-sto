@@ -82,7 +82,7 @@ export function RaioxPage({ retomadaId }: { retomadaId?: string }) {
       {!r && (
         <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
           <div>
-            <ConversaCard conversa={conversa} onAnalisar={() => analisar.mutate()} analisando={analisar.isPending} rotuloBotao="Fazer Raio-X" uso={uso}>
+            <ConversaCard dataTour="raiox-1" conversa={conversa} onAnalisar={() => analisar.mutate()} analisando={analisar.isPending} rotuloBotao="Fazer Raio-X" uso={uso}>
               {erro && <div className="mt-2"><ErroDiscreto>{ERRO_ANALISE}</ErroDiscreto></div>}
             </ConversaCard>
             <UsoAviso uso={uso} />
@@ -105,7 +105,7 @@ export function RaioxPage({ retomadaId }: { retomadaId?: string }) {
       {r && (
         <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="min-w-0 space-y-8">
-            <section>
+            <section data-tour="raiox-2">
               <Overline>Onde perdeu</Overline>
               <div className="mt-2 rounded-r-lg border-l-[3px] border-gold bg-surface-2 p-4">
                 <p className="text-[15px] leading-6 text-ink">{r.onde_perdeu.descricao}</p>
@@ -123,7 +123,7 @@ export function RaioxPage({ retomadaId }: { retomadaId?: string }) {
             </section>
 
             {r.faltou.length > 0 && (
-              <section>
+              <section data-tour="raiox-3">
                 <Overline>O que faltou</Overline>
                 <ul className="mt-2">
                   {r.faltou.map((f, i) => (
@@ -136,7 +136,7 @@ export function RaioxPage({ retomadaId }: { retomadaId?: string }) {
               </section>
             )}
 
-            <section>
+            <section data-tour="raiox-4">
               <Overline>Como eu responderia</Overline>
               <div className="mt-2 rounded-xl border border-line p-4">
                 {r.reescrita.original && <p className="text-[14px] leading-6 text-ink-muted line-through">{r.reescrita.original}</p>}
@@ -146,7 +146,7 @@ export function RaioxPage({ retomadaId }: { retomadaId?: string }) {
             </section>
 
             {r.escrita.length > 0 && (
-              <section>
+              <section data-tour="raiox-5">
                 <Overline>Qualidade da escrita</Overline>
                 <ul className="mt-2">
                   {r.escrita.map((e, i) => (
@@ -162,7 +162,7 @@ export function RaioxPage({ retomadaId }: { retomadaId?: string }) {
           </div>
 
           <aside className="space-y-3">
-            <div className="rounded-xl border border-line p-4">
+            <div data-tour="raiox-6" className="rounded-xl border border-line p-4">
               <Overline>Hábito para treinar</Overline>
               <h2 className="mt-2 text-[18px] font-medium leading-6 text-ink">{r.habito.titulo}</h2>
               {r.habito.descricao && <p className="mt-2 text-[14px] leading-5 text-ink-muted">{r.habito.descricao}</p>}

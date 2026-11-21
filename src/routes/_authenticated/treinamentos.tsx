@@ -79,6 +79,7 @@ function Page() {
         onChange={(e) => setBusca(e.target.value)}
         placeholder="Buscar treinamento…"
         aria-label="Buscar treinamento"
+        data-tour="treinamentos-1"
         className="mb-5 h-10 w-full max-w-sm rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-gold"
       />
 
@@ -92,10 +93,11 @@ function Page() {
       )}
 
       <div className="space-y-5">
-        {visiveis.map(({ m, idx }) => {
+        {visiveis.map(({ m, idx }, pos) => {
           const quiz = quizForModule(m.id);
+          const primeiroComSimulado = quiz && visiveis.findIndex((v) => quizForModule(v.m.id)) === pos;
           return (
-            <Card key={m.id} className="p-5">
+            <Card key={m.id} data-tour={pos === 0 ? "treinamentos-2" : undefined} className="p-5">
               <div className="flex items-start gap-3 mb-3">
                 <span className="flex items-center justify-center h-7 w-7 rounded-full bg-primary/10 text-gold-text text-sm font-semibold shrink-0">{idx + 1}</span>
                 <div className="min-w-0">
@@ -131,7 +133,7 @@ function Page() {
               )}
 
               {quiz && (
-                <Button size="sm" className="gap-2" onClick={() => setActiveQuiz(quiz)}>
+                <Button size="sm" className="gap-2" data-tour={primeiroComSimulado ? "treinamentos-3" : undefined} onClick={() => setActiveQuiz(quiz)}>
                   <ClipboardList className="h-4 w-4" /> Fazer simulado
                 </Button>
               )}
@@ -141,7 +143,7 @@ function Page() {
       </div>
 
       {quizzesAvulsos.length > 0 && (
-        <div className="mt-8">
+        <div data-tour="treinamentos-4" className="mt-8">
           <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">Outros simulados</h3>
           <div className="grid gap-3 sm:grid-cols-2">
             {quizzesAvulsos.map((quiz) => (

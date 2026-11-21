@@ -136,7 +136,7 @@ export function RetomadaPage() {
       {q.isError && <p className="mt-4 text-[13.5px] text-ink-muted">Não consegui carregar as retomadas agora. Tente de novo.</p>}
 
       <div className="grid min-h-[520px] lg:grid-cols-[minmax(0,470px)_minmax(0,1fr)]">
-        <div className="border-line lg:border-r">
+        <div data-tour="retomar-1" className="border-line lg:border-r">
           {q.isLoading ? (
             <div className="space-y-2 py-4" aria-hidden>{[0, 1, 2, 3].map((i) => <div key={i} className="h-12 animate-pulse rounded-lg bg-surface-2" />)}</div>
           ) : visao === "hoje" ? (
@@ -391,7 +391,7 @@ function Detalhe({ r, base, onAtualizada, onProximo, lista, onEnviarConversa }: 
       )}
 
       {naFila && r.etapa_atual !== "follow_up" && (
-        <ol className="mt-4 grid grid-cols-5 gap-2" aria-label="Régua da cadência">
+        <ol data-tour="retomar-2" className="mt-4 grid grid-cols-5 gap-2" aria-label="Régua da cadência">
           {REGUA.map((e) => {
             const i = REGUA.indexOf(e), cur = REGUA.indexOf(r.etapa_atual as (typeof REGUA)[number]);
             const feita = i < cur || (r.etapa_atual === "d10" && !!r.d10_enviado_em && e === "d10");
@@ -413,7 +413,7 @@ function Detalhe({ r, base, onAtualizada, onProximo, lista, onEnviarConversa }: 
 
       {naFila ? (
         <>
-          <div className="mt-4 rounded-xl bg-surface-2 px-5 py-4">
+          <div data-tour="retomar-3" className="mt-4 rounded-xl bg-surface-2 px-5 py-4">
             <div className="flex items-center justify-between gap-3">
               <Overline>
                 {mostrandoAnterior
@@ -453,7 +453,7 @@ function Detalhe({ r, base, onAtualizada, onProximo, lista, onEnviarConversa }: 
           {msg?.por_que && <p className="mt-3 text-[13.5px] leading-5 text-ink-muted">Por que esta mensagem: {msg.por_que}</p>}
 
           {!perdendo ? (
-            <div className="mt-4 flex flex-wrap items-center gap-2">
+            <div data-tour="retomar-4" className="mt-4 flex flex-wrap items-center gap-2">
               <GoldButton className="h-11 px-6" onClick={() => acao.mutate({ acao: "enviei", id: r.id, versao: mostrandoAnterior ? anterior.versao : undefined })} disabled={acao.isPending}>Enviei</GoldButton>
               <OutlineButton className="h-10" onClick={() => acao.mutate({ acao: "respondeu", id: r.id })} disabled={acao.isPending}>Respondeu</OutlineButton>
               <OutlineButton className="h-10" onClick={() => acao.mutate({ acao: "fechou", id: r.id })} disabled={acao.isPending}>Fechou</OutlineButton>
@@ -495,7 +495,7 @@ function Detalhe({ r, base, onAtualizada, onProximo, lista, onEnviarConversa }: 
             </button>
           )}
           {!voltando ? (
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div data-tour="retomar-5" className="mt-3 flex flex-wrap gap-2">
               <OutlineButton className="h-9" onClick={() => setVoltando(true)}>Voltar para a fila</OutlineButton>
               {r.status === "perdido" && (
                 <OutlineButton className="h-9" onClick={() => navigate({ to: "/raiox", search: { retomada: r.id } })}>Fazer Raio-X desta venda</OutlineButton>

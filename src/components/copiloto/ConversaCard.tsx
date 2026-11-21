@@ -111,7 +111,7 @@ export async function apagarImagens(caminhos: string[]) {
 export type Conversa = ReturnType<typeof useConversa>;
 
 export function ConversaCard({
-  conversa, onAnalisar, analisando, rotuloBotao = "Analisar", uso, children, className,
+  conversa, onAnalisar, analisando, rotuloBotao = "Analisar", uso, children, className, dataTour,
 }: {
   conversa: Conversa;
   onAnalisar: () => void;
@@ -120,6 +120,8 @@ export function ConversaCard({
   uso?: UsoStatus;
   children?: ReactNode;
   className?: string;
+  /** Âncora do tutorial da página (data-tour). */
+  dataTour?: string;
 }) {
   const imgInput = useRef<HTMLInputElement>(null);
   const txtInput = useRef<HTMLInputElement>(null);
@@ -131,7 +133,7 @@ export function ConversaCard({
     : "";
 
   return (
-    <section aria-label="Conversa" className={cn("flex flex-col rounded-2xl border border-dashed border-line-strong p-4", className)}>
+    <section aria-label="Conversa" data-tour={dataTour} className={cn("flex flex-col rounded-2xl border border-dashed border-line-strong p-4", className)}>
       <Overline>Conversa</Overline>
 
       <div className="mt-3 min-h-[200px] flex-1 rounded-xl bg-surface-2 p-3">

@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 // Cartão de entrada dos hubs (Scripts, Amor Saúde).
 
 export function HubCard({
-  to, icon: Icon, title, text, footer, badge, recommended, soon, className,
+  to, icon: Icon, title, text, footer, badge, recommended, soon, className, dataTour,
 }: {
   to?: string;
   icon: ComponentType<{ className?: string; strokeWidth?: number }>;
@@ -18,6 +18,8 @@ export function HubCard({
   recommended?: boolean;
   soon?: boolean;
   className?: string;
+  /** Âncora do tutorial da página (data-tour). */
+  dataTour?: string;
 }) {
   const body = (
     <>
@@ -52,7 +54,7 @@ export function HubCard({
   const base = cn("flex min-h-[212px] flex-col rounded-[14px] border p-5", className);
   if (!to) {
     return (
-      <div aria-disabled className={cn(base, "border-line bg-sidebar")}>
+      <div aria-disabled data-tour={dataTour} className={cn(base, "border-line bg-sidebar")}>
         {body}
       </div>
     );
@@ -60,6 +62,7 @@ export function HubCard({
   return (
     <Link
       to={to}
+      data-tour={dataTour}
       className={cn(
         base,
         "bg-surface transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
@@ -72,10 +75,10 @@ export function HubCard({
 }
 
 /** Campo grande do hub: ao digitar, abre a busca global já filtrada. */
-export function HubSearchField({ placeholder, label, scope }: { placeholder: string; label: string; scope: SearchScope }) {
+export function HubSearchField({ placeholder, label, scope, dataTour }: { placeholder: string; label: string; scope: SearchScope; dataTour?: string }) {
   const [value, setValue] = useState("");
   return (
-    <label className="mt-10 flex w-full max-w-[640px] cursor-text items-center gap-3 rounded-[14px] border border-line-strong bg-surface px-5 py-[15px] transition-colors hover:border-ink-muted focus-within:border-gold focus-within:hover:border-gold">
+    <label data-tour={dataTour} className="mt-10 flex w-full max-w-[640px] cursor-text items-center gap-3 rounded-[14px] border border-line-strong bg-surface px-5 py-[15px] transition-colors hover:border-ink-muted focus-within:border-gold focus-within:hover:border-gold">
       <Search className="h-[18px] w-[18px] shrink-0 text-ink-muted" strokeWidth={1.5} aria-hidden />
       <span className="sr-only">{label}</span>
       <input
