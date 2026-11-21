@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ClienteDisse } from "./ClienteDisse";
 import { ConversaAba, type ContextoConversa } from "./Conversa";
+import { Diagnostico } from "./Diagnostico";
 import { Hoje } from "./Hoje";
 import { OQueFaz } from "./OQueFaz";
 import { alternarPausa, aceiteConfirmado, confirmarAceite, usePausada } from "../lib/estado";
@@ -8,7 +9,7 @@ import { ignorarContato } from "../lib/ignorados";
 import { registrarEvento } from "../lib/eventos";
 
 type Aba = "conversa" | "hoje";
-type Vista = "ticket" | "cliente_disse" | "oquefaz";
+type Vista = "ticket" | "cliente_disse" | "oquefaz" | "diagnostico";
 
 export function Principal({ usuarioId, email, onSair }: { usuarioId: string; email: string; onSair: () => void }) {
   const [aba, setAba] = useState<Aba>("conversa");
@@ -73,9 +74,11 @@ export function Principal({ usuarioId, email, onSair }: { usuarioId: string; ema
             podeIgnorar={!!contexto} onIgnorar={() => contexto && void ignorar(contexto)}
             onVoltar={() => setVista("ticket")}
           />
+        ) : vista === "diagnostico" ? (
+          <Diagnostico onVoltar={() => setVista("ticket")} />
         ) : null}
         {/* Tudo fica montado: trocar de aba ou voltar ao ticket não perde a proposta em edição. */}
-        <div hidden={travado || vista === "oquefaz" || aba !== "conversa"}>
+        <div hidden={travado || vista === "oquefaz" || vista === "diagnostico" || aba !== "conversa"}>
           <div hidden={vista !== "ticket"}>
             <ConversaAba
               usuarioId={usuarioId}
@@ -90,12 +93,13 @@ export function Principal({ usuarioId, email, onSair }: { usuarioId: string; ema
           </div>
           {vista === "cliente_disse" && <ClienteDisse contexto={contexto} onVoltar={() => setVista("ticket")} />}
         </div>
-        {!travado && vista !== "oquefaz" && <Hoje ativa={aba === "hoje"} atualizar={atualizarHoje} onContagem={setContagem} pausada={pausada} />}
+        {!travado && vista !== "oquefaz" && vista !== "diagnostico" && <Hoje ativa={aba === "hoje"} atualizar={atualizarHoje} onContagem={setContagem} pausada={pausada} />}
       </main>
       <footer className="rodape">
         <span>{email}</span>
         <span style={{ display: "flex", gap: 12 }}>
           {!travado && <button onClick={() => setVista("oquefaz")}>O que a extensão faz</button>}
+          {!travado && <button onClick={() => setVista("diagnostico")}>Diagnóstico</button>}
           <button onClick={onSair}>Sair</button>
         </span>
       </footer>
