@@ -1,10 +1,13 @@
 // Chamadas às funções da Omnia (/api/extensao/*). A extensão nunca chama a IA direto.
 import { CONFIG } from "../config";
+import { estaPausada } from "./armazenamento";
 import { supabase, tokenAtual } from "./supabase";
 
 export type RespostaApi<T> = { ok: true; dados: T } | { ok: false; erro: string; codigo: string | null };
 
 export async function chamar<T>(rota: string, corpo: unknown, tentouRenovar = false): Promise<RespostaApi<T>> {
+  // Pausada: nenhuma chamada sai da extensão.
+  if (await estaPausada()) return { ok: false, erro: "A extensão está pausada.", codigo: "pausada" };
   const token = await tokenAtual();
   if (!token) return { ok: false, erro: "Entre de novo na extensão.", codigo: "sessao" };
   let res: Response;

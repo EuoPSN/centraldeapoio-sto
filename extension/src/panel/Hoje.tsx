@@ -12,12 +12,13 @@ function descricao(t: TicketHoje): string {
   return t.plano ? `${base} · ${t.plano}` : base;
 }
 
-export function Hoje({ atualizar, onContagem, ativa }: { atualizar: number; onContagem: (n: number) => void; ativa: boolean }) {
+export function Hoje({ atualizar, onContagem, ativa, pausada }: { atualizar: number; onContagem: (n: number) => void; ativa: boolean; pausada: boolean }) {
   const [resumo, setResumo] = useState<ResumoHoje | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(true);
 
   const carregar = useCallback(async () => {
+    if (pausada) { setCarregando(false); return; } // pausada: nenhuma chamada
     setCarregando(true);
     const desde = new Date(Date.now() - 2 * 86400_000).toISOString();
     // Na fila (para hoje/atrasados) + o que foi mexido nas últimas horas (para o contador "Atualizados hoje").
@@ -37,7 +38,7 @@ export function Hoje({ atualizar, onContagem, ativa }: { atualizar: number; onCo
     setResumo(r);
     onContagem(r.paraHoje.length);
     setCarregando(false);
-  }, [onContagem]);
+  }, [onContagem, pausada]);
 
   useEffect(() => { void carregar(); }, [carregar, atualizar]);
   useEffect(() => {
@@ -48,6 +49,7 @@ export function Hoje({ atualizar, onContagem, ativa }: { atualizar: number; onCo
 
   return (
     <div hidden={!ativa}>
+      {pausada && <div className="aviso" role="status">A extensão está pausada. Nenhuma chamada é feita até você retomar.</div>}
       {erro && <div className="aviso" role="alert">{erro} <button className="pilula" onClick={() => void carregar()}>Tentar de novo</button></div>}
       {!resumo && carregando && !erro && <p className="carregando">Carregando seus tickets…</p>}
       {resumo && (

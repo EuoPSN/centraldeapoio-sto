@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { chamar } from "../lib/api";
 import { identificarConversa, lerConversaAberta } from "../lib/conteudo";
-import { carregarHashesIgnorados } from "../lib/ignorados";
+import { carregarHashesIgnorados, voltarALer } from "../lib/ignorados";
 import { registrarEvento } from "../lib/eventos";
 import { numeroMascarado } from "../lib/numeros";
 import { sanitizarMensagens, ultimaFalaDoCliente } from "../lib/sanitizar";
@@ -25,7 +25,7 @@ export interface ContextoConversa { nome: string; numero: string; ultimaFala: st
 type Fase =
   | { t: "inicial" }
   | { t: "lendo"; passo: string }
-  | { t: "erro"; motivo: string; naoLe: boolean; ignorado?: boolean }
+  | { t: "erro"; motivo: string; naoLe: boolean; ignorado?: { nome: string; numero: string } }
   | { t: "proposta"; nome: string; numero: string; campos: CamposForm; original: CamposForm; consulta: Consulta; objecoes: string[] }
   | { t: "salvo"; r: Salvo };
 
@@ -48,9 +48,11 @@ export function diferencas(existente: TicketDTO, c: CamposForm): Mudanca[] {
 }
 
 export function ConversaAba({
-  usuarioId, bloqueio, onSalvo, onContexto, onIgnorar, onAbrirClienteDisse, reiniciar,
+  usuarioId, bloqueio, aviso, onSalvo, onContexto, onIgnorar, onAbrirClienteDisse, reiniciar,
 }: {
   usuarioId: string;
+  /** Mensagem de status vinda de fora (ex.: "Contato ignorado"). */
+  aviso?: string;
   /** Texto de por que o botão está travado (pausada, aviso não aceito). */
   bloqueio?: string;
   onSalvo: () => void;
@@ -75,7 +77,7 @@ export function ConversaAba({
     const hashes = await carregarHashesIgnorados();
     setFase({ t: "lendo", passo: "Lendo as mensagens que estão na tela…" });
     const lida = await lerConversaAberta(usuarioId, hashes);
-    if (!lida.ok) return setFase({ t: "erro", motivo: lida.motivo, naoLe: lida.naoLe, ignorado: lida.motivo.includes("ignorado") });
+    if (!lida.ok) return setFase({ t: "erro", motivo: lida.motivo, naoLe: lida.naoLe, ignorado: lida.motivo.includes("ignorado") ? { nome: id.id.nome, numero: id.id.numero } : undefined });
     const { nome, numero, mensagens } = lida.conversa;
     void registrarEvento(usuarioId, "leitura");
 
@@ -97,6 +99,11 @@ export function ConversaAba({
     setFase({ t: "proposta", nome, numero, campos, original: campos, consulta, objecoes: prop.dados.proposta.objecoes_detectadas });
   }
 
+  async function voltarALerContato(c: { nome: string; numero: string }) {
+    await voltarALer(usuarioId, c);
+    await ler();
+  }
+
   async function salvar(f: Extract<Fase, { t: "proposta" }>) {
     setSalvando(true);
     setErroSalvar(null);
@@ -113,10 +120,12 @@ export function ConversaAba({
   if (fase.t === "inicial" || fase.t === "erro" || fase.t === "lendo") {
     return (
       <div>
+        {fase.t === "inicial" && aviso && <p className="aviso" role="status">{aviso}</p>}
         {fase.t === "erro" && (
           <div className="aviso" role="alert">
             <strong>{fase.ignorado ? "Este contato está ignorado" : fase.naoLe ? "Não li esta conversa" : "Não consegui ler esta conversa"}</strong>
             <p style={{ margin: "4px 0 0" }}>{fase.motivo}</p>
+            {fase.ignorado && <button className="pilula" style={{ marginTop: 6 }} onClick={() => voltarALerContato(fase.ignorado!)}>Voltar a ler</button>}
           </div>
         )}
         <div className="card">
@@ -127,7 +136,7 @@ export function ConversaAba({
             {fase.t === "lendo" ? fase.passo : "Ler esta conversa"}
           </button>
         </div>
-        {fase.t === "lendo" && <p className="suave">Nada é salvo até você clicar em “Salvar ticket”.</p>}
+        {fase.t === "lendo" && <p className="suave"><span className="ponto" />Lendo só esta conversa. Nada é salvo até você clicar em “Salvar ticket”.</p>}
       </div>
     );
   }
