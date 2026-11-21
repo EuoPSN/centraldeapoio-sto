@@ -55,10 +55,10 @@ describe("1c · direção sem depender do formato do data-id", () => {
     expect(identificar(document)).toMatchObject({ ok: false, naoLe: true });
   });
 
-  it("remetente das recebidas diferente do título (um só nome): não lê", () => {
+  it("remetente das recebidas diferente do título (um só nome): continua individual (1d)", () => {
     const a = av(pagina({ nome: "Marlene R.", mensagens: msgNovo({ quem: "Outra Pessoa", texto: "oi", ticks: false }, 1) + msgNovo({ quem: "Atendente", texto: "olá", ticks: true }, 2) }));
-    // dois nomes ≠ título → o método do remetente não vale e as recebidas têm remetente diferente
-    expect(a.veredito.tipo).toBe("grupo");
+    expect(a.veredito.tipo).toBe("individual");
+    expect(a.observacoes).toContain("titulo_diferente_do_remetente");
   });
 
   it("citação com author NÃO vira sinal de grupo; author no corpo da mensagem SIM", () => {

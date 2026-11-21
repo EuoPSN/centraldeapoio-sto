@@ -25,3 +25,18 @@ export function numeroMascarado(v: string): string {
   const ddd = nac.length >= 10 ? nac.slice(0, 2) : "";
   return [nac !== d ? "+55" : "", ddd, "····", `··${d.slice(-2)}`].filter(Boolean).join(" ");
 }
+
+export type ValidacaoTelefone = { ok: true; digitos: string } | { ok: false; erro: string };
+
+export const ERRO_TELEFONE = "Confira o número: use o DDD e 10 a 13 dígitos, como (31) 99999-1234.";
+
+/** Valida o telefone digitado à mão: só dígitos, espaço, hífen, parênteses e "+"; 10 a 13 dígitos
+ * (com ou sem 55, com ou sem o 9 inicial). Devolve só os dígitos. Campo vazio = ok sem número. */
+export function validarTelefoneManual(texto: string): ValidacaoTelefone {
+  const t = (texto ?? "").trim();
+  if (!t) return { ok: true, digitos: "" };
+  if (!/^[\d\s()+-]+$/.test(t)) return { ok: false, erro: ERRO_TELEFONE };
+  const digitos = soDigitos(t);
+  if (digitos.length < 10 || digitos.length > 13) return { ok: false, erro: ERRO_TELEFONE };
+  return { ok: true, digitos };
+}

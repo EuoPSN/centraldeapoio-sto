@@ -37,6 +37,9 @@ export const SELETORES = {
     "[title]", // último recurso: qualquer elemento com title dentro do cabeçalho
   ],
 
+  /** Subtítulo do cabeçalho ("online", "Ana, Bruno, você"). Só o diagnóstico usa, e só em forma mascarada. */
+  subtituloChat: ['[data-testid="chat-subtitle"]'],
+
   /** Ícones do cabeçalho/avatar (data-icon). Usados só para detectar grupo, comunidade, lista e Status. */
   iconesCabecalho: ["[data-icon]"],
 
@@ -92,9 +95,27 @@ export const SELETORES = {
   /** Mensagem citada dentro de outra: não entra como texto da mensagem. */
   citada: ['[data-testid="quoted-message"]', '[aria-label*="citada"]', '[aria-label*="Quoted"]'],
 
+  /** Aba "Dados do contato" do WhatsApp Web (aberta PELO ATENDENTE; a extensão nunca a abre).
+   * O DOM real dela ainda não foi observado: estes candidatos são um palpite com fallbacks. Cada item é um
+   * seletor de região lateral; só vale se o aria-label/data-testid casar com RE_DADOS_CONTATO (abaixo)
+   * e o título lá dentro for igual ao título da conversa aberta. Se nada casar, a leitura não faz nada. */
+  dadosContato: [
+    "aside", // região lateral (mais provável)
+    '[role="complementary"]', // papel ARIA equivalente
+    "section", // fallback: bloco de seção
+    '[data-testid*="contact" i]', // fallback: qualquer área com "contact" no testid
+    '[data-testid*="info" i]', // fallback: "chat-info", "contact-info"…
+  ],
+
+  /** Dentro da aba: onde o título (nome ou número do contato) costuma aparecer. */
+  tituloDadosContato: ["h1", "h2", '[role="heading"]', "span[title]", '[data-testid*="title" i]'],
+
   /** Horário alternativo (quando não há data-pre-plain-text). */
   horario: ['[data-testid="msg-meta"] span', "span[aria-hidden='true']"],
 } as const;
+
+/** aria-label/data-testid que indicam a aba de dados do contato. */
+export const RE_DADOS_CONTATO = /(contact|contato|info|dados)/i;
 
 /** Trechos de data-icon que indicam conversa que NÃO é individual. */
 export const ICONES_NAO_INDIVIDUAL = ["group", "community", "broadcast", "newsletter", "status", "channel"];

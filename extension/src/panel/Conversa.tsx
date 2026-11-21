@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { chamar } from "../lib/api";
-import { identificarConversa, lerConversaAberta } from "../lib/conteudo";
+import { identificarConversa, lerConversaAberta, lerDadosDoContato } from "../lib/conteudo";
 import { carregarHashesIgnorados, voltarALer } from "../lib/ignorados";
 import { registrarEvento } from "../lib/eventos";
 import { registrarResultado } from "../lib/diagnostico-estado";
-import { numeroMascarado } from "../lib/numeros";
+import { numeroMascarado, validarTelefoneManual } from "../lib/numeros";
 import { sanitizarMensagens, ultimaFalaDoCliente } from "../lib/sanitizar";
 import { CONFIG } from "../config";
 import { dataCurta, rotuloCampo, rotuloValor, type QuandoId } from "../lib/rotulos";
@@ -27,7 +27,7 @@ type Fase =
   | { t: "inicial" }
   | { t: "lendo"; passo: string }
   | { t: "erro"; motivo: string; naoLe: boolean; codigo?: string; ignorado?: { nome: string; numero: string } }
-  | { t: "proposta"; nome: string; numero: string; campos: CamposForm; original: CamposForm; consulta: Consulta; objecoes: string[] }
+  | { t: "proposta"; nome: string; numero: string; numeroLido: boolean; editandoNumero?: boolean; campos: CamposForm; original: CamposForm; consulta: Consulta; objecoes: string[] }
   | { t: "salvo"; r: Salvo };
 
 const paraForm = (p: Proposta): CamposForm => ({
@@ -44,7 +44,7 @@ function tituloDoErro(f: { codigo?: string; naoLe: boolean; ignorado?: unknown }
 
 /** O link "Ver diagnóstico" aparece quando a causa pode ser layout/seletor (não grupo, ignorado nem pausa). */
 function comLinkDiagnostico(codigo?: string): boolean {
-  return !!codigo && !["grupo", "grupo_varios_remetentes", "grupo_remetente_diferente_do_titulo", "sem_mensagem_do_cliente", "ignorado", "pausada", "erro_servidor"].includes(codigo);
+  return !!codigo && !["grupo", "grupo_varios_remetentes", "sem_mensagem_do_cliente", "ignorado", "pausada", "erro_servidor"].includes(codigo);
 }
 
 /** Diferença (de → para) entre o ticket que já existe e o que está no formulário. */
@@ -76,6 +76,7 @@ export function ConversaAba({
   reiniciar: number;
 }) {
   const [fase, setFase] = useState<Fase>({ t: "inicial" });
+  const ultimaFalaRef = useRef("");
   const [salvando, setSalvando] = useState(false);
   const [erroSalvar, setErroSalvar] = useState<string | null>(null);
   const [prevReiniciar, setPrevReiniciar] = useState(reiniciar);
@@ -104,6 +105,7 @@ export function ConversaAba({
     const limpas = sanitizarMensagens(mensagens, { nome });
     if (!limpas.length) return falhar("Não há mensagens de texto para ler nesta conversa.", false, "sem_mensagens_de_texto");
     const ultimaFala = ultimaFalaDoCliente(limpas);
+    ultimaFalaRef.current = ultimaFala;
     onContexto({ nome, numero, ultimaFala, ponto: null });
 
     setFase({ t: "lendo", passo: "A Omnia está montando a proposta…" });
@@ -115,7 +117,22 @@ export function ConversaAba({
     const consulta: Consulta = cons && cons.ok ? cons.dados : { existente: null, historico: [], outroAtendente: false };
     const campos = paraForm(prop.dados.proposta);
     onContexto({ nome, numero, ultimaFala, ponto: campos.ponto_parada });
-    setFase({ t: "proposta", nome, numero, campos, original: campos, consulta, objecoes: prop.dados.proposta.objecoes_detectadas });
+    setFase({ t: "proposta", nome, numero, numeroLido: !!numero, campos, original: campos, consulta, objecoes: prop.dados.proposta.objecoes_detectadas });
+  }
+
+  // Última consulta pedida: respostas antigas (de números já trocados) são descartadas.
+  const consultaAtual = useRef(0);
+
+  /** Telefone digitado/corrigido: refaz a consulta de ticket existente. O número só entra no pedido
+   * de consultar/salvar ticket, nunca no de ler conversa (IA). */
+  async function definirNumero(f: Extract<Fase, { t: "proposta" }>, digitos: string) {
+    const minha = ++consultaAtual.current;
+    setFase({ ...f, numero: digitos, editandoNumero: false });
+    onContexto({ nome: f.nome, numero: digitos, ultimaFala: ultimaFalaRef.current, ponto: f.campos.ponto_parada });
+    const vazia: Consulta = { existente: null, historico: [], outroAtendente: false };
+    const cons = digitos ? await chamar<Consulta>("ticket", { op: "consultar", numero: digitos }) : null;
+    if (minha !== consultaAtual.current) return;
+    setFase((atual) => (atual.t === "proposta" ? { ...atual, consulta: cons && cons.ok ? cons.dados : vazia } : atual));
   }
 
   async function voltarALerContato(c: { nome: string; numero: string }) {
@@ -192,10 +209,23 @@ export function ConversaAba({
       <div className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
         <div>
           <h2 style={{ margin: 0 }}>{nomeMostrado}</h2>
-          <span className="suave">{mascarado ? `${mascarado} · só você vê o número` : "Número não visível nesta conversa"}</span>
+          {mascarado && !f.editandoNumero && (
+            <span className="suave">{mascarado} · só você vê o número{" "}
+              <button className="pilula" style={{ flex: "0 0 auto" }} onClick={() => setFase({ ...f, editandoNumero: true })}>Corrigir</button>
+            </span>
+          )}
         </div>
         <span className="pilula fixa">Conversa individual</span>
       </div>
+
+      {(!mascarado || f.editandoNumero) && (
+        <CampoTelefone
+          inicial=""
+          onValido={(d) => void definirNumero(f, d)}
+          onCancelar={f.editandoNumero ? () => setFase({ ...f, editandoNumero: false }) : undefined}
+          comAviso={!f.numero}
+        />
+      )}
 
       {f.consulta.outroAtendente && !existente && (
         <div className="card"><strong>Este contato já está com outro atendente.</strong><p className="suave" style={{ margin: "4px 0 0" }}>Você pode criar o seu ticket normalmente.</p></div>
@@ -245,6 +275,44 @@ export function ConversaAba({
         <button className="pilula" style={{ flex: "0 0 auto" }} onClick={onAbrirClienteDisse}>Abrir em O cliente disse…</button>
       </div>
       {existente && f.consulta.historico.length > 0 && <Historico linhas={f.consulta.historico} />}
+    </div>
+  );
+}
+
+/** Campo "Telefone (opcional)": valida ao digitar e só avisa o painel quando o número é válido. */
+function CampoTelefone({ inicial, onValido, onCancelar, comAviso }: {
+  inicial: string; onValido: (digitos: string) => void; onCancelar?: () => void; comAviso: boolean;
+}) {
+  const [texto, setTexto] = useState(inicial);
+  const v = validarTelefoneManual(texto);
+  // Número em "Dados do contato": só se o atendente abriu a aba. Consulta leve (só leitura) a cada 2 s.
+  const [daAba, setDaAba] = useState("");
+  useEffect(() => {
+    let vivo = true;
+    const ver = async () => { const d = await lerDadosDoContato(); if (vivo) setDaAba(d?.numero ?? ""); };
+    void ver();
+    const t = setInterval(() => void ver(), 2000);
+    return () => { vivo = false; clearInterval(t); };
+  }, []);
+  const muda = (t: string) => {
+    setTexto(t);
+    const r = validarTelefoneManual(t);
+    if (r.ok && r.digitos) onValido(r.digitos);
+  };
+  return (
+    <div className="card">
+      <label className="campo"><span>Telefone (opcional)</span>
+        <input type="tel" inputMode="tel" autoComplete="off" value={texto} placeholder="(31) 99999-1234" onChange={(e) => muda(e.target.value)} />
+      </label>
+      <p className="suave" style={{ margin: "4px 0 0" }}>Se quiser, digite o número do cliente para evitar ticket duplicado.</p>
+      {daAba
+        ? <button className="pilula" style={{ marginTop: 6 }} onClick={() => muda(daAba)}>Usar o número de Dados do contato</button>
+        : <p className="suave" style={{ margin: "4px 0 0" }}>Para preencher o número, abra Dados do contato no WhatsApp e clique em “Usar o número”.</p>}
+      {!v.ok && <p className="erro" role="alert" style={{ margin: "4px 0 0" }}>{v.erro}</p>}
+      {comAviso && v.ok && !v.digitos && (
+        <p className="suave" style={{ margin: "4px 0 0" }}>Sem número, o Omnia não evita ticket duplicado nem fecha o ticket pela planilha do CRM.</p>
+      )}
+      {onCancelar && <button className="pilula" style={{ marginTop: 6 }} onClick={onCancelar}>Cancelar</button>}
     </div>
   );
 }
