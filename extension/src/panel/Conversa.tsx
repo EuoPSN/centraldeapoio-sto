@@ -44,7 +44,7 @@ function tituloDoErro(f: { codigo?: string; naoLe: boolean; ignorado?: unknown }
 
 /** O link "Ver diagnóstico" aparece quando a causa pode ser layout/seletor (não grupo, ignorado nem pausa). */
 function comLinkDiagnostico(codigo?: string): boolean {
-  return !!codigo && !["grupo", "ignorado", "pausada", "erro_servidor"].includes(codigo);
+  return !!codigo && !["grupo", "grupo_varios_remetentes", "grupo_remetente_diferente_do_titulo", "sem_mensagem_do_cliente", "ignorado", "pausada", "erro_servidor"].includes(codigo);
 }
 
 /** Diferença (de → para) entre o ticket que já existe e o que está no formulário. */

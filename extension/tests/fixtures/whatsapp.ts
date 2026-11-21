@@ -19,7 +19,7 @@ export function msg(m: MsgFx, i = 0): string {
   const id = `${m.saiu ? "true" : "false"}_${chat}_ID${i}`;
   const hora = m.hora ?? "14:3" + (i % 10);
   const data = m.data ?? "21/11/2026";
-  const pre = `[${hora}, ${data}] ${m.quem ?? "Cliente"}: `;
+  const pre = `[${hora}, ${data}] ${m.quem ?? (m.saiu ? "Atendente" : "Marlene R.")}: `;
   const midia = m.midia === "imagem" ? `<img src="blob:https://web.whatsapp.com/abc">` : m.midia === "audio" ? `<span data-icon="audio-play"></span>` : "";
   const citada = m.citada ? `<div data-testid="quoted-message"><span dir="auto" class="selectable-text">${esc(m.citada)}</span></div>` : "";
   const texto = m.texto !== undefined
@@ -55,7 +55,7 @@ export const CONVERSA_INDIVIDUAL = pagina({
 
 /** Mensagem sem data-id: só a classe message-in/message-out indica a direção. */
 export function msgSemId(m: { saiu: boolean; texto: string; quem?: string }): string {
-  const pre = `[14:30, 21/11/2026] ${m.quem ?? "Cliente"}: `;
+  const pre = `[14:30, 21/11/2026] ${m.quem ?? (m.saiu ? "Atendente" : "Marlene R.")}: `;
   return `<div role="row"><div class="${m.saiu ? "message-out" : "message-in"}"><div class="copyable-text" data-pre-plain-text="${pre}"><span dir="ltr" class="selectable-text">${esc(m.texto)}</span></div></div></div>`;
 }
 
@@ -96,3 +96,85 @@ export const SEM_DATA_ID_COM_PRESENCA = pagina({
 export const SEM_DATA_ID_SEM_PRESENCA = pagina({ nome: "Marlene R.", mensagens: msgSemId({ saiu: false, texto: "Oi" }) });
 /** Layout sem data-id e SÓ mensagens enviadas, sem presença: nada confirma individual. */
 export const SEM_DATA_ID_SO_ENVIADAS = pagina({ nome: "Marlene R.", mensagens: msgSemId({ saiu: true, texto: "Oi", quem: "Atendente" }) });
+
+// ---------------------------------------------------------------------------
+// Correção 1c: data-id em formato desconhecido (sem true_/false_ nem id do chat)
+// ---------------------------------------------------------------------------
+
+export interface MsgNovoFx {
+  quem: string;
+  texto?: string;
+  midia?: boolean;
+  /** Texto da mensagem citada; o autor da citação aparece DENTRO dela. */
+  citada?: { autor: string; texto: string };
+  /** Ícone de status (ticks) em msg-meta. */
+  ticks?: boolean;
+  /** Sem msg-meta nenhum. */
+  semMeta?: boolean;
+  hora?: string;
+}
+
+export function msgNovo(m: MsgNovoFx, i = 0): string {
+  const hora = m.hora ?? "14:3" + (i % 10);
+  const pre = `[${hora}, 21/11/2026] ${m.quem}: `;
+  const citada = m.citada
+    ? `<div data-testid="quoted-message"><span data-testid="author" dir="auto">${esc(m.citada.autor)}</span><span class="selectable-text" dir="auto">${esc(m.citada.texto)}</span></div>`
+    : "";
+  const midia = m.midia ? `<img src="blob:https://web.whatsapp.com/abc">` : "";
+  const corpo = m.texto !== undefined
+    ? `<div data-pre-plain-text="${pre}"><span data-testid="selectable-text" dir="ltr" class="selectable-text">${esc(m.texto)}</span></div>`
+    : `<div data-pre-plain-text="${pre}"></div>`;
+  const meta = m.semMeta ? "" : `<div data-testid="msg-meta"><span>${hora}</span>${m.ticks ? `<span data-icon="msg-dblcheck"></span>` : ""}</div>`;
+  return `<div role="row"><div data-id="3EB0A1B2C3D4E5F6${i}" tabindex="-1">${citada}${midia}${corpo}${meta}</div></div>`;
+}
+
+/** (a) Individual, data-id desconhecido, direção pelo remetente; citação com author dentro. */
+export const NOVO_INDIVIDUAL = pagina({
+  nome: "Marlene R.",
+  mensagens: [
+    msgNovo({ quem: "Marlene R.", texto: "Oi, vi o anúncio do cartão" }, 1),
+    msgNovo({ quem: "Atendente", texto: "Oi! Posso te explicar?" }, 2),
+    msgNovo({ quem: "Marlene R.", texto: "Pode sim", citada: { autor: "Você", texto: "Posso te explicar?" } }, 3),
+  ].join(""),
+});
+
+/** (b) Grupo com dois remetentes, data-id desconhecido, sem subtítulo nem ícone. */
+export const NOVO_GRUPO_DOIS_REMETENTES = pagina({
+  nome: "Família Silva",
+  mensagens: [
+    msgNovo({ quem: "Ana", texto: "bom dia" }, 1),
+    msgNovo({ quem: "Bruno", texto: "oi gente" }, 2),
+    msgNovo({ quem: "Atendente", texto: "olá" , ticks: true }, 3),
+  ].join(""),
+});
+
+/** (c) Só mensagens enviadas. */
+export const NOVO_SO_ENVIADAS = pagina({
+  nome: "Marlene R.",
+  mensagens: msgNovo({ quem: "Atendente", texto: "Oi, tudo bem?" }, 1) + msgNovo({ quem: "Atendente", texto: "Posso ajudar?" }, 2),
+});
+
+/** (e) Mídia e texto misturados. */
+export const NOVO_MIDIA_E_TEXTO = pagina({
+  nome: "Marlene R.",
+  mensagens: [
+    msgNovo({ quem: "Marlene R.", midia: true }, 1),
+    msgNovo({ quem: "Marlene R.", texto: "Segue a foto", midia: true }, 2),
+    msgNovo({ quem: "Atendente", texto: "Recebi, obrigada" }, 3),
+  ].join(""),
+});
+
+/** Remetente com formato ilegível (sem "Nome: " no pre-plain-text): não dá para confirmar. */
+export const NOVO_REMETENTE_ILEGIVEL = pagina({
+  nome: "Marlene R.",
+  mensagens: `<div role="row"><div data-id="ABC1"><div data-pre-plain-text="[14:30, 21/11/2026]"><span class="selectable-text">oi</span></div></div></div>`,
+});
+
+/** Direção só pelos ícones de status (remetentes de dois nomes diferentes do título: método 2 não vale). */
+export const NOVO_SO_ICONES = pagina({
+  nome: "Marlene R.",
+  mensagens: [
+    msgNovo({ quem: "Marlene R.", texto: "Oi" }, 1),
+    msgNovo({ quem: "Marlene R.", texto: "Tudo bem?" }, 2),
+  ].join(""),
+});
