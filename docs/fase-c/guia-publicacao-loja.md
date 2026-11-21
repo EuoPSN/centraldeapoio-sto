@@ -8,7 +8,9 @@ Antes, confirme que testou a extensão no seu Chrome e que a CDT autorizou o uso
 3. Aceite os termos e pague a taxa única de registro (cerca de US$ 5). Confirme o e-mail de contato (ele aparece publicamente na página da extensão).
 
 ## 2. Gerar o pacote
-No repositório: `cd extension && npm run build && npm run zip`. O arquivo sai em `extension/dist/omnia-extensao-<versao>.zip`.
+Antes: confirme em `extension/src/config.ts` o endereço da Omnia (`OMNIA_URL`) e, no app, o e-mail de contato `PRIVACIDADE_CONTATO` em `src/lib/privacidade-extensao.ts` (ele aparece na página pública de privacidade; publique o app com essa mudança antes de enviar a extensão).
+
+No repositório: `cd extension && npm install && npm run build && npm run zip`. O arquivo sai em `extension/dist/omnia-extensao-<versao>.zip`. Para testar antes de enviar: no Chrome, `chrome://extensions` > Modo do desenvolvedor > "Carregar sem compactação" > pasta `extension/dist`.
 
 ## 3. Enviar
 1. No painel, "Novo item" e envie o .zip.
