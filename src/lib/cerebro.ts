@@ -8,7 +8,7 @@ import { removerDadosPessoais } from "@/lib/cliente-disse";
 // Ferramentas que usam o Cérebro
 // ---------------------------------------------------------------------------
 
-export const FERRAMENTAS = ["marciana", "cliente_disse", "mensagem_cliente", "retomada", "copiloto", "raiox", "simulador", "biblioteca"] as const;
+export const FERRAMENTAS = ["marciana", "cliente_disse", "mensagem_cliente", "retomada", "copiloto", "raiox", "simulador", "biblioteca", "aquecimento"] as const;
 export type Ferramenta = (typeof FERRAMENTAS)[number];
 
 export const FERRAMENTA_LABEL: Record<Ferramenta, string> = {
@@ -20,11 +20,12 @@ export const FERRAMENTA_LABEL: Record<Ferramenta, string> = {
   raiox: "Raio-X",
   simulador: "Simulador",
   biblioteca: "Biblioteca",
+  aquecimento: "Aquecimento",
 };
 
 /** Colunas mostradas no Admin ("Quem usa o quê"). A "Mensagem para o cliente"
  * faz parte da MarcIAna: marcar uma marca a outra. */
-export const FERRAMENTAS_COLUNAS = ["marciana", "cliente_disse", "retomada", "copiloto", "raiox", "simulador", "biblioteca"] as const;
+export const FERRAMENTAS_COLUNAS = ["marciana", "cliente_disse", "retomada", "copiloto", "raiox", "simulador", "biblioteca", "aquecimento"] as const;
 export type FerramentaColuna = (typeof FERRAMENTAS_COLUNAS)[number];
 
 export function ferramentasDaColuna(c: FerramentaColuna): Ferramenta[] {
