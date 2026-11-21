@@ -1,4 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { PONTOS, type Ponto } from "@/lib/retomada";
+import { TextTabs, TopbarBreadcrumb } from "@/components/scripts/shared";
+import { ConversasQueFecharam } from "@/components/biblioteca/ConversasQueFecharam";
 import { Pill } from "@/components/Pill";
 import { useState, useMemo, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -13,7 +16,16 @@ import { DownloadImageButton } from "@/components/DownloadImageButton";
 import { Search, Image as ImageIcon, FileText } from "lucide-react";
 import { SkeletonCard } from "@/components/ui/skeleton-card";
 
+type Aba = "materiais" | "conversas";
+interface Search { aba?: Aba; objecao?: string; ponto?: Ponto; plano?: string }
+
 export const Route = createFileRoute("/_authenticated/biblioteca")({
+  validateSearch: (s: Record<string, unknown>): Search => ({
+    aba: s.aba === "conversas" ? "conversas" : undefined,
+    objecao: typeof s.objecao === "string" && s.objecao.trim() ? s.objecao.slice(0, 160) : undefined,
+    ponto: (PONTOS as readonly string[]).includes(String(s.ponto)) ? (s.ponto as Ponto) : undefined,
+    plano: typeof s.plano === "string" && s.plano.trim() ? s.plano.slice(0, 20) : undefined,
+  }),
   component: Page,
 });
 
@@ -40,21 +52,40 @@ function useReloadKeyOnTabReturn() {
 }
 
 function Page() {
+  const search = Route.useSearch();
+  const navigate = useNavigate({ from: "/biblioteca" });
+  const aba: Aba = search.aba ?? "materiais";
+  const setAba = (a: Aba) => navigate({ search: a === "conversas" ? { aba: "conversas" } : {}, replace: true });
+
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-5 sm:px-5 lg:px-8 lg:py-7">
-      <header className="mb-5">
-        <h1 className="text-2xl font-medium">Imagens</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">Biblioteca de imagens e PDFs pra uso no atendimento (exames, especialidades, planos...).</p>
+      <TopbarBreadcrumb items={[{ label: "Atendimento" }, { label: "Biblioteca" }, ...(aba === "conversas" ? [{ label: "Conversas que fecharam" }] : [])]} />
+      <header className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-4">
+        <h1 className="text-2xl font-medium">Biblioteca</h1>
+        <p className="text-sm text-muted-foreground">Scripts, materiais e casos reais da equipe</p>
       </header>
 
-      <Tabs defaultValue="imagens">
-        <TabsList className="mb-6">
-          <TabsTrigger value="imagens" className="gap-1.5"><ImageIcon className="h-4 w-4" /> Imagens</TabsTrigger>
-          <TabsTrigger value="pdfs" className="gap-1.5"><FileText className="h-4 w-4" /> PDFs</TabsTrigger>
-        </TabsList>
-        <TabsContent value="imagens"><ImagensSubPage /></TabsContent>
-        <TabsContent value="pdfs"><PdfsSubPage /></TabsContent>
-      </Tabs>
+      <TextTabs<Aba>
+        label="Biblioteca"
+        items={[{ id: "materiais", name: "Materiais" }, { id: "conversas", name: "Conversas que fecharam" }]}
+        value={aba}
+        onChange={setAba}
+      />
+
+      {aba === "conversas" ? (
+        <ConversasQueFecharam filtrosIniciais={{ objecao: search.objecao, ponto: search.ponto, plano: search.plano }} />
+      ) : (
+        <div className="mt-5">
+          <Tabs defaultValue="imagens">
+            <TabsList className="mb-6">
+              <TabsTrigger value="imagens" className="gap-1.5"><ImageIcon className="h-4 w-4" /> Imagens</TabsTrigger>
+              <TabsTrigger value="pdfs" className="gap-1.5"><FileText className="h-4 w-4" /> PDFs</TabsTrigger>
+            </TabsList>
+            <TabsContent value="imagens"><ImagensSubPage /></TabsContent>
+            <TabsContent value="pdfs"><PdfsSubPage /></TabsContent>
+          </Tabs>
+        </div>
+      )}
     </div>
   );
 }
