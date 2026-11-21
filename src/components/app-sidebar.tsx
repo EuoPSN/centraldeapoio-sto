@@ -161,6 +161,7 @@ export function AppSidebar({ isAdmin, email, displayName, role }: { isAdmin: boo
   return (
     <Sidebar
       collapsible="icon"
+      data-tour="inicio-1"
       className={cn(
         "border-r border-sidebar-border",
         // Recolhido: barra flutuante, arredondada, afastada 12px das bordas.

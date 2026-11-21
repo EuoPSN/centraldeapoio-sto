@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { ListChecks, Settings, Star, Paperclip } from "lucide-react";
+import { ListChecks, Settings, Star, Paperclip, Route as RouteIcon } from "lucide-react";
 import { TopbarBreadcrumb, SkeletonLine } from "@/components/scripts/shared";
 import { HubCard } from "@/components/HubCard";
 import { AjudaSearchBox } from "@/components/ajuda/AjudaSearchBox";
@@ -86,6 +86,13 @@ function AjudaHub() {
           title="Sugestões e dúvidas"
           text="Mande uma ideia, dúvida ou script novo."
           footer={emAnalise > 0 ? `Você tem ${emAnalise} em análise` : "Mande uma ideia ou dúvida"}
+        />
+        <HubCard
+          to="/ajuda/tutoriais-paginas"
+          icon={RouteIcon}
+          title="Tutoriais das páginas"
+          text="Passo a passo de cada página da Omnia."
+          footer="Rever tutoriais"
         />
       </div>
 

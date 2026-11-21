@@ -80,7 +80,7 @@ export function ObjecoesTab({
   return (
     <div className="mt-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <label className="flex min-w-0 flex-1 cursor-text flex-col rounded-lg border border-line-strong bg-surface px-4 py-2.5 transition-colors focus-within:border-gold focus-within:ring-1 focus-within:ring-gold">
+        <label data-tour="cliente-disse-2" className="flex min-w-0 flex-1 cursor-text flex-col rounded-lg border border-line-strong bg-surface px-4 py-2.5 transition-colors focus-within:border-gold focus-within:ring-1 focus-within:ring-gold">
           <span className="text-[12.5px] text-ink-muted">Fala do cliente</span>
           <textarea
             value={fala}
@@ -218,7 +218,7 @@ function ObjecaoView({
         {motivo && <p className="text-[13px] leading-5 text-ink-muted">Por que esta primeiro: {motivo}</p>}
       </div>
 
-      <div className="space-y-3">
+      <div data-tour="cliente-disse-3" className="space-y-3">
         <AngulosGrid
           angulos={objecao.angulos}
           renderFooter={(a, i) => (

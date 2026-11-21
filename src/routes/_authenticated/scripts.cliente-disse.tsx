@@ -42,6 +42,7 @@ function ClienteDissePage() {
       <div className="mt-5">
         <TextTabs<Aba>
           label="Ferramentas"
+          dataTour="cliente-disse-1"
           items={[{ id: "objecoes", name: "Objeções" }, { id: "fechar", name: "Fechar com este cliente" }]}
           value={aba}
           onChange={setAba}

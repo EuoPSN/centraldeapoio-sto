@@ -290,6 +290,7 @@ function ChecklistBlock({ loading, done, total, completo }: { loading: boolean; 
   return (
     <Link
       to="/checklist"
+      data-tour="inicio-4"
       aria-label={loading ? "Check-list de hoje" : completo ? "Check-list de hoje: tudo feito" : `Check-list de hoje: ${done} de ${total} itens`}
       className="block w-full shrink-0 rounded-xl border border-white/[0.08] bg-white/[0.035] px-5 pb-5 pt-[18px] transition-colors hover:border-white/15 hover:bg-white/[0.05] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D4AF37] min-[900px]:w-[300px]"
     >
@@ -390,7 +391,7 @@ function CentralSearch() {
         Do que você precisa agora?
       </h2>
 
-      <label className="group mt-6 flex w-full max-w-[760px] cursor-text items-center gap-3 rounded-[14px] border border-line-strong bg-surface px-5 py-[18px] transition-colors focus-within:border-gold hover:border-ink-muted focus-within:hover:border-gold">
+      <label data-tour="inicio-2" className="group mt-6 flex w-full max-w-[760px] cursor-text items-center gap-3 rounded-[14px] border border-line-strong bg-surface px-5 py-[18px] transition-colors focus-within:border-gold hover:border-ink-muted focus-within:hover:border-gold">
         <Search className="h-5 w-5 shrink-0 text-ink-muted" strokeWidth={1.5} aria-hidden />
         <span className="sr-only">Buscar em toda a OMNIA Apoio</span>
         <input
@@ -416,7 +417,7 @@ function CentralSearch() {
         </kbd>
       </label>
 
-      <nav aria-label="Atalhos" className="mt-4 flex flex-wrap justify-center gap-2.5">
+      <nav aria-label="Atalhos" data-tour="inicio-3" className="mt-4 flex flex-wrap justify-center gap-2.5">
         {ATALHOS.map((a) => (
           <Link
             key={a.to}

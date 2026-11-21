@@ -328,16 +328,18 @@ export function TopbarBreadcrumb({ items }: { items: { label: string; to?: strin
 // ---------------------------------------------------------------------------
 
 export function TextTabs<T extends string>({
-  items, value, onChange, label, trailing,
+  items, value, onChange, label, trailing, dataTour,
 }: {
   items: { id: T; name: string }[];
   value: T | null;
   onChange: (id: T) => void;
   label: string;
   trailing?: ReactNode;
+  /** Âncora do tutorial da página (data-tour). */
+  dataTour?: string;
 }) {
   return (
-    <div className="flex flex-wrap items-end gap-x-6 gap-y-3 border-b border-line">
+    <div data-tour={dataTour} className="flex flex-wrap items-end gap-x-6 gap-y-3 border-b border-line">
       <div role="tablist" aria-label={label} className="-mb-px flex min-w-0 flex-1 gap-6 overflow-x-auto [scrollbar-width:none]">
         {items.map((it) => {
           const active = it.id === value;

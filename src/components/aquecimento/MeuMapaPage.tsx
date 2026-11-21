@@ -43,14 +43,14 @@ export function MeuMapaPage() {
 
       {d && d.temas.length > 0 && (
         <>
-          <ul className="mt-4 max-w-[860px]">
-            {d.temas.map((t) => (
+          <ul data-tour="meu-mapa-1" className="mt-4 max-w-[860px]">
+            {d.temas.map((t, i) => (
               <li key={t.tema_id} className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-line py-4">
                 <div className="min-w-0 flex-1 basis-60">
                   <p className="text-[16px] font-medium leading-6 text-ink">{t.nome}</p>
                   {t.descricao && <p className="text-[13.5px] leading-5 text-ink-muted">{t.descricao}</p>}
                 </div>
-                <div className="w-44 shrink-0">
+                <div data-tour={i === 0 ? "meu-mapa-2" : undefined} className="w-44 shrink-0">
                   <NivelPill nivel={t.nivel} />
                   <p className="mt-1 text-[13px] text-ink-muted">
                     {t.nivel === "nao_testado"
@@ -61,6 +61,7 @@ export function MeuMapaPage() {
                 <Link
                   to="/aquecimento"
                   search={{ tema: t.tema_id }}
+                  data-tour={i === 0 ? "meu-mapa-3" : undefined}
                   className="inline-flex h-[34px] shrink-0 items-center rounded-lg border border-line-strong bg-surface px-3.5 text-[14px] font-medium text-ink transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                 >
                   Treinar este tema
