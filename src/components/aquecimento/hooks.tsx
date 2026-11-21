@@ -16,6 +16,7 @@ export function useStatusAquecimento(enabled = true) {
     enabled,
     staleTime: 60_000,
     refetchOnWindowFocus: true,
+    refetchInterval: 300_000,
   });
 }
 

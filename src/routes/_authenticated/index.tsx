@@ -9,6 +9,7 @@ import { getMyChecklistToday, getChecklistSummaryForDate } from "@/lib/checklist
 import { getAdminPendencias } from "@/lib/home.functions";
 import { openGlobalSearch } from "@/components/GlobalSearch";
 import { useRetomadaContagem } from "@/components/retomada/hooks";
+import { AquecimentoFaixa } from "@/components/aquecimento/Faixa";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -116,6 +117,8 @@ function Home() {
       />
 
       <RetomadasHoje />
+
+      <AquecimentoFaixa />
 
       {/* Altura reservada para todos: a linha de pendências entra sem empurrar a página. */}
       <div className="flex min-h-[3.25rem] items-center px-1 pt-1">

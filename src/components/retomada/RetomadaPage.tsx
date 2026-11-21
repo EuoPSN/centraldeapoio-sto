@@ -22,6 +22,7 @@ import { RETOMADA_BASE_KEY, RETOMADA_CONTAGEM_KEY, useMensagensSelo, useRetomada
 import { SeloLinha } from "@/components/retomada/SeloMensagem";
 import { ROTULO_VERSAO_ANTERIOR } from "@/lib/mensagens-vendem";
 import { useAvisosPermissao } from "@/components/retomada/Avisos";
+import { AvisosAquecimentoToggle } from "@/components/aquecimento/hooks";
 import { EnviarConversaDialog } from "@/components/biblioteca/EnviarConversaDialog";
 import { useFichasDasRetomadas } from "@/components/biblioteca/hooks";
 import { DIAS_PARA_ENVIAR } from "@/lib/biblioteca";
@@ -124,6 +125,8 @@ export function RetomadaPage() {
           <AdicionarRetomada onCriada={(r) => { setVisao("hoje"); setSelId(r.id); }} />
         </div>
       </div>
+
+      <div className="mt-3"><AvisosAquecimentoToggle /></div>
 
       <div className="mt-3 flex items-center justify-between gap-3 border-b border-line pb-3">
         <VisaoMenu visao={visao} onChange={setVisao} base={base} />
