@@ -37,6 +37,9 @@ export const SELETORES = {
     "[title]", // último recurso: qualquer elemento com title dentro do cabeçalho
   ],
 
+  /** Subtítulo do cabeçalho ("online", "Ana, Bruno, você"). Só o diagnóstico usa, e só em forma mascarada. */
+  subtituloChat: ['[data-testid="chat-subtitle"]'],
+
   /** Ícones do cabeçalho/avatar (data-icon). Usados só para detectar grupo, comunidade, lista e Status. */
   iconesCabecalho: ["[data-icon]"],
 
