@@ -119,3 +119,45 @@ export function ultimaFalaDoCliente(msgs: MensagemLimpa[]): string {
 export function montarTranscricao(msgs: MensagemLimpa[]): string {
   return msgs.map((m) => `${m.de === "cliente" ? "Cliente" : "Atendente"}${m.hora ? ` (${m.hora})` : ""}: ${m.texto}`).join("\n");
 }
+
+// ---------------------------------------------------------------------------
+// Telefone: normalização para comparar números (BR) sem duplicar por formato.
+// ---------------------------------------------------------------------------
+
+export function soDigitos(v: string): string {
+  return (v ?? "").replace(/\D/g, "");
+}
+
+/** Remove o 55 do país quando o número tem tamanho de número brasileiro com DDI (12 ou 13 dígitos). */
+export function semDdi(d: string): string {
+  return (d.length === 12 || d.length === 13) && d.startsWith("55") ? d.slice(2) : d;
+}
+
+/**
+ * Chave de comparação: DDD (quando houver) + últimos 8 dígitos. Ignora o 55 e o 9 inicial,
+ * então "+55 31 99999-1234", "(31) 9999-1234" e "3199991234" dão a mesma chave.
+ * Sem DDD (8 ou 9 dígitos), devolve só os 8 últimos. (Igual a public.chave_telefone no banco.)
+ */
+export function chaveNumero(v: string): string {
+  const d = semDdi(soDigitos(v));
+  if (d.length < 8) return "";
+  const ult8 = d.slice(-8);
+  const resto = d.slice(0, -8);
+  const ddd = resto.length >= 2 ? resto.slice(0, 2) : "";
+  return ddd + ult8;
+}
+
+/** Duas chaves são o mesmo número? Se uma delas não tem DDD, compara só os 8 últimos. */
+export function mesmoNumero(a: string, b: string): boolean {
+  const ka = chaveNumero(a);
+  const kb = chaveNumero(b);
+  if (!ka || !kb) return false;
+  if (ka.length === kb.length) return ka === kb;
+  return ka.slice(-8) === kb.slice(-8);
+}
+
+/** Telefone plausível (10 a 13 dígitos). */
+export function numeroValido(v: string): boolean {
+  const n = soDigitos(v).length;
+  return n >= 10 && n <= 13;
+}

@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { ETAPAS_FUNIL, ETAPA_FUNIL_NOME, limparTrecho } from "@/lib/cerebro";
 import { PONTOS, QUANDO } from "@/lib/retomada";
-import { LIMITE_MENSAGENS, trocarNome } from "@/lib/extensao-sanitizar";
+import type { Ponto } from "@/lib/retomada";
+import { LIMITE_MENSAGENS, chaveNumero, mesmoNumero, removerDadosPessoais, trocarNome } from "@/lib/extensao-sanitizar";
 
 // Extensão do Chrome (WhatsApp Web): tipos e esquemas compartilhados entre as rotas
 // /api/extensao/* e os testes. Sem acesso a banco nem IA aqui.
@@ -16,8 +17,6 @@ export const LerConversaEntrada = z.object({
     texto: z.string().max(2000),
     hora: z.string().max(8).optional(),
   })).min(1).max(LIMITE_MENSAGENS * 2),
-  /** Nome exibido do contato: usado só para trocar por [nome]; nunca vai para a IA nem é guardado. */
-  nome: z.string().max(120).optional(),
 });
 export type LerConversaEntradaT = z.infer<typeof LerConversaEntrada>;
 
@@ -74,6 +73,99 @@ export function tentarProposta(raw: unknown, transcricao: string, nome: string |
     etapa_funil: etapa, ponto_parada: d.ponto_parada, plano: d.plano as Proposta["plano"],
     dependentes: d.dependentes, observacao: obs, quando_retomar: d.quando_retomar, objecoes_detectadas: d.objecoes_detectadas,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Ticket: criar ou atualizar
+// ---------------------------------------------------------------------------
+
+export type EtapaFunilCod = (typeof ETAPAS_FUNIL)[number];
+
+/** Campos do ticket que a extensão confere e salva. */
+export const CamposTicket = z.object({
+  etapa_funil: z.enum(ETAPAS_FUNIL),
+  ponto_parada: z.enum(PONTOS),
+  plano: z.string().nullish().transform((v) => PLANOS_EXT.find((p) => p.toLowerCase() === (v ?? "").trim().toLowerCase()) ?? ""),
+  dependentes: z.union([z.number(), z.string(), z.null()]).optional().transform((v) => {
+    if (v == null || v === "") return null;
+    const n = Math.trunc(Number(v));
+    return Number.isFinite(n) && n >= 0 && n <= 20 ? n : null;
+  }),
+  observacao: z.string().max(600).default("").transform((v) => removerDadosPessoais(v).trim().slice(0, 500)),
+  quando: z.enum(QUANDO_IDS).default("amanha"),
+});
+export type CamposTicketT = z.infer<typeof CamposTicket>;
+
+export const ConsultarTicketEntrada = z.object({
+  op: z.literal("consultar"),
+  numero: z.string().max(40).default(""),
+});
+
+export const SalvarTicketEntrada = z.object({
+  op: z.literal("salvar"),
+  /** Número (só dígitos ou formatado) da conversa aberta. Vai só para o ticket, nunca para a IA. */
+  numero: z.string().max(40).default(""),
+  /** Nome exibido do contato: vira o primeiro nome do ticket. */
+  nome: z.string().max(120).default(""),
+  campos: CamposTicket,
+});
+export type SalvarTicketEntradaT = z.infer<typeof SalvarTicketEntrada>;
+
+export const TicketEntrada = z.discriminatedUnion("op", [ConsultarTicketEntrada, SalvarTicketEntrada]);
+
+/** O ticket como a extensão enxerga (sem telefone). */
+export interface TicketDTO {
+  id: string;
+  codigo: string;
+  primeiro_nome: string;
+  etapa_funil: EtapaFunilCod | null;
+  ponto_parada: Ponto;
+  plano: string | null;
+  dependentes: number | null;
+  observacao: string;
+  status: string;
+  etapa_atual: string;
+  proxima_em: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export const CAMPOS_HISTORICO = ["etapa_funil", "ponto_parada", "plano", "dependentes", "observacao", "retomar"] as const;
+export type CampoHistorico = (typeof CAMPOS_HISTORICO)[number];
+export interface Mudanca { campo: CampoHistorico; de: string | null; para: string | null }
+
+const txt = (v: unknown): string | null => {
+  if (v == null) return null;
+  const t = String(v).trim();
+  return t === "" ? null : t;
+};
+
+/** Diferenças entre o ticket que existe e o que será salvo (uma por campo que mudou).
+ * `retomarNovo`/`retomarAtual` são as datas (ISO) de quando retomar. */
+export function calcularMudancas(
+  atual: Pick<TicketDTO, "etapa_funil" | "ponto_parada" | "plano" | "dependentes" | "observacao" | "proxima_em">,
+  novo: { etapa_funil: string; ponto_parada: string; plano: string; dependentes: number | null; observacao: string },
+  retomarNovo: string | null,
+): Mudanca[] {
+  const out: Mudanca[] = [];
+  const pares: [CampoHistorico, unknown, unknown][] = [
+    ["etapa_funil", atual.etapa_funil, novo.etapa_funil],
+    ["ponto_parada", atual.ponto_parada, novo.ponto_parada],
+    ["plano", atual.plano, novo.plano],
+    ["dependentes", atual.dependentes, novo.dependentes],
+    ["observacao", atual.observacao, novo.observacao],
+  ];
+  for (const [campo, a, b] of pares) {
+    if (txt(a) !== txt(b)) out.push({ campo, de: txt(a), para: txt(b) });
+  }
+  if (retomarNovo && txt(atual.proxima_em) !== retomarNovo) out.push({ campo: "retomar", de: txt(atual.proxima_em), para: retomarNovo });
+  return out;
+}
+
+/** Acha, entre os tickets abertos do atendente, o que tem o mesmo número (por formato normalizado). */
+export function acharTicketDoNumero<T extends { telefone: string | null }>(tickets: T[], numero: string): T | null {
+  if (!chaveNumero(numero)) return null;
+  return tickets.find((t) => !!t.telefone && mesmoNumero(t.telefone, numero)) ?? null;
 }
 
 export { ETAPAS_FUNIL, ETAPA_FUNIL_NOME };

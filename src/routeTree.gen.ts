@@ -55,6 +55,7 @@ import { Route as AuthenticatedScriptsIndexRouteImport } from './routes/_authent
 import { Route as AuthenticatedScriptsBibliotecaRouteImport } from './routes/_authenticated/scripts.biblioteca'
 import { Route as AuthenticatedScriptsClienteDisseRouteImport } from './routes/_authenticated/scripts.cliente-disse'
 import { Route as ApiExtensaoLerConversaRouteImport } from './routes/api/extensao/ler-conversa'
+import { Route as ApiExtensaoTicketRouteImport } from './routes/api/extensao/ticket'
 import { Route as ApiPublicKnowledgeFileRouteImport } from './routes/api/public/knowledge-file'
 import { Route as ApiPublicMessageImageRouteImport } from './routes/api/public/message-image'
 import { Route as AuthenticatedScriptsFluxoIndexRouteImport } from './routes/_authenticated/scripts.fluxo.index'
@@ -310,6 +311,11 @@ const ApiExtensaoLerConversaRoute = ApiExtensaoLerConversaRouteImport.update({
   path: '/api/extensao/ler-conversa',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiExtensaoTicketRoute = ApiExtensaoTicketRouteImport.update({
+  id: '/api/extensao/ticket',
+  path: '/api/extensao/ticket',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicKnowledgeFileRoute = ApiPublicKnowledgeFileRouteImport.update({
   id: '/api/public/knowledge-file',
   path: '/api/public/knowledge-file',
@@ -375,6 +381,7 @@ export interface FileRoutesByFullPath {
   '/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
   '/scripts/cliente-disse': typeof AuthenticatedScriptsClienteDisseRoute
   '/api/extensao/ler-conversa': typeof ApiExtensaoLerConversaRoute
+  '/api/extensao/ticket': typeof ApiExtensaoTicketRoute
   '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
   '/api/public/message-image': typeof ApiPublicMessageImageRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
@@ -425,6 +432,7 @@ export interface FileRoutesByTo {
   '/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
   '/scripts/cliente-disse': typeof AuthenticatedScriptsClienteDisseRoute
   '/api/extensao/ler-conversa': typeof ApiExtensaoLerConversaRoute
+  '/api/extensao/ticket': typeof ApiExtensaoTicketRoute
   '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
   '/api/public/message-image': typeof ApiPublicMessageImageRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
@@ -478,6 +486,7 @@ export interface FileRoutesById {
   '/_authenticated/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
   '/_authenticated/scripts/cliente-disse': typeof AuthenticatedScriptsClienteDisseRoute
   '/api/extensao/ler-conversa': typeof ApiExtensaoLerConversaRoute
+  '/api/extensao/ticket': typeof ApiExtensaoTicketRoute
   '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
   '/api/public/message-image': typeof ApiPublicMessageImageRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
@@ -531,6 +540,7 @@ export interface FileRouteTypes {
     | '/scripts/biblioteca'
     | '/scripts/cliente-disse'
     | '/api/extensao/ler-conversa'
+    | '/api/extensao/ticket'
     | '/api/public/knowledge-file'
     | '/api/public/message-image'
     | '/admin/'
@@ -581,6 +591,7 @@ export interface FileRouteTypes {
     | '/scripts/biblioteca'
     | '/scripts/cliente-disse'
     | '/api/extensao/ler-conversa'
+    | '/api/extensao/ticket'
     | '/api/public/knowledge-file'
     | '/api/public/message-image'
     | '/admin'
@@ -633,6 +644,7 @@ export interface FileRouteTypes {
     | '/_authenticated/scripts/biblioteca'
     | '/_authenticated/scripts/cliente-disse'
     | '/api/extensao/ler-conversa'
+    | '/api/extensao/ticket'
     | '/api/public/knowledge-file'
     | '/api/public/message-image'
     | '/_authenticated/admin/'
@@ -648,6 +660,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   PendenteRoute: typeof PendenteRoute
   ApiExtensaoLerConversaRoute: typeof ApiExtensaoLerConversaRoute
+  ApiExtensaoTicketRoute: typeof ApiExtensaoTicketRoute
   ApiPublicKnowledgeFileRoute: typeof ApiPublicKnowledgeFileRoute
   ApiPublicMessageImageRoute: typeof ApiPublicMessageImageRoute
 }
@@ -976,6 +989,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiExtensaoLerConversaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/extensao/ticket': {
+      id: '/api/extensao/ticket'
+      path: '/api/extensao/ticket'
+      fullPath: '/api/extensao/ticket'
+      preLoaderRoute: typeof ApiExtensaoTicketRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/knowledge-file': {
       id: '/api/public/knowledge-file'
       path: '/api/public/knowledge-file'
@@ -1122,6 +1142,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   PendenteRoute: PendenteRoute,
   ApiExtensaoLerConversaRoute: ApiExtensaoLerConversaRoute,
+  ApiExtensaoTicketRoute: ApiExtensaoTicketRoute,
   ApiPublicKnowledgeFileRoute: ApiPublicKnowledgeFileRoute,
   ApiPublicMessageImageRoute: ApiPublicMessageImageRoute,
 }

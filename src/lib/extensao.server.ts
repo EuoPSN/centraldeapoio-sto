@@ -7,9 +7,12 @@ import { EXTENSAO_MODEL } from "@/lib/ai-models";
 import { ETAPAS_FUNIL, ETAPA_FUNIL_NOME, mensagemLimite } from "@/lib/cerebro";
 import { PONTO_LISTA, PONTOS, QUANDO } from "@/lib/retomada";
 import {
-  ERRO_LER, LerConversaEntrada, tentarProposta, type LerConversaEntradaT, type Proposta,
+  ERRO_LER, LerConversaEntrada, TicketEntrada, acharTicketDoNumero, calcularMudancas, tentarProposta,
+  type LerConversaEntradaT, type Mudanca, type Proposta, type SalvarTicketEntradaT, type TicketDTO,
 } from "@/lib/extensao";
-import { montarTranscricao, sanitizarMensagens } from "@/lib/extensao-sanitizar";
+import { chaveNumero, montarTranscricao, numeroValido, primeiroNome, sanitizarMensagens, soDigitos } from "@/lib/extensao-sanitizar";
+import { agendarInicial } from "@/lib/retomada";
+import { criarTicketExterno } from "@/lib/retomada.functions";
 
 export type CtxExt = { supabase: unknown; userId: string };
 
@@ -101,7 +104,7 @@ export async function lerConversaExtensao(ctx: CtxExt, entrada: LerConversaEntra
   const st = await statusUso(ctx, "extensao");
   if (st.bloqueado) throw new ErroExt(429, mensagemLimite("extensao"), "limite");
 
-  const msgs = sanitizarMensagens(entrada.mensagens, { nome: entrada.nome });
+  const msgs = sanitizarMensagens(entrada.mensagens);
   if (!msgs.length) throw new ErroExt(422, "Não há mensagens de texto para ler nesta conversa.", "sem_texto");
   const transcricao = montarTranscricao(msgs);
 
@@ -116,7 +119,7 @@ export async function lerConversaExtensao(ctx: CtxExt, entrada: LerConversaEntra
         model: EXTENSAO_MODEL, temperature: tentativa === 0 ? 0.2 : 0,
         messages: [{ role: "system", content: system }, { role: "user", content: user }],
       });
-      proposta = tentarProposta(raw, transcricao, entrada.nome);
+      proposta = tentarProposta(raw, transcricao, undefined);
     } catch (err) {
       const m = err instanceof Error ? err.message : "";
       // Erros do provedor (limite, créditos) não adiantam repetir.
@@ -130,4 +133,130 @@ export async function lerConversaExtensao(ctx: CtxExt, entrada: LerConversaEntra
   return { proposta, uso: { usado: st.usado + 1, limite: st.limite } };
 }
 
-export { LerConversaEntrada };
+// ---------------------------------------------------------------------------
+// Ticket: criar ou atualizar (nunca duplica o mesmo número do mesmo atendente)
+// ---------------------------------------------------------------------------
+
+const db = (ctx: CtxExt) => ctx.supabase as any;
+const COLS_TICKET = "id, codigo, primeiro_nome, etapa_funil, ponto_parada, plano, dependentes, observacao, status, etapa_atual, proxima_em, created_at, updated_at";
+
+function paraDTO(r: Record<string, unknown>): TicketDTO {
+  return {
+    id: String(r.id), codigo: String(r.codigo ?? ""), primeiro_nome: String(r.primeiro_nome ?? ""),
+    etapa_funil: (r.etapa_funil as TicketDTO["etapa_funil"]) ?? null,
+    ponto_parada: r.ponto_parada as TicketDTO["ponto_parada"],
+    plano: (r.plano as string | null) ?? null,
+    dependentes: r.dependentes == null ? null : Number(r.dependentes),
+    observacao: String(r.observacao ?? ""),
+    status: String(r.status ?? ""), etapa_atual: String(r.etapa_atual ?? ""),
+    proxima_em: (r.proxima_em as string | null) ?? null,
+    created_at: String(r.created_at ?? ""), updated_at: String(r.updated_at ?? ""),
+  };
+}
+function check<T>(r: { data: T; error: { message: string } | null }): T {
+  if (r.error) throw new ErroExt(500, "Não consegui falar com o banco agora. Tente de novo.");
+  return r.data;
+}
+
+export interface HistoricoLinha { campo: string; valor_anterior: string | null; valor_novo: string | null; origem: string; created_at: string }
+
+/** Evento para o Admin (só tipo e hora, nunca conteúdo). Falha em silêncio: não derruba o ticket. */
+export async function registrarEvento(ctx: CtxExt, tipo: string): Promise<void> {
+  try {
+    await db(ctx).from("extensao_eventos").insert({ user_id: ctx.userId, tipo });
+  } catch (err) {
+    console.error("[extensao] evento não gravado:", err instanceof Error ? err.message : err);
+  }
+}
+
+async function ticketsAbertosComTelefone(ctx: CtxExt) {
+  const rows = check(await db(ctx).from("retomadas").select(`${COLS_TICKET}, telefone`)
+    .eq("user_id", ctx.userId).in("status", ["fila", "respondeu"]).not("telefone", "is", null)) as (Record<string, unknown> & { telefone: string | null })[];
+  return rows;
+}
+
+async function outroAtendenteTem(ctx: CtxExt, numero: string): Promise<boolean> {
+  const chave = chaveNumero(numero);
+  if (!chave) return false;
+  const r = await db(ctx).rpc("numero_com_outro_atendente", { _chave: chave });
+  return r.error ? false : r.data === true;
+}
+
+async function historicoDoTicket(ctx: CtxExt, id: string): Promise<HistoricoLinha[]> {
+  const r = await db(ctx).from("ticket_historico").select("campo, valor_anterior, valor_novo, origem, created_at")
+    .eq("ticket_id", id).order("created_at", { ascending: false }).limit(60);
+  return r.error ? [] : ((r.data ?? []) as HistoricoLinha[]);
+}
+
+export interface ConsultaTicket { existente: TicketDTO | null; historico: HistoricoLinha[]; outroAtendente: boolean }
+
+/** Já existe ticket aberto deste número para este atendente? (Outro atendente: só um aviso, sem detalhes.) */
+export async function consultarTicket(ctx: CtxExt, numero: string): Promise<ConsultaTicket> {
+  if (!numeroValido(numero)) return { existente: null, historico: [], outroAtendente: false };
+  const meus = await ticketsAbertosComTelefone(ctx);
+  const achou = acharTicketDoNumero(meus, numero);
+  if (achou) return { existente: paraDTO(achou), historico: await historicoDoTicket(ctx, String(achou.id)), outroAtendente: false };
+  return { existente: null, historico: [], outroAtendente: await outroAtendenteTem(ctx, numero) };
+}
+
+export interface ResultadoSalvar { acao: "criado" | "atualizado"; ticket: TicketDTO; mudancas: Mudanca[]; outroAtendente: boolean }
+
+const valorHist = (campo: string, v: string | null) => (v == null ? null : v.slice(0, 600));
+
+async function gravarHistorico(ctx: CtxExt, ticketId: string, linhas: { campo: string; de: string | null; para: string | null }[]) {
+  if (!linhas.length) return;
+  const agora = new Date().toISOString(); // mesmo instante em todas as linhas = uma "edição"
+  const r = await db(ctx).from("ticket_historico").insert(
+    linhas.map((l) => ({ ticket_id: ticketId, user_id: ctx.userId, campo: l.campo, valor_anterior: valorHist(l.campo, l.de), valor_novo: valorHist(l.campo, l.para), origem: "extensao", created_at: agora })),
+  );
+  if (r.error) console.error("[extensao] histórico não gravado:", r.error.message);
+}
+
+/** Salva o que o atendente conferiu: atualiza o ticket aberto do mesmo número ou cria um novo. */
+export async function salvarTicket(ctx: CtxExt, e: SalvarTicketEntradaT): Promise<ResultadoSalvar> {
+  const c = e.campos;
+  const nome = primeiroNome(e.nome) || "Cliente";
+  const temNumero = numeroValido(e.numero);
+  const telefone = temNumero ? soDigitos(e.numero) : null;
+  const ag = agendarInicial(c.quando as never);
+  const retomar = ag.em.toISOString();
+
+  const achou = temNumero ? acharTicketDoNumero(await ticketsAbertosComTelefone(ctx), e.numero) : null;
+
+  if (achou) {
+    const atual = paraDTO(achou);
+    const mudancas = calcularMudancas(atual, { etapa_funil: c.etapa_funil, ponto_parada: c.ponto_parada, plano: c.plano, dependentes: c.dependentes, observacao: c.observacao }, retomar);
+    const patch: Record<string, unknown> = {
+      etapa_funil: c.etapa_funil, ponto_parada: c.ponto_parada, plano: c.plano || null, dependentes: c.dependentes,
+      observacao: c.observacao, etapa_atual: ag.etapa, proxima_em: retomar,
+    };
+    const extras: { campo: string; de: string | null; para: string | null }[] = [];
+    if (atual.status === "respondeu") { patch.status = "fila"; extras.push({ campo: "status", de: "respondeu", para: "fila" }); }
+    const novo = check(await db(ctx).from("retomadas").update(patch).eq("id", atual.id).eq("user_id", ctx.userId).select(COLS_TICKET).single()) as Record<string, unknown>;
+    await gravarHistorico(ctx, atual.id, [...mudancas, ...extras]);
+    await registrarEvento(ctx, "ticket_atualizado");
+    return { acao: "atualizado", ticket: paraDTO(novo), mudancas, outroAtendente: false };
+  }
+
+  // Número novo para este atendente (mesmo que outro atendente já tenha o contato: nada é revelado).
+  const outro = temNumero ? await outroAtendenteTem(ctx, e.numero) : false;
+  const criado = await criarTicketExterno(ctx as never, {
+    primeiro_nome: nome, telefone, observacao: c.observacao, ponto_parada: c.ponto_parada, quando: c.quando,
+    etapa_funil: c.etapa_funil, plano: (c.plano || null) as never, dependentes: c.dependentes,
+  } as never);
+  const linhas = [
+    { campo: "ticket", de: null, para: "criado" },
+    { campo: "etapa_funil", de: null, para: c.etapa_funil },
+    { campo: "ponto_parada", de: null, para: c.ponto_parada },
+    ...(c.plano ? [{ campo: "plano", de: null, para: c.plano }] : []),
+    ...(c.dependentes != null ? [{ campo: "dependentes", de: null, para: String(c.dependentes) }] : []),
+    ...(c.observacao ? [{ campo: "observacao", de: null, para: c.observacao }] : []),
+    { campo: "retomar", de: null, para: criado.proxima_em },
+  ];
+  await gravarHistorico(ctx, criado.id, linhas);
+  await registrarEvento(ctx, "ticket_criado");
+  const lido = check(await db(ctx).from("retomadas").select(COLS_TICKET).eq("id", criado.id).single()) as Record<string, unknown>;
+  return { acao: "criado", ticket: paraDTO(lido), mudancas: [], outroAtendente: outro };
+}
+
+export { LerConversaEntrada, TicketEntrada };
