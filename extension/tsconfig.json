@@ -1,15 +1,39 @@
 {
-  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "scripts/**/*.ts", "vite*.ts", "../src/lib/extensao-sanitizar.ts"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "tests/**/*.ts",
+    "scripts/**/*.ts",
+    "vite*.ts",
+    "../src/lib/extensao-sanitizar.ts",
+    "../src/lib/extensao.ts",
+    "../src/lib/cerebro.ts",
+    "../src/lib/retomada.ts"
+  ],
   "compilerOptions": {
     "target": "ES2022",
     "jsx": "react-jsx",
     "module": "ESNext",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["chrome", "node", "vite/client"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "types": [
+      "chrome",
+      "node",
+      "vite/client"
+    ],
     "moduleResolution": "Bundler",
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "strict": true
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "../src/*"
+      ]
+    }
   }
 }

@@ -54,6 +54,7 @@ import { Route as AuthenticatedAmorSaudeOdontologiaRouteImport } from './routes/
 import { Route as AuthenticatedScriptsIndexRouteImport } from './routes/_authenticated/scripts.index'
 import { Route as AuthenticatedScriptsBibliotecaRouteImport } from './routes/_authenticated/scripts.biblioteca'
 import { Route as AuthenticatedScriptsClienteDisseRouteImport } from './routes/_authenticated/scripts.cliente-disse'
+import { Route as ApiExtensaoLerConversaRouteImport } from './routes/api/extensao/ler-conversa'
 import { Route as ApiPublicKnowledgeFileRouteImport } from './routes/api/public/knowledge-file'
 import { Route as ApiPublicMessageImageRouteImport } from './routes/api/public/message-image'
 import { Route as AuthenticatedScriptsFluxoIndexRouteImport } from './routes/_authenticated/scripts.fluxo.index'
@@ -304,6 +305,11 @@ const AuthenticatedScriptsClienteDisseRoute =
     path: '/scripts/cliente-disse',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiExtensaoLerConversaRoute = ApiExtensaoLerConversaRouteImport.update({
+  id: '/api/extensao/ler-conversa',
+  path: '/api/extensao/ler-conversa',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicKnowledgeFileRoute = ApiPublicKnowledgeFileRouteImport.update({
   id: '/api/public/knowledge-file',
   path: '/api/public/knowledge-file',
@@ -368,6 +374,7 @@ export interface FileRoutesByFullPath {
   '/amor-saude/odontologia': typeof AuthenticatedAmorSaudeOdontologiaRoute
   '/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
   '/scripts/cliente-disse': typeof AuthenticatedScriptsClienteDisseRoute
+  '/api/extensao/ler-conversa': typeof ApiExtensaoLerConversaRoute
   '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
   '/api/public/message-image': typeof ApiPublicMessageImageRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
@@ -417,6 +424,7 @@ export interface FileRoutesByTo {
   '/amor-saude/odontologia': typeof AuthenticatedAmorSaudeOdontologiaRoute
   '/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
   '/scripts/cliente-disse': typeof AuthenticatedScriptsClienteDisseRoute
+  '/api/extensao/ler-conversa': typeof ApiExtensaoLerConversaRoute
   '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
   '/api/public/message-image': typeof ApiPublicMessageImageRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
@@ -469,6 +477,7 @@ export interface FileRoutesById {
   '/_authenticated/amor-saude/odontologia': typeof AuthenticatedAmorSaudeOdontologiaRoute
   '/_authenticated/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
   '/_authenticated/scripts/cliente-disse': typeof AuthenticatedScriptsClienteDisseRoute
+  '/api/extensao/ler-conversa': typeof ApiExtensaoLerConversaRoute
   '/api/public/knowledge-file': typeof ApiPublicKnowledgeFileRoute
   '/api/public/message-image': typeof ApiPublicMessageImageRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
@@ -521,6 +530,7 @@ export interface FileRouteTypes {
     | '/amor-saude/odontologia'
     | '/scripts/biblioteca'
     | '/scripts/cliente-disse'
+    | '/api/extensao/ler-conversa'
     | '/api/public/knowledge-file'
     | '/api/public/message-image'
     | '/admin/'
@@ -570,6 +580,7 @@ export interface FileRouteTypes {
     | '/amor-saude/odontologia'
     | '/scripts/biblioteca'
     | '/scripts/cliente-disse'
+    | '/api/extensao/ler-conversa'
     | '/api/public/knowledge-file'
     | '/api/public/message-image'
     | '/admin'
@@ -621,6 +632,7 @@ export interface FileRouteTypes {
     | '/_authenticated/amor-saude/odontologia'
     | '/_authenticated/scripts/biblioteca'
     | '/_authenticated/scripts/cliente-disse'
+    | '/api/extensao/ler-conversa'
     | '/api/public/knowledge-file'
     | '/api/public/message-image'
     | '/_authenticated/admin/'
@@ -635,6 +647,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   PendenteRoute: typeof PendenteRoute
+  ApiExtensaoLerConversaRoute: typeof ApiExtensaoLerConversaRoute
   ApiPublicKnowledgeFileRoute: typeof ApiPublicKnowledgeFileRoute
   ApiPublicMessageImageRoute: typeof ApiPublicMessageImageRoute
 }
@@ -956,6 +969,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedScriptsClienteDisseRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/extensao/ler-conversa': {
+      id: '/api/extensao/ler-conversa'
+      path: '/api/extensao/ler-conversa'
+      fullPath: '/api/extensao/ler-conversa'
+      preLoaderRoute: typeof ApiExtensaoLerConversaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/knowledge-file': {
       id: '/api/public/knowledge-file'
       path: '/api/public/knowledge-file'
@@ -1101,6 +1121,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   PendenteRoute: PendenteRoute,
+  ApiExtensaoLerConversaRoute: ApiExtensaoLerConversaRoute,
   ApiPublicKnowledgeFileRoute: ApiPublicKnowledgeFileRoute,
   ApiPublicMessageImageRoute: ApiPublicMessageImageRoute,
 }

@@ -58,3 +58,6 @@ export const MENSAGEM_SUGESTAO_MODEL = "google/gemini-2.5-flash";
 
 /** Aquecimento: nota das respostas escritas e rascunhos de exercícios (sempre com revisão do Admin). */
 export const AQUECIMENTO_MODEL = "google/gemini-2.5-flash";
+
+/** Extensão do WhatsApp Web > "Ler esta conversa": propõe etapa, ponto de parada, plano e observação a partir da conversa já sem dados pessoais. */
+export const EXTENSAO_MODEL = "google/gemini-2.5-flash";
