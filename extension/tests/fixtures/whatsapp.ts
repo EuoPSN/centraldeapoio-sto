@@ -48,3 +48,51 @@ export const CONVERSA_INDIVIDUAL = pagina({
     msg({ saiu: false, texto: "Pode. Mas vou conversar com meu marido e te falo", hora: "14:32", citada: "Posso te explicar como fica?" }, 6),
   ].join(""),
 });
+
+// ---------------------------------------------------------------------------
+// Variações de layout (correção 1b)
+// ---------------------------------------------------------------------------
+
+/** Mensagem sem data-id: só a classe message-in/message-out indica a direção. */
+export function msgSemId(m: { saiu: boolean; texto: string; quem?: string }): string {
+  const pre = `[14:30, 21/11/2026] ${m.quem ?? "Cliente"}: `;
+  return `<div role="row"><div class="${m.saiu ? "message-out" : "message-in"}"><div class="copyable-text" data-pre-plain-text="${pre}"><span dir="ltr" class="selectable-text">${esc(m.texto)}</span></div></div></div>`;
+}
+
+/** Individual SEM subtítulo de presença (contato que oculta o "visto por último"). */
+export const INDIVIDUAL_SEM_SUBTITULO = pagina({
+  nome: "Marlene R.",
+  mensagens: [
+    msg({ saiu: false, texto: "Oi, tudo bem?", hora: "14:20" }, 1),
+    msg({ saiu: true, texto: "Tudo sim!", quem: "Atendente", hora: "14:21" }, 2),
+  ].join(""),
+});
+
+/** Individual com subtítulo "online". */
+export const INDIVIDUAL_ONLINE = pagina({
+  nome: "Marlene R.",
+  subtitulo: "online",
+  mensagens: msg({ saiu: false, texto: "Oi", hora: "14:20" }, 1),
+});
+
+/** Grupo: nome do autor visível nas mensagens recebidas e subtítulo com vários nomes. */
+export const GRUPO = pagina({
+  nome: "Família Silva",
+  subtitulo: "Ana, Bruno, Carla, você",
+  mensagens: [
+    `<div role="row"><div data-id="false_120363000000000000@g.us_A1_5531988887777@c.us"><span dir="auto" aria-label="Ana:">Ana</span><div class="copyable-text" data-pre-plain-text="[14:20, 21/11/2026] Ana: "><span dir="ltr" class="selectable-text">bom dia</span></div></div></div>`,
+  ].join(""),
+});
+
+/** Conversa aberta, mas sem nenhuma mensagem carregada. */
+export const CONVERSA_VAZIA = pagina({ nome: "Marlene R.", subtitulo: "online", mensagens: "" });
+
+/** Layout sem data-id, individual com presença. */
+export const SEM_DATA_ID_COM_PRESENCA = pagina({
+  nome: "Marlene R.", subtitulo: "visto por último hoje às 14:30",
+  mensagens: msgSemId({ saiu: false, texto: "Oi" }) + msgSemId({ saiu: true, texto: "Olá", quem: "Atendente" }),
+});
+/** Layout sem data-id, sem presença, só mensagens recebidas sem remetente. */
+export const SEM_DATA_ID_SEM_PRESENCA = pagina({ nome: "Marlene R.", mensagens: msgSemId({ saiu: false, texto: "Oi" }) });
+/** Layout sem data-id e SÓ mensagens enviadas, sem presença: nada confirma individual. */
+export const SEM_DATA_ID_SO_ENVIADAS = pagina({ nome: "Marlene R.", mensagens: msgSemId({ saiu: true, texto: "Oi", quem: "Atendente" }) });
