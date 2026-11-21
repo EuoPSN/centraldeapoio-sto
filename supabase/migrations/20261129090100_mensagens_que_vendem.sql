@@ -150,7 +150,7 @@ CREATE INDEX IF NOT EXISTS idx_mensagens_sugestoes_status ON public.mensagens_su
 -- etapa = taxa somada de todas as versões do mesmo ponto de parada e etapa.
 -- Taxa >= média: "funciona_bem"; taxa < limite_baixo x média: "vale_testar_outra"; senão sem selo.
 -- ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public._mensagens_calc(_desde TIMESTAMPTZ)
+CREATE OR REPLACE FUNCTION public._mensagens_calc(_desde TIMESTAMPTZ, _ate TIMESTAMPTZ DEFAULT NULL)
 RETURNS TABLE (
   origem TEXT, ponto TEXT, etapa TEXT, mensagem_id UUID, versao INT, titulo TEXT,
   enviadas BIGINT, responderam BIGINT, fecharam BIGINT,
@@ -170,7 +170,7 @@ envios AS (
          CASE WHEN e.etapa = 'follow_up' THEN 'follow_up' ELSE COALESCE(e.ponto_parada, 'desconhecido') END AS ponto
     FROM public.retomada_eventos e
    WHERE e.acao = 'enviei' AND e.mensagem_id IS NOT NULL AND e.mensagem_versao IS NOT NULL
-     AND (_desde IS NULL OR e.created_at >= _desde)
+     AND (_desde IS NULL OR e.created_at >= _desde) AND (_ate IS NULL OR e.created_at < _ate)
 ),
 desfechos AS (
   SELECT d.acao,
@@ -206,7 +206,7 @@ fechar AS (
          (count(*) FILTER (WHERE u.levou_fechamento))::bigint AS fecharam
     FROM public.mensagens_usos u
     JOIN public.fechamento_itens fi ON fi.id = u.item_id
-   WHERE u.origem = 'fechamento' AND (_desde IS NULL OR u.created_at >= _desde)
+   WHERE u.origem = 'fechamento' AND (_desde IS NULL OR u.created_at >= _desde) AND (_ate IS NULL OR u.created_at < _ate)
    GROUP BY fi.tipo, fi.etapa, u.item_id, fi.titulo
 ),
 todas AS (SELECT * FROM cadencia UNION ALL SELECT * FROM fechar),
@@ -235,12 +235,13 @@ SELECT t.origem, t.ponto, t.etapa, t.mensagem_id, t.versao, t.titulo,
   CROSS JOIN cfg c;
 $$;
 
-REVOKE ALL ON FUNCTION public._mensagens_calc(TIMESTAMPTZ) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public._mensagens_calc(TIMESTAMPTZ) TO service_role;
+REVOKE ALL ON FUNCTION public._mensagens_calc(TIMESTAMPTZ, TIMESTAMPTZ) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public._mensagens_calc(TIMESTAMPTZ, TIMESTAMPTZ) TO service_role;
 
 -- Admin: enviadas, responderam, fecharam e selo por ponto de parada, etapa e versão.
--- periodo_dias vazio = desde o começo.
-CREATE OR REPLACE FUNCTION public.mensagens_desempenho(periodo_dias INT DEFAULT NULL)
+-- periodo_dias vazio = desde o começo. _de/_ate (opcionais) escolhem um intervalo exato
+-- (usado pelo relatório Excel) e valem no lugar de periodo_dias.
+CREATE OR REPLACE FUNCTION public.mensagens_desempenho(periodo_dias INT DEFAULT NULL, _de TIMESTAMPTZ DEFAULT NULL, _ate TIMESTAMPTZ DEFAULT NULL)
 RETURNS TABLE (
   origem TEXT, ponto TEXT, etapa TEXT, mensagem_id UUID, versao INT, titulo TEXT,
   enviadas BIGINT, responderam BIGINT, fecharam BIGINT,
@@ -257,13 +258,16 @@ BEGIN
   END IF;
   RETURN QUERY
     SELECT * FROM public._mensagens_calc(
-      CASE WHEN periodo_dias IS NULL THEN NULL ELSE now() - make_interval(days => periodo_dias) END
+      CASE WHEN _de IS NOT NULL THEN _de
+           WHEN periodo_dias IS NULL THEN NULL
+           ELSE now() - make_interval(days => periodo_dias) END,
+      _ate
     );
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.mensagens_desempenho(INT) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.mensagens_desempenho(INT) TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.mensagens_desempenho(INT, TIMESTAMPTZ, TIMESTAMPTZ) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.mensagens_desempenho(INT, TIMESTAMPTZ, TIMESTAMPTZ) TO authenticated, service_role;
 
 -- Qualquer usuário logado: só mensagem, versão, envios da equipe e selo. Sem percentuais
 -- e sem dados de outros atendentes.
