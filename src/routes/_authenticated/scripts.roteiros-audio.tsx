@@ -71,7 +71,7 @@ function RoteirosAudioPage() {
       carregando={q.isLoading}
       vazio={{ titulo: "Ainda não há roteiros de áudio publicados.", dica: "Quando forem publicados no Painel Admin, aparecem aqui." }}
       rotuloDicas="Dicas de voz"
-      tour="roteirosaudio"
+      ancoras={{ filtros: "roteirosaudio-1", lista: "roteirosaudio-2", texto: "roteirosaudio-3", copiar: "roteirosaudio-4" }}
     />
   );
 }

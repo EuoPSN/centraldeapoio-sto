@@ -1,4 +1,4 @@
--- Fase D · 3/9 — Teleconsulta e PA digital (Amor Saúde). Idempotente.
+-- Fase D · 3/7 — Teleconsulta e PA digital (Amor Saúde). Idempotente.
 -- Leitura para autenticados; escrita só admin. A teleconsulta nasce VAZIA (21 especialidades
 -- que o Paulo cadastra, com "Adicionar várias"). O PA digital nasce com dois rascunhos editáveis.
 

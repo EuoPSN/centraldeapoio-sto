@@ -92,7 +92,6 @@ function ScriptsHub() {
         {acesso.podeVer ? (
           <HubCard
             to="/scripts/ligacao"
-            dataTour="scripts-6"
             icon={Phone}
             title="Scripts de ligação"
             text="Roteiro da ligação com respostas para cada objeção."
@@ -100,11 +99,10 @@ function ScriptsHub() {
             footer={lig.isLoading ? <SkeletonLine className="h-3.5 w-24" /> : `${nLig} ${nLig === 1 ? "roteiro" : "roteiros"}`}
           />
         ) : (
-          <HubCard icon={Phone} dataTour="scripts-6" title="Scripts de ligação" text="Roteiro da ligação com respostas para cada objeção." badge="Em breve" soon />
+          <HubCard icon={Phone} title="Scripts de ligação" text="Roteiro da ligação com respostas para cada objeção." badge="Em breve" soon />
         )}
         <HubCard
           to="/scripts/roteiros-audio"
-          dataTour="scripts-5"
           icon={AudioLines}
           title="Roteiros de áudio"
           text="O texto de como falar e um áudio de exemplo."

@@ -1,4 +1,4 @@
--- Fase D · 4/9 — Dúvidas frequentes (Amor Saúde). Idempotente.
+-- Fase D · 4/7 — Dúvidas frequentes (Amor Saúde). Idempotente.
 -- Atendente lê só as publicadas; admin lê e escreve tudo. O seed entra como RASCUNHO: o Paulo
 -- revisa e publica no Admin (nada é publicado sozinho).
 

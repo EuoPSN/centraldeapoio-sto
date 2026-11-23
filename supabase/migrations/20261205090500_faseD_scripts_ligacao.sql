@@ -1,4 +1,4 @@
--- Fase D · 6/9 — Scripts de ligação com chave de liberação. Idempotente.
+-- Fase D · 6/7 — Scripts de ligação com chave de liberação. Idempotente.
 --
 -- recursos_config: chaves de liberação (booleanas) que o admin liga e desliga. Nenhuma tabela
 -- parecida existia (app_settings é uma linha só, com colunas fixas), então esta é a primeira.

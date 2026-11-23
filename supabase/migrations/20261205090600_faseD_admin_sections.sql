@@ -1,4 +1,4 @@
--- Fase D · 7/9 — Seções novas do Painel Admin (padrão da 20261125090000). Idempotente.
+-- Fase D · 7/7 — Seções novas do Painel Admin (padrão da 20261125090000). Idempotente.
 -- Só INSERE: o que já existe não é alterado, removido nem reordenado (ON CONFLICT DO NOTHING).
 --
 -- telemedicina: fica DENTRO de Amor Saúde (aba "Teleconsulta e PA"), por isso visible = false;

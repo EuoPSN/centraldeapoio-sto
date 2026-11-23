@@ -147,7 +147,7 @@ function MaisPerguntadas({ aoCriar }: { aoCriar: (d: Duvida) => void }) {
   });
   const d = q.data;
   return (
-    <Card className="space-y-3 p-4" data-tour="duvidas-admin-1">
+    <Card className="space-y-3 p-4">
       <div>
         <h3 className="font-semibold">Mais perguntadas à MarcIAna · últimos 30 dias</h3>
         <p className="text-xs text-muted-foreground">

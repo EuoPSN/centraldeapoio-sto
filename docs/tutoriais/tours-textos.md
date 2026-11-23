@@ -23,7 +23,7 @@ Regras que valem para todos:
 3. **O cliente disse…** · alvo: card. Cole a fala do cliente e receba a resposta aprovada para a objeção.
 4. **Buscar mensagem** · alvo: campo de busca da página. Digite o nome, um pedaço do texto ou o atalho (como /lead) para achar uma mensagem na hora.
 
-(Os cards "Scripts de ligação" e "Roteiros de áudio" estão marcados "Em breve" e ficam fora do tour.)
+(Os cards "Scripts de ligação" e "Roteiros de áudio" ficam fora deste tour; cada um tem o seu, nos itens 15 e 16.)
 
 ## 3. O cliente disse… (`cliente-disse`) · 3 passos
 1. **Duas ferramentas** · alvo: abas Objeções e Fechar com este cliente. Use "Objeções" quando o cliente travar e "Fechar com este cliente" para levar a venda ao fim.
@@ -86,8 +86,31 @@ Regras que valem para todos:
 2. **Canais** · alvo: tabela. Em cada canal, informe Tentativas, Oportunidades e Vendas.
 3. **Salvar** · alvo: botão Salvar de um canal. Salve cada linha. O Total soma tudo.
 
+## 13. Teleconsulta e PA digital (`telemedicina`) · 4 passos
+1. **Teleconsulta ou PA digital** · alvo: seletor do topo da lista. Troque aqui entre teleconsulta, que é agendada, e PA digital, que atende em poucos minutos.
+2. **Especialidades** · alvo: lista da esquerda. Escolha a especialidade. A busca no topo da página ajuda a achar mais rápido.
+3. **Como o cliente usa** · alvo: bloco da direita. Veja o valor, os passos que o cliente segue e quando indicar.
+4. **Copiar e abrir o site** · alvo: botões. Copie o texto sobre o serviço ou o passo a passo para mandar no WhatsApp. O link abre o site da Amor Saúde.
+
+## 14. Dúvidas frequentes (`duvidas`) · 3 passos
+1. **Buscar dúvida** · alvo: campo de busca. Digite uma palavra da pergunta do cliente para achar a resposta na hora.
+2. **Temas** · alvo: filtros. Escolha o tema para ver só as perguntas dele.
+3. **Perguntas e respostas** · alvo: lista. Clique na pergunta para abrir a resposta. Depois use "Copiar resposta" ou "Perguntar à MarcIAna".
+
+## 15. Roteiros de áudio (`roteirosaudio`) · 4 passos
+1. **Categorias** · alvo: filtros do topo. Escolha Retomada, Objeção, Fechamento ou Pós-venda para ver só os roteiros daquele momento.
+2. **Lista de roteiros** · alvo: lista da esquerda. Clique em um roteiro para abrir.
+3. **Ouvir e ler** · alvo: bloco da direita. Ouça o exemplo e leia o que falar. As marcações em dourado, como (pausa curta), são dicas de como dizer.
+4. **Copiar roteiro** · alvo: botão. Copie o texto para ensaiar ou ter à mão enquanto grava o seu áudio.
+
+## 16. Scripts de ligação (`scriptsligacao`) · 4 passos
+1. **Etapas da ligação** · alvo: filtros do topo. Escolha a etapa: Abertura, Sondagem, Apresentação, Objeções ou Fechamento.
+2. **Lista de roteiros** · alvo: lista da esquerda. Clique em um roteiro para abrir.
+3. **O que falar** · alvo: bloco da direita. Leia o roteiro e as dicas da ligação. As marcações em dourado mostram onde pausar e sorrir.
+4. **Copiar roteiro** · alvo: botão. Copie o texto para ter à mão durante a ligação.
+
 ---
 
 Pendências de texto:
 - "MarcIAna" aparece no passo 3 do Início e deve acompanhar o novo nome da IA, quando você escolher.
-- Páginas que ainda não ganham tour (podem entrar numa próxima leva): Simulador IA, Check-list, Aquecimento, MarcIAna, Amor Saúde, Contatos e Endereços, Criar Scripts.
+- Páginas que ainda não ganham tour (podem entrar numa próxima leva): Simulador IA, Check-list, Aquecimento, MarcIAna, Amor Saúde (início, Consultas, Exames, Odontologia e Clínicas), Contatos e Endereços, Criar Scripts.

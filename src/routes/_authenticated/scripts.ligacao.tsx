@@ -55,7 +55,7 @@ function LigacaoPage() {
       carregando={q.isLoading}
       vazio={{ titulo: "Ainda não há scripts de ligação publicados.", dica: "Publique no Painel Admin → Scripts de ligação." }}
       rotuloDicas="Dicas da ligação"
-      tour="scriptsligacao"
+      ancoras={{ filtros: "scriptsligacao-1", lista: "scriptsligacao-2", texto: "scriptsligacao-3", copiar: "scriptsligacao-4" }}
     />
   );
 }

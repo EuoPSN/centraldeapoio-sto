@@ -20,7 +20,7 @@ export interface RoteiroItem {
 
 /** Lista + detalhe dos roteiros, no mesmo desenho para áudio e ligação. */
 export function RoteirosView({
-  titulo, breadcrumb, grupos, grupoAtivo, onGrupo, itens, selecionadoId, onSelecionar, carregando, vazio, rotuloDicas, tour, selo,
+  titulo, breadcrumb, grupos, grupoAtivo, onGrupo, itens, selecionadoId, onSelecionar, carregando, vazio, rotuloDicas, ancoras, selo,
 }: {
   titulo: string;
   breadcrumb: string;
@@ -33,7 +33,8 @@ export function RoteirosView({
   carregando: boolean;
   vazio: { titulo: string; dica: string };
   rotuloDicas: string;
-  tour: string;
+  /** Âncoras do tutorial (data-tour), escritas por extenso nas páginas para o verificar:tours achá-las. */
+  ancoras: { filtros: string; lista: string; texto: string; copiar: string };
   selo?: ReactNode;
 }) {
   const visiveis = useMemo(() => itens.filter((i) => grupoAtivo === "Todos" || i.grupo === grupoAtivo), [itens, grupoAtivo]);
@@ -48,7 +49,7 @@ export function RoteirosView({
             <h1 className="text-2xl font-medium leading-8 text-ink">{titulo}</h1>
             {selo}
           </div>
-          <div data-tour={`${tour}-1`} role="group" aria-label="Filtrar" className="flex flex-wrap gap-1.5">
+          <div data-tour={ancoras.filtros} role="group" aria-label="Filtrar" className="flex flex-wrap gap-1.5">
             {["Todos", ...grupos].map((g) => (
               <button
                 key={g}
@@ -68,7 +69,7 @@ export function RoteirosView({
       </header>
 
       <div className="mt-4 grid min-h-0 flex-1 grid-cols-1 border-t border-line md:grid-cols-[minmax(340px,480px)_minmax(0,1fr)]">
-        <section aria-label={titulo} data-tour={`${tour}-2`} className="min-h-0 border-line pb-4 md:overflow-y-auto md:border-r">
+        <section aria-label={titulo} data-tour={ancoras.lista} className="min-h-0 border-line pb-4 md:overflow-y-auto md:border-r">
           {carregando ? (
             <div className="space-y-5 px-5 py-5">{Array.from({ length: 6 }, (_, i) => <SkeletonLine key={i} className="h-4 w-full" />)}</div>
           ) : itens.length === 0 ? (
@@ -98,14 +99,14 @@ export function RoteirosView({
         </section>
 
         <section aria-label="Roteiro selecionado" className="min-h-0 border-t border-line md:overflow-y-auto md:border-t-0">
-          {sel && <Detalhe key={sel.id} i={sel} rotuloDicas={rotuloDicas} tour={tour} />}
+          {sel && <Detalhe key={sel.id} i={sel} rotuloDicas={rotuloDicas} ancoras={ancoras} />}
         </section>
       </div>
     </div>
   );
 }
 
-function Detalhe({ i, rotuloDicas, tour }: { i: RoteiroItem; rotuloDicas: string; tour: string }) {
+function Detalhe({ i, rotuloDicas, ancoras }: { i: RoteiroItem; rotuloDicas: string; ancoras: { texto: string; copiar: string } }) {
   const partes = partesDoRoteiro(i.texto);
   return (
     <article className="max-w-[760px] px-4 py-7 sm:px-8 lg:py-8">
@@ -114,13 +115,13 @@ function Detalhe({ i, rotuloDicas, tour }: { i: RoteiroItem; rotuloDicas: string
       {i.situacao && <p className="mt-2 max-w-[68ch] text-[15px] leading-6 text-ink-muted">{i.situacao}</p>}
 
       {i.extra && (
-        <section data-tour={`${tour}-3`} className="mt-5">
+        <section data-tour={ancoras.texto} className="mt-5">
           <p className="mb-2 text-xs font-semibold uppercase leading-4 tracking-[0.12em] text-ink-muted">Exemplo para ouvir</p>
           {i.extra}
         </section>
       )}
 
-      <section className="mt-5" {...(i.extra ? {} : { "data-tour": `${tour}-3` })}>
+      <section className="mt-5" {...(i.extra ? {} : { "data-tour": ancoras.texto })}>
         <p className="mb-2 text-xs font-semibold uppercase leading-4 tracking-[0.12em] text-ink-muted">O que falar</p>
         <div className="whitespace-pre-line rounded-xl bg-surface-2 px-5 py-4 text-[15.5px] leading-[26px] text-ink">
           {partes.map((p, k) => (p.marca ? <strong key={k} className="font-semibold text-gold-text">{p.texto}</strong> : <span key={k}>{p.texto}</span>))}
@@ -141,7 +142,7 @@ function Detalhe({ i, rotuloDicas, tour }: { i: RoteiroItem; rotuloDicas: string
         </section>
       )}
 
-      <div data-tour={`${tour}-4`} className="mt-7 flex flex-wrap items-center gap-3">
+      <div data-tour={ancoras.copiar} className="mt-7 flex flex-wrap items-center gap-3">
         <CopyAction variant="gold" text={i.texto}>Copiar roteiro</CopyAction>
         {i.acoes}
       </div>

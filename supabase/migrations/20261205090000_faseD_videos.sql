@@ -1,4 +1,4 @@
--- Fase D · 1/9 — Vídeos na Central de Ajuda e nos fluxos de Scripts.
+-- Fase D · 1/7 — Vídeos na Central de Ajuda e nos fluxos de Scripts.
 -- Colunas opcionais (vazio = "Vídeo em breve"). Idempotente.
 -- A validação principal fica no servidor e no formulário (src/lib/video.ts); aqui há uma
 -- trava de segurança no banco: só https, e só YouTube, Vimeo ou arquivo .mp4/.webm.

@@ -1,4 +1,4 @@
--- Fase D · 5/9 — Roteiros de áudio (Scripts). Sem seed: o Paulo e o Claude escrevem depois. Idempotente.
+-- Fase D · 5/7 — Roteiros de áudio (Scripts). Sem seed: o Paulo e o Claude escrevem depois. Idempotente.
 -- Atendente lê só as publicadas; admin lê e escreve tudo.
 
 CREATE TABLE IF NOT EXISTS public.roteiros_audio (

@@ -1,4 +1,4 @@
--- Fase D · 2/9 — Exclusão em lote no Admin do Amor Saúde.
+-- Fase D · 2/7 — Exclusão em lote no Admin do Amor Saúde.
 -- Uma função só por tipo de item, numa transação: apaga os vínculos (unidades e clínicas) e
 -- depois os itens. Se qualquer id não existir, a função levanta erro e NADA é apagado.
 -- Só admin (private.has_role). Idempotente (CREATE OR REPLACE).

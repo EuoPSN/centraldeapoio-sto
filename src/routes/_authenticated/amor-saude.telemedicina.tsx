@@ -59,8 +59,8 @@ function TelemedicinaPage() {
       />
 
       <div className="grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[minmax(340px,460px)_minmax(0,1fr)] 2xl:grid-cols-[540px_minmax(0,1fr)]">
-        <section aria-label="Especialidades por vídeo" data-tour="telemedicina-1" className="min-h-0 border-line pb-4 md:overflow-y-auto md:border-r">
-          <div role="group" aria-label="Tipo de atendimento" className="mx-4 mt-4 inline-flex overflow-hidden rounded-lg border border-line-strong sm:mx-5">
+        <section aria-label="Especialidades por vídeo" data-tour="telemedicina-2" className="min-h-0 border-line pb-4 md:overflow-y-auto md:border-r">
+          <div role="group" aria-label="Tipo de atendimento" data-tour="telemedicina-1" className="mx-4 mt-4 inline-flex overflow-hidden rounded-lg border border-line-strong sm:mx-5">
             {([
               ["teleconsulta", "Teleconsulta · agendada"],
               ["pa_digital", `PA digital · até ${esperaPA} min`],
@@ -114,7 +114,7 @@ function TelemedicinaPage() {
           )}
         </section>
 
-        <section aria-label="Especialidade selecionada" data-tour="telemedicina-2" className="min-h-0 border-t border-line md:overflow-y-auto md:border-t-0">
+        <section aria-label="Especialidade selecionada" data-tour="telemedicina-3" className="min-h-0 border-t border-line md:overflow-y-auto md:border-t-0">
           {isLoading ? <DetailSkeleton /> : selected ? <TelemedicinaDetail key={selected.id} t={selected} siteUrl={siteUrl} /> : null}
         </section>
       </div>
@@ -173,7 +173,7 @@ function TelemedicinaDetail({ t, siteUrl }: { t: Telemedicina; siteUrl: string |
         </section>
       )}
 
-      <div data-tour="telemedicina-3" className="mt-7 flex flex-wrap items-center gap-3">
+      <div data-tour="telemedicina-4" className="mt-7 flex flex-wrap items-center gap-3">
         <CopyAction variant="gold" text={textoTelemedicina(t)} onCopied={counted}>Copiar sobre {pa ? "o PA digital" : "a teleconsulta"}</CopyAction>
         {passos && <CopyAction text={passos} onCopied={counted}>Copiar passo a passo</CopyAction>}
         {link && (

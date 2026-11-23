@@ -91,7 +91,7 @@ export function ScriptsLigacaoAdminTab() {
       subtitle="O roteiro da ligação, por etapa. A equipe só vê depois que você liberar."
       actions={<Button size="sm" className="gap-1" onClick={() => setEdit({ ...NOVO })}><Plus className="h-4 w-4" /> Novo roteiro</Button>}
       belowHeader={
-        <Card className="flex flex-wrap items-center gap-4 p-4" data-tour="scriptsligacao-admin-1">
+        <Card className="flex flex-wrap items-center gap-4 p-4">
           <Switch id="liberar-ligacao" checked={liberado} disabled={rec.isLoading || liberar.isPending} onCheckedChange={(v) => setConfirmar(v)} aria-describedby="liberar-ligacao-desc" />
           <div className="min-w-0 flex-1">
             <Label htmlFor="liberar-ligacao" className="text-sm font-semibold">Liberar para a equipe</Label>
