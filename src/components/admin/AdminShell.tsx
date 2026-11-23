@@ -14,7 +14,10 @@ import { ChevronDown, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ADMIN_GROUP_ORDER } from "@/components/admin/admin-groups";
 
-import { UsersTab, AiTab, ProcedimentosTab, ProblemasTecnicosTab } from "@/components/admin/CoreTabs";
+import { UsersTab } from "@/components/admin/UsersTab";
+import { AiTab } from "@/components/admin/AiTab";
+import { ProcedimentosTab } from "@/components/admin/ProcedimentosTab";
+import { ProblemasTecnicosTab } from "@/components/admin/ProblemasTecnicosTab";
 import { KnowledgeTab } from "@/components/admin/KnowledgeTab";
 import { ClientKnowledgeTab } from "@/components/admin/ClientKnowledgeTab";
 import { MarcianaTab } from "@/components/admin/MarcianaTab";
@@ -37,15 +40,22 @@ import { HomepageMessagesTab } from "@/components/admin/HomepageMessagesTab";
 import { TaxonomyTab } from "@/components/admin/TaxonomyTab";
 import { BibliotecaTab } from "@/components/admin/BibliotecaTab";
 import { PromoPlansTab } from "@/components/admin/PromoPlansTab";
-import { ObjecoesAdminTab, ObjecoesNovasTab, FechamentoAdminTab, EconomiaAdminTab } from "@/components/admin/ClienteDisseAdmin";
-import { CadenciaAdminTab, MotivosPerdaAdminTab } from "@/components/admin/RetomadaAdmin";
-import { CerebroAdminTab, RaioxEquipeTab } from "@/components/admin/CerebroAdmin";
+import { ObjecoesAdminTab } from "@/components/admin/ObjecoesAdminTab";
+import { ObjecoesNovasTab } from "@/components/admin/ObjecoesNovasTab";
+import { FechamentoAdminTab } from "@/components/admin/FechamentoAdminTab";
+import { EconomiaAdminTab } from "@/components/admin/EconomiaAdminTab";
+import { CadenciaAdminTab } from "@/components/admin/CadenciaAdminTab";
+import { MotivosPerdaAdminTab } from "@/components/admin/MotivosPerdaAdminTab";
+import { CerebroAdminTab } from "@/components/admin/CerebroAdminTab";
+import { RaioxEquipeTab } from "@/components/admin/RaioxEquipeTab";
 import { MensagensVendemAdminTab } from "@/components/admin/MensagensVendemAdmin";
 import { ConversasEnviadasAdminTab } from "@/components/admin/ConversasEnviadasAdmin";
 import { ScriptsLigacaoAdminTab } from "@/components/admin/ScriptsLigacaoAdmin";
 import { RoteirosAudioAdminTab } from "@/components/admin/RoteirosAudioAdmin";
 import { DuvidasAdminTab } from "@/components/admin/DuvidasAdmin";
-import { MapaEquipeTab, BancoExerciciosTab, AquecimentoAdminTab } from "@/components/admin/AquecimentoAdmin";
+import { MapaEquipeTab } from "@/components/admin/MapaEquipeTab";
+import { BancoExerciciosTab } from "@/components/admin/BancoExerciciosTab";
+import { AquecimentoAdminTab } from "@/components/admin/AquecimentoAdminTab";
 
 export { ADMIN_GROUP_ORDER };
 
