@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Plus, Sparkles } from "lucide-react";
 import { AdminListDetail } from "@/components/admin/AdminListDetail";
 import { BarraLote, ConfirmarLote, useExcluirLote, useLote } from "@/components/admin/LoteAdmin";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,8 @@ import {
   addManyTelemedicina, deleteTelemedicina, listTelemedicina, setAmorSaudeSiteUrl, upsertTelemedicina,
 } from "@/lib/telemedicina.functions";
 import { linhasDoColar } from "@/lib/telemedicina";
+import { IaImportDialog, type ItemInterpretado } from "@/components/admin/IaImportDialog";
+import { REGRAS_IA, listaDeTextos, numeroOuNull } from "@/lib/ia-importacao";
 import { matches, reais } from "@/components/amor-saude/model";
 import { cn } from "@/lib/utils";
 
@@ -43,6 +45,25 @@ const doItem = (i: Item): Edit => ({
   passos: (i.passos ?? []).join("\n"), indique_quando: i.indique_quando ?? "", link_agendamento: i.link_agendamento ?? "",
   tempo_espera_min: i.tempo_espera_min != null ? String(i.tempo_espera_min) : "", ativo: i.ativo, position: i.position,
 });
+type TeleIA = { nome: string; descricao: string; para_quem: string; cartao: string; particular: string; passos: string; indique_quando: string; link_agendamento: string; tempo_espera_min: string };
+
+const NUM_TEXTO = (v: unknown) => { const n = numeroOuNull(v); return n == null || n > 100000 ? "" : String(n); };
+const TXT = (v: unknown, max: number) => String(v ?? "").replace(/^null$/i, "").trim().slice(0, max);
+
+const promptTele = (tipo: Tipo) => `Você organiza uma lista de especialidades de ${tipo === "pa_digital" ? "PA digital (pronto atendimento por vídeo)" : "teleconsulta (consulta por vídeo agendada)"} de um cartão de descontos em saúde (Cartão de Todos, rede Amor Saúde), a partir de texto livre enviado por um administrador. O texto pode trazer só nomes ou também descrição, valores e tempo de espera.
+Extraia cada especialidade e devolva um array JSON, um objeto por item, no formato exato:
+[{"nome": "...", "descricao": "...", "para_quem": "...", "cartao": numero ou null, "particular": numero ou null, "passos": ["..."], "indique_quando": "...", "link_agendamento": "https://..." ou null${tipo === "pa_digital" ? ', "tempo_espera_min": numero ou null' : ""}}]
+
+Regras:
+- ${REGRAS_IA.split("\n").join("\n- ")}
+- "nome": nome da especialidade (ex: Cardiologia).
+- "descricao": o que é atendido, 1 a 2 frases, baseada no texto; "" se o texto não disser.
+- "para_quem": para quem indicar, baseada no texto; "" se o texto não disser.
+- "cartao" e "particular": valores em reais, só se estiverem no texto.
+- "passos": como agendar/usar, em lista de passos curtos, só o que o texto disser; lista vazia se não disser.
+- "indique_quando": quando indicar esta especialidade, baseada no texto; "" se não disser.
+- "link_agendamento": só se o texto trouxer um link começando com https://; nunca invente URL; senão null.${tipo === "pa_digital" ? '\n- "tempo_espera_min": minutos de espera, só se o texto citar; senão null.' : ""}`;
+
 const numero = (t: string): number | null => {
   const v = t.trim().replace(/\./g, "").replace(",", ".");
   if (!v) return null;
@@ -68,6 +89,7 @@ export function TelemedicinaSubTab() {
   const [busca, setBusca] = useState("");
   const [edit, setEdit] = useState<Edit | null>(null);
   const [varias, setVarias] = useState<null | { tipo: Tipo; texto: string }>(null);
+  const [ia, setIa] = useState<null | { tipo: Tipo; texto: string }>(null);
   const [site, setSite] = useState("");
   useEffect(() => { setSite((siteQ.data as { siteUrl?: string | null } | undefined)?.siteUrl ?? ""); }, [siteQ.data]);
 
@@ -122,6 +144,26 @@ export function TelemedicinaSubTab() {
 
   const nTele = itens.filter((i) => i.tipo === "teleconsulta").length;
   const nPA = itens.filter((i) => i.tipo === "pa_digital").length;
+  const interpretarTele = (tipo: Tipo) => (c: Record<string, unknown>): ItemInterpretado<TeleIA> | null => {
+    const nome = TXT(c.nome, 150);
+    if (!nome) return null;
+    const link = TXT(c.link_agendamento, 500);
+    const espera = tipo === "pa_digital" ? numeroOuNull(c.tempo_espera_min) : null;
+    return { nome, dados: {
+      nome, descricao: TXT(c.descricao, 1000), para_quem: TXT(c.para_quem, 600), cartao: NUM_TEXTO(c.cartao), particular: NUM_TEXTO(c.particular),
+      passos: listaDeTextos(c.passos).slice(0, 12).map((x) => x.slice(0, 300)).join("\n"), indique_quando: TXT(c.indique_quando, 600),
+      link_agendamento: /^https:\/\//i.test(link) ? link : "",
+      tempo_espera_min: espera != null && espera >= 1 && espera <= 600 ? String(Math.round(espera)) : "",
+    } };
+  };
+  const importarTele = async (tipo: Tipo, d: TeleIA) => {
+    await upsert({ data: {
+      tipo, nome: d.nome.trim(), descricao: d.descricao, para_quem: d.para_quem, cartao: numero(d.cartao), particular: numero(d.particular),
+      passos: listaDeTextos(d.passos), indique_quando: d.indique_quando, link_agendamento: d.link_agendamento, ativo: true, position: 0,
+      tempo_espera_min: tipo === "pa_digital" && d.tempo_espera_min.trim() ? Number(d.tempo_espera_min) : null,
+    } });
+  };
+
   const previa = varias ? linhasDoColar(varias.texto) : [];
 
   return (
@@ -252,11 +294,40 @@ export function TelemedicinaSubTab() {
             </div>
           )}
           <DialogFooter>
+            <Button variant="outline" className="gap-1" disabled={!varias?.texto.trim()} onClick={() => { setIa(varias); setVarias(null); }}><Sparkles className="h-4 w-4" /> Preencher com IA</Button>
             <Button variant="outline" onClick={() => setVarias(null)}>Cancelar</Button>
             <Button onClick={() => adicionar.mutate()} disabled={adicionar.isPending || previa.length === 0}>{adicionar.isPending ? "Cadastrando…" : `Cadastrar ${previa.length}`}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {ia && (
+        <IaImportDialog<TeleIA>
+          open onOpenChange={(v) => { if (!v) setIa(null); }} titulo={`Preencher ${ia.tipo === "pa_digital" ? "PA digital" : "Teleconsulta"} com IA`} rotuloItem="item"
+          instrucao="Cole o texto com as especialidades (pode ter descrição, valores e tempo de espera além dos nomes). Limite de 100 itens por vez."
+          placeholder={"Ex:\nCardiologia - R$ 90 pelo cartão, R$ 200 particular"} textoInicial={ia.texto}
+          prompt={promptTele(ia.tipo)} interpretar={interpretarTele(ia.tipo)} comClinicas={false} maxItens={100}
+          existentes={itens.filter((i) => i.tipo === ia.tipo).map((i) => i.nome)}
+          nomeDe={(d) => d.nome}
+          resumo={(d) => `Cartão ${d.cartao ? reais(Number(d.cartao)) : "—"} · Particular ${d.particular ? reais(Number(d.particular)) : "—"}${d.tempo_espera_min ? ` · espera ${d.tempo_espera_min} min` : ""}`}
+          campos={(d, set) => (
+            <>
+              <div><Label>Especialidade</Label><Input value={d.nome} onChange={(e) => set({ nome: e.target.value })} /></div>
+              <div><Label>Descrição</Label><Textarea rows={2} value={d.descricao} onChange={(e) => set({ descricao: e.target.value })} /></div>
+              <div><Label>Para quem</Label><Textarea rows={2} value={d.para_quem} onChange={(e) => set({ para_quem: e.target.value })} /></div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><Label>Cartão de TODOS (R$)</Label><Input inputMode="decimal" value={d.cartao} onChange={(e) => set({ cartao: e.target.value })} /></div>
+                <div><Label>Particular (R$)</Label><Input inputMode="decimal" value={d.particular} onChange={(e) => set({ particular: e.target.value })} /></div>
+              </div>
+              {ia.tipo === "pa_digital" && <div className="w-40"><Label>Espera (minutos)</Label><Input inputMode="numeric" value={d.tempo_espera_min} onChange={(e) => set({ tempo_espera_min: e.target.value.replace(/\D/g, "") })} /></div>}
+              <div><Label>Como o cliente usa (um passo por linha)</Label><Textarea rows={4} value={d.passos} onChange={(e) => set({ passos: e.target.value })} /></div>
+              <div><Label>Indique quando</Label><Textarea rows={2} value={d.indique_quando} onChange={(e) => set({ indique_quando: e.target.value })} /></div>
+              <div><Label>Link de agendamento (opcional)</Label><Input type="url" placeholder="https://…" value={d.link_agendamento} onChange={(e) => set({ link_agendamento: e.target.value })} /></div>
+            </>
+          )}
+          importar={(d) => importarTele(ia.tipo, d)}
+          onConcluido={recarregar}
+        />
+      )}
     </AdminListDetail>
   );
 }

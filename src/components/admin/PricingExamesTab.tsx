@@ -7,7 +7,6 @@ import { BarraLote, BuscaLista, CabecalhoSelecao, ConfirmarLote, useExcluirLote,
 import { Checkbox } from "@/components/ui/checkbox";
 import { matches } from "@/components/amor-saude/model";
 import { ClinicasPicker } from "@/components/admin/ClinicasPicker";
-import { simulatorChat } from "@/lib/simulator.chat.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +19,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pencil, Plus, Trash2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { ADMIN_ASSISTANT_MODEL } from "@/lib/ai-models";
+import { IaImportDialog, type ItemInterpretado } from "@/components/admin/IaImportDialog";
+import { REGRAS_IA, listaDeTextos, numeroOuNull } from "@/lib/ia-importacao";
 import { ExameDraft } from "@/components/admin/pricing-shared";
 
 
@@ -29,7 +29,6 @@ export function ExamesSubTab() {
   const upsert = useServerFn(upsertExame);
   const del = useServerFn(deleteExame);
   const setClinicasFn = useServerFn(setItemClinicas);
-  const genAI = useServerFn(simulatorChat);
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["exames"], queryFn: () => list({}) });
 
@@ -66,64 +65,49 @@ export function ExamesSubTab() {
   };
 
   const [aiOpen, setAiOpen] = useState(false);
-  const [aiInput, setAiInput] = useState("");
-  const [aiGenerating, setAiGenerating] = useState(false);
-  const [aiImporting, setAiImporting] = useState(false);
-  const [aiPreview, setAiPreview] = useState<ExameDraft[]>([]);
+  type ExameIA = Omit<ExameDraft, "selected" | "media_referencia" | "preparo_itens"> & { media: string; preparoItens: string };
 
-  const generateFromAI = async () => {
-    if (!aiInput.trim()) return;
-    setAiGenerating(true);
-    try {
-      const prompt = `Você organiza uma lista de exames laboratoriais e de imagem oferecidos por um cartão de descontos em saúde (Cartão de Todos), a partir de texto livre enviado por um administrador.
+  const promptIA = `Você organiza uma lista de exames laboratoriais e de imagem oferecidos por um cartão de descontos em saúde (Cartão de Todos, rede Amor Saúde), a partir de texto livre enviado por um administrador.
 Extraia cada exame mencionado e devolva um array JSON, um objeto por item, no formato exato:
-[{"nome": "...", "tipo": "laboratorial" ou "imagem", "categoria": "...", "material": "...", "jejum": true ou false, "preparo": "...", "descricao": "...", "observacoes": "..."}]
+[{"nome": "...", "tipo": "laboratorial" ou "imagem", "categoria": "...", "material": "...", "jejum": true ou false, "preparo": "...", "descricao": "...", "observacoes": "...", "media_referencia": numero ou null, "preparo_itens": ["..."], "clinicas": ["..."]}]
 
 Regras:
+- ${REGRAS_IA.split("\n").join("\n- ")}
 - "nome": nome do exame (ex: Hemograma, Raio-X de tórax).
 - "tipo": "laboratorial" para exames de sangue/urina/fezes, "imagem" para raio-x, ultrassom, tomografia etc.
 - "categoria": agrupamento curto e consistente (ex: Hematologia, Cardiologia).
 - "material": o que é coletado ou o método (ex: Sangue, Urina, Raio-X). Use "" se não souber.
-- "jejum": true se precisar de jejum, false caso contrário.
-- "preparo": instruções de preparo em texto livre. Use "" se não houver.
+- "jejum": true só se o texto disser que precisa de jejum.
+- "preparo": instruções de preparo em texto corrido, como estão no texto. Use "" se não houver.
+- "preparo_itens": os mesmos passos de preparo em lista, um passo curto por item, derivados do preparo escrito no texto. Não invente jejum nem horas. Se o texto tiver só um passo, a lista tem um item; sem preparo, lista vazia.
 - "descricao": o que o exame avalia/serve para quê.
 - "observacoes": informação extra relevante. Use "" se não houver.
-- Responda APENAS com o array JSON, sem markdown, sem texto fora do JSON.`;
-      const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: aiInput }], model: ADMIN_ASSISTANT_MODEL } });
-      const clean = content.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(clean);
-      const items: ExameDraft[] = (Array.isArray(parsed) ? parsed : [])
-        .map((it: any): ExameDraft => ({
-          nome: it.nome || "", tipo: it.tipo === "imagem" ? "imagem" : "laboratorial",
-          categoria: it.categoria || "", material: it.material || "", jejum: !!it.jejum,
-          preparo: it.preparo || "", descricao: it.descricao || "", observacoes: it.observacoes || "", selected: true,
-        }))
-        .filter((it: any) => !!it.nome) as ExameDraft[];
-      if (items.length === 0) { toast.error("A IA não conseguiu identificar nenhum exame no texto enviado."); return; }
-      setAiPreview(items);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao gerar com IA.");
-    } finally {
-      setAiGenerating(false);
-    }
+- "media_referencia": valor médio de referência em reais, só se estiver escrito no texto; senão null.
+- "clinicas": nomes de clínica/região citados para o exame; use ["todas"] se o texto disser que vale em todas; lista vazia se não houver menção.`;
+
+  const interpretarIA = (c: Record<string, unknown>): ItemInterpretado<ExameIA> | null => {
+    const nome = String(c.nome ?? "").trim();
+    if (!nome) return null;
+    const txt = (v: unknown) => String(v ?? "").replace(/^null$/i, "").trim();
+    const media = numeroOuNull(c.media_referencia);
+    return {
+      nome, clinicas: listaDeTextos(c.clinicas),
+      dados: {
+        nome, tipo: c.tipo === "imagem" ? "imagem" : "laboratorial", categoria: txt(c.categoria), material: txt(c.material),
+        jejum: c.jejum === true, preparo: txt(c.preparo), descricao: txt(c.descricao), observacoes: txt(c.observacoes),
+        media: media == null ? "" : String(media), preparoItens: listaDeTextos(c.preparo_itens).join("\n"),
+      },
+    };
   };
 
-  const importSelected = async () => {
-    const toImport = aiPreview.filter((i) => i.selected);
-    if (toImport.length === 0) return;
-    setAiImporting(true);
-    try {
-      for (const item of toImport) {
-        await upsert({ data: { nome: item.nome, tipo: item.tipo, categoria: item.categoria || null, material: item.material || null, jejum: item.jejum, preparo: item.preparo || null, descricao: item.descricao || null, observacoes: item.observacoes || null, position: 0 } });
-      }
-      toast.success(`${toImport.length} exame(s) importado(s)!`);
-      qc.invalidateQueries({ queryKey: ["exames"] });
-      setAiOpen(false); setAiInput(""); setAiPreview([]);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao importar.");
-    } finally {
-      setAiImporting(false);
-    }
+  const importarIA = async (d: ExameIA, extra: { clinicaIds: string[] }) => {
+    const saved = await upsert({ data: {
+      nome: d.nome.trim(), tipo: d.tipo, categoria: d.categoria.trim() || null, material: d.material.trim() || null, jejum: d.jejum,
+      preparo: d.preparo.trim() || null, descricao: d.descricao.trim() || null, observacoes: d.observacoes.trim() || null, position: 0,
+      media_referencia: d.media.trim() ? Number(d.media.replace(",", ".")) : null,
+      preparo_itens: listaDeTextos(d.preparoItens),
+    } });
+    if (extra.clinicaIds.length > 0) await setClinicasFn({ data: { tipo: "exame", item_id: String(saved.id), clinica_ids: extra.clinicaIds } });
   };
 
   const [busca, setBusca] = useState("");
@@ -214,45 +198,40 @@ Regras:
         </DialogContent>
       </Dialog>
 
-      <Dialog open={aiOpen} onOpenChange={(v) => { setAiOpen(v); if (!v) { setAiPreview([]); setAiInput(""); } }}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Preencher Exames com IA</DialogTitle></DialogHeader>
-          {aiPreview.length === 0 ? (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">Cole a lista de exames (pode ser em qualquer formato, tipo tabela ou texto corrido).</p>
-              <Textarea rows={12} value={aiInput} onChange={(e) => setAiInput(e.target.value)} placeholder={"Ex:\nHemograma - Hematologia - sangue - sem jejum - avalia glóbulos vermelhos, brancos e plaquetas"} />
+      <IaImportDialog<ExameIA>
+        open={aiOpen} onOpenChange={setAiOpen} titulo="Preencher Exames com IA" rotuloItem="exame"
+        instrucao="Cole a lista de exames (tabela ou texto do site, em qualquer formato). A IA preenche todos os campos, inclusive preparo e clínicas."
+        placeholder={"Ex:\nHemograma - Hematologia - sangue - sem jejum - avalia glóbulos vermelhos, brancos e plaquetas"}
+        prompt={promptIA} interpretar={interpretarIA} existentes={((q.data ?? []) as any[]).map((r) => r.nome)} comClinicas
+        nomeDe={(d) => d.nome}
+        resumo={(d) => `${d.tipo === "imagem" ? "Imagem" : "Laboratorial"} · ${d.categoria || "sem categoria"} · jejum: ${d.jejum ? "sim" : "não"}${d.media ? ` · média R$ ${Number(d.media).toFixed(2)}` : ""}`}
+        campos={(d, set) => (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Nome</Label><Input value={d.nome} onChange={(e) => set({ nome: e.target.value })} /></div>
+              <div>
+                <Label>Tipo</Label>
+                <Select value={d.tipo} onValueChange={(v) => set({ tipo: v as "laboratorial" | "imagem" })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="laboratorial">Laboratorial</SelectItem><SelectItem value="imagem">Imagem</SelectItem></SelectContent>
+                </Select>
+              </div>
             </div>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">Confira antes de importar. Você pode ajustar cada um depois na lista.</p>
-              <Table>
-                <TableHeader><TableRow><TableHead className="w-8"></TableHead><TableHead>Tipo</TableHead><TableHead>Nome</TableHead><TableHead>Categoria</TableHead><TableHead>Jejum</TableHead></TableRow></TableHeader>
-                <TableBody>
-                  {aiPreview.map((item, idx) => (
-                    <TableRow key={idx}>
-                      <TableCell><input type="checkbox" checked={item.selected} onChange={(e) => setAiPreview((prev) => prev.map((p, i) => i === idx ? { ...p, selected: e.target.checked } : p))} /></TableCell>
-                      <TableCell><Badge variant="secondary">{item.tipo === "imagem" ? "Imagem" : "Laboratorial"}</Badge></TableCell>
-                      <TableCell className="font-medium">{item.nome}</TableCell>
-                      <TableCell>{item.categoria || "—"}</TableCell>
-                      <TableCell>{item.jejum ? "Sim" : "Não"}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Categoria</Label><Input value={d.categoria} onChange={(e) => set({ categoria: e.target.value })} /></div>
+              <div><Label>Material/Método</Label><Input value={d.material} onChange={(e) => set({ material: e.target.value })} /></div>
             </div>
-          )}
-          <DialogFooter>
-            {aiPreview.length === 0 ? (
-              <Button onClick={generateFromAI} disabled={aiGenerating || !aiInput.trim()} className="gap-2"><Sparkles className="h-4 w-4" /> {aiGenerating ? "Gerando..." : "Gerar com IA"}</Button>
-            ) : (
-              <>
-                <Button variant="outline" onClick={() => setAiPreview([])}>Voltar</Button>
-                <Button onClick={importSelected} disabled={aiImporting || aiPreview.every((p) => !p.selected)}>{aiImporting ? "Importando..." : `Importar ${aiPreview.filter((p) => p.selected).length} exame(s)`}</Button>
-              </>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <div className="flex items-center gap-2"><Switch checked={d.jejum} onCheckedChange={(v) => set({ jejum: v })} /><Label className="!mt-0">Precisa de jejum</Label></div>
+            <div><Label>Preparo</Label><Input value={d.preparo} onChange={(e) => set({ preparo: e.target.value })} /></div>
+            <div><Label>Descrição</Label><Textarea rows={3} value={d.descricao} onChange={(e) => set({ descricao: e.target.value })} /></div>
+            <div><Label>Observações</Label><Input value={d.observacoes} onChange={(e) => set({ observacoes: e.target.value })} /></div>
+            <div><Label>Média de referência (R$, opcional)</Label><Input inputMode="decimal" value={d.media} onChange={(e) => set({ media: e.target.value })} /></div>
+            <div><Label>Preparo para o cliente (um item por linha)</Label><Textarea rows={4} value={d.preparoItens} onChange={(e) => set({ preparoItens: e.target.value })} /></div>
+          </>
+        )}
+        importar={importarIA}
+        onConcluido={() => { qc.invalidateQueries({ queryKey: ["exames"] }); qc.invalidateQueries({ queryKey: ["amor-saude"] }); }}
+      />
     </Card>
   );
 }

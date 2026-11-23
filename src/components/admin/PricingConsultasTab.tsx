@@ -1,8 +1,7 @@
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { listPricing, upsertPricing, deletePricing, setPricingItemUnidades } from "@/lib/content.functions";
-import { listUnidades, upsertUnidade } from "@/lib/unidades.functions";
+import { listPricing, upsertPricing, deletePricing } from "@/lib/content.functions";
 import { setItemClinicas, deleteManyConsultas } from "@/lib/amorsaude.functions";
 import { BarraLote, BuscaLista, CabecalhoSelecao, ConfirmarLote, useExcluirLote, useLote } from "@/components/admin/LoteAdmin";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -22,6 +21,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Pencil, Plus, Trash2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { ADMIN_ASSISTANT_MODEL } from "@/lib/ai-models";
+import { IaImportDialog, type ItemInterpretado } from "@/components/admin/IaImportDialog";
+import { REGRAS_IA, listaDeTextos, numeroOuNull } from "@/lib/ia-importacao";
 
 
 // ============================================================
@@ -31,13 +32,8 @@ export function ConsultasSubTab() {
   const list = useServerFn(listPricing);
   const upsert = useServerFn(upsertPricing);
   const del = useServerFn(deletePricing);
-  const setUnidadesFn = useServerFn(setPricingItemUnidades);
-  const unidadesListFn = useServerFn(listUnidades);
-  const upsertUnidadeFn = useServerFn(upsertUnidade);
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["pricing"], queryFn: () => list({}) });
-  const unidadesQ = useQuery({ queryKey: ["unidades"], queryFn: () => unidadesListFn({}) });
-  const unidadesList = (unidadesQ.data ?? []) as { id: string; nome: string }[];
 
   const setClinicasFn = useServerFn(setItemClinicas);
   type ConsultaEdit = {
@@ -48,85 +44,54 @@ export function ConsultasSubTab() {
   const [edit, setEdit] = useState<null | ConsultaEdit>(null);
   const [descGenerating, setDescGenerating] = useState(false);
 
-  type AiPricingItem = { category: string; specialty: string; cartao_price: number | null; particular_price: number | null; notes: string | null; regioes_principais: string[]; regioes_outras: string[]; selected: boolean };
+  type ConsultaIA = { category: string; specialty: string; cartao_price: string; particular_price: string; notes: string; area: string; para_quem: string; como_agendar: string; description: string };
   const genAI = useServerFn(simulatorChat);
   const [aiOpen, setAiOpen] = useState(false);
-  const [aiInput, setAiInput] = useState("");
-  const [aiGenerating, setAiGenerating] = useState(false);
-  const [aiImporting, setAiImporting] = useState(false);
-  const [aiPreview, setAiPreview] = useState<AiPricingItem[]>([]);
 
-  const generateFromAI = async () => {
-    if (!aiInput.trim()) return;
-    setAiGenerating(true);
-    try {
-      const prompt = `Você organiza tabelas de preços de um cartão de descontos em saúde (Cartão de Todos) a partir de texto livre enviado por um administrador.
-Extraia cada especialidade ou procedimento mencionado no texto e devolva um array JSON, um objeto por item, no formato exato:
-[{"category": "...", "specialty": "...", "cartao_price": numero ou null, "particular_price": numero ou null, "notes": "texto curto ou null", "regioes_principais": ["..."], "regioes_outras": ["..."]}]
+  const promptIA = `Você organiza tabelas de preços de consultas de um cartão de descontos em saúde (Cartão de Todos, rede Amor Saúde) a partir de texto livre enviado por um administrador.
+Extraia cada especialidade ou consulta mencionada e devolva um array JSON, um objeto por item, no formato exato:
+[{"category": "Consultas", "specialty": "...", "cartao_price": numero ou null, "particular_price": numero ou null, "notes": "texto curto ou null", "area": "...", "para_quem": "...", "como_agendar": "texto ou null", "description": "...", "clinicas": ["..."]}]
 
 Regras:
-- "category" agrupa itens parecidos (ex: "Consultas", "Exames", "Procedimentos", "Odontologia"). Use categorias curtas e consistentes entre os itens.
-- "specialty" é o nome específico da especialidade ou procedimento (ex: "Cardiologista").
-- "cartao_price" e "particular_price" são números em reais, com ponto como separador decimal. Se um valor não aparecer no texto, use null.
-- "notes" é opcional: use apenas se houver informação extra relevante.
-- "regioes_principais" e "regioes_outras" são listas de nomes de bairro/região/cidade, SE o texto mencionar onde aquele item está disponível. Se não houver nada, devolva as duas listas vazias.
-- Responda APENAS com o array JSON, sem markdown, sem nenhum texto fora do JSON.`;
-      const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: aiInput }], model: ADMIN_ASSISTANT_MODEL } });
-      const clean = content.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(clean);
-      const items: AiPricingItem[] = (Array.isArray(parsed) ? parsed : [])
-        .map((it: any) => ({
-          category: it.category || "Outros",
-          specialty: it.specialty || "",
-          cartao_price: typeof it.cartao_price === "number" ? it.cartao_price : null,
-          particular_price: typeof it.particular_price === "number" ? it.particular_price : null,
-          notes: it.notes || null,
-          regioes_principais: Array.isArray(it.regioes_principais) ? it.regioes_principais : [],
-          regioes_outras: Array.isArray(it.regioes_outras) ? it.regioes_outras : [],
-          selected: true,
-        }))
-        .filter((it: AiPricingItem) => it.specialty);
-      if (items.length === 0) { toast.error("A IA não conseguiu identificar nenhum item no texto enviado."); return; }
-      setAiPreview(items);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao gerar com IA.");
-    } finally {
-      setAiGenerating(false);
-    }
+- ${REGRAS_IA.split("\n").join("\n- ")}
+- "category": use "Consultas" quando o texto não indicar outra categoria.
+- "specialty": nome específico da especialidade (ex: Cardiologista).
+- "cartao_price" e "particular_price": só se estiverem escritos no texto; senão null.
+- "notes": só informação extra relevante do texto; senão null.
+- "area": uma destas, exatamente: ${AREAS.map((a) => `"${a}"`).join(", ")}. Use "Outras" se nenhuma servir.
+- "para_quem": 1 a 2 frases dizendo para quem indicar esta consulta.
+- "como_agendar": apenas o que o texto disser sobre agendamento; senão null.
+- "description": descrição para busca, 1 a 2 frases, até 240 caracteres, com 3 a 6 palavras-chave/sinônimos. É o único campo em que você pode compor texto próprio, mesmo que o texto enviado não traga nada.
+- "clinicas": nomes de clínica/região citados para o item; use ["todas"] se o texto disser que vale em todas; lista vazia se não houver menção.`;
+
+  const interpretarIA = (c: Record<string, unknown>): ItemInterpretado<ConsultaIA> | null => {
+    const specialty = String(c.specialty ?? "").trim();
+    if (!specialty) return null;
+    const area = String(c.area ?? "").trim();
+    const num = (v: unknown) => { const n = numeroOuNull(v); return n == null ? "" : String(n); };
+    return {
+      nome: specialty,
+      clinicas: listaDeTextos(c.clinicas),
+      dados: {
+        category: String(c.category ?? "").trim() || "Consultas", specialty,
+        cartao_price: num(c.cartao_price), particular_price: num(c.particular_price),
+        notes: String(c.notes ?? "").replace(/^null$/i, "").trim(),
+        area: (AREAS as readonly string[]).includes(area) ? area : "Outras",
+        para_quem: String(c.para_quem ?? "").trim(), como_agendar: String(c.como_agendar ?? "").replace(/^null$/i, "").trim(),
+        description: String(c.description ?? "").trim().slice(0, 240),
+      },
+    };
   };
 
-  const resolveUnidadeId = async (nome: string, cache: Map<string, string>): Promise<string> => {
-    const key = nome.trim().toLowerCase();
-    if (cache.has(key)) return cache.get(key)!;
-    const existing = unidadesList.find((u) => u.nome.trim().toLowerCase() === key);
-    if (existing) { cache.set(key, String(existing.id)); return String(existing.id); }
-    const created = await upsertUnidadeFn({ data: { nome: nome.trim(), position: 0 } });
-    cache.set(key, String(created.id));
-    return String(created.id);
-  };
-
-  const importSelected = async () => {
-    const toImport = aiPreview.filter((i) => i.selected);
-    if (toImport.length === 0) return;
-    setAiImporting(true);
-    const cache = new Map<string, string>();
-    try {
-      for (const item of toImport) {
-        const created = await upsert({ data: { category: item.category, specialty: item.specialty, cartao_price: item.cartao_price, particular_price: item.particular_price, notes: item.notes, position: 0 } });
-        const links: { unidade_id: string; destaque: boolean }[] = [];
-        for (const nome of item.regioes_principais) links.push({ unidade_id: await resolveUnidadeId(nome, cache), destaque: true });
-        for (const nome of item.regioes_outras) links.push({ unidade_id: await resolveUnidadeId(nome, cache), destaque: false });
-        if (links.length > 0 && created?.id) await setUnidadesFn({ data: { pricing_item_id: String(created.id), unidades: links } });
-      }
-      toast.success(`${toImport.length} item(ns) importado(s)!`);
-      qc.invalidateQueries({ queryKey: ["pricing"] });
-      qc.invalidateQueries({ queryKey: ["unidades"] });
-      setAiOpen(false); setAiInput(""); setAiPreview([]);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao importar itens.");
-    } finally {
-      setAiImporting(false);
-    }
+  const importarIA = async (d: ConsultaIA, extra: { clinicaIds: string[]; pendente: boolean }) => {
+    const saved = await upsert({ data: {
+      category: d.category.trim() || "Consultas", specialty: d.specialty.trim(),
+      cartao_price: d.cartao_price ? Number(d.cartao_price) : null, particular_price: d.particular_price ? Number(d.particular_price) : null,
+      notes: d.notes.trim() || null, description: d.description.trim() || null, position: 0,
+      area: d.area.trim() || null, para_quem: d.para_quem.trim() || null, como_agendar: d.como_agendar.trim() || null,
+      clinicas_pendente: extra.pendente,
+    } });
+    if (extra.clinicaIds.length > 0) await setClinicasFn({ data: { tipo: "consulta", item_id: String(saved.id), clinica_ids: extra.clinicaIds } });
   };
 
   const generateDescription = async () => {
@@ -281,45 +246,33 @@ Responda APENAS com o texto da descrição, sem aspas, sem markdown.`;
         </DialogContent>
       </Dialog>
 
-      <Dialog open={aiOpen} onOpenChange={(v) => { setAiOpen(v); if (!v) { setAiPreview([]); setAiInput(""); } }}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Preencher Consultas com IA</DialogTitle></DialogHeader>
-          {aiPreview.length === 0 ? (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">Cole o conteúdo com especialidades, valores e observações. A IA organiza.</p>
-              <Textarea rows={12} value={aiInput} onChange={(e) => setAiInput(e.target.value)} placeholder={"Ex:\nCardiologia - consulta - R$ 80 pelo cartão, R$ 180 particular"} />
+      <IaImportDialog<ConsultaIA>
+        open={aiOpen} onOpenChange={setAiOpen} titulo="Preencher Consultas com IA" rotuloItem="item"
+        instrucao="Cole o conteúdo com especialidades, valores, áreas e clínicas (tabelas ou texto do site). A IA organiza todos os campos."
+        placeholder={"Ex:\nCardiologia - consulta - R$ 80 pelo cartão, R$ 180 particular - todas as clínicas"}
+        prompt={promptIA} interpretar={interpretarIA} existentes={((q.data ?? []) as any[]).map((r) => r.specialty)} comClinicas
+        nomeDe={(d) => d.specialty}
+        resumo={(d) => `${d.area || "Outras"} · CDT ${d.cartao_price ? `R$ ${Number(d.cartao_price).toFixed(2)}` : "—"} · Particular ${d.particular_price ? `R$ ${Number(d.particular_price).toFixed(2)}` : "—"}`}
+        campos={(d, set) => (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Categoria</Label><Input value={d.category} onChange={(e) => set({ category: e.target.value })} /></div>
+              <div><Label>Especialidade</Label><Input value={d.specialty} onChange={(e) => set({ specialty: e.target.value })} /></div>
             </div>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">Confira antes de importar.</p>
-              <Table>
-                <TableHeader><TableRow><TableHead className="w-8"></TableHead><TableHead>Categoria</TableHead><TableHead>Especialidade</TableHead><TableHead className="text-right">CDT</TableHead><TableHead className="text-right">Particular</TableHead></TableRow></TableHeader>
-                <TableBody>
-                  {aiPreview.map((item, idx) => (
-                    <TableRow key={idx}>
-                      <TableCell><input type="checkbox" checked={item.selected} onChange={(e) => setAiPreview((prev) => prev.map((p, i) => i === idx ? { ...p, selected: e.target.checked } : p))} /></TableCell>
-                      <TableCell><Badge variant="secondary">{item.category}</Badge></TableCell>
-                      <TableCell className="font-medium">{item.specialty}</TableCell>
-                      <TableCell className="text-right">{item.cartao_price != null ? `R$ ${item.cartao_price.toFixed(2)}` : "—"}</TableCell>
-                      <TableCell className="text-right">{item.particular_price != null ? `R$ ${item.particular_price.toFixed(2)}` : "—"}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Valor CDT (R$)</Label><Input type="number" step="0.01" value={d.cartao_price} onChange={(e) => set({ cartao_price: e.target.value })} /></div>
+              <div><Label>Valor Particular (R$)</Label><Input type="number" step="0.01" value={d.particular_price} onChange={(e) => set({ particular_price: e.target.value })} /></div>
             </div>
-          )}
-          <DialogFooter>
-            {aiPreview.length === 0 ? (
-              <Button onClick={generateFromAI} disabled={aiGenerating || !aiInput.trim()} className="gap-2"><Sparkles className="h-4 w-4" /> {aiGenerating ? "Gerando..." : "Gerar com IA"}</Button>
-            ) : (
-              <>
-                <Button variant="outline" onClick={() => setAiPreview([])}>Voltar</Button>
-                <Button onClick={importSelected} disabled={aiImporting || aiPreview.every((p) => !p.selected)}>{aiImporting ? "Importando..." : `Importar ${aiPreview.filter((p) => p.selected).length} item(ns)`}</Button>
-              </>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <div><Label>Observações</Label><Input value={d.notes} onChange={(e) => set({ notes: e.target.value })} /></div>
+            <div><Label>Área</Label><Input list="amor-areas" value={d.area} onChange={(e) => set({ area: e.target.value })} /></div>
+            <div><Label>Para quem indicar</Label><Textarea rows={2} value={d.para_quem} onChange={(e) => set({ para_quem: e.target.value })} /></div>
+            <div><Label>Como agendar</Label><Textarea rows={2} value={d.como_agendar} onChange={(e) => set({ como_agendar: e.target.value })} /></div>
+            <div><Label>Descrição para busca</Label><Textarea rows={3} value={d.description} onChange={(e) => set({ description: e.target.value })} /></div>
+          </>
+        )}
+        importar={importarIA}
+        onConcluido={() => { qc.invalidateQueries({ queryKey: ["pricing"] }); qc.invalidateQueries({ queryKey: ["amor-saude"] }); }}
+      />
     </Card>
   );
 }
