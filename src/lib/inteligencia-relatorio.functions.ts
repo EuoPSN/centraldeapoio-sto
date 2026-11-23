@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isAdminUser } from "@/lib/authz";
 import { diaBR, inicioDiaBR, somarDias } from "@/lib/retomada";
-import { limparTextoExport, type AquecimentoLinha, type ConfirmacaoLinha, type DadosInteligencia, type MeuRankingLinha, type MudancaLinha, type RankingLinha, type MapaDominioLinha, type RaioxLinha, type UsoLinha } from "@/lib/inteligencia-relatorio";
+import { limparTextoExport, type AquecimentoLinha, type ConfirmacaoLinha, type DadosInteligencia, type ExtensaoLinha, type FechamentoLinha, type TempoLinha, type MeuRankingLinha, type MudancaLinha, type RankingLinha, type MapaDominioLinha, type RaioxLinha, type UsoLinha } from "@/lib/inteligencia-relatorio";
 import { CONFIG_AQUECIMENTO_PADRAO, calcularNivel } from "@/lib/aquecimento";
 import { mesDe, PODIOS_QUALIDADE } from "@/lib/ranking";
 
@@ -88,7 +88,10 @@ export const getDadosInteligencia = createServerFn({ method: "POST" })
     const mud = await lerMudancas(s, { ini, fim, filtroUser, equipe, userId: context.userId });
     const rk = await lerRanking(s, { de: data.de, ate: data.ate, equipe, filtroUser, userId: context.userId });
 
-    const ids = [...new Set([context.userId, ...brutoRaiox.map((r) => r.user_id), ...brutoUso.map((u) => u.user_id), ...(aq?.usuarios ?? []), ...(mud?.usuarios ?? []), ...(rk?.usuarios ?? [])])];
+    // Fase C · extensão 2: extensão, tempo de resposta e fechamentos do CRM (só contagens e minutos).
+    const ext = await lerExtensao(s, { de: data.de, ate: data.ate, ini, fim, filtroUser, userId: context.userId, equipe });
+
+    const ids = [...new Set([context.userId, ...brutoRaiox.map((r) => r.user_id), ...brutoUso.map((u) => u.user_id), ...(aq?.usuarios ?? []), ...(mud?.usuarios ?? []), ...(rk?.usuarios ?? []), ...(ext?.usuarios ?? [])])];
     const atendentes: Record<string, string> = {};
     if (ids.length) {
       const perfis = check(await s.from("profiles").select("id, display_name, email").in("id", ids)) as { id: string; display_name: string | null; email: string | null }[];
@@ -140,6 +143,7 @@ export const getDadosInteligencia = createServerFn({ method: "POST" })
       ...(aq ? { aquecimento: aq.linhas, mapa: aq.mapa, aquecimentoConfig: aq.config } : {}),
       ...(mud ? { confirmacoes: mud.confirmacoes, ...(mud.mudancas ? { mudancas: mud.mudancas } : {}) } : {}),
       ...(rk ? (rk.ranking ? { ranking: rk.ranking } : { meuRanking: rk.meuRanking }) : {}),
+      ...(ext ? { extensao: ext.extensao, tempo: ext.tempo, fechamentos: ext.fechamentos, metaTempoMinutos: ext.meta } : {}),
       funil: ((funil.data ?? []) as { etapa: string; nome: string; definicao: string | null; sinais: string[] | null }[])
         .map((f) => ({ etapa: f.etapa, nome: f.nome, definicao: f.definicao ?? "", sinais: f.sinais ?? [] })),
       blocosCerebro: (blocos.data ?? []) as { chave: string; titulo: string }[],
@@ -253,6 +257,59 @@ async function lerMudancas(
     return { mudancas, confirmacoes, usuarios: [...new Set(confirmacoes.map((c) => c.user_id))] };
   } catch (err) {
     console.error("Mudanças indisponíveis no relatório (migração pendente?):", err);
+    return null;
+  }
+}
+
+/** Segunda-feira da semana de um dia (AAAA-MM-DD). */
+function segundaDe(dia: string): string {
+  const dow = new Date(`${dia}T12:00:00.000Z`).getUTCDay(); // 0 = domingo
+  return somarDias(dia, -((dow + 6) % 7));
+}
+
+/** Extensão do WhatsApp, tempo de resposta e fechamentos do CRM. Atendente: as funções SQL e a RLS devolvem
+ * só os próprios dados (o filtro de usuário é forçado aqui e no banco). Sem as migrações, o relatório sai sem as abas. */
+async function lerExtensao(
+  s: any,
+  o: { de: string; ate: string; ini: string; fim: string; filtroUser: string | null; userId: string; equipe: boolean },
+): Promise<{ extensao: ExtensaoLinha[]; tempo: TempoLinha[]; fechamentos: FechamentoLinha[]; meta: number; usuarios: string[] } | null> {
+  try {
+    const usuarioParam = o.equipe ? o.filtroUser : o.userId;
+    const [sem, tmp, fech, cfg] = await Promise.all([
+      s.rpc("extensao_resumo_semanal", { _ini: o.ini, _fim: o.fim, _user: usuarioParam }),
+      s.rpc("extensao_tempo_dia", { _ini: o.de, _fim: o.ate, _user: usuarioParam }),
+      (() => {
+        let q = s.from("crm_fechamentos").select("user_id, periodo_ini, vendas, tickets_fechados, sem_ticket").gte("periodo_ini", o.de).lte("periodo_ini", o.ate).limit(5000);
+        if (usuarioParam) q = q.eq("user_id", usuarioParam);
+        return q;
+      })(),
+      s.from("extensao_config").select("meta_minutos").eq("id", 1).maybeSingle(),
+    ]);
+    if (sem.error) throw new Error(sem.error.message);
+    if (tmp.error) throw new Error(tmp.error.message);
+    if (fech.error) throw new Error(fech.error.message);
+
+    const extensao: ExtensaoLinha[] = ((sem.data ?? []) as { semana: string; user_id: string; tickets_criados: number; atualizados: number; ignorados: number; pausas: number }[])
+      .map((r) => ({ semana: r.semana, user_id: r.user_id, tickets_criados: Number(r.tickets_criados), atualizados: Number(r.atualizados), ignorados: Number(r.ignorados), pausas: Number(r.pausas) }));
+    const tempo: TempoLinha[] = ((tmp.data ?? []) as { dia: string; user_id: string; conversas_novas: number; dentro_da_meta: number; media_minutos: number | null; sem_resposta: number }[])
+      .map((r) => ({ dia: r.dia, user_id: r.user_id, conversas_novas: Number(r.conversas_novas), dentro_da_meta: Number(r.dentro_da_meta), media_minutos: r.media_minutos == null ? null : Number(r.media_minutos), sem_resposta: Number(r.sem_resposta) }));
+
+    // Fechamentos: as linhas do CRM são por dia; no arquivo saem por semana (segunda a domingo).
+    const porSemana = new Map<string, FechamentoLinha>();
+    for (const r of (fech.data ?? []) as { user_id: string; periodo_ini: string; vendas: number; tickets_fechados: number; sem_ticket: number }[]) {
+      const seg = segundaDe(r.periodo_ini);
+      const k = `${seg}|${r.user_id}`;
+      const x = porSemana.get(k) ?? { periodo_ini: seg, periodo_fim: somarDias(seg, 6), user_id: r.user_id, vendas: 0, tickets_fechados: 0, sem_ticket: 0 };
+      x.vendas += Number(r.vendas); x.tickets_fechados += Number(r.tickets_fechados); x.sem_ticket += Number(r.sem_ticket);
+      porSemana.set(k, x);
+    }
+    const fechamentos = [...porSemana.values()];
+    return {
+      extensao, tempo, fechamentos, meta: Number(cfg.data?.meta_minutos ?? 5),
+      usuarios: [...new Set([...extensao.map((r) => r.user_id), ...tempo.map((r) => r.user_id), ...fechamentos.map((r) => r.user_id)])],
+    };
+  } catch (err) {
+    console.error("Extensão indisponível no relatório (migração pendente?):", err);
     return null;
   }
 }

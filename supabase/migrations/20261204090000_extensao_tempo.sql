@@ -1,4 +1,4 @@
--- Fase C · extensão 2 — 1/4: tempo de primeira resposta (config + medições). Idempotente.
+-- Fase C · extensão 2 — 1/5: tempo de primeira resposta (config + medições). Idempotente.
 -- Nenhuma tabela guarda nome, telefone nem texto de cliente: só a chave em hash (chat_key), horários e minutos.
 
 -- ------------------------------------------------------------
