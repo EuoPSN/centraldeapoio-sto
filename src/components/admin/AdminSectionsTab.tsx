@@ -10,7 +10,9 @@ import { Button } from "@/components/ui/button";
 import { ArrowUp, ArrowDown, Layers } from "lucide-react";
 import { toast } from "sonner";
 
-export const ADMIN_GROUP_ORDER = ["Atendimento", "Inteligência", "Treino", "Central de Ajuda", "Equipe e sistema"];
+import { ADMIN_GROUP_ORDER } from "@/components/admin/admin-groups";
+
+export { ADMIN_GROUP_ORDER };
 
 interface AdminSectionRow {
   id: string;

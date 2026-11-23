@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdminTopBar, useAdminSections, ADMIN_TAB_COMPONENTS } from "@/components/admin/AdminShell";
 
 export const Route = createFileRoute("/_authenticated/admin/$key")({
-  beforeLoad: async () => {
+  beforeLoad: async ({ params }) => {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) throw redirect({ to: "/auth" });
     const { data: roles } = await supabase
@@ -13,6 +13,8 @@ export const Route = createFileRoute("/_authenticated/admin/$key")({
     if (!roles?.some((r) => r.role === "admin")) {
       throw redirect({ to: "/" });
     }
+    // Seção removida ou renomeada (ex.: "content", "appearance"): volta pra entrada, sem erro.
+    if (!Object.hasOwn(ADMIN_TAB_COMPONENTS, params.key)) throw redirect({ to: "/admin" });
   },
   component: AdminSectionPage,
 });

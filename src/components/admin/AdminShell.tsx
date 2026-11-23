@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ADMIN_GROUP_ORDER } from "@/components/admin/admin-groups";
 
 import { UsersTab, AiTab, ProcedimentosTab, ProblemasTecnicosTab } from "@/components/admin/CoreTabs";
 import { KnowledgeTab } from "@/components/admin/KnowledgeTab";
@@ -46,8 +47,7 @@ import { RoteirosAudioAdminTab } from "@/components/admin/RoteirosAudioAdmin";
 import { DuvidasAdminTab } from "@/components/admin/DuvidasAdmin";
 import { MapaEquipeTab, BancoExerciciosTab, AquecimentoAdminTab } from "@/components/admin/AquecimentoAdmin";
 
-// Ordem dos grupos na entrada, no seletor e em "Organização das abas".
-export const ADMIN_GROUP_ORDER = ["Atendimento", "Inteligência", "Treino", "Central de Ajuda", "Equipe e sistema"];
+export { ADMIN_GROUP_ORDER };
 
 export interface AdminSectionRow {
   id: string; tab_key: string; label: string; icon: string;
@@ -97,7 +97,6 @@ export const ADMIN_TAB_COMPONENTS: Record<string, ComponentType> = {
   problemastecnicos: ProblemasTecnicosTab,
   changelog: MudancasAdminTab,
   suggestions: SuggestionsTab,
-  content: ProcedimentosTab,
 
   users: UsersTab,
   unidades: UnidadesTab,
