@@ -21,6 +21,7 @@ const COLUNAS: Record<Podio, { valor: string; total: string; minimo: boolean }> 
   evoluiram: { valor: "Evolução da nota", total: "Simulações no mês", minimo: false },
   ensinam: { valor: "Contribuições", total: "Contribuições", minimo: false },
   treino: { valor: "Pontos", total: "Simulações no mês", minimo: false },
+  fechamentos: { valor: "Vendas no mês", total: "Vendas no mês", minimo: false },
 };
 
 interface Rascunho { ativos: Record<Podio, boolean>; minimo: string; ocultos: string[] }
@@ -141,7 +142,7 @@ export function RankingAdminTab() {
                   <tr key={l.user_id} className="border-t border-line">
                     <td className="py-2.5 pr-2 text-ink-muted">{l.posicao ?? ""}</td>
                     <td className="py-2.5 pr-2 text-ink">{l.nome}</td>
-                    <td className="py-2.5 pr-2 text-right tabular-nums text-ink">{l.valor == null ? "—" : podio === "ensinam" ? Math.round(l.valor) : fmtValor(podio, l.valor)}</td>
+                    <td className="py-2.5 pr-2 text-right tabular-nums text-ink">{l.valor == null ? "—" : podio === "ensinam" || podio === "fechamentos" ? Math.round(l.valor) : fmtValor(podio, l.valor)}</td>
                     <td className="py-2.5 pr-2 text-right tabular-nums text-ink">{l.total}</td>
                     <td className="py-2.5">
                       {l.entra_no_podio

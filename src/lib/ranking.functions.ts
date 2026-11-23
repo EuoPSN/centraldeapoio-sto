@@ -45,6 +45,7 @@ async function lerConfig(ctx: Ctx): Promise<ConfigRanking> {
     ativos: {
       constantes: data?.podio_constantes ?? true, respondidas: data?.podio_respondidas ?? true,
       evoluiram: data?.podio_evoluiram ?? true, ensinam: data?.podio_ensinam ?? true, treino: data?.podio_treino ?? true,
+      fechamentos: data?.podio_fechamentos ?? true,
     },
     minimo_retomadas: Number(data?.minimo_retomadas ?? 15),
     periodo: "mensal",
@@ -259,7 +260,7 @@ export const getRankingAdminConfig = createServerFn({ method: "GET" })
 export const salvarRankingAdminConfig = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({
-    ativos: z.object({ constantes: z.boolean(), respondidas: z.boolean(), evoluiram: z.boolean(), ensinam: z.boolean(), treino: z.boolean() }),
+    ativos: z.object({ constantes: z.boolean(), respondidas: z.boolean(), evoluiram: z.boolean(), ensinam: z.boolean(), treino: z.boolean(), fechamentos: z.boolean() }),
     minimo_retomadas: z.number().int().min(1).max(500),
     ocultar: z.array(z.string().uuid()).max(200),
   }).parse(d))
@@ -270,6 +271,7 @@ export const salvarRankingAdminConfig = createServerFn({ method: "POST" })
     check(await s.from("ranking_config").upsert({
       id: 1, podio_constantes: data.ativos.constantes, podio_respondidas: data.ativos.respondidas,
       podio_evoluiram: data.ativos.evoluiram, podio_ensinam: data.ativos.ensinam, podio_treino: data.ativos.treino,
+      podio_fechamentos: data.ativos.fechamentos,
       minimo_retomadas: data.minimo_retomadas, periodo: "mensal", updated_at: new Date().toISOString(),
     }, { onConflict: "id" }));
     // Ocultos do mês: a lista enviada é a lista final.

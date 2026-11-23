@@ -145,7 +145,7 @@ function CartaoPodio({ podio, dados, minimo, subtitulo, extra, ancora }: { podio
 
       {dados.top.length === 0 ? (
         <p className="mt-3 border-t border-line pt-3 text-[14px] text-ink-muted">
-          {porcentagem ? `Ninguém chegou ao mínimo de ${minimo} retomadas ainda neste mês.` : "Ainda sem pódio neste mês."}
+          {porcentagem ? `Ninguém chegou ao mínimo de ${minimo} retomadas ainda neste mês.` : podio === "fechamentos" ? "Ainda sem fechamentos neste mês. Os números chegam com a planilha semanal do CRM." : "Ainda sem pódio neste mês."}
         </p>
       ) : (
         <ol className="mt-3 divide-y divide-line border-t border-line">
@@ -176,11 +176,11 @@ function LinhaMinha({ podio, meu, anterior, nivel, minimo }: { podio: Podio; meu
     const falta = (podio === "constantes" || podio === "respondidas") && meu && !meu.qualifica;
     return <>Você: ainda sem valor neste mês{falta ? ` · mínimo de ${minimo} retomadas` : ""}</>;
   }
-  const forte = <strong className="font-semibold text-ink">{podio === "ensinam" ? `${Math.round(meu.valor)} ${Math.round(meu.valor) === 1 ? "contribuição" : "contribuições"}` : podio === "treino" ? `${Math.round(meu.valor)} pontos` : fmtValor(podio, meu.valor)}</strong>;
+  const forte = <strong className="font-semibold text-ink">{podio === "ensinam" ? `${Math.round(meu.valor)} ${Math.round(meu.valor) === 1 ? "contribuição" : "contribuições"}` : podio === "fechamentos" ? `${Math.round(meu.valor)} ${Math.round(meu.valor) === 1 ? "venda" : "vendas"}` : podio === "treino" ? `${Math.round(meu.valor)} pontos` : fmtValor(podio, meu.valor)}</strong>;
   const resto = podio === "constantes" || podio === "respondidas" ? ` ${PODIO_MEU[podio].rotulo}`
-    : podio === "evoluiram" ? ` ${PODIO_MEU.evoluiram.rotulo}` : podio === "ensinam" ? " neste mês" : nivel ? ` · Nível ${nivel}` : "";
-  const mesPassado = anterior != null && podio !== "ensinam" && podio !== "treino"
-    ? ` · mês passado ${fmtValor(podio, anterior)}` : anterior != null && podio === "ensinam" ? ` · mês passado ${Math.round(anterior)}` : "";
+    : podio === "evoluiram" ? ` ${PODIO_MEU.evoluiram.rotulo}` : podio === "ensinam" || podio === "fechamentos" ? " neste mês" : nivel ? ` · Nível ${nivel}` : "";
+  const mesPassado = anterior != null && podio !== "ensinam" && podio !== "fechamentos" && podio !== "treino"
+    ? ` · mês passado ${fmtValor(podio, anterior)}` : anterior != null && (podio === "ensinam" || podio === "fechamentos") ? ` · mês passado ${Math.round(anterior)}` : "";
   const noPodio = meu.no_podio ? " Você está no pódio." : "";
   const semMinimo = (podio === "constantes" || podio === "respondidas") && !meu.qualifica ? ` · abaixo do mínimo de ${minimo} retomadas` : "";
   return <>Você: {forte}{resto}{mesPassado}{semMinimo}.{noPodio}</>;

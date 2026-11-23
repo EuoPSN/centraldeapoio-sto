@@ -1,8 +1,10 @@
 // Ranking de qualidade (pódios mensais): constantes, textos e formatação. Sem banco nem servidor.
 
-export const PODIOS_QUALIDADE = ["constantes", "respondidas", "evoluiram", "ensinam"] as const;
+/** Pódios calculados no banco (ranking_calcular). O Treino é calculado no servidor da Omnia. */
+export const PODIOS_QUALIDADE = ["constantes", "respondidas", "evoluiram", "ensinam", "fechamentos"] as const;
 export type PodioQualidade = (typeof PODIOS_QUALIDADE)[number];
-export const PODIOS = [...PODIOS_QUALIDADE, "treino"] as const;
+/** Ordem de exibição: "Mais fechamentos" é o sexto pódio. */
+export const PODIOS = ["constantes", "respondidas", "evoluiram", "ensinam", "treino", "fechamentos"] as const;
 export type Podio = (typeof PODIOS)[number];
 
 export const PODIO_TITULO: Record<Podio, string> = {
@@ -11,6 +13,7 @@ export const PODIO_TITULO: Record<Podio, string> = {
   evoluiram: "Que mais evoluíram",
   ensinam: "Que mais ensinam",
   treino: "Treino no Simulador",
+  fechamentos: "Mais fechamentos",
 };
 
 export const PODIO_SUBTITULO: Record<Podio, string> = {
@@ -19,6 +22,7 @@ export const PODIO_SUBTITULO: Record<Podio, string> = {
   evoluiram: "Melhora da nota no Simulador sobre o mês passado",
   ensinam: "Conversas publicadas e objeções aprovadas",
   treino: "Pontos do mês",
+  fechamentos: "Vendas do mês confirmadas no CRM",
 };
 
 /** "Como é calculado": uma explicação curta de cada pódio. */
@@ -33,6 +37,8 @@ export const PODIO_COMO: Record<Podio, string> = {
     "Conversas suas publicadas na Biblioteca mais objeções suas aprovadas com o seu crédito, no mês. Conta o número de contribuições.",
   treino:
     "Pontos que você ganhou no Simulador neste mês, com as mesmas regras de XP de sempre. Atendimento e Solução de problemas têm abas separadas.",
+  fechamentos:
+    "Vendas do mês confirmadas no CRM: a soma das planilhas semanais que o Admin envia. Não tem mínimo de retomadas. Você vê o seu valor e o do mês passado; só os 3 primeiros aparecem na lista.",
 };
 
 export const PODIO_MEU: Record<Podio, { rotulo: string; sufixo: string }> = {
@@ -41,6 +47,7 @@ export const PODIO_MEU: Record<Podio, { rotulo: string; sufixo: string }> = {
   evoluiram: { rotulo: "sobre o mês passado", sufixo: "" },
   ensinam: { rotulo: "contribuições", sufixo: "" },
   treino: { rotulo: "pontos", sufixo: "" },
+  fechamentos: { rotulo: "vendas no mês", sufixo: "" },
 };
 
 /** Valor como aparece no pódio: 96%, +18%, 5, 640. */
@@ -82,6 +89,7 @@ export const PODIO_DESTAQUE: Record<Podio, string> = {
   evoluiram: "mais evoluiu",
   ensinam: "mais ensina",
   treino: "mais treinou",
+  fechamentos: "mais fechou",
 };
 
 const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];

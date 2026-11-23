@@ -3,6 +3,7 @@ import { chaveNumero } from "./numeros";
 import type { ResultadoIdentificar, ResultadoLer } from "../content/ler";
 import type { Relatorio } from "../content/diagnostico";
 import type { DadosDoContato } from "../content/contato";
+import type { ItemLista } from "../content/lista";
 
 export type PedidoContent =
   | { tipo: "omnia:identificar" }
@@ -20,3 +21,7 @@ export function chaveDoContato(id: { nome: string; numero: string }): string {
   const k = id.numero ? chaveNumero(id.numero) : "";
   return k ? `n:${k}` : `nome:${id.nome.trim().toLowerCase()}`;
 }
+
+/** Varredura da lista (content script → service worker, sempre dentro do navegador). Nome e prévia
+ * não saem do navegador: o service worker só envia ao servidor a chave em hash, o horário e a direção. */
+export interface VarreduraLista { tipo: "varredura:lista"; itens: ItemLista[] }

@@ -4,9 +4,10 @@
 import { identificar, lerConversa, MOTIVO_FALHA } from "./ler";
 import { lerDadosDoContato } from "./contato";
 import { montarDiagnostico } from "./diagnostico";
+import { lerListaDeConversas } from "./lista";
 import { CHAVES } from "../lib/armazenamento";
 import { hashContato } from "../lib/numeros";
-import { chaveDoContato, type PedidoContent } from "../lib/mensagens";
+import { chaveDoContato, type PedidoContent, type VarreduraLista } from "../lib/mensagens";
 
 async function pausada(): Promise<boolean> {
   try {
@@ -41,3 +42,21 @@ chrome.runtime.onMessage.addListener((msg: PedidoContent, _sender, responder) =>
   tratar(msg).then(responder, () => responder({ ok: false, motivo: MOTIVO_FALHA, naoLe: false }));
   return true;
 });
+
+// Varredura leve da lista de conversas visível: só lê, a cada 30 s, e só entrega ao service worker
+// (dentro do navegador). Pausada: não faz nada. Nunca abre conversa, rola a lista nem clica.
+const INTERVALO_VARREDURA_MS = 30_000;
+
+async function varrer() {
+  try {
+    if (await pausada()) return;
+    const r = lerListaDeConversas(document);
+    if (!r.ok || r.itens.length === 0) return;
+    const msg: VarreduraLista = { tipo: "varredura:lista", itens: r.itens };
+    await chrome.runtime.sendMessage(msg);
+  } catch {
+    /* falha segura: sem varredura neste ciclo */
+  }
+}
+
+setInterval(() => void varrer(), INTERVALO_VARREDURA_MS);

@@ -6,7 +6,7 @@
 export const PRIVACIDADE_CONTATO = "[definir o e-mail de contato]";
 
 /** Data da última revisão do texto. */
-export const PRIVACIDADE_ATUALIZADA = "21/11/2026";
+export const PRIVACIDADE_ATUALIZADA = "23/11/2026";
 
 export interface SecaoPrivacidade {
   titulo: string;
@@ -45,7 +45,7 @@ export const PRIVACIDADE_SECOES: SecaoPrivacidade[] = [
     titulo: "O que é guardado",
     paragrafos: [
       "No ticket do atendente: primeiro nome do cliente, telefone (visível só ao atendente dono do ticket), etapa do funil, ponto de parada, plano, observação resumida e prazo de retomada, além do histórico do que mudou no ticket. O telefone é apagado quando o ticket sai da fila ou em até 30 dias.",
-      "Também são guardados contadores de uso (por exemplo, quantos tickets foram criados) e tempos de resposta, sem nome, telefone nem conteúdo de conversa. Se o atendente ignorar um contato, guardamos apenas um código irreversível (hash) do número, nunca o número, para a extensão não ler essa conversa. Guardamos também a confirmação de que o atendente leu o aviso \"O que a extensão faz\".",
+      "Também são guardados contadores de uso (por exemplo, quantos tickets foram criados) e tempos de resposta, sem nome, telefone nem conteúdo de conversa: para cada conversa nova, só um código irreversível (hash) da conversa, os horários e os minutos até a primeira resposta. Se o atendente ignorar um contato, guardamos apenas um código irreversível (hash) do número, nunca o número, para a extensão não ler essa conversa. Guardamos também a confirmação de que o atendente leu o aviso \"O que a extensão faz\".",
     ],
   },
   {

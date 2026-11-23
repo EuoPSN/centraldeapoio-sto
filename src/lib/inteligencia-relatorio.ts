@@ -61,6 +61,13 @@ export interface RankingLinha { mes: string; podio: string; user_id: string; val
 /** Ranking do atendente: só o próprio valor e o do mês anterior, sem posição. */
 export interface MeuRankingLinha { mes: string; podio: string; valor: number | null; valor_anterior: number | null }
 
+/** Fase C · extensão 2: uso da extensão por semana (só contagens). Atendente: só as próprias linhas. */
+export interface ExtensaoLinha { semana: string; user_id: string; tickets_criados: number; atualizados: number; ignorados: number; pausas: number }
+/** Tempo de primeira resposta por dia (minutos úteis). */
+export interface TempoLinha { dia: string; user_id: string; conversas_novas: number; dentro_da_meta: number; media_minutos: number | null; sem_resposta: number }
+/** Fechamentos do CRM por semana (segunda a domingo). */
+export interface FechamentoLinha { periodo_ini: string; periodo_fim: string; user_id: string; vendas: number; tickets_fechados: number; sem_ticket: number }
+
 export interface DadosInteligencia {
   de: string;
   ate: string;
@@ -78,6 +85,12 @@ export interface DadosInteligencia {
   confirmacoes?: ConfirmacaoLinha[];
   ranking?: RankingLinha[];
   meuRanking?: MeuRankingLinha[];
+  /** Fase C · extensão 2 (ausentes se as migrações ainda não rodaram). */
+  extensao?: ExtensaoLinha[];
+  tempo?: TempoLinha[];
+  fechamentos?: FechamentoLinha[];
+  /** Meta de 1ª resposta (minutos) configurada hoje no Admin, para o LEIA-ME. */
+  metaTempoMinutos?: number;
   /** Regras do mapa e do acerto (aquecimento_config), para o LEIA-ME. */
   aquecimentoConfig?: { nota_acerto: number; janela_dominio_dias: number; min_respostas: number; limiar_dominando: number };
   /** Etapas do funil do Cérebro (tabela funil_etapas). */
@@ -154,6 +167,30 @@ const ETAPAS = "novo_lead | lead_qualificado | proposta_enviada | fechamento | v
 const FERRAMENTAS = "copiloto | raiox | marciana | cliente_disse | mensagem_cliente | retomada | simulador | biblioteca | aquecimento";
 
 const C = {
+  extensao: [
+    { nome: "semana_inicio", significado: "Segunda-feira da semana (Brasília). A linha cobre de segunda a domingo.", valores: "AAAA-MM-DD", largura: 14 },
+    { nome: "atendente", significado: "Atendente.", valores: "nome do atendente", largura: 16 },
+    { nome: "tickets_criados", significado: "Tickets criados pela extensão do WhatsApp na semana.", valores: "número inteiro", largura: 14 },
+    { nome: "tickets_atualizados", significado: "Vezes em que a extensão atualizou um ticket existente na semana (um salvamento = uma atualização).", valores: "número inteiro", largura: 18 },
+    { nome: "conversas_ignoradas", significado: "Contatos que o atendente mandou ignorar na extensão.", valores: "número inteiro", largura: 18 },
+    { nome: "pausas", significado: "Vezes em que o atendente pausou a extensão.", valores: "número inteiro", largura: 10 },
+  ],
+  tempo: [
+    { nome: "dia", significado: "Dia em que a conversa nova começou (Brasília).", valores: "AAAA-MM-DD", largura: 12 },
+    { nome: "atendente", significado: "Atendente.", valores: "nome do atendente", largura: 16 },
+    { nome: "conversas_novas", significado: "Conversas novas do dia: o cliente escreve depois de várias horas sem mensagens (padrão 12 h).", valores: "número inteiro", largura: 16 },
+    { nome: "dentro_da_meta", significado: "Conversas novas respondidas dentro da meta de primeira resposta.", valores: "número inteiro", largura: 14 },
+    { nome: "primeira_resposta_media_min", significado: "Média, em minutos úteis (só o horário de atendimento), do tempo até a primeira resposta humana. Vazio se nenhuma foi respondida.", valores: "número com até 2 casas decimais ou vazio", largura: 26 },
+    { nome: "sem_resposta", significado: "Conversas novas ainda sem resposta e já acima da meta (contadas na hora do download).", valores: "número inteiro", largura: 14 },
+  ],
+  fechamentos: [
+    { nome: "periodo_inicio", significado: "Segunda-feira do período (Brasília).", valores: "AAAA-MM-DD", largura: 15 },
+    { nome: "periodo_fim", significado: "Domingo do período.", valores: "AAAA-MM-DD", largura: 13 },
+    { nome: "atendente", significado: "Atendente (vendedor da planilha do CRM já ligado a um usuário da Omnia).", valores: "nome do atendente", largura: 16 },
+    { nome: "vendas", significado: "Vendas com data de Venda no período, segundo a planilha do CRM enviada pelo Admin.", valores: "número inteiro", largura: 10 },
+    { nome: "tickets_fechados", significado: "Vendas que casaram, pelo telefone, com um ticket da Omnia fechado como Venda concluída (CRM).", valores: "número inteiro", largura: 16 },
+    { nome: "sem_ticket", significado: "Vendas sem ticket correspondente na Omnia (vendas − tickets_fechados).", valores: "número inteiro", largura: 12 },
+  ],
   raiox: [
     { nome: "data_hora", significado: "Quando o Raio-X foi feito.", valores: "AAAA-MM-DD HH:MM", largura: 17 },
     { nome: "atendente", significado: "Atendente que fez o Raio-X.", valores: "nome do atendente", largura: 16 },
@@ -211,15 +248,15 @@ const C = {
   ],
   ranking: [
     { nome: "mes", significado: "Mês do ranking (o ranking é mensal e zera no dia 1º).", valores: "AAAA-MM", largura: 10 },
-    { nome: "podio", significado: "Pódio.", valores: "constantes | respondidas | evoluiram | ensinam | treino", largura: 14 },
+    { nome: "podio", significado: "Pódio.", valores: "constantes | respondidas | evoluiram | ensinam | treino | fechamentos", largura: 14 },
     { nome: "atendente", significado: "Atendente.", valores: "nome do atendente", largura: 16 },
-    { nome: "valor", significado: "constantes e respondidas: percentual 0 a 100. evoluiram: variação percentual da nota sobre o mês anterior. ensinam: número de contribuições. treino: pontos do mês no Simulador (Atendimento).", valores: "número ou vazio", largura: 12 },
+    { nome: "valor", significado: "constantes e respondidas: percentual 0 a 100. evoluiram: variação percentual da nota sobre o mês anterior. ensinam: número de contribuições. treino: pontos do mês no Simulador (Atendimento). fechamentos: vendas do mês confirmadas no CRM.", valores: "número ou vazio", largura: 12 },
     { nome: "posicao", significado: "Posição entre quem entra no pódio. Vazio se não entra. Só o Admin vê posições.", valores: "número inteiro ou vazio", largura: 10 },
-    { nome: "entra_no_podio", significado: "sim se tem o mínimo exigido (retomadas, simulações ou contribuições) para disputar.", valores: "sim | não", largura: 14 },
+    { nome: "entra_no_podio", significado: "sim se tem o mínimo exigido (retomadas, simulações, contribuições ou vendas) para disputar.", valores: "sim | não", largura: 14 },
   ],
   meuRanking: [
     { nome: "mes", significado: "Mês do ranking.", valores: "AAAA-MM", largura: 10 },
-    { nome: "podio", significado: "Pódio.", valores: "constantes | respondidas | evoluiram | ensinam | treino", largura: 14 },
+    { nome: "podio", significado: "Pódio.", valores: "constantes | respondidas | evoluiram | ensinam | treino | fechamentos", largura: 14 },
     { nome: "meu_valor", significado: "O seu valor no mês (mesma unidade do pódio). Sem número de posição.", valores: "número ou vazio", largura: 12 },
     { nome: "valor_do_mes_anterior", significado: "O seu valor no mês anterior ao da linha.", valores: "número ou vazio", largura: 20 },
   ],
@@ -346,6 +383,17 @@ export function montarAbasInteligencia(d: DadosInteligencia): Aba[] {
     .sort((a, b) => a.mes.localeCompare(b.mes) || a.podio.localeCompare(b.podio))
     .map((r) => [mesAAAAMM(r.mes), r.podio, r.valor, r.valor_anterior]);
 
+  // Fase C · extensão 2: extensão do WhatsApp, tempo de resposta e fechamentos do CRM (só contagens e minutos).
+  const extLinhas: Cel[][] = [...(d.extensao ?? [])]
+    .sort((a, b) => a.semana.localeCompare(b.semana) || ptBR(nomeAt(a.user_id), nomeAt(b.user_id)))
+    .map((x) => [x.semana, nomeAt(x.user_id), x.tickets_criados, x.atualizados, x.ignorados, x.pausas]);
+  const tempoLinhas: Cel[][] = [...(d.tempo ?? [])]
+    .sort((a, b) => a.dia.localeCompare(b.dia) || ptBR(nomeAt(a.user_id), nomeAt(b.user_id)))
+    .map((x) => [x.dia, nomeAt(x.user_id), x.conversas_novas, x.dentro_da_meta, x.media_minutos, x.sem_resposta]);
+  const fechLinhas: Cel[][] = [...(d.fechamentos ?? [])]
+    .sort((a, b) => a.periodo_ini.localeCompare(b.periodo_ini) || ptBR(nomeAt(a.user_id), nomeAt(b.user_id)))
+    .map((x) => [x.periodo_ini, x.periodo_fim, nomeAt(x.user_id), x.vendas, x.tickets_fechados, x.sem_ticket]);
+
   return [
     { nome: "LEIA-ME", tabela: "tbl_leia_me", colunas: LEIA_ME_COLUNAS, linhas: montarLeiaMe(d) },
     { nome: "Raio-X", tabela: "tbl_raiox", colunas: C.raiox, linhas: raioxLinhas },
@@ -358,6 +406,9 @@ export function montarAbasInteligencia(d: DadosInteligencia): Aba[] {
     ...(d.confirmacoes ? [{ nome: "Confirmacoes", tabela: "tbl_confirmacoes", colunas: C.confirmacoes, linhas: confLinhas }] : []),
     ...(d.ranking ? [{ nome: "Ranking", tabela: "tbl_ranking", colunas: C.ranking, linhas: rankLinhas }] : []),
     ...(d.meuRanking ? [{ nome: "Meu_ranking", tabela: "tbl_meu_ranking", colunas: C.meuRanking, linhas: meuLinhas }] : []),
+    ...(d.extensao ? [{ nome: "Extensao", tabela: "tbl_extensao", colunas: C.extensao, linhas: extLinhas }] : []),
+    ...(d.tempo ? [{ nome: "Tempo_de_resposta", tabela: "tbl_tempo_de_resposta", colunas: C.tempo, linhas: tempoLinhas }] : []),
+    ...(d.fechamentos ? [{ nome: "Fechamentos", tabela: "tbl_fechamentos", colunas: C.fechamentos, linhas: fechLinhas }] : []),
   ];
 }
 
@@ -409,15 +460,36 @@ function montarLeiaMe(d: DadosInteligencia): Cel[][] {
     add("mudancas", "privacidade", d.escopo === "equipe" ? "Equipe inteira: uma linha por confirmação." : "Somente as suas próprias confirmações.");
   }
   if (d.ranking || d.meuRanking) {
-    add("ranking", "o_que_e", "Ranking mensal de qualidade, zerado no dia 1º. Pódios: constantes, respondidas, evoluiram, ensinam e treino (pontos do Simulador). O aquecimento e o Raio-X não entram no ranking.");
+    add("ranking", "o_que_e", "Ranking mensal de qualidade, zerado no dia 1º. Pódios: constantes, respondidas, evoluiram, ensinam, treino (pontos do Simulador) e fechamentos (vendas confirmadas no CRM). O aquecimento e o Raio-X não entram no ranking.");
     add("ranking", "constantes", "% das etapas de retomada com prazo no mês enviadas no dia do prazo (primeiro Enviei até o fim do dia do prazo, horário de Brasília). Etapa = um passo da régua de uma retomada.", "0 a 100");
     add("ranking", "respondidas", "Entre as retomadas com pelo menos um Enviei no mês, % em que o cliente respondeu ou fechou.", "0 a 100");
     add("ranking", "evoluiram", "Variação % da nota média do Simulador no mês sobre o mês anterior; precisa de 3 simulações em cada mês e só entra quem melhorou.");
     add("ranking", "ensinam", "Conversas publicadas na Biblioteca mais objeções aprovadas com crédito ao autor, no mês.");
+    add("ranking", "fechamentos", "Vendas do mês confirmadas no CRM: soma das planilhas semanais enviadas pelo Admin. Não tem mínimo de retomadas.");
     add("ranking", "minimo", "Os pódios de porcentagem só contam quem tem o mínimo de retomadas no mês (padrão 15, definido no Admin).");
     add("ranking", "privacidade", d.escopo === "equipe"
       ? "Visão do Admin: lista completa com posições. O atendente vê só os 3 primeiros no site e, neste arquivo, só o próprio valor."
       : "Aba Meu_ranking: só o seu valor e o do mês anterior, sem posição e sem dados de outras pessoas.");
+  }
+
+  if (d.extensao || d.tempo || d.fechamentos) {
+    const meta = d.metaTempoMinutos ?? 5;
+    const proprio = d.escopo === "equipe" ? "Equipe inteira (ou o atendente filtrado)." : "Somente os seus próprios dados.";
+    if (d.extensao) {
+      add("extensao", "o_que_e", `Uso da extensão do WhatsApp por semana (segunda a domingo): tickets criados e atualizados pela extensão, contatos ignorados e vezes em que pausou. ${proprio}`);
+      add("extensao", "privacidade", "Só contagens. A extensão lê apenas a conversa que o atendente manda ler; nada de conversa, nome nem telefone de cliente entra neste arquivo.");
+    }
+    if (d.tempo) {
+      add("tempo_de_resposta", "o_que_e", `Tempo de primeira resposta por dia. Conversa nova = o cliente escreve depois de várias horas (padrão 12 h) sem mensagens; se mandar várias seguidas, o relógio começa na primeira. A meta atual é de ${meta} minutos. ${proprio}`, `${meta}`);
+      add("tempo_de_resposta", "minutos_uteis", "Os minutos contam só dentro do horário de atendimento configurado no Admin (padrão: segunda a sexta 08:00–18:00 e sábado 08:00–12:00, horário de Brasília).");
+      add("tempo_de_resposta", "limitacao", "A extensão lê só a lista de conversas. Mensagens automáticas ou de bot só deixam de contar quando a prévia tem um aviso automático inequívoco; na dúvida, a resposta é tratada como humana. Se o cliente escreve de novo antes de a extensão ver a resposta, o tempo pode sair maior que o real.");
+      add("tempo_de_resposta", "privacidade", "O nome e a prévia da conversa ficam só no navegador do atendente. O que é guardado: uma chave em hash, o horário e os minutos.");
+    }
+    if (d.fechamentos) {
+      add("fechamentos", "o_que_e", `Vendas do CRM por semana e atendente, a partir da planilha semanal enviada pelo Admin. Cada envio substitui os dias que a planilha cobre. ${proprio}`);
+      add("fechamentos", "como_casa", "O telefone da planilha é lido no navegador do Admin e só um hash chega ao servidor; ele é comparado ao hash do telefone dos tickets abertos do atendente. A planilha não é guardada e nenhum telefone ou nome de cliente entra aqui.");
+      add("fechamentos", "sem_ticket", "Venda sem ticket correspondente na Omnia (cliente que não passou pela retomada ou sem telefone na planilha).");
+    }
   }
 
   d.funil.forEach((f, i) => {
@@ -433,6 +505,9 @@ function montarLeiaMe(d: DadosInteligencia): Cel[][] {
   if (d.confirmacoes) abasDic.push(["Confirmacoes", C.confirmacoes]);
   if (d.ranking) abasDic.push(["Ranking", C.ranking]);
   if (d.meuRanking) abasDic.push(["Meu_ranking", C.meuRanking]);
+  if (d.extensao) abasDic.push(["Extensao", C.extensao]);
+  if (d.tempo) abasDic.push(["Tempo_de_resposta", C.tempo]);
+  if (d.fechamentos) abasDic.push(["Fechamentos", C.fechamentos]);
   for (const [aba, cols] of abasDic) {
     for (const c of cols) add("dicionario_de_colunas", `${aba}.${c.nome}`, c.significado, c.valores);
   }
