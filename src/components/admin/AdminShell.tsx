@@ -27,6 +27,7 @@ import { SimulatorResultsTab } from "@/components/admin/SimulatorResultsTab";
 import { TreinamentosTab } from "@/components/admin/TreinamentosTab";
 import { ChecklistTab } from "@/components/admin/ChecklistTab";
 import { RankingAdminTab } from "@/components/admin/RankingAdmin";
+import { ExtensaoAdminTab } from "@/components/admin/ExtensaoAdmin";
 import { MudancasAdminTab } from "@/components/admin/MudancasAdmin";
 import { SuggestionsTab } from "@/components/admin/SuggestionsTab";
 import { UnidadesTab } from "@/components/admin/UnidadesTab";
@@ -83,6 +84,7 @@ export const ADMIN_TAB_COMPONENTS: Record<string, ComponentType> = {
   bancoexercicios: BancoExerciciosTab,
   aquecimentoadmin: AquecimentoAdminTab,
   rankingadmin: RankingAdminTab,
+  extensaoadmin: ExtensaoAdminTab,
 
   procedimentos: ProcedimentosTab,
   problemastecnicos: ProblemasTecnicosTab,

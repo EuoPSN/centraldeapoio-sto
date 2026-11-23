@@ -6,6 +6,7 @@ import { contarFichasNovas } from "@/lib/biblioteca.functions";
 import { contarSugestoesPendentes } from "@/lib/mensagens-vendem.functions";
 import { contarMudancasSemConfirmar } from "@/lib/changelog.functions";
 import { contarExerciciosParaAprovar } from "@/lib/aquecimento-admin.functions";
+import { contarPendenciasExtensao } from "@/lib/extensao-admin.functions";
 
 async function requireAdmin(ctx: { supabase: unknown; userId: string }) {
   const s = ctx.supabase as { rpc: (n: string, p: unknown) => Promise<{ data: boolean | null }> };
@@ -162,6 +163,27 @@ export const getAdminPendingCounts = createServerFn({ method: "GET" })
         context: total > 0 && primeira ? primeira : "Tudo em dia",
         count: total,
         href: "/admin/changelog",
+      });
+    }
+
+    // 2g) Fase C · extensão 2: tempo de resposta acima da meta (semana) e atendentes sem a extensão
+    // (só contagens; se a migração ainda não rodou, não derruba as outras pendências).
+    {
+      const ext = await contarPendenciasExtensao(context).catch(() => ({ semExtensao: 0, acimaDaMeta: 0, meta: 5 }));
+      bySection.extensaoadmin = ext.acimaDaMeta + ext.semExtensao;
+      items.push({
+        key: "extensao_tempo",
+        title: "Tempo de resposta acima da meta (semana)",
+        context: ext.acimaDaMeta > 0 ? `Média da semana acima de ${ext.meta} min` : "Tudo em dia",
+        count: ext.acimaDaMeta,
+        href: "/admin/extensaoadmin",
+      });
+      items.push({
+        key: "extensao_sem",
+        title: "Atendentes sem a extensão",
+        context: ext.semExtensao > 0 ? "Ainda não usaram a extensão do WhatsApp" : "Todos já usam",
+        count: ext.semExtensao,
+        href: "/admin/extensaoadmin",
       });
     }
 
