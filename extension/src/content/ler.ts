@@ -72,7 +72,6 @@ export interface ElMensagem { el: Element; saiu: boolean | null; chat: string | 
 const MOTIVO_REMETENTE_ILEGIVEL = "Não consegui identificar quem enviou as mensagens (formato novo do WhatsApp); por segurança a Omnia não lê.";
 export const MOTIVO_SEM_MENSAGEM_DO_CLIENTE = "Ainda não há mensagem do cliente nesta conversa.";
 export const MOTIVO_VARIOS_REMETENTES = "Há mais de um remetente nas mensagens recebidas: parece um grupo.";
-export const MOTIVO_REMETENTE_DIFERENTE = "O remetente das mensagens recebidas não é o contato do cabeçalho: pode ser um grupo. A Omnia não lê.";
 export const MOTIVO_DIRECAO = "Não consegui separar o que o cliente enviou do que você enviou; por segurança a Omnia não lê.";
 
 /** Normaliza nome para comparação: sem marcas invisíveis, caixa e espaços; telefone vira só dígitos. */
@@ -194,7 +193,8 @@ function lerCabecalho(painel: Element): Cabecalho | null {
   // Rótulos de grupo/comunidade em atributos de acessibilidade (nunca no texto, que é o nome do contato).
   const rotuloDeGrupo = [cab, ...Array.from(cab.querySelectorAll("*"))].some((e) =>
     RE_ROTULO_GRUPO.test(`${e.getAttribute("aria-label") ?? ""} ${e.getAttribute("data-testid") ?? ""}`));
-  return { el: cab, nome, subtitulo: textos.slice(1).join(" · "), icones, presenca, rotuloDeGrupo };
+  const doTestid = qualquer(cab, SELETORES.subtituloCabecalho).map((e) => limpar(e.getAttribute("title") || textoDe(e))).find(Boolean);
+  return { el: cab, nome, subtitulo: doTestid ?? textos.slice(1).join(" · "), icones, presenca, rotuloDeGrupo };
 }
 
 /** Título (nome) da conversa no cabeçalho; "" se não achar. */
@@ -212,9 +212,11 @@ export function subtituloDeGrupo(sub: string): boolean {
 
 // ---------------------------------------------------------------------------
 // Detecção de grupo. Regra: na dúvida, NÃO lê.
-//   GRUPO      = qualquer sinal de grupo encontrado, ou remetentes diferentes nas recebidas.
-//   INDIVIDUAL = cabeçalho com nome + mensagens + nenhum sinal de grupo + TODAS as mensagens
-//                recebidas com o mesmo remetente, igual ao título do cabeçalho + direção decidida.
+//   GRUPO      = qualquer sinal de grupo encontrado, ou 2+ remetentes distintos entre as RECEBIDAS.
+//   INDIVIDUAL = cabeçalho com nome + mensagens + nenhum sinal de grupo + direção decidida +
+//                no máximo UM remetente distinto entre as recebidas (legível). Se ele for diferente
+//                do título (contato salvo com outro nome), ainda é individual: só se registra.
+//   O nome nas mensagens ENVIADAS é o do atendente: nunca conta como sinal de grupo.
 //   resto      = dúvida (não lê).
 // ---------------------------------------------------------------------------
 
@@ -236,6 +238,27 @@ export interface Avaliacao {
   metodosDeDirecao: Record<MetodoDirecao, number>;
   /** Elementos de autor ignorados por estarem dentro de mensagem citada. */
   autoresEmCitacao: number;
+  /** Só contagens e formas mascaradas (sem nome, número nem texto). */
+  remetentes: { distintos_recebidas: number; distintos_enviadas: number };
+  subtitulo: { forma_mascarada: string; nomes: "0" | "1" | "2+" };
+  /** Observações que não bloqueiam (ex.: "titulo_diferente_do_remetente"). */
+  observacoes: string[];
+}
+
+function mascararLocal(v: string): string {
+  let o = "";
+  for (const ch of v) o += /\p{Nd}/u.test(ch) ? "9" : /\p{L}/u.test(ch) ? "a" : ch === "," || ch === " " || ch === "-" || ch === "+" ? ch : "?";
+  return o;
+}
+
+/** Forma mascarada do subtítulo: dígito→9, letra→a; itens com nome (separados por vírgula) → [nome]. */
+export function subtituloMascarado(sub: string): { forma: string; nomes: "0" | "1" | "2+" } {
+  const t = sub.trim();
+  if (!t) return { forma: "", nomes: "0" };
+  if (RE_PRESENCA.test(t) || /(conta comercial|business account)/i.test(t)) return { forma: mascararLocal(t), nomes: "0" };
+  const itens = t.split(",").map((x) => x.trim()).filter(Boolean);
+  const forma = itens.map((i) => (/\p{L}/u.test(i) ? "[nome]" : mascararLocal(i))).join(", ");
+  return { forma, nomes: itens.length >= 2 ? "2+" : itens.length === 1 ? "1" : "0" };
 }
 
 const sn = (b: boolean): SimNao => (b ? "sim" : "não");
@@ -268,11 +291,12 @@ export function avaliarConversa(painel: Element): Avaliacao {
       if (dentroDeCitada(a, citadas)) autoresEmCitacao++; else autorVisivel = true;
     }
   }
-  // Remetentes: 2+ nomes diferentes entre as recebidas, ou 2+ diferentes do título em toda a conversa
-  // (um individual só tem o contato e o atendente).
+  // Remetentes: só as RECEBIDAS contam. O nome nas enviadas é o do atendente (só vai para o diagnóstico).
   const rem = (l: ElMensagem[]) => new Set(l.map((m) => m.remetente).filter((r): r is string => !!r));
-  const recebidasSemTitulo = [...rem(recebidasEl)].filter((r) => r !== tit);
-  const variosRemetentes = rem(recebidasEl).size >= 2 || [...rem(msgs)].filter((r) => r !== tit).length >= 2;
+  const remRecebidas = rem(recebidasEl);
+  const recebidasSemTitulo = [...remRecebidas].filter((r) => r !== tit);
+  const variosRemetentes = remRecebidas.size >= 2;
+  const sub = subtituloMascarado(cab?.subtitulo ?? "");
   const remetenteNasMensagens = variosRemetentes || autorVisivel;
 
   const sinais: Record<string, SimNao> = {
@@ -299,6 +323,9 @@ export function avaliarConversa(painel: Element): Avaliacao {
   const base = {
     cabecalhoEncontrado: !!cab, totalMensagens: msgs.length, recebidas: recebidasEl.length,
     enviadas: enviadasEl.length, sinais, positivas, metodosDeDirecao, autoresEmCitacao,
+    remetentes: { distintos_recebidas: remRecebidas.size, distintos_enviadas: rem(enviadasEl).size },
+    subtitulo: { forma_mascarada: sub.forma, nomes: sub.nomes },
+    observacoes: [] as string[],
   };
   const grupo = (codigo: string, motivo = MOTIVO_GRUPO): Avaliacao => ({ ...base, veredito: { tipo: "grupo", motivo }, codigo });
   const duvida = (codigo: string, motivo = MOTIVO_DUVIDA): Avaliacao => ({ ...base, veredito: { tipo: "duvida", motivo }, codigo });
@@ -314,7 +341,9 @@ export function avaliarConversa(painel: Element): Avaliacao {
   if (indefinidas) return duvida("direcao_indefinida", MOTIVO_DIRECAO);
   if (!recebidasEl.length) return duvida("sem_mensagem_do_cliente", MOTIVO_SEM_MENSAGEM_DO_CLIENTE);
   if (!remetentesLegiveis) return duvida("remetente_ilegivel", MOTIVO_REMETENTE_ILEGIVEL);
-  if (recebidasSemTitulo.length) return grupo("grupo_remetente_diferente_do_titulo", MOTIVO_REMETENTE_DIFERENTE);
+  // Um único remetente entre as recebidas, diferente do título: o contato pode ter nome salvo
+  // diferente do nome do perfil. Continua individual; só registra no diagnóstico.
+  if (recebidasSemTitulo.length) base.observacoes.push("titulo_diferente_do_remetente");
   return { ...base, veredito: { tipo: "individual" }, codigo: "individual_confirmado" };
 }
 

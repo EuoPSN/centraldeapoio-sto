@@ -37,6 +37,9 @@ export const SELETORES = {
     "[title]", // último recurso: qualquer elemento com title dentro do cabeçalho
   ],
 
+  /** Subtítulo do cabeçalho (presença ou lista de participantes). Se achar, vale no lugar dos demais textos. */
+  subtituloCabecalho: ['[data-testid="chat-subtitle"]'],
+
   /** Ícones do cabeçalho/avatar (data-icon). Usados só para detectar grupo, comunidade, lista e Status. */
   iconesCabecalho: ["[data-icon]"],
 

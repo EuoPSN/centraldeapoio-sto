@@ -61,6 +61,11 @@ export interface Relatorio {
     decisao: "le" | "nao_le";
     motivo_codigo: string;
     motivo: string;
+    /** Só contagens (sem nomes). */
+    remetentes?: { distintos_recebidas: number; distintos_enviadas: number };
+    /** Forma mascarada de chat-subtitle (dígito→9, letra→a, nomes→[nome]) e quantos nomes tem. */
+    subtitulo?: { forma_mascarada: string; nomes: "0" | "1" | "2+" };
+    observacoes?: string[];
   };
   /** Preenchido pelo painel: motivo do último resultado de leitura nesta sessão do painel. */
   ultimo_resultado_no_painel?: { codigo: string; motivo: string } | null;
@@ -224,7 +229,6 @@ export function montarDiagnostico(doc: Document, extra: { versao: string; domini
     sem_mensagem_do_cliente: "só há mensagens enviadas: não dá para confirmar o contato: não lê",
     remetente_ilegivel: "remetente das mensagens recebidas não pôde ser lido: não lê",
     grupo_varios_remetentes: "mais de um remetente nas mensagens recebidas: parece grupo: não lê",
-    grupo_remetente_diferente_do_titulo: "remetente das recebidas diferente do título do cabeçalho: não lê",
     individual_confirmado: "conversa individual confirmada: lê",
   };
   return {
@@ -239,6 +243,7 @@ export function montarDiagnostico(doc: Document, extra: { versao: string; domini
       sinais_de_grupo: a.sinais, verificacoes_positivas: a.positivas,
       decisao: a.veredito.tipo === "individual" ? "le" : "nao_le",
       motivo_codigo: a.codigo, motivo: motivos[a.codigo] ?? a.codigo,
+      remetentes: a.remetentes, subtitulo: a.subtitulo, observacoes: a.observacoes,
     },
   };
 }
