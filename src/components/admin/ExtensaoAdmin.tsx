@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { getExtensaoAdmin, salvarExtensaoConfig } from "@/lib/extensao-admin.functions";
+import { getAntesDepois, getExtensaoAdmin, salvarExtensaoConfig, salvarInicioAntesDepois } from "@/lib/extensao-admin.functions";
 import {
   DIAS_SEMANA, PERIODOS_EXTENSAO, descreverHorario, fmtMinSeg, horaValida,
   type ConfigExtensao, type Horario, type PeriodoExtensao,
@@ -13,6 +13,73 @@ import { BaixarInteligenciaAdmin } from "@/components/copiloto/BaixarInteligenci
 import { FechamentosCrm } from "@/components/admin/FechamentosCrm";
 
 const DADOS_KEY = ["admin-extensao"] as const;
+const dmy = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`;
+const dm = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
+const num = (n: number | null) => (n == null ? "—" : String(n).replace(".", ","));
+
+/** "Antes e depois": vendas por semana nos 60 dias antes e depois do início da extensão. Só o Admin vê. */
+function AntesDepois() {
+  const qc = useQueryClient();
+  const dadosFn = useServerFn(getAntesDepois);
+  const salvarFn = useServerFn(salvarInicioAntesDepois);
+  const q = useQuery({ queryKey: ["admin-extensao-antes-depois"], queryFn: () => dadosFn({}) });
+  const salvar = useMutation({
+    mutationFn: (v: { user_id: string; inicio: string | null }) => salvarFn({ data: v }),
+    onSuccess: () => { toast.success("Data de início salva."); qc.invalidateQueries({ queryKey: ["admin-extensao-antes-depois"] }); },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Não consegui salvar."),
+  });
+  if (q.isLoading) return <p className="py-6 text-[14px] text-ink-muted">Carregando…</p>;
+  if (q.isError || !q.data) return <p className="py-6 text-[14px] text-ink-muted">Não consegui carregar o comparativo agora. Confira se as migrações da extensão já rodaram.</p>;
+  const { linhas, semInicio, coberturaCrm } = q.data;
+  return (
+    <>
+      <p className="mt-1 text-[13.5px] leading-5 text-ink-muted">
+        Vendas por semana (planilhas do CRM) nos 60 dias antes e nos 60 dias depois da data de início. O padrão é o dia do primeiro uso da extensão; você pode escolher outra data.
+        {coberturaCrm.min ? ` Planilhas enviadas de ${dm(coberturaCrm.min)} a ${dm(coberturaCrm.max!)}.` : " Nenhuma planilha do CRM enviada ainda."}
+      </p>
+      <div className="mt-3 overflow-x-auto">
+        <table className="w-full min-w-[620px] border-t border-line text-[14px]">
+          <thead>
+            <tr className="text-left text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-muted">
+              <th scope="col" className="py-2.5 pr-2">Atendente</th>
+              <th scope="col" className="py-2.5 pr-2">Início</th>
+              <th scope="col" className="py-2.5 pr-2 text-right">Antes (vendas/sem)</th>
+              <th scope="col" className="py-2.5 pr-2 text-right">Depois (vendas/sem)</th>
+              <th scope="col" className="py-2.5 pr-2 text-right">Variação</th>
+              <th scope="col" className="py-2.5">Dados</th>
+            </tr>
+          </thead>
+          <tbody>
+            {linhas.length === 0 && <tr><td colSpan={6} className="py-6 text-ink-muted">Ninguém começou a usar a extensão ainda.</td></tr>}
+            {linhas.map((l) => (
+              <tr key={l.user_id} className="border-t border-line align-top">
+                <td className="py-2.5 pr-2 text-ink">{l.nome}</td>
+                <td className="py-2.5 pr-2">
+                  <input
+                    type="date" aria-label={`Início de ${l.nome}`} className={`${inputCls} h-8 w-[150px] py-1`} defaultValue={l.inicio}
+                    onBlur={(e) => { if (e.target.value && e.target.value !== l.inicio) salvar.mutate({ user_id: l.user_id, inicio: e.target.value }); }}
+                  />
+                  <span className="mt-0.5 block text-[12px] text-ink-muted">{l.origem === "escolhida" ? "data escolhida" : "1º uso da extensão"}
+                    {l.origem === "escolhida" && <button type="button" className="ml-2 underline" onClick={() => salvar.mutate({ user_id: l.user_id, inicio: null })}>voltar ao padrão</button>}
+                  </span>
+                </td>
+                <td className="py-2.5 pr-2 text-right tabular-nums text-ink">{num(l.antes.porSemana)}<span className="block text-[12px] text-ink-muted">{l.antes.vendas} em {l.antes.diasComDados} dias</span></td>
+                <td className="py-2.5 pr-2 text-right tabular-nums text-ink">{num(l.depois.porSemana)}<span className="block text-[12px] text-ink-muted">{l.depois.vendas} em {l.depois.diasComDados} dias</span></td>
+                <td className="py-2.5 pr-2 text-right tabular-nums text-ink">{l.variacaoPct == null ? "—" : `${l.variacaoPct > 0 ? "+" : ""}${l.variacaoPct}%`}</td>
+                <td className="py-2.5 text-[12.5px] text-ink-muted">
+                  {l.faltamAntes === 0 && l.faltamDepois === 0 ? "60 + 60 dias completos"
+                    : [l.faltamAntes > 0 ? `faltam ${l.faltamAntes} dias antes` : null, l.faltamDepois > 0 ? `faltam ${l.faltamDepois} dias depois` : null].filter(Boolean).join(" · ")}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {semInicio.length > 0 && <p className="mt-3 text-[13px] text-ink-muted">Sem data de início (não usaram a extensão): {semInicio.map((p) => p.nome).join(", ")}. Escolha uma data na lista para incluir.</p>}
+      <p className="mt-3 text-[13px] text-ink-muted">Se ainda não há 60 dias de dados, a tabela mostra o que existe e quantos dias faltam. Só você vê este comparativo.</p>
+    </>
+  );
+}
 
 interface Rascunho { meta: string; nova: string; horario: Horario }
 const doBanco = (c: ConfigExtensao): Rascunho => ({ meta: String(c.meta_minutos), nova: String(c.nova_conversa_horas), horario: JSON.parse(JSON.stringify(c.horario)) });
@@ -22,7 +89,8 @@ export function ExtensaoAdminTab() {
   const qc = useQueryClient();
   const dadosFn = useServerFn(getExtensaoAdmin);
   const salvarFn = useServerFn(salvarExtensaoConfig);
-  const [periodo, setPeriodo] = useState<PeriodoExtensao>("semana");
+  const [vista, setVista] = useState<PeriodoExtensao | "antesdepois">("semana");
+  const periodo: PeriodoExtensao = vista === "antesdepois" ? "semana" : vista;
   const q = useQuery({ queryKey: [...DADOS_KEY, periodo], queryFn: () => dadosFn({ data: { periodo } }) });
   const dados = q.data;
 
@@ -113,10 +181,10 @@ export function ExtensaoAdminTab() {
     <AdminListDetail
       title="Extensão do WhatsApp"
       subtitle="Números por atendente. Nunca mostra conversa, nome nem telefone de cliente."
-      filters={PERIODOS_EXTENSAO.map((p) => <FilterPill key={p.id} active={periodo === p.id} onClick={() => setPeriodo(p.id)}>{p.rotulo}</FilterPill>)}
+      filters={[...PERIODOS_EXTENSAO.map((p) => <FilterPill key={p.id} active={vista === p.id} onClick={() => setVista(p.id)}>{p.rotulo}</FilterPill>), <FilterPill key="antesdepois" active={vista === "antesdepois"} onClick={() => setVista("antesdepois")}>Antes e depois</FilterPill>]}
       panel={painel}
     >
-      {q.isLoading ? <p className="py-6 text-[14px] text-ink-muted">Carregando…</p> : q.isError ? (
+      {vista === "antesdepois" ? <AntesDepois /> : q.isLoading ? <p className="py-6 text-[14px] text-ink-muted">Carregando…</p> : q.isError ? (
         <p className="py-6 text-[14px] text-ink-muted">Não consegui carregar os números agora. Se as migrações da extensão ainda não rodaram, rode-as no SQL editor.</p>
       ) : (
         <>

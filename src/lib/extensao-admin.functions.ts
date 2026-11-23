@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isAdminUser } from "@/lib/authz";
+import { diaBR } from "@/lib/retomada";
+import { compararAntesDepois, type ResultadoAntesDepois } from "@/lib/extensao-antes-depois";
 import {
   CONFIG_EXTENSAO_PADRAO, HORARIO_PADRAO, horaValida, intervaloDoPeriodo, resumoEquipe,
   type ConfigExtensao, type ExtensaoAdminDados, type Horario, type LinhaExtensao,
@@ -96,3 +98,64 @@ export async function contarPendenciasExtensao(ctx: Ctx): Promise<{ semExtensao:
     meta: config.meta_minutos,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Antes e depois (60 dias) — só o Admin
+// ---------------------------------------------------------------------------
+
+export interface LinhaAntesDepois extends ResultadoAntesDepois {
+  user_id: string; nome: string;
+  origem: "primeiro_uso" | "escolhida";
+}
+export interface AntesDepoisDados { hoje: string; linhas: LinhaAntesDepois[]; semInicio: { user_id: string; nome: string }[]; coberturaCrm: { min: string | null; max: string | null } }
+
+export const getAntesDepois = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<AntesDepoisDados> => {
+    await requireAdmin(context);
+    const s = db(context);
+    const hoje = diaBR(new Date());
+    const { ini, fim } = intervaloDoPeriodo("pessoas");
+    const [pessoas, escolhidas] = await Promise.all([linhasExtensao(context, ini, fim), s.from("extensao_inicio").select("user_id, inicio")]);
+    const escolha = new Map(((escolhidas.error ? [] : escolhidas.data ?? []) as { user_id: string; inicio: string }[]).map((r) => [r.user_id, r.inicio]));
+
+    const vendas = new Map<string, Record<string, number>>();
+    let min: string | null = null, max: string | null = null;
+    for (let i = 0; i < 40; i++) {
+      const r = await s.from("crm_fechamentos").select("user_id, periodo_ini, vendas").order("periodo_ini").order("id").range(i * 1000, i * 1000 + 999);
+      if (r.error) break;
+      for (const x of (r.data ?? []) as { user_id: string; periodo_ini: string; vendas: number }[]) {
+        const m = vendas.get(x.user_id) ?? {};
+        m[x.periodo_ini] = (m[x.periodo_ini] ?? 0) + x.vendas;
+        vendas.set(x.user_id, m);
+        if (!min || x.periodo_ini < min) min = x.periodo_ini;
+        if (!max || x.periodo_ini > max) max = x.periodo_ini;
+      }
+      if ((r.data ?? []).length < 1000) break;
+    }
+
+    const linhas: LinhaAntesDepois[] = [];
+    const semInicio: { user_id: string; nome: string }[] = [];
+    for (const p of pessoas) {
+      const escolhida = escolha.get(p.user_id);
+      const inicio = escolhida ?? (p.primeiro_evento ? diaBR(p.primeiro_evento) : null);
+      if (!inicio) { semInicio.push({ user_id: p.user_id, nome: p.nome }); continue; }
+      linhas.push({
+        user_id: p.user_id, nome: p.nome, origem: escolhida ? "escolhida" : "primeiro_uso",
+        ...compararAntesDepois({ inicio, hoje, vendasPorDia: vendas.get(p.user_id) ?? {}, cobertura: { min, max } }),
+      });
+    }
+    return { hoje, linhas, semInicio, coberturaCrm: { min, max } };
+  });
+
+/** Define (ou limpa, com inicio nulo) a data de início do atendente. */
+export const salvarInicioAntesDepois = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ user_id: z.string().uuid(), inicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context);
+    const s = db(context);
+    if (!data.inicio) check(await s.from("extensao_inicio").delete().eq("user_id", data.user_id));
+    else check(await s.from("extensao_inicio").upsert({ user_id: data.user_id, inicio: data.inicio, definido_por: context.userId, updated_at: new Date().toISOString() }, { onConflict: "user_id" }));
+    return { ok: true };
+  });
