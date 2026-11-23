@@ -16,6 +16,8 @@ import {
 
 type Ctx = { supabase: unknown; userId: string };
 const db = (ctx: Ctx) => ctx.supabase as any;
+// Escritas de sessões/respostas só pelo servidor (o banco não aceita escrita direta do usuário).
+const adm = async () => (await import("@/integrations/supabase/client.server")).supabaseAdmin as any;
 const UUID = z.string().uuid();
 function check<T>(r: { data: T; error: { message: string } | null }): T {
   if (r.error) throw new Error(r.error.message);
@@ -277,7 +279,7 @@ export const iniciarAquecimento = createServerFn({ method: "POST" })
       return { sessao_id: sessao.id, tipo, tema_id: data.tema_id ?? null, cartoes: [], concluida: true, limite, nota_acerto: cfg.nota_acerto };
     }
     if (!sessao) {
-      sessao = check(await s.from("aquecimento_sessoes").insert({ user_id: context.userId, tipo, tema_id: data.tema_id ?? null, data: hoje }).select("id, status").single()) as { id: string; status: string };
+      sessao = check(await (await adm()).from("aquecimento_sessoes").insert({ user_id: context.userId, tipo, tema_id: data.tema_id ?? null, data: hoje }).select("id, status").single()) as { id: string; status: string };
     }
 
     // Retoma o que já foi respondido nesta sessão e completa com cartões novos.
@@ -311,7 +313,7 @@ async function abrirSessaoEExercicio(ctx: Ctx, sessaoId: string, exercicioId: st
 }
 
 async function gravarResposta(ctx: Ctx, sessaoId: string, e: ExRow, acertou: boolean, nota: number | null) {
-  check(await db(ctx).from("aquecimento_respostas").insert({
+  check(await (await adm()).from("aquecimento_respostas").insert({
     sessao_id: sessaoId, user_id: ctx.userId, exercicio_id: e.id, tema_id: e.tema_id, tipo: e.tipo, acertou, nota,
   }));
 }
@@ -383,7 +385,7 @@ export const concluirAquecimento = createServerFn({ method: "POST" })
     // Sessão sem nenhuma resposta (só pulou) não conta como concluída.
     let concluida = ses.status === "concluida";
     if (!concluida && resp.length > 0) {
-      check(await s.from("aquecimento_sessoes").update({ status: "concluida", concluida_em: new Date().toISOString() }).eq("id", ses.id).eq("user_id", context.userId));
+      check(await (await adm()).from("aquecimento_sessoes").update({ status: "concluida", concluida_em: new Date().toISOString() }).eq("id", ses.id).eq("user_id", context.userId));
       concluida = true;
     }
 

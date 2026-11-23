@@ -13,6 +13,7 @@ import {
 
 type Ctx = { supabase: unknown; userId: string };
 const db = (ctx: Ctx) => ctx.supabase as any;
+const adm = async () => (await import("@/integrations/supabase/client.server")).supabaseAdmin as any;
 const UUID = z.string().uuid();
 function check<T>(r: { data: T; error: { message: string } | null }): T {
   if (r.error) throw new Error(r.error.message);
@@ -112,7 +113,7 @@ export const confirmarMudanca = createServerFn({ method: "POST" })
       if (data.indice == null) throw new Error("Responda a pergunta antes de confirmar.");
       acertou = e.pergunta.alternativas[data.indice]?.correta === true;
     }
-    const { error } = await db(context).from("changelog_confirmacoes")
+    const { error } = await (await adm()).from("changelog_confirmacoes")
       .insert({ entry_id: data.entry_id, user_id: context.userId, acertou_checagem: acertou });
     // Já confirmada antes (índice único): trata como feito.
     if (error && error.code !== "23505") throw new Error(error.message);

@@ -8,6 +8,13 @@
       "when": 1795129951318,
       "tag": "0000_amor_saude_schema_sync",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795440258646,
+      "tag": "0001_security_staff_only_reads",
+      "breakpoints": true
     }
   ]
 }

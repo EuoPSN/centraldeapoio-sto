@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { csvCell } from "@/lib/csv-safe";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -160,7 +161,7 @@ function Page() {
       u.ligacoes + u.mensagens + u.ztalk, u.oportunidades, u.vendas
     ]);
     const csv = [headers, ...dataRows]
-      .map((r) => r.map((c: any) => `"${String(c).replace(/"/g, '""')}"`).join(";"))
+      .map((r) => r.map((c: any) => csvCell(c)).join(";"))
       .join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);

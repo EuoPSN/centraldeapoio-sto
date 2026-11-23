@@ -102,7 +102,11 @@ export const upsertNode = createServerFn({ method: "POST" })
 
 export const deleteNode = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => d as { id: string })
+  .inputValidator((d: unknown) => {
+    const id = (d as { id?: unknown })?.id;
+    if (typeof id !== "string" || !/^[0-9a-f-]{36}$/i.test(id)) throw new Error("id inválido");
+    return { id };
+  })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const db = context.supabase as any;

@@ -21,7 +21,17 @@ export const listQuizzes = createServerFn({ method: "GET" })
         questions:quiz_questions(*, options:quiz_options(*))`)
       .order("position", { ascending: true });
     if (error) throw new Error(error.message);
-    return data ?? [];
+    const isAdmin = await isAdminUser(context.supabase as any, context.userId);
+    if (isAdmin) return data ?? [];
+    // Funcionários não recebem o gabarito.
+    return (data ?? []).map((q: any) => ({
+      ...q,
+      questions: (q.questions ?? []).map((qq: any) => ({
+        ...qq,
+        resposta_esperada: null,
+        options: (qq.options ?? []).map((o: any) => ({ ...o, is_correct: false })),
+      })),
+    }));
   });
 
 const QuizInput = z.object({

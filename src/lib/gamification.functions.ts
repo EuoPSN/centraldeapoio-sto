@@ -1,6 +1,20 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Json } from "@/integrations/supabase/types";
+import { z } from "zod";
+
+const Txt = z.string().max(4000);
+const ResultInput = z.object({
+  difficulty: z.enum(["facil", "medio", "dificil", "especialista"]),
+  nota: z.number().min(0).max(100),
+  resumo: Txt,
+  pontos_fortes: z.array(Txt).max(30),
+  pontos_melhoria: z.array(Txt).max(30),
+  erros: z.array(Txt).max(30),
+  trechos: z.any().optional(),
+  mensagem_fraca: Txt.nullish(),
+  reescrita: Txt.nullish(),
+});
 
 export const xpForDifficulty = (difficulty: string, nota: number) => {
   const base: Record<string, number> = { facil: 10, medio: 20, dificil: 35, especialista: 50 };
@@ -18,14 +32,10 @@ export const levelFromXp = (xp: number) => {
 
 export const saveSimulatorResult = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => d as {
-    profile_id: string; profile_name: string; difficulty: string;
-    nota: number; resumo: string; pontos_fortes: string[];
-    pontos_melhoria: string[]; erros: string[];
-    trechos?: Json; mensagem_fraca?: string | null; reescrita?: string | null;
-  })
+  .inputValidator((d: unknown) => ResultInput.extend({ profile_id: z.string().min(1).max(100), profile_name: z.string().max(200) }).parse(d))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("simulator_results").insert({
+    const { supabaseAdmin: admRes } = await import("@/integrations/supabase/client.server");
+    const { error } = await admRes.from("simulator_results").insert({
       user_id: context.userId,
       profile_id: data.profile_id,
       profile_name: data.profile_name,
@@ -69,14 +79,10 @@ export const saveSimulatorResult = createServerFn({ method: "POST" })
 // grava com tipo='problema' e soma XP na coluna separada xp_problemas (ranking à parte).
 export const saveProblemSimulatorResult = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => d as {
-    scenario_id: string; scenario_name: string; difficulty: string;
-    nota: number; resumo: string; pontos_fortes: string[];
-    pontos_melhoria: string[]; erros: string[];
-    trechos?: Json; mensagem_fraca?: string | null; reescrita?: string | null;
-  })
+  .inputValidator((d: unknown) => ResultInput.extend({ scenario_id: z.string().min(1).max(100), scenario_name: z.string().max(200) }).parse(d))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("simulator_results").insert({
+    const { supabaseAdmin: admRes } = await import("@/integrations/supabase/client.server");
+    const { error } = await admRes.from("simulator_results").insert({
       user_id: context.userId,
       tipo: "problema",
       scenario_id: data.scenario_id,

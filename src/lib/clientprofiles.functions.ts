@@ -31,9 +31,9 @@ export const listClientProfilesForTraining = createServerFn({ method: "GET" })
     const { data, error } = await (supabaseAdmin as any)
       .from("client_profiles")
       .select(`id, name, personality, difficulty, objectives, objections, behaviors,
-        cliente_nome, cliente_cpf, cliente_regiao, cliente_genero, cliente_telefone, cliente_origem_lead,
-        endereco_rua, endereco_numero, endereco_complemento, endereco_bairro, endereco_cidade, endereco_estado, endereco_cep,
-        dependentes, category_id, category:categories(id,name,slug), created_at`)
+        cliente_nome, cliente_regiao, cliente_genero, cliente_origem_lead,
+        endereco_cidade, endereco_estado,
+        category_id, category:categories(id,name,slug), created_at`)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return data ?? [];

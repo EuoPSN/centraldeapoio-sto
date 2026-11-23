@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { csvCell } from "@/lib/csv-safe";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { listAllSimulatorResults, deleteSimulatorResult } from "@/lib/admin-results.functions";
@@ -126,7 +127,7 @@ export function SimulatorResultsTab() {
   ]);
 
   const csvContent = [headers, ...rows]
-    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(";"))
+    .map((row) => row.map((cell) => csvCell(cell)).join(";"))
     .join("\n");
 
   const BOM = "\uFEFF";
