@@ -2,13 +2,15 @@
 import { chaveNumero } from "./numeros";
 import type { ResultadoIdentificar, ResultadoLer } from "../content/ler";
 import type { Relatorio } from "../content/diagnostico";
+import type { DadosDoContato } from "../content/contato";
 
 export type PedidoContent =
   | { tipo: "omnia:identificar" }
   | { tipo: "omnia:ler"; usuarioId: string; hashesIgnorados: string[] }
-  | { tipo: "omnia:diagnostico"; versao: string };
+  | { tipo: "omnia:diagnostico"; versao: string }
+  | { tipo: "omnia:contato" };
 
-export type { ResultadoIdentificar, ResultadoLer, Relatorio };
+export type { ResultadoIdentificar, ResultadoLer, Relatorio, DadosDoContato };
 
 /** O painel pede ao service worker, que repassa ao content script da aba ativa do WhatsApp Web. */
 export interface PedidoViaBackground { para: "content"; pedido: PedidoContent }

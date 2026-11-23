@@ -1,6 +1,7 @@
 // Relatório de diagnóstico da leitura. Descreve SÓ ESTRUTURA: nunca texto de nós, nomes de
 // contato, números nem mensagens. Só consulta o DOM (nada é clicado, rolado ou escrito).
 import { SELETORES } from "./selectors";
+import { lerDadosDoContato } from "./contato";
 import { acharCabecalho, acharPainel, avaliarConversa, elementosDeMensagem, textoDe, tituloDoCabecalho } from "./ler";
 import type { MetodoDirecao } from "./ler";
 
@@ -67,6 +68,8 @@ export interface Relatorio {
     subtitulo?: { forma_mascarada: string; nomes: "0" | "1" | "2+" };
     observacoes?: string[];
   };
+  /** Aba "Dados do contato": detecção e forma mascarada do texto do número (nunca o número nem o nome). */
+  dados_do_contato?: { aba_detectada: boolean; seletor_que_decidiu: string; forma_mascarada_do_texto: string; numero_encontrado: boolean };
   /** Preenchido pelo painel: motivo do último resultado de leitura nesta sessão do painel. */
   ultimo_resultado_no_painel?: { codigo: string; motivo: string } | null;
 }
@@ -192,6 +195,11 @@ function areaDeMensagens(painel: Element, primeira: Element | null): Element {
 // Relatório
 // ---------------------------------------------------------------------------
 
+function dadosDoContatoRelatorio(doc: Document) {
+  const d = lerDadosDoContato(doc);
+  return { aba_detectada: d.aba_detectada, seletor_que_decidiu: d.seletor_que_decidiu, forma_mascarada_do_texto: d.forma_mascarada, numero_encontrado: !!d.numero };
+}
+
 export function montarDiagnostico(doc: Document, extra: { versao: string; dominio: string }): Relatorio {
   const painel = acharPainel(doc);
   const cab = painel ? acharCabecalho(painel) : null;
@@ -238,6 +246,7 @@ export function montarDiagnostico(doc: Document, extra: { versao: string; domini
       arvore: resumir(areaDeMensagens(painel, msgs[0]?.el ?? null), 0, proibidas),
     },
     formas_dos_identificadores: formasDosIdentificadores(painel, msgs.find((m) => m.remetente)?.el ?? msgs[0]?.el ?? null),
+    dados_do_contato: dadosDoContatoRelatorio(doc),
     direcao: { metodos: a.metodosDeDirecao, autores_ignorados_em_citacao: a.autoresEmCitacao },
     deteccao: {
       sinais_de_grupo: a.sinais, verificacoes_positivas: a.positivas,

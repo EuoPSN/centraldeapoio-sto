@@ -95,6 +95,29 @@ export const SELETORES = {
   /** Mensagem citada dentro de outra: não entra como texto da mensagem. */
   citada: ['[data-testid="quoted-message"]', '[aria-label*="citada"]', '[aria-label*="Quoted"]'],
 
+  /** ABA "Dados do contato" (painel lateral que o ATENDENTE abre; a extensão nunca a abre).
+   * O DOM real ainda NÃO foi observado: lista ampla com fallbacks, do mais específico ao mais genérico.
+   * Só vale se o título dentro da região (tituloDaAba) for igual ao título da conversa aberta.
+   * Ajuste aqui depois do primeiro "Copiar diagnóstico" com a aba aberta. */
+  abaDadosDoContato: [
+    '[data-testid="contact-info-drawer"]',
+    '[data-testid*="contact-info"]',
+    '[data-testid*="contact_info"]',
+    'aside[aria-label*="contato" i]',
+    'aside[aria-label*="contact" i]',
+    'aside[aria-label*="dados" i]',
+    'section[aria-label*="contato" i]',
+    'section[aria-label*="contact" i]',
+    'section[aria-label*="dados" i]',
+    '[role="complementary"]',
+    'aside[data-testid*="info"]',
+    'section[data-testid*="info"]',
+    "aside",
+  ],
+
+  /** Título (nome ou número) mostrado no topo da aba "Dados do contato". */
+  tituloDaAba: ['[data-testid*="title"]', "h1", "h2", '[role="heading"]', "span[title]", '[aria-level]'],
+
   /** Horário alternativo (quando não há data-pre-plain-text). */
   horario: ['[data-testid="msg-meta"] span', "span[aria-hidden='true']"],
 } as const;
