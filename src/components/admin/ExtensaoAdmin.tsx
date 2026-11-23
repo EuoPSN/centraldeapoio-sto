@@ -10,6 +10,7 @@ import {
 import { GoldButton, OutlineButton } from "@/components/scripts/shared";
 import { AdminListDetail, FieldLabel, FilterPill, inputCls } from "@/components/admin/AdminListDetail";
 import { BaixarInteligenciaAdmin } from "@/components/copiloto/BaixarInteligencia";
+import { FechamentosCrm } from "@/components/admin/FechamentosCrm";
 
 const DADOS_KEY = ["admin-extensao"] as const;
 
@@ -99,6 +100,8 @@ export function ExtensaoAdminTab() {
         <GoldButton className="h-9 text-[14px]" onClick={() => salvar.mutate(draft)} disabled={salvar.isPending || !horarioOk}>Salvar</GoldButton>
         <OutlineButton className="h-9 text-[14px]" onClick={() => setDraft(doBanco(dados.config))}>Cancelar</OutlineButton>
       </div>
+
+      <FechamentosCrm />
     </div>
   );
 
