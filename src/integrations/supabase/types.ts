@@ -1446,6 +1446,63 @@ export type Database = {
           },
         ]
       }
+      crm_fechamentos: {
+        Row: {
+          enviado_em: string
+          enviado_por: string | null
+          id: string
+          periodo_fim: string
+          periodo_ini: string
+          sem_ticket: number
+          tickets_fechados: number
+          user_id: string
+          vendas: number
+        }
+        Insert: {
+          enviado_em?: string
+          enviado_por?: string | null
+          id?: string
+          periodo_fim: string
+          periodo_ini: string
+          sem_ticket?: number
+          tickets_fechados?: number
+          user_id: string
+          vendas?: number
+        }
+        Update: {
+          enviado_em?: string
+          enviado_por?: string | null
+          id?: string
+          periodo_fim?: string
+          periodo_ini?: string
+          sem_ticket?: number
+          tickets_fechados?: number
+          user_id?: string
+          vendas?: number
+        }
+        Relationships: []
+      }
+      crm_vendedor_map: {
+        Row: {
+          created_at: string
+          updated_at: string
+          user_id: string
+          vendedor_nome_planilha: string
+        }
+        Insert: {
+          created_at?: string
+          updated_at?: string
+          user_id: string
+          vendedor_nome_planilha: string
+        }
+        Update: {
+          created_at?: string
+          updated_at?: string
+          user_id?: string
+          vendedor_nome_planilha?: string
+        }
+        Relationships: []
+      }
       decision_edges: {
         Row: {
           created_at: string | null
@@ -1743,6 +1800,33 @@ export type Database = {
         }
         Relationships: []
       }
+      extensao_config: {
+        Row: {
+          fuso: string
+          horario: Json
+          id: number
+          meta_minutos: number
+          nova_conversa_horas: number
+          updated_at: string
+        }
+        Insert: {
+          fuso?: string
+          horario?: Json
+          id?: number
+          meta_minutos?: number
+          nova_conversa_horas?: number
+          updated_at?: string
+        }
+        Update: {
+          fuso?: string
+          horario?: Json
+          id?: number
+          meta_minutos?: number
+          nova_conversa_horas?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       extensao_eventos: {
         Row: {
           created_at: string
@@ -1778,6 +1862,63 @@ export type Database = {
         Update: {
           created_at?: string
           numero_hash?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      extensao_inicio: {
+        Row: {
+          definido_por: string | null
+          inicio: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          definido_por?: string | null
+          inicio: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          definido_por?: string | null
+          inicio?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      extensao_tempos: {
+        Row: {
+          chat_key: string
+          created_at: string
+          dentro_da_meta: boolean | null
+          dia: string
+          id: string
+          inicio_em: string
+          minutos_uteis: number | null
+          resposta_em: string | null
+          user_id: string
+        }
+        Insert: {
+          chat_key: string
+          created_at?: string
+          dentro_da_meta?: boolean | null
+          dia: string
+          id?: string
+          inicio_em: string
+          minutos_uteis?: number | null
+          resposta_em?: string | null
+          user_id?: string
+        }
+        Update: {
+          chat_key?: string
+          created_at?: string
+          dentro_da_meta?: boolean | null
+          dia?: string
+          id?: string
+          inicio_em?: string
+          minutos_uteis?: number | null
+          resposta_em?: string | null
           user_id?: string
         }
         Relationships: []
@@ -3698,6 +3839,7 @@ export type Database = {
           podio_constantes: boolean
           podio_ensinam: boolean
           podio_evoluiram: boolean
+          podio_fechamentos: boolean
           podio_respondidas: boolean
           podio_treino: boolean
           updated_at: string
@@ -3709,6 +3851,7 @@ export type Database = {
           podio_constantes?: boolean
           podio_ensinam?: boolean
           podio_evoluiram?: boolean
+          podio_fechamentos?: boolean
           podio_respondidas?: boolean
           podio_treino?: boolean
           updated_at?: string
@@ -3720,6 +3863,7 @@ export type Database = {
           podio_constantes?: boolean
           podio_ensinam?: boolean
           podio_evoluiram?: boolean
+          podio_fechamentos?: boolean
           podio_respondidas?: boolean
           podio_treino?: boolean
           updated_at?: string
@@ -3907,6 +4051,7 @@ export type Database = {
           status: string
           subetapa_fechamento: string | null
           telefone: string | null
+          telefone_hash: string | null
           updated_at: string
           user_id: string
           vezes_voltou: number
@@ -3931,6 +4076,7 @@ export type Database = {
           status?: string
           subetapa_fechamento?: string | null
           telefone?: string | null
+          telefone_hash?: string | null
           updated_at?: string
           user_id?: string
           vezes_voltou?: number
@@ -3955,6 +4101,7 @@ export type Database = {
           status?: string
           subetapa_fechamento?: string | null
           telefone?: string | null
+          telefone_hash?: string | null
           updated_at?: string
           user_id?: string
           vezes_voltou?: number
@@ -4509,6 +4656,62 @@ export type Database = {
           total: number
         }[]
       }
+      crm_gravar_fechamentos: {
+        Args: { _fim: string; _ini: string; _linhas: Json }
+        Returns: number
+      }
+      extensao_admin_resumo: {
+        Args: { _fim: string; _ini: string }
+        Returns: {
+          atualizados: number
+          conversas_novas: number
+          dentro_da_meta: number
+          ignorados: number
+          instalou: boolean
+          nome: string
+          pausas: number
+          primeiro_evento: string
+          resposta_media: number
+          tickets_criados: number
+          user_id: string
+        }[]
+      }
+      extensao_minutos_uteis: {
+        Args: { _fim: string; _ini: string }
+        Returns: number
+      }
+      extensao_resumo_semanal: {
+        Args: { _fim: string; _ini: string; _user?: string }
+        Returns: {
+          atualizados: number
+          ignorados: number
+          pausas: number
+          semana: string
+          tickets_criados: number
+          user_id: string
+        }[]
+      }
+      extensao_tempo_dia: {
+        Args: { _fim: string; _ini: string; _user?: string }
+        Returns: {
+          conversas_novas: number
+          dentro_da_meta: number
+          dia: string
+          media_minutos: number
+          sem_resposta: number
+          user_id: string
+        }[]
+      }
+      extensao_tempo_resumo: { Args: { _dia: string }; Returns: Json }
+      fechar_tickets_por_crm: {
+        Args: {
+          _fim: string
+          _hashes: string[]
+          _ini: string
+          _user_id: string
+        }
+        Returns: Json
+      }
       increment_amor_saude_use: {
         Args: { item_id: string; item_tipo: string }
         Returns: undefined
@@ -4612,6 +4815,7 @@ export type Database = {
         }[]
       }
       ranking_podios: { Args: { p_mes: string }; Returns: Json }
+      telefone_hash: { Args: { _tel: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "funcionario"
