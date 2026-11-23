@@ -29,6 +29,11 @@ const aba = (titulo: string, extra: string) =>
   `<aside aria-label="Dados do contato"><header><span dir="auto" title="${titulo}">${titulo}</span></header><div><span>${extra}</span></div></aside>`;
 
 describe("1d · C · Dados do contato", () => {
+  it("DOM sem aside/aria/testid (divs): acha pelo cabeçalho 'Dados do contato'", () => {
+    base(`<div class="x"><div><div><span>Dados do contato</span></div></div><div><div>${NOME}</div><div>+55 31 9438-0020</div></div></div>`);
+    const d = lerDadosDoContato(document);
+    expect(d).toMatchObject({ aba_detectada: true, numero: "553194380020", seletor_que_decidiu: "cabecalho:Dados do contato" });
+  });
   it("aba aberta com número: lê, e o diagnóstico traz só a forma mascarada", () => {
     base(aba(NOME, "+55 31 99123-4567"));
     const d = lerDadosDoContato(document);
