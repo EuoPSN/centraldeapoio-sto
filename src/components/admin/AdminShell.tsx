@@ -41,6 +41,7 @@ import { CadenciaAdminTab, MotivosPerdaAdminTab } from "@/components/admin/Retom
 import { CerebroAdminTab, RaioxEquipeTab } from "@/components/admin/CerebroAdmin";
 import { MensagensVendemAdminTab } from "@/components/admin/MensagensVendemAdmin";
 import { ConversasEnviadasAdminTab } from "@/components/admin/ConversasEnviadasAdmin";
+import { ScriptsLigacaoAdminTab } from "@/components/admin/ScriptsLigacaoAdmin";
 import { RoteirosAudioAdminTab } from "@/components/admin/RoteirosAudioAdmin";
 import { DuvidasAdminTab } from "@/components/admin/DuvidasAdmin";
 import { MapaEquipeTab, BancoExerciciosTab, AquecimentoAdminTab } from "@/components/admin/AquecimentoAdmin";
@@ -62,6 +63,7 @@ export const ADMIN_TAB_COMPONENTS: Record<string, ComponentType> = {
   telemedicina: () => <PricingTab defaultTab="telemedicina" />,
   duvidas: DuvidasAdminTab,
   roteirosaudio: RoteirosAudioAdminTab,
+  scriptsligacao: ScriptsLigacaoAdminTab,
   contatos: ContatosTab,
   scriptreview: () => <MensagensEScriptsTab defaultTab="revisar" />,
   objecoes: ObjecoesAdminTab,
