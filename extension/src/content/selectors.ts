@@ -167,3 +167,73 @@ export function qualquer(raiz: ParentNode, lista: readonly string[]): Element[] 
   }
   return Array.from(set);
 }
+
+// ---------------------------------------------------------------------------
+// Lista de conversas (varredura leve do tempo de resposta)
+// O DOM real da lista ainda NÃO foi observado ao vivo: listas amplas com fallback, do mais
+// específico ao mais genérico. Se nada casar, a varredura falha de forma segura (não lê nada).
+// Só LEITURA: nada aqui é usado para clicar, rolar ou abrir conversa.
+// ---------------------------------------------------------------------------
+export const SELETORES_LISTA = {
+  /** Contêiner da lista de conversas (a coluna da esquerda). */
+  lista: ["#pane-side", '[data-testid="chat-list"]', '[aria-label*="lista de conversas" i]', '[aria-label*="chat list" i]'],
+
+  /** Cada conversa visível na lista. Só as que já estão renderizadas na tela. */
+  item: ['[role="listitem"]', '[data-testid="cell-frame-container"]', '[role="row"]', '[role="gridcell"]'],
+
+  /** Nome (ou número) da conversa. O primeiro com texto vale. */
+  nome: ['[data-testid="cell-frame-title"] span[title]', "span[title]", '[data-testid="cell-frame-title"]', 'span[dir="auto"]'],
+
+  /** Prévia da última mensagem. */
+  previa: [
+    '[data-testid="last-msg"] span[title]',
+    '[data-testid="cell-frame-secondary"] span[title]',
+    '[data-testid="cell-frame-secondary"] span[dir="ltr"]',
+    'span[dir="ltr"][title]',
+    'span[dir="ltr"]',
+  ],
+
+  /** Ticks de mensagem ENVIADA na prévia (relógio, um check, dois checks, lido). Presença = última mensagem é do atendente. */
+  statusEnviada: [
+    '[data-icon="msg-check"]',
+    '[data-icon="msg-dblcheck"]',
+    '[data-icon="msg-time"]',
+    '[data-icon="msg-check-light"]',
+    '[data-icon="msg-dblcheck-light"]',
+    '[data-icon^="status-"]',
+    '[data-testid="last-msg-status"]',
+    '[data-testid^="msg-"][data-testid$="check"]',
+  ],
+
+  /** Marca de mensagem não lida (bolinha/contador). */
+  naoLida: [
+    '[aria-label*="não lida" i]',
+    '[aria-label*="nao lida" i]',
+    '[aria-label*="unread" i]',
+    '[data-testid="icon-unread-count"]',
+    '[data-icon="unread-count"]',
+    '[data-testid="icon-unread-mark"]',
+  ],
+
+  /** Sinais de grupo, comunidade, lista de transmissão, canal e Status. Qualquer um = ignora. */
+  naoIndividual: [
+    '[data-icon*="group"]',
+    '[data-icon*="community"]',
+    '[data-icon*="broadcast"]',
+    '[data-icon*="newsletter"]',
+    '[data-icon*="channel"]',
+    '[data-icon="status"]',
+    '[data-icon*="status-ring"]',
+    '[data-icon="status-v3"]',
+    '[data-testid*="group"]',
+    '[data-testid*="community"]',
+    '[data-testid*="broadcast"]',
+    '[data-testid*="status-ring"]',
+  ],
+
+  /** Onde procurar o horário (texto curto "14:32", "ontem", "22/11/2026"). */
+  horario: ['[data-testid="cell-frame-primary-detail"]', '[data-testid="cell-frame-primary"]', "div", "span"],
+} as const;
+
+/** Prévia de conversa em andamento: não é mensagem, a direção é desconhecida. */
+export const PREVIAS_TRANSITORIAS = [/^digitando/i, /^gravando/i, /^typing/i, /^recording/i, /^online$/i];

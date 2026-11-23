@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 // O content script só pode LER. Guarda estática contra ações no WhatsApp.
-const arquivos = ["../src/content/ler.ts", "../src/content/whatsapp.ts", "../src/content/selectors.ts", "../src/content/diagnostico.ts", "../src/content/contato.ts"];
+const arquivos = ["../src/content/ler.ts", "../src/content/whatsapp.ts", "../src/content/selectors.ts", "../src/content/diagnostico.ts", "../src/content/contato.ts", "../src/content/lista.ts"];
 const proibidos: [RegExp, string][] = [
   [/\.click\s*\(/, ".click("],
   [/\.scroll(To|By|IntoView)?\s*\(/, "scroll"],
