@@ -58,6 +58,7 @@ import { Route as AuthenticatedAmorSaudeTelemedicinaRouteImport } from './routes
 import { Route as AuthenticatedScriptsIndexRouteImport } from './routes/_authenticated/scripts.index'
 import { Route as AuthenticatedScriptsBibliotecaRouteImport } from './routes/_authenticated/scripts.biblioteca'
 import { Route as AuthenticatedScriptsClienteDisseRouteImport } from './routes/_authenticated/scripts.cliente-disse'
+import { Route as AuthenticatedScriptsRoteirosAudioRouteImport } from './routes/_authenticated/scripts.roteiros-audio'
 import { Route as ApiExtensaoClienteDisseRouteImport } from './routes/api/extensao/cliente-disse'
 import { Route as ApiExtensaoLerConversaRouteImport } from './routes/api/extensao/ler-conversa'
 import { Route as ApiExtensaoTicketRouteImport } from './routes/api/extensao/ticket'
@@ -334,6 +335,12 @@ const AuthenticatedScriptsClienteDisseRoute =
     path: '/scripts/cliente-disse',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedScriptsRoteirosAudioRoute =
+  AuthenticatedScriptsRoteirosAudioRouteImport.update({
+    id: '/scripts/roteiros-audio',
+    path: '/scripts/roteiros-audio',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiExtensaoClienteDisseRoute = ApiExtensaoClienteDisseRouteImport.update({
   id: '/api/extensao/cliente-disse',
   path: '/api/extensao/cliente-disse',
@@ -417,6 +424,7 @@ export interface FileRoutesByFullPath {
   '/amor-saude/telemedicina': typeof AuthenticatedAmorSaudeTelemedicinaRoute
   '/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
   '/scripts/cliente-disse': typeof AuthenticatedScriptsClienteDisseRoute
+  '/scripts/roteiros-audio': typeof AuthenticatedScriptsRoteirosAudioRoute
   '/api/extensao/cliente-disse': typeof ApiExtensaoClienteDisseRoute
   '/api/extensao/ler-conversa': typeof ApiExtensaoLerConversaRoute
   '/api/extensao/ticket': typeof ApiExtensaoTicketRoute
@@ -473,6 +481,7 @@ export interface FileRoutesByTo {
   '/amor-saude/telemedicina': typeof AuthenticatedAmorSaudeTelemedicinaRoute
   '/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
   '/scripts/cliente-disse': typeof AuthenticatedScriptsClienteDisseRoute
+  '/scripts/roteiros-audio': typeof AuthenticatedScriptsRoteirosAudioRoute
   '/api/extensao/cliente-disse': typeof ApiExtensaoClienteDisseRoute
   '/api/extensao/ler-conversa': typeof ApiExtensaoLerConversaRoute
   '/api/extensao/ticket': typeof ApiExtensaoTicketRoute
@@ -532,6 +541,7 @@ export interface FileRoutesById {
   '/_authenticated/amor-saude/telemedicina': typeof AuthenticatedAmorSaudeTelemedicinaRoute
   '/_authenticated/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
   '/_authenticated/scripts/cliente-disse': typeof AuthenticatedScriptsClienteDisseRoute
+  '/_authenticated/scripts/roteiros-audio': typeof AuthenticatedScriptsRoteirosAudioRoute
   '/api/extensao/cliente-disse': typeof ApiExtensaoClienteDisseRoute
   '/api/extensao/ler-conversa': typeof ApiExtensaoLerConversaRoute
   '/api/extensao/ticket': typeof ApiExtensaoTicketRoute
@@ -591,6 +601,7 @@ export interface FileRouteTypes {
     | '/amor-saude/telemedicina'
     | '/scripts/biblioteca'
     | '/scripts/cliente-disse'
+    | '/scripts/roteiros-audio'
     | '/api/extensao/cliente-disse'
     | '/api/extensao/ler-conversa'
     | '/api/extensao/ticket'
@@ -647,6 +658,7 @@ export interface FileRouteTypes {
     | '/amor-saude/telemedicina'
     | '/scripts/biblioteca'
     | '/scripts/cliente-disse'
+    | '/scripts/roteiros-audio'
     | '/api/extensao/cliente-disse'
     | '/api/extensao/ler-conversa'
     | '/api/extensao/ticket'
@@ -705,6 +717,7 @@ export interface FileRouteTypes {
     | '/_authenticated/amor-saude/telemedicina'
     | '/_authenticated/scripts/biblioteca'
     | '/_authenticated/scripts/cliente-disse'
+    | '/_authenticated/scripts/roteiros-audio'
     | '/api/extensao/cliente-disse'
     | '/api/extensao/ler-conversa'
     | '/api/extensao/ticket'
@@ -1075,6 +1088,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedScriptsClienteDisseRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/scripts/roteiros-audio': {
+      id: '/_authenticated/scripts/roteiros-audio'
+      path: '/scripts/roteiros-audio'
+      fullPath: '/scripts/roteiros-audio'
+      preLoaderRoute: typeof AuthenticatedScriptsRoteirosAudioRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/extensao/cliente-disse': {
       id: '/api/extensao/cliente-disse'
       path: '/api/extensao/cliente-disse'
@@ -1191,6 +1211,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAjudaTutoriaisPaginasRoute: typeof AuthenticatedAjudaTutoriaisPaginasRoute
   AuthenticatedScriptsBibliotecaRoute: typeof AuthenticatedScriptsBibliotecaRoute
   AuthenticatedScriptsClienteDisseRoute: typeof AuthenticatedScriptsClienteDisseRoute
+  AuthenticatedScriptsRoteirosAudioRoute: typeof AuthenticatedScriptsRoteirosAudioRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAjudaIndexRoute: typeof AuthenticatedAjudaIndexRoute
   AuthenticatedScriptsIndexRoute: typeof AuthenticatedScriptsIndexRoute
@@ -1235,6 +1256,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedAjudaTutoriaisPaginasRoute,
   AuthenticatedScriptsBibliotecaRoute: AuthenticatedScriptsBibliotecaRoute,
   AuthenticatedScriptsClienteDisseRoute: AuthenticatedScriptsClienteDisseRoute,
+  AuthenticatedScriptsRoteirosAudioRoute:
+    AuthenticatedScriptsRoteirosAudioRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedAjudaIndexRoute: AuthenticatedAjudaIndexRoute,
   AuthenticatedScriptsIndexRoute: AuthenticatedScriptsIndexRoute,

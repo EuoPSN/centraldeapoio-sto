@@ -77,7 +77,14 @@ function ScriptsHub() {
           footer="Objeções e fechamento"
         />
         <HubCard icon={Phone} title="Scripts de ligação" text="Roteiro da ligação com respostas para cada objeção." badge="Em breve" soon />
-        <HubCard icon={AudioLines} title="Roteiros de áudio" text="O texto de como falar e um áudio de exemplo." badge="Em breve" soon />
+        <HubCard
+          to="/scripts/roteiros-audio"
+          dataTour="scripts-5"
+          icon={AudioLines}
+          title="Roteiros de áudio"
+          text="O texto de como falar e um áudio de exemplo."
+          footer="Retomada, objeção e fechamento"
+        />
       </div>
 
       <HubSearchField
