@@ -1,0 +1,59 @@
+diff --git a/extension/src/content/contato.ts b/extension/src/content/contato.ts
+index fb3912f..65b0ad2 100644
+--- a/extension/src/content/contato.ts
++++ b/extension/src/content/contato.ts
+@@ -41,6 +41,26 @@ function acharTelefone(aba: Element): { numero: string; texto: string } | null {
+   return null;
+ }
+ 
++const RE_CABECALHO_ABA = /^(dados do contato|informa[cç][õo]es do contato|contact info)$/i;
++
++/** Fallback sem depender de data-testid/aria: acha o cabeçalho "Dados do contato" e sobe até a região
++ * que também mostra o título da conversa (nome ou número) fora do painel da conversa. */
++function abaPorCabecalho(doc: Document, painel: Element, titulo: string): Element | null {
++  const folhas = Array.from(doc.querySelectorAll("*")).filter((e) => e.children.length === 0 && !painel.contains(e));
++  const cab = folhas.filter((e) => RE_CABECALHO_ABA.test(textoDe(e).replace(/[‎‏‪-‮]/g, "").trim()));
++  for (const c of cab) {
++    let r: Element | null = c.parentElement;
++    for (let i = 0; r && i < 14; i++, r = r.parentElement) {
++      if (r.closest("#pane-side") || r.contains(painel)) break;
++      const temTitulo = Array.from(r.querySelectorAll("*")).some(
++        (e) => e.children.length === 0 && normalizarNome(e.getAttribute("title") || textoDe(e)) === titulo,
++      );
++      if (temTitulo) return r;
++    }
++  }
++  return null;
++}
++
+ export function lerDadosDoContato(doc: Document): DadosDoContato {
+   try {
+     const painel = acharPainel(doc);
+@@ -61,6 +81,11 @@ export function lerDadosDoContato(doc: Document): DadosDoContato {
+         return { aba_detectada: true, seletor_que_decidiu: sel, forma_mascarada: achado ? mascararDigitos(achado.texto) : "", numero: achado?.numero ?? "" };
+       }
+     }
++    const alt = abaPorCabecalho(doc, painel, titulo);
++    if (alt) {
++      const achado = acharTelefone(alt);
++      return { aba_detectada: true, seletor_que_decidiu: "cabecalho:Dados do contato", forma_mascarada: achado ? mascararDigitos(achado.texto) : "", numero: achado?.numero ?? "" };
++    }
+   } catch {
+     /* falha de forma segura */
+   }
+diff --git a/extension/tests/telefone-e-contato.test.ts b/extension/tests/telefone-e-contato.test.ts
+index 452b3cc..f6d361e 100644
+--- a/extension/tests/telefone-e-contato.test.ts
++++ b/extension/tests/telefone-e-contato.test.ts
+@@ -29,6 +29,11 @@ const aba = (titulo: string, extra: string) =>
+   `<aside aria-label="Dados do contato"><header><span dir="auto" title="${titulo}">${titulo}</span></header><div><span>${extra}</span></div></aside>`;
+ 
+ describe("1d · C · Dados do contato", () => {
++  it("DOM sem aside/aria/testid (divs): acha pelo cabeçalho 'Dados do contato'", () => {
++    base(`<div class="x"><div><div><span>Dados do contato</span></div></div><div><div>${NOME}</div><div>+55 31 9438-0020</div></div></div>`);
++    const d = lerDadosDoContato(document);
++    expect(d).toMatchObject({ aba_detectada: true, numero: "553194380020", seletor_que_decidiu: "cabecalho:Dados do contato" });
++  });
+   it("aba aberta com número: lê, e o diagnóstico traz só a forma mascarada", () => {
+     base(aba(NOME, "+55 31 99123-4567"));
+     const d = lerDadosDoContato(document);
