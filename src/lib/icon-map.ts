@@ -3,7 +3,7 @@ import {
   Bot, Settings, Lightbulb, Users, Database, Sparkles, FileText, Layers,
   HelpCircle, ListChecks, Network, Play, Palette, Menu, Star, Heart,
   Folder, Shield, Tag, Briefcase, Phone, Mail, Globe, LayoutDashboard,
-  BarChart2, Image, GitBranch, MessageCircleQuestion, Inbox, Handshake, PiggyBank, Repeat2, ListX, Brain, ScanSearch, LayoutGrid, ClipboardList, Flame, Trophy, type LucideIcon,
+  BarChart2, Image, GitBranch, MessageCircleQuestion, Inbox, Handshake, PiggyBank, Repeat2, ListX, Brain, ScanSearch, LayoutGrid, ClipboardList, Flame, Trophy, Video, AudioLines, PhoneCall, type LucideIcon,
 } from "lucide-react";
 
 export const ICONS: Record<string, LucideIcon> = {
@@ -11,7 +11,7 @@ export const ICONS: Record<string, LucideIcon> = {
   Bot, Settings, Lightbulb, Users, Database, Sparkles, FileText, Layers,
   HelpCircle, ListChecks, Network, Play, Palette, Menu, Star, Heart,
   Folder, Shield, Tag, Briefcase, Phone, Mail, Globe, LayoutDashboard,
-  BarChart2, Image, GitBranch, MessageCircleQuestion, Inbox, Handshake, PiggyBank, Repeat2, ListX, Brain, ScanSearch, LayoutGrid, ClipboardList, Flame, Trophy,
+  BarChart2, Image, GitBranch, MessageCircleQuestion, Inbox, Handshake, PiggyBank, Repeat2, ListX, Brain, ScanSearch, LayoutGrid, ClipboardList, Flame, Trophy, Video, AudioLines, PhoneCall,
 };
 
 export function getIcon(name: string | null | undefined): LucideIcon {
