@@ -75,3 +75,8 @@ p { margin: 0 0 8px; }
 .ok::before { content: "✓ "; color: var(--gold-text); font-weight: 700; }
 .nao::before { content: "✕ "; color: var(--gold-text); font-weight: 700; }
 .carregando { color: var(--ink-muted); padding: 24px 0; text-align: center; }
+.barra { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; margin: 8px 0; }
+.barra > span { display: block; height: 100%; background: var(--gold); }
+.barra.acima > span { background: var(--danger); }
+.grande { display: block; font-size: 30px; font-weight: 600; line-height: 1.1; margin: 2px 0 4px; }
+.destaque-num { color: var(--gold-text); }

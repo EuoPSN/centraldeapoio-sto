@@ -4,11 +4,12 @@ import { ConversaAba, type ContextoConversa } from "./Conversa";
 import { Diagnostico } from "./Diagnostico";
 import { Hoje } from "./Hoje";
 import { OQueFaz } from "./OQueFaz";
+import { Tempo } from "./Tempo";
 import { alternarPausa, aceiteConfirmado, confirmarAceite, usePausada } from "../lib/estado";
 import { ignorarContato } from "../lib/ignorados";
 import { registrarEvento } from "../lib/eventos";
 
-type Aba = "conversa" | "hoje";
+type Aba = "conversa" | "hoje" | "tempo";
 type Vista = "ticket" | "cliente_disse" | "oquefaz" | "diagnostico";
 
 export function Principal({ usuarioId, email, onSair }: { usuarioId: string; email: string; onSair: () => void }) {
@@ -64,6 +65,7 @@ export function Principal({ usuarioId, email, onSair }: { usuarioId: string; ema
           <button className="aba" role="tab" aria-selected={aba === "hoje"} onClick={() => setAba("hoje")}>
             Hoje{contagem > 0 && <span className="selo">{contagem}</span>}
           </button>
+          <button className="aba" role="tab" aria-selected={aba === "tempo"} onClick={() => setAba("tempo")}>Tempo de resposta</button>
         </nav>
       )}
       <main className="conteudo">
@@ -78,6 +80,7 @@ export function Principal({ usuarioId, email, onSair }: { usuarioId: string; ema
           <Diagnostico onVoltar={() => setVista("ticket")} />
         ) : null}
         {/* Tudo fica montado: trocar de aba ou voltar ao ticket não perde a proposta em edição. */}
+        {!travado && vista !== "oquefaz" && vista !== "diagnostico" && <Tempo usuarioId={usuarioId} ativa={aba === "tempo"} pausada={pausada} />}
         <div hidden={travado || vista === "oquefaz" || vista === "diagnostico" || aba !== "conversa"}>
           <div hidden={vista !== "ticket"}>
             <ConversaAba
