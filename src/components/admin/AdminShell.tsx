@@ -41,6 +41,7 @@ import { CadenciaAdminTab, MotivosPerdaAdminTab } from "@/components/admin/Retom
 import { CerebroAdminTab, RaioxEquipeTab } from "@/components/admin/CerebroAdmin";
 import { MensagensVendemAdminTab } from "@/components/admin/MensagensVendemAdmin";
 import { ConversasEnviadasAdminTab } from "@/components/admin/ConversasEnviadasAdmin";
+import { DuvidasAdminTab } from "@/components/admin/DuvidasAdmin";
 import { MapaEquipeTab, BancoExerciciosTab, AquecimentoAdminTab } from "@/components/admin/AquecimentoAdmin";
 
 // Ordem dos grupos na entrada, no seletor e em "Organização das abas".
@@ -57,6 +58,8 @@ export const ADMIN_TAB_COMPONENTS: Record<string, ComponentType> = {
   messages: MensagensEScriptsTab,
   atendimentos: () => <MessagesTab defaultTab="fluxo" />,
   pricing: PricingTab,
+  telemedicina: () => <PricingTab defaultTab="telemedicina" />,
+  duvidas: DuvidasAdminTab,
   contatos: ContatosTab,
   scriptreview: () => <MensagensEScriptsTab defaultTab="revisar" />,
   objecoes: ObjecoesAdminTab,

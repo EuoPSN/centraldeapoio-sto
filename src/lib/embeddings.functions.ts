@@ -128,6 +128,23 @@ export const reindexAll = createServerFn({ method: "POST" })
       });
     }
 
+    // Dúvidas frequentes PUBLICADAS entram na Base IA pelo mesmo caminho do conteúdo aprovado.
+    // Rascunho não entra; despublicar ou excluir remove os trechos na próxima reindexação
+    // incremental (o bloco de órfãos abaixo já faz isso).
+    {
+      const duvRes = await (supabaseAdmin as any).from("duvidas_frequentes").select("id,tema,pergunta,resposta").eq("status", "publicada");
+      // Se a migração ainda não rodou, a leitura falha e o bloco é pulado.
+      for (const d of (duvRes.error ? [] : duvRes.data ?? []) as { id: string; tema: string; pergunta: string; resposta: string }[]) {
+        all.push(...chunkText({
+          source_type: "duvida",
+          source_id: d.id,
+          title: d.pergunta,
+          content: `[DÚVIDA FREQUENTE – ${d.tema}] ${d.pergunta}\n\n${d.resposta}`,
+          metadata: { tema: d.tema },
+        }));
+      }
+    }
+
     if (data.reset) {
       const { error: delErr } = await supabaseAdmin
         .from("knowledge_chunks").delete().neq("id", "00000000-0000-0000-0000-000000000000");
