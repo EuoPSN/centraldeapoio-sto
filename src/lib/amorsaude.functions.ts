@@ -96,3 +96,37 @@ export const setAvaliacaoOdonto = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// ---------------------------------------------------------------------------
+// Exclusão em lote (Admin). Uma transação no banco (amor_saude_excluir_lote):
+// apaga os vínculos com unidades/clínicas e os itens; qualquer erro desfaz tudo.
+// ---------------------------------------------------------------------------
+const Ids = z.object({ ids: z.array(z.string().uuid()).min(1, "Nenhum item selecionado.").max(200, "Selecione no máximo 200 itens por vez.") });
+
+async function excluirLote(ctx: { supabase: unknown; userId: string }, tipo: "consulta" | "exame" | "odontologia" | "telemedicina", ids: string[]) {
+  await admin(ctx);
+  const db = ctx.supabase as { rpc: (n: string, p: unknown) => Promise<{ data: number | null; error: { message: string } | null }> };
+  const { data, error } = await db.rpc("amor_saude_excluir_lote", { p_tipo: tipo, p_ids: [...new Set(ids)] });
+  if (error) throw new Error(`Nada foi apagado. ${error.message}`);
+  return { ok: true, apagados: Number(data ?? 0) };
+}
+
+export const deleteManyConsultas = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => Ids.parse(d))
+  .handler(({ data, context }) => excluirLote(context, "consulta", data.ids));
+
+export const deleteManyExames = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => Ids.parse(d))
+  .handler(({ data, context }) => excluirLote(context, "exame", data.ids));
+
+export const deleteManyProcedimentos = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => Ids.parse(d))
+  .handler(({ data, context }) => excluirLote(context, "odontologia", data.ids));
+
+export const deleteManyTelemedicina = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => Ids.parse(d))
+  .handler(({ data, context }) => excluirLote(context, "telemedicina", data.ids));
