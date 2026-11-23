@@ -1,0 +1,49 @@
+Fase D da OMNIA Apoio: **páginas "em breve" e organização do Amor Saúde**. Entregas: (1) capa e link de vídeo na Central de Ajuda e nos fluxos; (2) seleção em lote com exclusão no Admin do Amor Saúde; (3) **Teleconsulta e PA digital**; (4) **Dúvidas frequentes**; (5) **Roteiros de áudio**; (6) **Scripts de ligação** com chave de liberação; (7) hubs, busca e Admin; (8) tutoriais das páginas novas.
+
+Siga os tokens e regras da marca (docs/redesign-omnia/prompt-lovable-base-omnia.md), o padrão lista + painel do Admin e as páginas de Amor Saúde já existentes (Consultas, Exames, Odontologia). Esboços aprovados (siga fielmente; nomes, valores e textos são ilustrativos): docs/fase-d/teleconsulta.png, pa-digital.png, roteiros-audio.png, duvidas.png, admin-lote.png, capa-video.png.
+
+Regras de trabalho (as mesmas das fases anteriores): sem harness visual nem capturas de tela; IA só por cerebro.ts/ai-models.ts; migrações em ordem, cada uma idempotente, com SQL para o SQL editor do Lovable, `GRANT` e políticas explícitas de SELECT/INSERT/UPDATE/DELETE; escrita só para admin com `private.has_role(auth.uid(), 'admin'::app_role)`; funções SECURITY DEFINER com `set search_path`; nada de telefone, nome nem fala de cliente; pagamento só cartão; a equipe só atende por mensagem; nunca escrever "não é plano de saúde". Branch `fase-d-paginas-em-breve`, **um commit por seção**, build + typecheck + testes + `npm run verificar:tours`, Pull Request para a main **sem merge**. No PR: migrações em ordem (também em docs/fase-d/migracoes-fase-d.md), o que não foi possível validar e decisões tomadas.
+
+## 1. Vídeos (Central de Ajuda e Scripts)
+- Migração: `video_url TEXT` e `video_duracao TEXT` em `content_items` (artigos de Procedimentos e Problemas técnicos) e em `flows` (vídeo "Para quem é"). Aceitar link de YouTube (inclusive não listado), Vimeo ou arquivo de vídeo direto; converter para embed (iframe com `youtube-nocookie`) ou `<video>` conforme o tipo. Validar a URL (https; domínios permitidos: youtube.com, youtu.be, vimeo.com ou extensão .mp4/.webm) no servidor e no formulário.
+- `FlowCover`: com `video`, mostrar a capa com botão de play e a duração; ao clicar, o vídeo toca no lugar da capa. Sem vídeo, **continua** a capa "Vídeo em breve" (Central de Ajuda) e "Para quem é" (Scripts), como hoje. Ver docs/fase-d/capa-video.png.
+- Admin: campo "Link do vídeo (opcional)", "Duração" e botão "Testar vídeo" no editor de Procedimentos, de Problemas técnicos e de Fluxos. Vazio = "Vídeo em breve".
+
+## 2. Seleção em lote no Admin do Amor Saúde
+- Em Admin > Amor Saúde, nas listas de **Consultas, Exames, Odontologia e Teleconsulta/PA** (esta vem da seção 3): caixa de seleção em cada linha, caixa "selecionar todos" no cabeçalho (todos os itens do filtro atual, com o texto "Selecionar todas as N"), barra preta com "N selecionadas · Limpar seleção · Excluir selecionadas" e **confirmação** listando até 5 nomes ("Não dá para desfazer"). Ver docs/fase-d/admin-lote.png.
+- Funções de servidor `deleteManyConsultas/Exames/Procedimentos/Telemedicina` (ids[] ≤ 200, só admin), removendo também os vínculos com unidades/clínicas (tabelas de junção). Uma só transação; erro = nada é apagado e a mensagem diz o motivo. Atualizar a lista e limpar a seleção depois.
+
+## 3. Teleconsulta e PA digital (Amor Saúde)
+- Tabela `telemedicina_itens`: id, `tipo` ('teleconsulta' | 'pa_digital'), `nome` (especialidade), `descricao`, `para_quem`, `cartao NUMERIC NULL`, `particular NUMERIC NULL`, `passos TEXT[]` (como o cliente usa), `indique_quando`, `link_agendamento`, `tempo_espera_min INT NULL` (PA digital), `ativo`, `position`, `use_count`, timestamps. Leitura para autenticados; escrita só admin. Seed (rascunho editável): PA digital com "Clínico geral" e "Pediatra", tempo de espera 15, descrição "atendimento por vídeo em até 15 minutos depois de agendar", e a regra "em caso grave ou urgência, procurar um pronto-socorro". A teleconsulta nasce **vazia** (são 21 especialidades que o Paulo vai cadastrar).
+- Admin: lista + painel de edição; botão **"Adicionar várias"** (colar uma especialidade por linha, tipo escolhido) para cadastrar as 21 de uma vez; valores vazios mostram "Consulte o valor" para o atendente.
+- Página `/amor-saude/telemedicina` no mesmo padrão de Consultas (lista + detalhe), com o seletor "Teleconsulta · agendada" / "PA digital · até 15 min", busca, "Como o cliente usa" (passos), valores cartão × particular quando existirem, botões **Copiar sobre o serviço**, **Copiar passo a passo** e **Abrir o site da Amor Saúde** (link configurável no Admin). Registrar uso (`use_count`) como nas outras. Ver docs/fase-d/teleconsulta.png e pa-digital.png.
+- A busca do Amor Saúde (Ctrl K, escopo `amor`) passa a achar esses itens.
+
+## 4. Dúvidas frequentes
+- Tabela `duvidas_frequentes`: id, `tema` ('Planos' | 'Pagamento' | 'Cancelamento' | 'Amor Saúde' | 'Clínicas', editável), `pergunta`, `resposta`, `status` ('rascunho' | 'publicada'), `origem` ('manual' | 'marciana'), `position`, `copias_count`, timestamps. Atendente só lê publicadas; admin lê e escreve tudo.
+- Seed: importe docs/fase-d/base-duvidas.json como **rascunho** (migração com INSERT idempotente por pergunta). O Paulo revisa e publica no Admin; não publique sozinho.
+- Página `/amor-saude/duvidas` (e item no hub do Amor Saúde): busca, filtros por tema, perguntas que se abrem (só uma aberta por vez), botões **Copiar resposta** (conta cópias) e **Perguntar à MarcIAna** (abre a MarcIAna com a pergunta preenchida). Ver docs/fase-d/duvidas.png.
+- Admin > Dúvidas frequentes (lista + painel; rascunhos contados em "O que precisa de você"). Bloco **"Mais perguntadas à MarcIAna"**: use as tabelas que já existem (`marciana_sugestoes`, `marciana_feedback`, `chat_messages`); mostre as perguntas mais frequentes dos últimos 30 dias, sem nome nem texto que identifique cliente, com o botão "Virar dúvida frequente" (cria rascunho com a pergunta e abre o painel para o Paulo escrever a resposta). Se os dados não permitirem agrupar perguntas parecidas de forma confiável, mostre só as sugestões e feedbacks 👎 e diga isso no PR.
+- Dúvida **publicada** entra na Base IA pelo mesmo caminho que já usa o conteúdo aprovado (confira como `content_items`/knowledge é indexado) para a MarcIAna responder com ela. Se não houver caminho simples, descreva no PR o que falta, sem inventar um novo mecanismo.
+
+## 5. Roteiros de áudio (Scripts)
+- Tabela `roteiros_audio`: id, `titulo`, `categoria` ('Retomada' | 'Objeção' | 'Fechamento' | 'Pós-venda', editável), `situacao`, `texto` (com marcações como [nome], (pausa curta), (sorria)), `dicas TEXT[]`, `audio_url`, `duracao`, `status` ('rascunho' | 'publicada'), `position`, timestamps. Áudio de exemplo em bucket de Storage (reaproveite o bucket dos áudios de exemplo da cadência se a política servir; senão crie `roteiros-audio`: leitura para autenticados, escrita só admin; mp3/m4a/ogg/wav, até 5 MB).
+- Página `/scripts/roteiros-audio` (ver docs/fase-d/roteiros-audio.png): lista com filtros por categoria, detalhe com **player** (exemplo), "O que falar" com as marcações destacadas, "Dicas de voz" e **Copiar roteiro**. Os áudios do D+7 da cadência de retomada (`cadencia_mensagens` com `canal = 'audio'`, publicadas) aparecem na mesma lista, somente leitura, com o botão "Ver mensagem de texto do D+7" levando para Retomar hoje; não duplique o conteúdo.
+- Admin > Roteiros de áudio: lista + painel, upload do áudio, rascunho/publicada. Sem seed (o Paulo e o Claude escrevem depois).
+
+## 6. Scripts de ligação com chave de liberação
+- Tabela `roteiros_ligacao`: id, `titulo`, `etapa` ('Abertura' | 'Sondagem' | 'Apresentação' | 'Objeções' | 'Fechamento'), `situacao`, `texto`, `dicas TEXT[]`, `status`, `position`, timestamps. Tabela de configuração `recursos_config` (chave, valor boolean, atualizado_por) ou a que já existir para isso, com a chave `scripts_ligacao_liberado` (padrão false).
+- Página `/scripts/ligacao` com o mesmo desenho dos Roteiros de áudio, por etapa da ligação, com **Copiar roteiro**. **Enquanto a chave estiver desligada**, o cartão "Scripts de ligação" em Scripts mostra "Em breve" para os atendentes, e a rota recusa o acesso deles (redirecionar para Scripts); o admin vê o cartão com o selo "Só você vê" e acessa a página normalmente.
+- Admin > Scripts de ligação: lista + painel + interruptor **"Liberar para a equipe"** com texto de confirmação ("Os atendentes passam a ver esta página"). Sem seed: uma entrada de exemplo em rascunho por etapa, curta, marcada como exemplo.
+
+## 7. Hubs, menu, busca e Admin
+- Scripts (`scripts.index.tsx`): "Roteiros de áudio" ativo; "Scripts de ligação" conforme a seção 6. Amor Saúde (`amor-saude.index.tsx`): "Teleconsulta e PA digital" e "Dúvidas frequentes" ativos, com contagem no rodapé (como os outros cartões).
+- Migração em `admin_sections` (padrão da 20261125090000): `telemedicina` dentro de Amor Saúde, `duvidas`, `roteirosaudio` e `scriptsligacao` no grupo Atendimento; idempotente; nada que já exista é removido nem reordenado.
+- Ctrl K e busca de Scripts/Amor Saúde passam a achar roteiros, dúvidas e telemedicina (só publicados para atendente).
+- Atualize `docs`/LEIA-ME do relatório só se alguma tela entrar nele; caso contrário, nada de Excel nesta fase.
+
+## 8. Tutoriais das páginas novas
+- Tours curtos (driver.js, mesmo padrão de `src/lib/tours.ts`, âncoras `data-tour="<tour>-<n>"`, disparo automático só na primeira visita) para: Teleconsulta e PA digital, Dúvidas frequentes, Roteiros de áudio e Scripts de ligação. Registrar em `/ajuda/tutoriais-paginas` e passar em `scripts/verificar-tours.mjs`. Texto direto, em português do dia a dia, 3 a 5 passos cada.
+
+## Antes de terminar
+- `npm run build`, typecheck, testes e `npm run verificar:tours`. Liste no PR: migrações em ordem, o que depende de teste no navegador (player de vídeo/áudio, upload, seleção em lote) e qualquer divergência dos esboços.

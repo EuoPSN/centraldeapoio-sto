@@ -1,0 +1,14 @@
+[
+ {"tema":"Planos","pergunta":"Tem carência?","resposta":"Não. Depois que a adesão é confirmada, o cliente já pode usar os benefícios, sem prazo de espera."},
+ {"tema":"Pagamento","pergunta":"Como funciona o pagamento?","resposta":"A mensalidade é cobrada no cartão de crédito ou débito, de forma automática. Não trabalhamos com boleto nem Pix recorrente."},
+ {"tema":"Cancelamento","pergunta":"Posso cancelar quando quiser?","resposta":"O contrato tem fidelidade de 12 meses. Cancelando antes disso, há multa de 50% sobre o que falta. Explique isso com calma e sem pressionar; se o cliente tiver dúvida, passe para o consultor."},
+ {"tema":"Planos","pergunta":"Quais são os planos?","resposta":"Prata, Ouro e Diamante. Os valores das mensalidades estão em Amor Saúde e na ferramenta de economia; não decore números, consulte sempre a base atualizada."},
+ {"tema":"Planos","pergunta":"Dependentes entram no mesmo plano?","resposta":"Sim, o cliente pode incluir dependentes. Confira na hora a regra e o valor do plano escolhido antes de prometer."},
+ {"tema":"Planos","pergunta":"Depois de aderir, o que acontece?","resposta":"Depois do cadastro, o cliente recebe um link para validar a identidade (KYC). Assim que o pagamento e a validação são confirmados, ele já pode usar."},
+ {"tema":"Amor Saúde","pergunta":"O desconto vale em qualquer clínica?","resposta":"Vale nas clínicas Amor Saúde. Veja a clínica mais próxima do cliente em Amor Saúde > Clínicas."},
+ {"tema":"Amor Saúde","pergunta":"Como o cliente agenda uma consulta?","resposta":"Pelo WhatsApp da clínica escolhida ou, para consulta por vídeo, pela teleconsulta. Os contatos e horários estão em Amor Saúde > Clínicas e Consultas."},
+ {"tema":"Amor Saúde","pergunta":"Tem atendimento por vídeo?","resposta":"Sim. Há teleconsulta por agendamento e PA digital, com clínico geral e pediatra, que atende em até 15 minutos depois de agendar. Veja os detalhes em Amor Saúde > Teleconsulta e PA digital."},
+ {"tema":"Amor Saúde","pergunta":"O PA digital serve para emergência?","resposta":"Não. Para urgência ou caso grave, o cliente deve procurar um pronto-socorro. O PA digital serve para o que não pode esperar uma consulta marcada, mas não é grave."},
+ {"tema":"Clínicas","pergunta":"Vocês atendem na minha cidade?","resposta":"Nossa unidade atende Ribeirão das Neves e Esmeraldas. Para o cliente de outra região, veja em Amor Saúde > Clínicas a unidade mais próxima."},
+ {"tema":"Pagamento","pergunta":"Meu cartão foi recusado, e agora?","resposta":"Peça ao cliente para conferir limite e dados do cartão, ou tentar outro cartão de crédito ou débito. Se continuar, passe para o consultor."}
+]
