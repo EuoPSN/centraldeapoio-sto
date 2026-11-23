@@ -530,8 +530,6 @@ export type Database = {
       }
       categories: {
         Row: {
-          video_duracao: string | null
-          video_url: string | null
           color: string | null
           created_at: string
           icon: string | null
@@ -542,10 +540,10 @@ export type Database = {
           scope: string
           slug: string
           updated_at: string
+          video_duracao: string | null
+          video_url: string | null
         }
         Insert: {
-          video_duracao?: string | null
-          video_url?: string | null
           color?: string | null
           created_at?: string
           icon?: string | null
@@ -556,10 +554,10 @@ export type Database = {
           scope: string
           slug: string
           updated_at?: string
-        }
-        Update: {
           video_duracao?: string | null
           video_url?: string | null
+        }
+        Update: {
           color?: string | null
           created_at?: string
           icon?: string | null
@@ -570,6 +568,8 @@ export type Database = {
           scope?: string
           slug?: string
           updated_at?: string
+          video_duracao?: string | null
+          video_url?: string | null
         }
         Relationships: [
           {
@@ -1286,8 +1286,6 @@ export type Database = {
       }
       content_items: {
         Row: {
-          video_duracao: string | null
-          video_url: string | null
           category: string | null
           content: string
           created_at: string
@@ -1300,10 +1298,10 @@ export type Database = {
           tags: string[]
           title: string
           updated_at: string
+          video_duracao: string | null
+          video_url: string | null
         }
         Insert: {
-          video_duracao?: string | null
-          video_url?: string | null
           category?: string | null
           content?: string
           created_at?: string
@@ -1316,10 +1314,10 @@ export type Database = {
           tags?: string[]
           title: string
           updated_at?: string
-        }
-        Update: {
           video_duracao?: string | null
           video_url?: string | null
+        }
+        Update: {
           category?: string | null
           content?: string
           created_at?: string
@@ -1332,6 +1330,8 @@ export type Database = {
           tags?: string[]
           title?: string
           updated_at?: string
+          video_duracao?: string | null
+          video_url?: string | null
         }
         Relationships: []
       }
@@ -1673,6 +1673,45 @@ export type Database = {
           id?: string
           nome?: string
           ordem?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      duvidas_frequentes: {
+        Row: {
+          copias_count: number
+          created_at: string
+          id: string
+          origem: string
+          pergunta: string
+          position: number
+          resposta: string
+          status: string
+          tema: string
+          updated_at: string
+        }
+        Insert: {
+          copias_count?: number
+          created_at?: string
+          id?: string
+          origem?: string
+          pergunta: string
+          position?: number
+          resposta?: string
+          status?: string
+          tema: string
+          updated_at?: string
+        }
+        Update: {
+          copias_count?: number
+          created_at?: string
+          id?: string
+          origem?: string
+          pergunta?: string
+          position?: number
+          resposta?: string
+          status?: string
+          tema?: string
           updated_at?: string
         }
         Relationships: []
@@ -2203,8 +2242,6 @@ export type Database = {
       }
       flows: {
         Row: {
-          video_duracao: string | null
-          video_url: string | null
           category_id: string | null
           created_at: string
           created_by: string | null
@@ -2214,10 +2251,10 @@ export type Database = {
           position: number
           title: string
           updated_at: string
+          video_duracao: string | null
+          video_url: string | null
         }
         Insert: {
-          video_duracao?: string | null
-          video_url?: string | null
           category_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -2227,10 +2264,10 @@ export type Database = {
           position?: number
           title: string
           updated_at?: string
-        }
-        Update: {
           video_duracao?: string | null
           video_url?: string | null
+        }
+        Update: {
           category_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -2240,6 +2277,8 @@ export type Database = {
           position?: number
           title?: string
           updated_at?: string
+          video_duracao?: string | null
+          video_url?: string | null
         }
         Relationships: [
           {
@@ -3939,6 +3978,27 @@ export type Database = {
         }
         Relationships: []
       }
+      recursos_config: {
+        Row: {
+          atualizado_por: string | null
+          chave: string
+          updated_at: string
+          valor: boolean
+        }
+        Insert: {
+          atualizado_por?: string | null
+          chave: string
+          updated_at?: string
+          valor?: boolean
+        }
+        Update: {
+          atualizado_por?: string | null
+          chave?: string
+          updated_at?: string
+          valor?: boolean
+        }
+        Relationships: []
+      }
       relatorio_prospeccao: {
         Row: {
           area: string
@@ -4137,6 +4197,90 @@ export type Database = {
           },
         ]
       }
+      roteiros_audio: {
+        Row: {
+          audio_url: string | null
+          categoria: string
+          created_at: string
+          dicas: string[]
+          duracao: string | null
+          id: string
+          position: number
+          situacao: string
+          status: string
+          texto: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          audio_url?: string | null
+          categoria: string
+          created_at?: string
+          dicas?: string[]
+          duracao?: string | null
+          id?: string
+          position?: number
+          situacao?: string
+          status?: string
+          texto?: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          audio_url?: string | null
+          categoria?: string
+          created_at?: string
+          dicas?: string[]
+          duracao?: string | null
+          id?: string
+          position?: number
+          situacao?: string
+          status?: string
+          texto?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      roteiros_ligacao: {
+        Row: {
+          created_at: string
+          dicas: string[]
+          etapa: string
+          id: string
+          position: number
+          situacao: string
+          status: string
+          texto: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dicas?: string[]
+          etapa: string
+          id?: string
+          position?: number
+          situacao?: string
+          status?: string
+          texto?: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dicas?: string[]
+          etapa?: string
+          id?: string
+          position?: number
+          situacao?: string
+          status?: string
+          texto?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       scripts: {
         Row: {
           body: string
@@ -4329,6 +4473,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      telemedicina_itens: {
+        Row: {
+          ativo: boolean
+          cartao: number | null
+          created_at: string
+          descricao: string | null
+          id: string
+          indique_quando: string | null
+          link_agendamento: string | null
+          nome: string
+          para_quem: string | null
+          particular: number | null
+          passos: string[]
+          position: number
+          tempo_espera_min: number | null
+          tipo: string
+          updated_at: string
+          use_count: number
+        }
+        Insert: {
+          ativo?: boolean
+          cartao?: number | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          indique_quando?: string | null
+          link_agendamento?: string | null
+          nome: string
+          para_quem?: string | null
+          particular?: number | null
+          passos?: string[]
+          position?: number
+          tempo_espera_min?: number | null
+          tipo: string
+          updated_at?: string
+          use_count?: number
+        }
+        Update: {
+          ativo?: boolean
+          cartao?: number | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          indique_quando?: string | null
+          link_agendamento?: string | null
+          nome?: string
+          para_quem?: string | null
+          particular?: number | null
+          passos?: string[]
+          position?: number
+          tempo_espera_min?: number | null
+          tipo?: string
+          updated_at?: string
+          use_count?: number
+        }
+        Relationships: []
       }
       themes: {
         Row: {
@@ -4631,6 +4832,10 @@ export type Database = {
           versao: number
         }[]
       }
+      amor_saude_excluir_lote: {
+        Args: { p_ids: string[]; p_tipo: string }
+        Returns: number
+      }
       aquecimento_adesao_semana: {
         Args: never
         Returns: {
@@ -4741,6 +4946,7 @@ export type Database = {
         Args: { contato_id: string }
         Returns: undefined
       }
+      increment_duvida_copias: { Args: { p_id: string }; Returns: undefined }
       increment_message_use_count: {
         Args: { msg_id: string }
         Returns: undefined
