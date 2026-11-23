@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { ChevronDown, ChevronRight, Sparkles } from "lucide-react";
@@ -52,6 +52,10 @@ interface Props<T> {
   importar: (d: T, extra: { clinicaIds: string[]; pendente: boolean }) => Promise<void>;
   onConcluido: () => void;
   rotuloItem: string;
+  /** Texto já colado em outro diálogo (preenche a caixa ao abrir). */
+  textoInicial?: string;
+  /** Limite de itens por importação (ex.: 100 na Teleconsulta). */
+  maxItens?: number;
 }
 
 export function IaImportDialog<T>(p: Props<T>) {
@@ -62,6 +66,7 @@ export function IaImportDialog<T>(p: Props<T>) {
   const [importando, setImportando] = useState(false);
   const [linhas, setLinhas] = useState<LinhaPrevia<T>[]>([]);
   const [lotesFalhos, setLotesFalhos] = useState<string[]>([]);
+  useEffect(() => { if (p.open && p.textoInicial) setTexto(p.textoInicial); }, [p.open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fechar = (v: boolean) => {
     p.onOpenChange(v);
@@ -115,6 +120,7 @@ export function IaImportDialog<T>(p: Props<T>) {
 
   const importar = async () => {
     if (marcadas.length === 0) return;
+    if (p.maxItens && marcadas.length > p.maxItens) { toast.error(`No máximo ${p.maxItens} por vez. Desmarque ${marcadas.length - p.maxItens} e importe o restante depois.`); return; }
     setImportando(true);
     const res: ResultadoImportacao = { importados: 0, falhas: [], comClinicasParaConferir: 0 };
     try {
