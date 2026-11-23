@@ -4,6 +4,7 @@ import { HubCard, HubSearchField } from "@/components/HubCard";
 import { TopbarBreadcrumb, SkeletonLine } from "@/components/scripts/shared";
 import { useAmorSaude } from "@/components/amor-saude/model";
 import { ToothIcon } from "@/components/amor-saude/ui";
+import { useDuvidasPublicadas } from "@/components/amor-saude/useDuvidas";
 
 export const Route = createFileRoute("/_authenticated/amor-saude/")({
   component: AmorSaudeHub,
@@ -12,7 +13,8 @@ export const Route = createFileRoute("/_authenticated/amor-saude/")({
 const contagem = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`;
 
 function AmorSaudeHub() {
-  const { consultas, exames, procedimentos, clinicas, isLoading } = useAmorSaude();
+  const { consultas, exames, procedimentos, clinicas, telemedicina, isLoading } = useAmorSaude();
+  const duv = useDuvidasPublicadas();
   const footer = (text: string) => (isLoading ? <SkeletonLine className="h-3.5 w-28" /> : text);
 
   return (
@@ -57,8 +59,20 @@ function AmorSaudeHub() {
             text="Endereço, telefone e rota no Maps."
             footer={footer(contagem(clinicas.length, "unidade", "unidades"))}
           />
-          <HubCard icon={Video} title="Teleconsulta e PA digital" text="Atendimento online e pronto atendimento." badge="Em breve" soon />
-          <HubCard icon={CircleQuestionMark} title="Dúvidas frequentes" text="As perguntas que os clientes mais fazem." badge="Em breve" soon />
+          <HubCard
+            to="/amor-saude/telemedicina"
+            icon={Video}
+            title="Teleconsulta e PA digital"
+            text="Atendimento online e pronto atendimento."
+            footer={footer(`${telemedicina.filter((t) => t.modalidade === "teleconsulta").length} teleconsultas · ${telemedicina.filter((t) => t.modalidade === "pa_digital").length} PA digital`)}
+          />
+          <HubCard
+            to="/amor-saude/duvidas"
+            icon={CircleQuestionMark}
+            title="Dúvidas frequentes"
+            text="As perguntas que os clientes mais fazem."
+            footer={duv.isLoading ? <SkeletonLine className="h-3.5 w-28" /> : contagem(duv.duvidas.length, "dúvida", "dúvidas")}
+          />
         </div>
 
         <HubSearchField

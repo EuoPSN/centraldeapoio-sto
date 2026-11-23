@@ -1,4 +1,4 @@
-// Tutoriais das páginas: tipos, dados dos 12 tours e funções puras
+// Tutoriais das páginas: tipos, dados dos 16 tours e funções puras
 // (filtro de passos, passo "sem resultado", regra de versão).
 // Textos copiados de docs/tutoriais/tours-textos.md, sem reescrever.
 
@@ -178,6 +178,53 @@ export const TOURS: Tour[] = [
       { alvo: a("meus-relatorios", 1), titulo: "Resultado do dia", texto: "Preencha o seu resultado diário por canal." },
       { alvo: a("meus-relatorios", 2), titulo: "Canais", texto: "Em cada canal, informe Tentativas, Oportunidades e Vendas." },
       { alvo: a("meus-relatorios", 3), titulo: "Salvar", texto: "Salve cada linha. O Total soma tudo." },
+    ],
+  },
+  {
+    id: "telemedicina",
+    versao: 1,
+    rotas: ["/amor-saude/telemedicina"],
+    titulo: "Teleconsulta e PA digital",
+    passos: [
+      { alvo: a("telemedicina", 1), titulo: "Teleconsulta ou PA digital", texto: "Troque aqui entre teleconsulta, que é agendada, e PA digital, que atende em poucos minutos." },
+      { alvo: a("telemedicina", 2), titulo: "Especialidades", texto: "Escolha a especialidade. A busca no topo da página ajuda a achar mais rápido." },
+      { alvo: a("telemedicina", 3), titulo: "Como o cliente usa", texto: "Veja o valor, os passos que o cliente segue e quando indicar." },
+      { alvo: a("telemedicina", 4), titulo: "Copiar e abrir o site", texto: "Copie o texto sobre o serviço ou o passo a passo para mandar no WhatsApp. O link abre o site da Amor Saúde." },
+    ],
+  },
+  {
+    id: "duvidas",
+    versao: 1,
+    rotas: ["/amor-saude/duvidas"],
+    titulo: "Dúvidas frequentes",
+    passos: [
+      { alvo: a("duvidas", 1), titulo: "Buscar dúvida", texto: "Digite uma palavra da pergunta do cliente para achar a resposta na hora." },
+      { alvo: a("duvidas", 2), titulo: "Temas", texto: "Escolha o tema para ver só as perguntas dele." },
+      { alvo: a("duvidas", 3), titulo: "Perguntas e respostas", texto: 'Clique na pergunta para abrir a resposta. Depois use "Copiar resposta" ou "Perguntar à MarcIAna".' },
+    ],
+  },
+  {
+    id: "roteirosaudio",
+    versao: 1,
+    rotas: ["/scripts/roteiros-audio"],
+    titulo: "Roteiros de áudio",
+    passos: [
+      { alvo: a("roteirosaudio", 1), titulo: "Categorias", texto: "Escolha Retomada, Objeção, Fechamento ou Pós-venda para ver só os roteiros daquele momento." },
+      { alvo: a("roteirosaudio", 2), titulo: "Lista de roteiros", texto: "Clique em um roteiro para abrir." },
+      { alvo: a("roteirosaudio", 3), titulo: "Ouvir e ler", texto: "Ouça o exemplo e leia o que falar. As marcações em dourado, como (pausa curta), são dicas de como dizer." },
+      { alvo: a("roteirosaudio", 4), titulo: "Copiar roteiro", texto: "Copie o texto para ensaiar ou ter à mão enquanto grava o seu áudio." },
+    ],
+  },
+  {
+    id: "scriptsligacao",
+    versao: 1,
+    rotas: ["/scripts/ligacao"],
+    titulo: "Scripts de ligação",
+    passos: [
+      { alvo: a("scriptsligacao", 1), titulo: "Etapas da ligação", texto: "Escolha a etapa: Abertura, Sondagem, Apresentação, Objeções ou Fechamento." },
+      { alvo: a("scriptsligacao", 2), titulo: "Lista de roteiros", texto: "Clique em um roteiro para abrir." },
+      { alvo: a("scriptsligacao", 3), titulo: "O que falar", texto: "Leia o roteiro e as dicas da ligação. As marcações em dourado mostram onde pausar e sorrir." },
+      { alvo: a("scriptsligacao", 4), titulo: "Copiar roteiro", texto: "Copie o texto para ter à mão durante a ligação." },
     ],
   },
 ];

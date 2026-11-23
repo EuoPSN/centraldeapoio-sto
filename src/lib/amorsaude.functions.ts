@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { isAdminUser } from "@/lib/authz";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { tabela } from "@/lib/db-novas-tabelas";
 
 // Amor Saúde: consultas, exames, odontologia e clínicas numa leitura só.
 
@@ -9,7 +10,7 @@ export const getAmorSaude = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const db = context.supabase;
-    const [clinicas, consultas, exames, procedimentos, settings] = await Promise.all([
+    const [clinicas, consultas, exames, procedimentos, settings, telemedicina, site] = await Promise.all([
       db.from("contatos_enderecos").select("*").eq("tipo", "clinica_amor_saude")
         .order("position", { ascending: true }).order("nome_regiao", { ascending: true }),
       db.from("pricing_items").select("*, clinicas:pricing_item_clinicas(clinica_id)")
@@ -19,6 +20,9 @@ export const getAmorSaude = createServerFn({ method: "GET" })
       db.from("procedimentos_odontologicos").select("*, clinicas:procedimento_clinicas(clinica_id)")
         .order("position", { ascending: true }).order("nome", { ascending: true }),
       db.from("app_settings").select("avaliacao_odonto_valor").eq("id", 1).maybeSingle(),
+      // Tabela e coluna novas (Fase D): se a migração ainda não rodou, a leitura falha e some.
+      tabela(db, "telemedicina_itens").select("*").order("position", { ascending: true }).order("nome", { ascending: true }),
+      tabela(db, "app_settings").select("amor_saude_site_url").eq("id", 1).maybeSingle(),
     ]);
     for (const r of [clinicas, consultas, exames, procedimentos]) {
       if (r.error) throw new Error(r.error.message);
@@ -29,11 +33,15 @@ export const getAmorSaude = createServerFn({ method: "GET" })
       exames: exames.data ?? [],
       procedimentos: procedimentos.data ?? [],
       // Coluna nova: se a migração ainda não rodou, a leitura falha e o bloco some.
+      telemedicina: ((telemedicina as { error: unknown; data: unknown[] | null }).error ? [] : ((telemedicina as { data: unknown[] | null }).data ?? [])) as any[],
+      siteUrl: (site as { error: unknown; data: { amor_saude_site_url: string | null } | null }).error
+        ? null
+        : ((site as { data: { amor_saude_site_url: string | null } | null }).data?.amor_saude_site_url ?? null),
       avaliacaoOdonto: settings.error ? null : (settings.data?.avaliacao_odonto_valor ?? null),
     };
   });
 
-const Tipo = z.enum(["consulta", "exame", "odontologia"]);
+const Tipo = z.enum(["consulta", "exame", "odontologia", "telemedicina"]);
 
 /** Cada cópia feita no Amor Saúde soma 1 no item ("Mais procuradas"). */
 export const registerAmorSaudeUse = createServerFn({ method: "POST" })
@@ -96,3 +104,37 @@ export const setAvaliacaoOdonto = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// ---------------------------------------------------------------------------
+// Exclusão em lote (Admin). Uma transação no banco (amor_saude_excluir_lote):
+// apaga os vínculos com unidades/clínicas e os itens; qualquer erro desfaz tudo.
+// ---------------------------------------------------------------------------
+const Ids = z.object({ ids: z.array(z.string().uuid()).min(1, "Nenhum item selecionado.").max(200, "Selecione no máximo 200 itens por vez.") });
+
+async function excluirLote(ctx: { supabase: unknown; userId: string }, tipo: "consulta" | "exame" | "odontologia" | "telemedicina", ids: string[]) {
+  await admin(ctx);
+  const db = ctx.supabase as { rpc: (n: string, p: unknown) => Promise<{ data: number | null; error: { message: string } | null }> };
+  const { data, error } = await db.rpc("amor_saude_excluir_lote", { p_tipo: tipo, p_ids: [...new Set(ids)] });
+  if (error) throw new Error(`Nada foi apagado. ${error.message}`);
+  return { ok: true, apagados: Number(data ?? 0) };
+}
+
+export const deleteManyConsultas = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => Ids.parse(d))
+  .handler(({ data, context }) => excluirLote(context, "consulta", data.ids));
+
+export const deleteManyExames = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => Ids.parse(d))
+  .handler(({ data, context }) => excluirLote(context, "exame", data.ids));
+
+export const deleteManyProcedimentos = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => Ids.parse(d))
+  .handler(({ data, context }) => excluirLote(context, "odontologia", data.ids));
+
+export const deleteManyTelemedicina = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => Ids.parse(d))
+  .handler(({ data, context }) => excluirLote(context, "telemedicina", data.ids));

@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { isAdminUser } from "@/lib/authz";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { VideoDuracaoField, VideoUrlField } from "@/lib/video-schema";
 
 async function admin(ctx: { supabase: unknown; userId: string }) {
   const s = ctx.supabase as { rpc: (n: string, p: unknown) => Promise<{ data: boolean | null }> };
@@ -40,6 +41,8 @@ const FlowInput = z.object({
   description: z.string().nullable().optional(),
   category_id: z.string().uuid().nullable().optional(),
   is_training: z.boolean().default(false),
+  video_url: VideoUrlField,
+  video_duracao: VideoDuracaoField,
   position: z.number().int().default(0),
 });
 

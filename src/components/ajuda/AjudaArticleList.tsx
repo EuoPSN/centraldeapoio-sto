@@ -16,6 +16,8 @@ interface ContentItem {
   title: string;
   content: string;
   category: string | null;
+  video_url?: string | null;
+  video_duracao?: string | null;
 }
 
 // Passo a passo: se a maior parte das linhas estiver numerada ou em lista, mostra
@@ -124,7 +126,7 @@ function ArticleDetail({ item, section }: { item: ContentItem; section: "tutoria
       <p className="text-xs font-semibold uppercase leading-4 tracking-[0.12em] text-ink-muted">{overline}</p>
       <h2 className="mt-1.5 text-[24px] font-semibold leading-8 text-ink">{item.title}</h2>
 
-      <FlowCover className="mt-4 rounded-[14px]" height={300} emptyText="Vídeo em breve" />
+      <FlowCover key={item.id} className="mt-4 rounded-[14px]" height={300} emptyText="Vídeo em breve" videoUrl={item.video_url} videoDuracao={item.video_duracao} />
 
       <div className="mt-6">
         <p className="text-xs font-semibold uppercase leading-4 tracking-[0.12em] text-ink-muted">Passo a passo</p>

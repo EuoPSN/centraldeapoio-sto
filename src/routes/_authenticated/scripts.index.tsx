@@ -1,5 +1,9 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { useAcessoLigacao } from "@/components/scripts/ligacao";
+import { listRoteirosAudio, listRoteirosLigacao } from "@/lib/roteiros.functions";
 import { ArrowRight, AudioLines, MessageCircleQuestion, Phone, Quote } from "lucide-react";
 import { HubCard, HubSearchField } from "@/components/HubCard";
 import {
@@ -36,6 +40,15 @@ function ScriptsHub() {
   const flowData = useFlowData();
   const { flows } = useMemo(() => buildFlows(cats.rows, flowData.stages), [cats.rows, flowData.stages]);
   const flowsLoading = cats.isLoading || flowData.isLoading;
+
+  // Contagem dos cartões novos (roteiros de áudio publicados + áudios da cadência; scripts de ligação publicados).
+  const audioFn = useServerFn(listRoteirosAudio);
+  const audio = useQuery({ queryKey: ["roteiros-audio"], queryFn: () => audioFn({}), staleTime: 60_000, retry: false });
+  const nAudios = ((audio.data?.roteiros ?? []) as { status: string }[]).filter((r) => r.status === "publicada").length + (audio.data?.cadencia ?? []).length;
+  const acesso = useAcessoLigacao();
+  const ligFn = useServerFn(listRoteirosLigacao);
+  const lig = useQuery({ queryKey: ["roteiros-ligacao"], queryFn: () => ligFn({}), staleTime: 60_000, retry: false, enabled: acesso.podeVer });
+  const nLig = ((lig.data ?? []) as { status: string }[]).filter((r) => r.status === "publicada").length;
 
   return (
     <div className="mx-auto flex w-full max-w-[1100px] flex-col items-center px-4 pb-16 pt-10 sm:px-6 lg:pt-16">
@@ -76,8 +89,25 @@ function ScriptsHub() {
           text="Cole a fala do cliente e receba a resposta aprovada para a objeção."
           footer="Objeções e fechamento"
         />
-        <HubCard icon={Phone} title="Scripts de ligação" text="Roteiro da ligação com respostas para cada objeção." badge="Em breve" soon />
-        <HubCard icon={AudioLines} title="Roteiros de áudio" text="O texto de como falar e um áudio de exemplo." badge="Em breve" soon />
+        {acesso.podeVer ? (
+          <HubCard
+            to="/scripts/ligacao"
+            icon={Phone}
+            title="Scripts de ligação"
+            text="Roteiro da ligação com respostas para cada objeção."
+            badge={acesso.isAdmin && !acesso.liberado ? "Só você vê" : undefined}
+            footer={lig.isLoading ? <SkeletonLine className="h-3.5 w-24" /> : `${nLig} ${nLig === 1 ? "roteiro" : "roteiros"}`}
+          />
+        ) : (
+          <HubCard icon={Phone} title="Scripts de ligação" text="Roteiro da ligação com respostas para cada objeção." badge="Em breve" soon />
+        )}
+        <HubCard
+          to="/scripts/roteiros-audio"
+          icon={AudioLines}
+          title="Roteiros de áudio"
+          text="O texto de como falar e um áudio de exemplo."
+          footer={audio.isLoading ? <SkeletonLine className="h-3.5 w-24" /> : `${nAudios} ${nAudios === 1 ? "roteiro" : "roteiros"}`}
+        />
       </div>
 
       <HubSearchField

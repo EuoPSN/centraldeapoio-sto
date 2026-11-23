@@ -7,6 +7,7 @@ import { contarSugestoesPendentes } from "@/lib/mensagens-vendem.functions";
 import { contarMudancasSemConfirmar } from "@/lib/changelog.functions";
 import { contarExerciciosParaAprovar } from "@/lib/aquecimento-admin.functions";
 import { contarPendenciasExtensao } from "@/lib/extensao-admin.functions";
+import { contarDuvidasRascunho } from "@/lib/duvidas.functions";
 
 async function requireAdmin(ctx: { supabase: unknown; userId: string }) {
   const s = ctx.supabase as { rpc: (n: string, p: unknown) => Promise<{ data: boolean | null }> };
@@ -284,6 +285,20 @@ export const getAdminPendingCounts = createServerFn({ method: "GET" })
         context: count > 0 ? data[0].nome_regiao : "Tudo em dia",
         count,
         href: "/admin/contatos",
+      });
+    }
+
+    // 7) Dúvidas frequentes em rascunho (o Paulo revisa e publica)
+    {
+      let count = 0;
+      try { count = await contarDuvidasRascunho(db); } catch { /* tabela ainda não criada */ }
+      bySection.duvidas = count;
+      items.push({
+        key: "duvidas",
+        title: "Dúvidas frequentes para revisar e publicar",
+        context: count > 0 ? "Rascunhos esperando resposta ou publicação" : "Tudo em dia",
+        count,
+        href: "/admin/duvidas",
       });
     }
 

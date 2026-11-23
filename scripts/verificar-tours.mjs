@@ -44,7 +44,7 @@ for (const t of TOURS) {
     if (frases(limpo) > 2) falha(`${t.id}: texto com mais de 2 frases em "${p.titulo}"`);
   }
 }
-if (TOURS.length !== 12) falha(`esperado 12 tours, achei ${TOURS.length}`);
+if (TOURS.length !== 16) falha(`esperado 16 tours, achei ${TOURS.length}`);
 
 // --- funções puras ---
 const igual = (a, b, m) => JSON.stringify(a) !== JSON.stringify(b) && falha(m + ` (obtido ${JSON.stringify(a)})`);

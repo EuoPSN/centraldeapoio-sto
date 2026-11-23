@@ -65,7 +65,7 @@ function FluxoCatalogo() {
                 params={{ fluxo: f.key }}
                 className="group block h-full overflow-hidden rounded-[14px] border border-line bg-surface transition-colors hover:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
-                <FlowCover name={f.name} />
+                <FlowCover name={f.name} videoUrl={f.videoUrl} videoDuracao={f.videoDuracao} />
                 <div className="px-4 pb-4 pt-3.5">
                   <h2 className="text-base font-semibold leading-6 text-ink">{f.name}</h2>
                   <p className="mt-1.5 text-[13px] font-semibold leading-5 text-gold-text">{etapasLabel(f.trunk.length)}</p>

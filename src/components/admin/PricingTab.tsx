@@ -1,12 +1,16 @@
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { listPricing, upsertPricing, deletePricing, setPricingItemUnidades } from "@/lib/content.functions";
 import { listExames, upsertExame, deleteExame } from "@/lib/exames.functions";
 import { listProcedimentos, upsertProcedimento, deleteProcedimento } from "@/lib/odontologia.functions";
 import { listUnidades, upsertUnidade } from "@/lib/unidades.functions";
-import { getAmorSaude, setAvaliacaoOdonto, setItemClinicas } from "@/lib/amorsaude.functions";
+import { getAmorSaude, setAvaliacaoOdonto, setItemClinicas, deleteManyConsultas, deleteManyExames, deleteManyProcedimentos } from "@/lib/amorsaude.functions";
+import { BarraLote, BuscaLista, CabecalhoSelecao, ConfirmarLote, useExcluirLote, useLote } from "@/components/admin/LoteAdmin";
+import { Checkbox } from "@/components/ui/checkbox";
+import { matches } from "@/components/amor-saude/model";
 import { listContatos, upsertContato, deleteContato } from "@/lib/contatos.functions";
+import { TelemedicinaSubTab } from "@/components/admin/TelemedicinaAdmin";
 import { ClinicasPicker } from "@/components/admin/ClinicasPicker";
 import { AREAS } from "@/components/amor-saude/model";
 import { simulatorChat } from "@/lib/simulator.chat.functions";
@@ -25,18 +29,20 @@ import { Pencil, Plus, Trash2, Sparkles, ArrowUp, ArrowDown } from "lucide-react
 import { toast } from "sonner";
 import { ADMIN_ASSISTANT_MODEL } from "@/lib/ai-models";
 
-export function PricingTab() {
+export function PricingTab({ defaultTab = "consultas" }: { defaultTab?: "consultas" | "exames" | "odontologia" | "telemedicina" | "clinicas" } = {}) {
   return (
-    <Tabs defaultValue="consultas">
+    <Tabs defaultValue={defaultTab}>
       <TabsList>
         <TabsTrigger value="consultas">Consultas</TabsTrigger>
         <TabsTrigger value="exames">Exames</TabsTrigger>
         <TabsTrigger value="odontologia">Procedimentos Odontológicos</TabsTrigger>
+        <TabsTrigger value="telemedicina">Teleconsulta e PA</TabsTrigger>
         <TabsTrigger value="clinicas">Clínicas</TabsTrigger>
       </TabsList>
       <TabsContent value="consultas" className="mt-4"><ConsultasSubTab /></TabsContent>
       <TabsContent value="exames" className="mt-4"><ExamesSubTab /></TabsContent>
       <TabsContent value="odontologia" className="mt-4"><OdontologiaSubTab /></TabsContent>
+      <TabsContent value="telemedicina" className="mt-4"><TelemedicinaSubTab /></TabsContent>
       {/* Cadastro das clínicas Amor Saúde (nome, região, endereço, telefones, Maps, principal).
           Morava em Contatos e Endereços → "Clínica Amor Saúde"; mudou pra cá porque é onde
           vive o resto do catálogo do Amor Saúde (Consultas/Exames/Odontologia já selecionam
@@ -206,6 +212,18 @@ Responda APENAS com o texto da descrição, sem aspas, sem markdown.`;
     });
   };
   const pendentes = ((q.data ?? []) as any[]).filter((p) => p.clinicas_pendente).length;
+  const [busca, setBusca] = useState("");
+  const visiveis = useMemo(
+    () => ((q.data ?? []) as any[]).filter((r) => matches(busca, r.specialty, r.area, r.category)),
+    [q.data, busca],
+  );
+  const lote = useLote(visiveis);
+  const apagarLote = useServerFn(deleteManyConsultas);
+  const excluir = useExcluirLote(lote, (r: any) => r.specialty, (ids) => apagarLote({ data: { ids } }), () => {
+    toast.success("Excluídos.");
+    qc.invalidateQueries({ queryKey: ["pricing"] });
+    qc.invalidateQueries({ queryKey: ["amor-saude"] });
+  });
 
   return (
     <Card className="overflow-hidden">
@@ -219,11 +237,15 @@ Responda APENAS com o texto da descrição, sem aspas, sem markdown.`;
           <Button size="sm" className="gap-2" onClick={() => setEdit({ category: "Consultas", specialty: "", cartao_price: "", particular_price: "", notes: "", description: "", area: "", para_quem: "", como_agendar: "", clinicaIds: [], refAntiga: null, pendente: false })}><Plus className="h-4 w-4" /> Novo</Button>
         </div>
       </div>
+      <div className="px-4 pt-3"><BuscaLista valor={busca} onChange={setBusca} placeholder="Buscar…" /></div>
+      <BarraLote quantidade={lote.sel.size} total={lote.total} todos={lote.todos} onSelecionarTodos={lote.selecionarTodos} onLimpar={lote.limpar} onExcluir={excluir.abrir} ocupado={excluir.ocupado} />
+      <ConfirmarLote aberto={excluir.aberto} onFechar={excluir.fechar} onConfirmar={excluir.confirmar} nomes={excluir.nomes} singular="consulta" plural="consultas" ocupado={excluir.ocupado} erro={excluir.erro} />
       <Table>
-        <TableHeader><TableRow><TableHead>Área</TableHead><TableHead>Especialidade</TableHead><TableHead className="text-right">CDT</TableHead><TableHead className="text-right">Particular</TableHead><TableHead>Clínicas</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><CabecalhoSelecao todos={lote.todos} algum={lote.algum} onToggle={lote.alternarTodos} /><TableHead>Área</TableHead><TableHead>Especialidade</TableHead><TableHead className="text-right">CDT</TableHead><TableHead className="text-right">Particular</TableHead><TableHead>Clínicas</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
         <TableBody>
-          {(q.data ?? []).map((p: any) => (
+          {visiveis.map((p: any) => (
             <TableRow key={p.id}>
+              <TableCell><Checkbox aria-label={`Selecionar ${p.specialty}`} checked={lote.marcado(p.id)} onCheckedChange={() => lote.alternar(p.id)} /></TableCell>
               <TableCell>{p.area ? <Badge variant="secondary">{p.area}</Badge> : <span className="text-xs text-muted-foreground">Outras</span>}</TableCell>
               <TableCell className="font-medium">{p.specialty}</TableCell>
               <TableCell className="text-right">{p.cartao_price != null ? `R$ ${Number(p.cartao_price).toFixed(2)}` : "—"}</TableCell>
@@ -437,6 +459,19 @@ Regras:
     }
   };
 
+  const [busca, setBusca] = useState("");
+  const visiveis = useMemo(
+    () => ((q.data ?? []) as any[]).filter((r) => matches(busca, r.nome, r.categoria, r.tipo)),
+    [q.data, busca],
+  );
+  const lote = useLote(visiveis);
+  const apagarLote = useServerFn(deleteManyExames);
+  const excluir = useExcluirLote(lote, (r: any) => r.nome, (ids) => apagarLote({ data: { ids } }), () => {
+    toast.success("Excluídos.");
+    qc.invalidateQueries({ queryKey: ["exames"] });
+    qc.invalidateQueries({ queryKey: ["amor-saude"] });
+  });
+
   return (
     <Card className="overflow-hidden">
       <div className="flex justify-between items-center p-4 border-b border-border">
@@ -446,11 +481,15 @@ Regras:
           <Button size="sm" className="gap-2" onClick={() => setEdit({ nome: "", tipo: "laboratorial", categoria: "", material: "", jejum: false, preparo: "", descricao: "", observacoes: "", media: "", preparoItens: "", clinicaIds: [] })}><Plus className="h-4 w-4" /> Novo</Button>
         </div>
       </div>
+      <div className="px-4 pt-3"><BuscaLista valor={busca} onChange={setBusca} placeholder="Buscar…" /></div>
+      <BarraLote quantidade={lote.sel.size} total={lote.total} todos={lote.todos} onSelecionarTodos={lote.selecionarTodos} onLimpar={lote.limpar} onExcluir={excluir.abrir} ocupado={excluir.ocupado} />
+      <ConfirmarLote aberto={excluir.aberto} onFechar={excluir.fechar} onConfirmar={excluir.confirmar} nomes={excluir.nomes} singular="exame" plural="exames" ocupado={excluir.ocupado} erro={excluir.erro} />
       <Table>
-        <TableHeader><TableRow><TableHead>Tipo</TableHead><TableHead>Nome</TableHead><TableHead>Categoria</TableHead><TableHead>Jejum</TableHead><TableHead>Clínicas</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><CabecalhoSelecao todos={lote.todos} algum={lote.algum} onToggle={lote.alternarTodos} /><TableHead>Tipo</TableHead><TableHead>Nome</TableHead><TableHead>Categoria</TableHead><TableHead>Jejum</TableHead><TableHead>Clínicas</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
         <TableBody>
-          {(q.data ?? []).map((e: any) => (
+          {visiveis.map((e: any) => (
             <TableRow key={e.id}>
+              <TableCell><Checkbox aria-label={`Selecionar ${e.nome}`} checked={lote.marcado(e.id)} onCheckedChange={() => lote.alternar(e.id)} /></TableCell>
               <TableCell><Badge variant="secondary">{e.tipo === "imagem" ? "Imagem" : "Laboratorial"}</Badge></TableCell>
               <TableCell className="font-medium">{e.nome}</TableCell>
               <TableCell>{e.categoria || "—"}</TableCell>
@@ -643,6 +682,19 @@ Regras:
     }
   };
 
+  const [busca, setBusca] = useState("");
+  const visiveis = useMemo(
+    () => ((q.data ?? []) as any[]).filter((r) => matches(busca, r.nome, r.categoria)),
+    [q.data, busca],
+  );
+  const lote = useLote(visiveis);
+  const apagarLote = useServerFn(deleteManyProcedimentos);
+  const excluir = useExcluirLote(lote, (r: any) => r.nome, (ids) => apagarLote({ data: { ids } }), () => {
+    toast.success("Excluídos.");
+    qc.invalidateQueries({ queryKey: ["procedimentos"] });
+    qc.invalidateQueries({ queryKey: ["amor-saude"] });
+  });
+
   return (
     <Card className="overflow-hidden">
       <div className="flex justify-between items-center p-4 border-b border-border">
@@ -653,11 +705,15 @@ Regras:
         </div>
       </div>
       <AvaliacaoOdontoField />
+      <div className="px-4 pt-3"><BuscaLista valor={busca} onChange={setBusca} placeholder="Buscar…" /></div>
+      <BarraLote quantidade={lote.sel.size} total={lote.total} todos={lote.todos} onSelecionarTodos={lote.selecionarTodos} onLimpar={lote.limpar} onExcluir={excluir.abrir} ocupado={excluir.ocupado} />
+      <ConfirmarLote aberto={excluir.aberto} onFechar={excluir.fechar} onConfirmar={excluir.confirmar} nomes={excluir.nomes} singular="procedimento" plural="procedimentos" ocupado={excluir.ocupado} erro={excluir.erro} />
       <Table>
-        <TableHeader><TableRow><TableHead>Nome</TableHead><TableHead>Categoria</TableHead><TableHead>Clínicas</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><CabecalhoSelecao todos={lote.todos} algum={lote.algum} onToggle={lote.alternarTodos} /><TableHead>Nome</TableHead><TableHead>Categoria</TableHead><TableHead>Clínicas</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
         <TableBody>
-          {(q.data ?? []).map((p: any) => (
+          {visiveis.map((p: any) => (
             <TableRow key={p.id}>
+              <TableCell><Checkbox aria-label={`Selecionar ${p.nome}`} checked={lote.marcado(p.id)} onCheckedChange={() => lote.alternar(p.id)} /></TableCell>
               <TableCell className="font-medium">{p.nome}</TableCell>
               <TableCell>{p.categoria || "—"}</TableCell>
               <TableCell>{(p.clinicas ?? []).length || <span className="text-xs text-muted-foreground">nenhuma</span>}</TableCell>

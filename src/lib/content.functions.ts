@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { isAdminUser } from "@/lib/authz";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { VideoDuracaoField, VideoUrlField } from "@/lib/video-schema";
 
 // ============================================================
 // CONTENT ITEMS (Conhecimento / Problemas / Tutoriais)
@@ -41,6 +42,8 @@ const ContentInput = z.object({
   tags: z.array(z.string()).default([]),
   link_externo: z.string().nullable().optional(),
   link_label: z.string().nullable().optional(),
+  video_url: VideoUrlField,
+  video_duracao: VideoDuracaoField,
   position: z.number().int().default(0),
 });
 

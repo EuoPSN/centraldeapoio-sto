@@ -7,7 +7,7 @@ import { getAmorSaude, registerAmorSaudeUse } from "@/lib/amorsaude.functions";
 // Tipos
 // ---------------------------------------------------------------------------
 
-export type ItemTipo = "consulta" | "exame" | "odontologia";
+export type ItemTipo = "consulta" | "exame" | "odontologia" | "telemedicina";
 
 export interface Clinica {
   id: string;
@@ -51,7 +51,21 @@ export interface Procedimento extends Base {
   categoria: string | null;
   cuidadosPos: string | null;
 }
-export type AmorItem = Consulta | Exame | Procedimento;
+export type Modalidade = "teleconsulta" | "pa_digital";
+export interface Telemedicina extends Base {
+  tipo: "telemedicina";
+  modalidade: Modalidade;
+  paraQuem: string | null;
+  cartao: number | null;
+  particular: number | null;
+  passos: string[];
+  indiqueQuando: string | null;
+  linkAgendamento: string | null;
+  tempoEsperaMin: number | null;
+  ativo: boolean;
+  position: number;
+}
+export type AmorItem = Consulta | Exame | Procedimento | Telemedicina;
 
 // ---------------------------------------------------------------------------
 // Dados
@@ -140,8 +154,28 @@ export function useAmorSaude() {
       categoria: s(r.categoria),
       cuidadosPos: s(r.cuidados_pos),
     }));
+    const telemedicina: Telemedicina[] = ((raw?.telemedicina ?? []) as Raw[])
+      .map((r): Telemedicina => ({
+        tipo: "telemedicina",
+        id: String(r.id),
+        nome: String(r.nome ?? ""),
+        descricao: s(r.descricao),
+        clinicaIds: [],
+        useCount: Number(r.use_count ?? 0),
+        modalidade: r.tipo === "pa_digital" ? "pa_digital" : "teleconsulta",
+        paraQuem: s(r.para_quem),
+        cartao: n(r.cartao),
+        particular: n(r.particular),
+        passos: Array.isArray(r.passos) ? (r.passos as unknown[]).map(s).filter((x): x is string => !!x) : [],
+        indiqueQuando: s(r.indique_quando),
+        linkAgendamento: s(r.link_agendamento),
+        tempoEsperaMin: n(r.tempo_espera_min),
+        ativo: r.ativo !== false,
+        position: Number(r.position ?? 0),
+      }))
+      .filter((t) => t.ativo);
     const regioes = [...new Set(clinicas.map((c) => c.regiao).filter((x): x is string => !!x))].sort((a, b) => a.localeCompare(b, "pt-BR"));
-    return { clinicas, consultas, exames, procedimentos, regioes, avaliacaoOdonto: n(raw?.avaliacaoOdonto) };
+    return { clinicas, consultas, exames, procedimentos, telemedicina, regioes, siteUrl: s(raw?.siteUrl), avaliacaoOdonto: n(raw?.avaliacaoOdonto) };
   }, [q.data]);
 
   return { ...data, isLoading: q.isLoading, isError: q.isError };
@@ -294,6 +328,26 @@ export function textoProcedimento(p: Procedimento, ordenadas: ClinicaOrdenada[],
     avaliacao != null && `Avaliação odontológica pelo Cartão de TODOS: *${reais(avaliacao)}*`,
     ...linhasOnde(ordenadas, regiao),
   ]);
+}
+
+export const nomeModalidade = (m: Modalidade) => (m === "pa_digital" ? "PA digital" : "Teleconsulta");
+
+/** Texto do serviço para o cliente (sem "consulte o valor": valor vazio simplesmente não aparece). */
+export function textoTelemedicina(t: Telemedicina) {
+  const pa = t.modalidade === "pa_digital";
+  return clean([
+    pa ? `*PA digital – ${t.nome} pelo Cartão de TODOS* 💻` : `*Teleconsulta de ${t.nome} pelo Cartão de TODOS* 💻`,
+    t.descricao,
+    pa && t.tempoEsperaMin != null && `⏱️ Atendimento por vídeo em até ${t.tempoEsperaMin} minutos depois de agendar.`,
+    t.cartao != null && `💚 Cartão de TODOS: *${reais(t.cartao)}*`,
+    t.particular != null && `Particular: ${reais(t.particular)}${t.cartao != null && t.particular > t.cartao ? ` (você economiza ${reais(t.particular - t.cartao)})` : ""}`,
+    pa && "Em caso grave ou urgência, procure um pronto-socorro.",
+  ]);
+}
+
+export function textoPassosTelemedicina(t: Telemedicina) {
+  if (!t.passos.length) return "";
+  return clean([`*Como usar: ${nomeModalidade(t.modalidade)} – ${t.nome}*`, ...t.passos.map((p, i) => `${i + 1}. ${p}`)]);
 }
 
 /** Até 4 clínicas, a mais próxima primeiro. */

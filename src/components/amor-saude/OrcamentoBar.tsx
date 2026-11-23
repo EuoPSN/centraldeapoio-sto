@@ -8,11 +8,11 @@ import { limparOrcamento, resumoOrcamento, textoOrcamento, useOrcamento } from "
 
 export function OrcamentoBar() {
   const lista = useOrcamento();
-  const { consultas, exames, procedimentos } = useAmorSaude();
+  const { consultas, exames, procedimentos, telemedicina } = useAmorSaude();
   const { copied, copy } = useCopy();
 
   const itens: AmorItem[] = lista
-    .map((r) => (r.tipo === "consulta" ? consultas : r.tipo === "exame" ? exames : procedimentos).find((i: AmorItem) => i.id === r.id))
+    .map((r) => (r.tipo === "consulta" ? consultas : r.tipo === "exame" ? exames : r.tipo === "telemedicina" ? telemedicina : procedimentos).find((i: AmorItem) => i.id === r.id))
     .filter((i): i is AmorItem => !!i);
   if (!itens.length) return null;
 
