@@ -5,12 +5,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { listAdminSections } from "@/lib/settings.functions";
 import { getAdminPendingCounts } from "@/lib/admin-pending.functions";
 import { getIcon } from "@/lib/icon-map";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ADMIN_GROUP_ORDER } from "@/components/admin/admin-groups";
 
@@ -146,8 +143,10 @@ export function PendingDot({ n }: { n: number }) {
   return <Badge className="h-5 min-w-5 shrink-0 justify-center rounded-full px-1 text-[11px]">{n}</Badge>;
 }
 
+const FOCO = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold";
+
 /** Barra de topo do Admin: entrada ("Painel Admin" + busca) ou dentro de uma
- * seção ("← Painel Admin" + seletor de grupo/seção + busca). */
+ * seção ("← Painel Admin" + busca, e abaixo as abas de grupo e as seções do grupo atual). */
 export function AdminTopBar({ current }: { current?: AdminSectionRow }) {
   const { grouped, orderedGroups } = useAdminSections();
   const { data: pending } = useAdminPendingCounts();
@@ -165,53 +164,90 @@ export function AdminTopBar({ current }: { current?: AdminSectionRow }) {
     }
   };
 
-  return (
-    <div className="flex items-center justify-between gap-3 border-b border-line pb-3 mb-5">
-      {current ? (
-        <div className="flex min-w-0 items-center gap-2">
-          <Link to="/admin" className="shrink-0 text-sm text-ink-muted hover:text-ink">← Painel Admin</Link>
-          <DropdownMenu>
-            <DropdownMenuTrigger className="flex min-w-0 items-center gap-1.5 rounded-md border border-line-strong px-2.5 py-1 text-sm hover:bg-sidebar">
-              <span className="truncate text-ink-muted">{current.group_name} ›</span>
-              <span className="truncate font-medium text-ink">{current.label}</span>
-              <ChevronDown className="h-3.5 w-3.5 shrink-0 text-ink-muted" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="max-h-[70vh] overflow-y-auto">
-              {orderedGroups.map((g) => (
-                <div key={g}>
-                  <DropdownMenuLabel className="type-overline text-xs text-ink-muted">{g}</DropdownMenuLabel>
-                  {(grouped[g] ?? []).map((s) => (
-                    <DropdownMenuItem key={s.tab_key} asChild>
-                      <Link
-                        to="/admin/$key"
-                        params={{ key: s.tab_key }}
-                        className={cn("flex w-full items-center justify-between gap-2", s.tab_key === current.tab_key && "font-semibold text-gold-text")}
-                      >
-                        {s.label}
-                        <PendingDot n={pending?.bySection[s.tab_key] ?? 0} />
-                      </Link>
-                    </DropdownMenuItem>
-                  ))}
-                  <DropdownMenuSeparator />
-                </div>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      ) : (
-        <span className="rounded-md border border-line-strong px-2.5 py-1 text-sm font-medium text-ink">Painel Admin</span>
-      )}
+  const bySection = pending?.bySection ?? {};
+  const secoesDe = (g: string) => [...(grouped[g] ?? [])].sort((a, b) => a.position - b.position);
+  const pendenciasDe = (g: string) => secoesDe(g).reduce((sum, s) => sum + (bySection[s.tab_key] ?? 0), 0);
+  const grupoAtual = current && orderedGroups.includes(current.group_name) ? current.group_name : null;
 
-      <div className="relative w-full max-w-[300px]">
-        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-muted" />
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={goToSearch}
-          placeholder="Buscar seção ou item…"
-          className="h-8 pl-8 text-sm"
-        />
+  return (
+    <div className="mb-5 border-b border-line pb-3">
+      <div className="flex items-center justify-between gap-3">
+        {current ? (
+          <Link to="/admin" className={cn("shrink-0 rounded-sm text-sm text-ink-muted hover:text-ink", FOCO)}>← Painel Admin</Link>
+        ) : (
+          <span className="rounded-md border border-line-strong px-2.5 py-1 text-sm font-medium text-ink">Painel Admin</span>
+        )}
+
+        <div className="relative w-full max-w-[300px]">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-muted" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={goToSearch}
+            placeholder="Buscar seção ou item…"
+            className="h-8 pl-8 text-sm"
+          />
+        </div>
       </div>
+
+      {current && orderedGroups.length > 0 && (
+        <div className="mt-4 space-y-2">
+          {/* Abas de grupo: clicar abre a primeira seção do grupo. */}
+          <div role="tablist" aria-label="Grupos do Admin" className="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
+            {orderedGroups.map((g) => {
+              const ativo = g === grupoAtual;
+              const n = pendenciasDe(g);
+              return (
+                <button
+                  key={g}
+                  type="button"
+                  role="tab"
+                  aria-selected={ativo}
+                  onClick={() => {
+                    const primeira = secoesDe(g)[0];
+                    if (primeira && !ativo) navigate({ to: "/admin/$key", params: { key: primeira.tab_key } });
+                  }}
+                  className={cn(
+                    "inline-flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm transition-colors motion-reduce:transition-none",
+                    FOCO,
+                    ativo ? "border-ink bg-ink font-medium text-background" : "border-line-strong text-ink hover:bg-sidebar",
+                  )}
+                >
+                  {g}
+                  {!ativo && <PendingDot n={n} />}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Seções do grupo atual: sempre visíveis. */}
+          {grupoAtual && (
+            <div role="tablist" aria-label={`Seções de ${grupoAtual}`} className="flex gap-1 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
+              {secoesDe(grupoAtual).map((s) => {
+                const atual = s.tab_key === current.tab_key;
+                return (
+                  <Link
+                    key={s.tab_key}
+                    to="/admin/$key"
+                    params={{ key: s.tab_key }}
+                    role="tab"
+                    aria-selected={atual}
+                    aria-current={atual ? "page" : undefined}
+                    className={cn(
+                      "inline-flex shrink-0 items-center gap-2 rounded-md border-b-2 px-3 py-1.5 text-sm transition-colors motion-reduce:transition-none",
+                      FOCO,
+                      atual ? "border-gold bg-sidebar font-medium text-ink" : "border-transparent text-ink-muted hover:bg-sidebar hover:text-ink",
+                    )}
+                  >
+                    {s.label}
+                    <PendingDot n={bySection[s.tab_key] ?? 0} />
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
