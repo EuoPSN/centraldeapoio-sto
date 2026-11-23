@@ -149,6 +149,7 @@ export type Database = {
         Row: {
           accent_color: string | null
           active_theme: string
+          amor_saude_site_url: string | null
           avaliacao_odonto_valor: number | null
           background_color: string | null
           cover_url: string | null
@@ -164,6 +165,7 @@ export type Database = {
         Insert: {
           accent_color?: string | null
           active_theme?: string
+          amor_saude_site_url?: string | null
           avaliacao_odonto_valor?: number | null
           background_color?: string | null
           cover_url?: string | null
@@ -179,6 +181,7 @@ export type Database = {
         Update: {
           accent_color?: string | null
           active_theme?: string
+          amor_saude_site_url?: string | null
           avaliacao_odonto_valor?: number | null
           background_color?: string | null
           cover_url?: string | null

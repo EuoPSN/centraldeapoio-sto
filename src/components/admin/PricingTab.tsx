@@ -10,6 +10,7 @@ import { BarraLote, BuscaLista, CabecalhoSelecao, ConfirmarLote, useExcluirLote,
 import { Checkbox } from "@/components/ui/checkbox";
 import { matches } from "@/components/amor-saude/model";
 import { listContatos, upsertContato, deleteContato } from "@/lib/contatos.functions";
+import { TelemedicinaSubTab } from "@/components/admin/TelemedicinaAdmin";
 import { ClinicasPicker } from "@/components/admin/ClinicasPicker";
 import { AREAS } from "@/components/amor-saude/model";
 import { simulatorChat } from "@/lib/simulator.chat.functions";
@@ -28,18 +29,20 @@ import { Pencil, Plus, Trash2, Sparkles, ArrowUp, ArrowDown } from "lucide-react
 import { toast } from "sonner";
 import { ADMIN_ASSISTANT_MODEL } from "@/lib/ai-models";
 
-export function PricingTab() {
+export function PricingTab({ defaultTab = "consultas" }: { defaultTab?: "consultas" | "exames" | "odontologia" | "telemedicina" | "clinicas" } = {}) {
   return (
-    <Tabs defaultValue="consultas">
+    <Tabs defaultValue={defaultTab}>
       <TabsList>
         <TabsTrigger value="consultas">Consultas</TabsTrigger>
         <TabsTrigger value="exames">Exames</TabsTrigger>
         <TabsTrigger value="odontologia">Procedimentos Odontológicos</TabsTrigger>
+        <TabsTrigger value="telemedicina">Teleconsulta e PA</TabsTrigger>
         <TabsTrigger value="clinicas">Clínicas</TabsTrigger>
       </TabsList>
       <TabsContent value="consultas" className="mt-4"><ConsultasSubTab /></TabsContent>
       <TabsContent value="exames" className="mt-4"><ExamesSubTab /></TabsContent>
       <TabsContent value="odontologia" className="mt-4"><OdontologiaSubTab /></TabsContent>
+      <TabsContent value="telemedicina" className="mt-4"><TelemedicinaSubTab /></TabsContent>
       {/* Cadastro das clínicas Amor Saúde (nome, região, endereço, telefones, Maps, principal).
           Morava em Contatos e Endereços → "Clínica Amor Saúde"; mudou pra cá porque é onde
           vive o resto do catálogo do Amor Saúde (Consultas/Exames/Odontologia já selecionam

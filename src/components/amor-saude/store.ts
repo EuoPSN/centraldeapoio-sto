@@ -59,11 +59,11 @@ export const limparOrcamento = () => orcStore.write([]);
 export const noOrcamento = (lista: OrcamentoRef[], item: { tipo: string; id: string }) =>
   lista.some((r) => r.tipo === item.tipo && r.id === item.id);
 
-/** Soma só itens com preço fixo (consultas); exames e odonto entram como "consulte a clínica". */
+/** Soma só itens com preço fixo (consultas e teleconsultas); exames e odonto entram como "consulte a clínica". */
 export function resumoOrcamento(itens: AmorItem[]) {
   let total = 0, particular = 0, temFixo = false, particularCompleto = true;
   itens.forEach((i) => {
-    if (i.tipo !== "consulta" || i.cartao == null) return;
+    if ((i.tipo !== "consulta" && i.tipo !== "telemedicina") || i.cartao == null) return;
     temFixo = true;
     total += i.cartao;
     if (i.particular == null) particularCompleto = false;
@@ -79,6 +79,11 @@ export function textoOrcamento(itens: AmorItem[]) {
     if (i.tipo === "consulta") {
       if (i.cartao == null) return `• ${i.nome}: consulte a clínica`;
       return `• ${i.nome}: *${reais(i.cartao)}*${i.particular != null ? ` (particular ${reais(i.particular)})` : ""}`;
+    }
+    if (i.tipo === "telemedicina") {
+      const rot = i.modalidade === "pa_digital" ? "PA digital" : "Teleconsulta";
+      if (i.cartao == null) return `• ${rot} – ${i.nome}: consulte a clínica`;
+      return `• ${rot} – ${i.nome}: *${reais(i.cartao)}*${i.particular != null ? ` (particular ${reais(i.particular)})` : ""}`;
     }
     if (i.tipo === "exame") return `• ${i.nome}: consulte a clínica${i.media != null ? ` (média de ${reais(i.media)})` : ""}`;
     return `• ${i.nome}: valor após avaliação odontológica`;

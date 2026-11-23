@@ -28,6 +28,7 @@ const TABS = [
   { to: "/amor-saude/consultas", label: "Consultas" },
   { to: "/amor-saude/exames", label: "Exames" },
   { to: "/amor-saude/odontologia", label: "Odontologia" },
+  { to: "/amor-saude/telemedicina", label: "Teleconsulta e PA" },
   { to: "/amor-saude/clinicas", label: "Clínicas" },
 ] as const;
 

@@ -53,6 +53,7 @@ import { Route as AuthenticatedAmorSaudeClinicasRouteImport } from './routes/_au
 import { Route as AuthenticatedAmorSaudeConsultasRouteImport } from './routes/_authenticated/amor-saude.consultas'
 import { Route as AuthenticatedAmorSaudeExamesRouteImport } from './routes/_authenticated/amor-saude.exames'
 import { Route as AuthenticatedAmorSaudeOdontologiaRouteImport } from './routes/_authenticated/amor-saude.odontologia'
+import { Route as AuthenticatedAmorSaudeTelemedicinaRouteImport } from './routes/_authenticated/amor-saude.telemedicina'
 import { Route as AuthenticatedScriptsIndexRouteImport } from './routes/_authenticated/scripts.index'
 import { Route as AuthenticatedScriptsBibliotecaRouteImport } from './routes/_authenticated/scripts.biblioteca'
 import { Route as AuthenticatedScriptsClienteDisseRouteImport } from './routes/_authenticated/scripts.cliente-disse'
@@ -302,6 +303,12 @@ const AuthenticatedAmorSaudeOdontologiaRoute =
     path: '/odontologia',
     getParentRoute: () => AuthenticatedAmorSaudeRoute,
   } as any)
+const AuthenticatedAmorSaudeTelemedicinaRoute =
+  AuthenticatedAmorSaudeTelemedicinaRouteImport.update({
+    id: '/telemedicina',
+    path: '/telemedicina',
+    getParentRoute: () => AuthenticatedAmorSaudeRoute,
+  } as any)
 const AuthenticatedScriptsIndexRoute =
   AuthenticatedScriptsIndexRouteImport.update({
     id: '/scripts/',
@@ -399,6 +406,7 @@ export interface FileRoutesByFullPath {
   '/amor-saude/consultas': typeof AuthenticatedAmorSaudeConsultasRoute
   '/amor-saude/exames': typeof AuthenticatedAmorSaudeExamesRoute
   '/amor-saude/odontologia': typeof AuthenticatedAmorSaudeOdontologiaRoute
+  '/amor-saude/telemedicina': typeof AuthenticatedAmorSaudeTelemedicinaRoute
   '/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
   '/scripts/cliente-disse': typeof AuthenticatedScriptsClienteDisseRoute
   '/api/extensao/cliente-disse': typeof ApiExtensaoClienteDisseRoute
@@ -453,6 +461,7 @@ export interface FileRoutesByTo {
   '/amor-saude/consultas': typeof AuthenticatedAmorSaudeConsultasRoute
   '/amor-saude/exames': typeof AuthenticatedAmorSaudeExamesRoute
   '/amor-saude/odontologia': typeof AuthenticatedAmorSaudeOdontologiaRoute
+  '/amor-saude/telemedicina': typeof AuthenticatedAmorSaudeTelemedicinaRoute
   '/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
   '/scripts/cliente-disse': typeof AuthenticatedScriptsClienteDisseRoute
   '/api/extensao/cliente-disse': typeof ApiExtensaoClienteDisseRoute
@@ -510,6 +519,7 @@ export interface FileRoutesById {
   '/_authenticated/amor-saude/consultas': typeof AuthenticatedAmorSaudeConsultasRoute
   '/_authenticated/amor-saude/exames': typeof AuthenticatedAmorSaudeExamesRoute
   '/_authenticated/amor-saude/odontologia': typeof AuthenticatedAmorSaudeOdontologiaRoute
+  '/_authenticated/amor-saude/telemedicina': typeof AuthenticatedAmorSaudeTelemedicinaRoute
   '/_authenticated/scripts/biblioteca': typeof AuthenticatedScriptsBibliotecaRoute
   '/_authenticated/scripts/cliente-disse': typeof AuthenticatedScriptsClienteDisseRoute
   '/api/extensao/cliente-disse': typeof ApiExtensaoClienteDisseRoute
@@ -567,6 +577,7 @@ export interface FileRouteTypes {
     | '/amor-saude/consultas'
     | '/amor-saude/exames'
     | '/amor-saude/odontologia'
+    | '/amor-saude/telemedicina'
     | '/scripts/biblioteca'
     | '/scripts/cliente-disse'
     | '/api/extensao/cliente-disse'
@@ -621,6 +632,7 @@ export interface FileRouteTypes {
     | '/amor-saude/consultas'
     | '/amor-saude/exames'
     | '/amor-saude/odontologia'
+    | '/amor-saude/telemedicina'
     | '/scripts/biblioteca'
     | '/scripts/cliente-disse'
     | '/api/extensao/cliente-disse'
@@ -677,6 +689,7 @@ export interface FileRouteTypes {
     | '/_authenticated/amor-saude/consultas'
     | '/_authenticated/amor-saude/exames'
     | '/_authenticated/amor-saude/odontologia'
+    | '/_authenticated/amor-saude/telemedicina'
     | '/_authenticated/scripts/biblioteca'
     | '/_authenticated/scripts/cliente-disse'
     | '/api/extensao/cliente-disse'
@@ -1014,6 +1027,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAmorSaudeOdontologiaRouteImport
       parentRoute: typeof AuthenticatedAmorSaudeRoute
     }
+    '/_authenticated/amor-saude/telemedicina': {
+      id: '/_authenticated/amor-saude/telemedicina'
+      path: '/telemedicina'
+      fullPath: '/amor-saude/telemedicina'
+      preLoaderRoute: typeof AuthenticatedAmorSaudeTelemedicinaRouteImport
+      parentRoute: typeof AuthenticatedAmorSaudeRoute
+    }
     '/_authenticated/scripts/': {
       id: '/_authenticated/scripts/'
       path: '/scripts'
@@ -1092,6 +1112,7 @@ interface AuthenticatedAmorSaudeRouteChildren {
   AuthenticatedAmorSaudeConsultasRoute: typeof AuthenticatedAmorSaudeConsultasRoute
   AuthenticatedAmorSaudeExamesRoute: typeof AuthenticatedAmorSaudeExamesRoute
   AuthenticatedAmorSaudeOdontologiaRoute: typeof AuthenticatedAmorSaudeOdontologiaRoute
+  AuthenticatedAmorSaudeTelemedicinaRoute: typeof AuthenticatedAmorSaudeTelemedicinaRoute
   AuthenticatedAmorSaudeIndexRoute: typeof AuthenticatedAmorSaudeIndexRoute
 }
 
@@ -1102,6 +1123,8 @@ const AuthenticatedAmorSaudeRouteChildren: AuthenticatedAmorSaudeRouteChildren =
     AuthenticatedAmorSaudeExamesRoute: AuthenticatedAmorSaudeExamesRoute,
     AuthenticatedAmorSaudeOdontologiaRoute:
       AuthenticatedAmorSaudeOdontologiaRoute,
+    AuthenticatedAmorSaudeTelemedicinaRoute:
+      AuthenticatedAmorSaudeTelemedicinaRoute,
     AuthenticatedAmorSaudeIndexRoute: AuthenticatedAmorSaudeIndexRoute,
   }
 

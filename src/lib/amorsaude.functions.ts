@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { isAdminUser } from "@/lib/authz";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { tabela } from "@/lib/db-novas-tabelas";
 
 // Amor Saúde: consultas, exames, odontologia e clínicas numa leitura só.
 
@@ -9,7 +10,7 @@ export const getAmorSaude = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const db = context.supabase;
-    const [clinicas, consultas, exames, procedimentos, settings] = await Promise.all([
+    const [clinicas, consultas, exames, procedimentos, settings, telemedicina, site] = await Promise.all([
       db.from("contatos_enderecos").select("*").eq("tipo", "clinica_amor_saude")
         .order("position", { ascending: true }).order("nome_regiao", { ascending: true }),
       db.from("pricing_items").select("*, clinicas:pricing_item_clinicas(clinica_id)")
@@ -19,6 +20,9 @@ export const getAmorSaude = createServerFn({ method: "GET" })
       db.from("procedimentos_odontologicos").select("*, clinicas:procedimento_clinicas(clinica_id)")
         .order("position", { ascending: true }).order("nome", { ascending: true }),
       db.from("app_settings").select("avaliacao_odonto_valor").eq("id", 1).maybeSingle(),
+      // Tabela e coluna novas (Fase D): se a migração ainda não rodou, a leitura falha e some.
+      tabela(db, "telemedicina_itens").select("*").order("position", { ascending: true }).order("nome", { ascending: true }),
+      tabela(db, "app_settings").select("amor_saude_site_url").eq("id", 1).maybeSingle(),
     ]);
     for (const r of [clinicas, consultas, exames, procedimentos]) {
       if (r.error) throw new Error(r.error.message);
@@ -29,11 +33,15 @@ export const getAmorSaude = createServerFn({ method: "GET" })
       exames: exames.data ?? [],
       procedimentos: procedimentos.data ?? [],
       // Coluna nova: se a migração ainda não rodou, a leitura falha e o bloco some.
+      telemedicina: ((telemedicina as { error: unknown; data: unknown[] | null }).error ? [] : ((telemedicina as { data: unknown[] | null }).data ?? [])) as any[],
+      siteUrl: (site as { error: unknown; data: { amor_saude_site_url: string | null } | null }).error
+        ? null
+        : ((site as { data: { amor_saude_site_url: string | null } | null }).data?.amor_saude_site_url ?? null),
       avaliacaoOdonto: settings.error ? null : (settings.data?.avaliacao_odonto_valor ?? null),
     };
   });
 
-const Tipo = z.enum(["consulta", "exame", "odontologia"]);
+const Tipo = z.enum(["consulta", "exame", "odontologia", "telemedicina"]);
 
 /** Cada cópia feita no Amor Saúde soma 1 no item ("Mais procuradas"). */
 export const registerAmorSaudeUse = createServerFn({ method: "POST" })

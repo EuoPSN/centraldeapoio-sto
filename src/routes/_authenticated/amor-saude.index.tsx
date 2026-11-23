@@ -12,7 +12,7 @@ export const Route = createFileRoute("/_authenticated/amor-saude/")({
 const contagem = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`;
 
 function AmorSaudeHub() {
-  const { consultas, exames, procedimentos, clinicas, isLoading } = useAmorSaude();
+  const { consultas, exames, procedimentos, clinicas, telemedicina, isLoading } = useAmorSaude();
   const footer = (text: string) => (isLoading ? <SkeletonLine className="h-3.5 w-28" /> : text);
 
   return (
@@ -57,7 +57,13 @@ function AmorSaudeHub() {
             text="Endereço, telefone e rota no Maps."
             footer={footer(contagem(clinicas.length, "unidade", "unidades"))}
           />
-          <HubCard icon={Video} title="Teleconsulta e PA digital" text="Atendimento online e pronto atendimento." badge="Em breve" soon />
+          <HubCard
+            to="/amor-saude/telemedicina"
+            icon={Video}
+            title="Teleconsulta e PA digital"
+            text="Atendimento online e pronto atendimento."
+            footer={footer(`${telemedicina.filter((t) => t.modalidade === "teleconsulta").length} teleconsultas · ${telemedicina.filter((t) => t.modalidade === "pa_digital").length} PA digital`)}
+          />
           <HubCard icon={CircleQuestionMark} title="Dúvidas frequentes" text="As perguntas que os clientes mais fazem." badge="Em breve" soon />
         </div>
 

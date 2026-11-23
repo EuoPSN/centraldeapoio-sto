@@ -18,12 +18,13 @@ import { listAllCategories } from "@/lib/taxonomy.functions";
 import { listMetas } from "@/lib/metas.functions";
 import { listUnidades } from "@/lib/unidades.functions";
 import { listExames } from "@/lib/exames.functions";
+import { listTelemedicina } from "@/lib/telemedicina.functions";
 import { listProcedimentos } from "@/lib/odontologia.functions";
 import { listChangelog } from "@/lib/changelog.functions";
 import { listContatos } from "@/lib/contatos.functions";
 import {
   BookOpen, DollarSign, GraduationCap, MessageSquareQuote, Wrench,
-  Users, Tag, UserCog, MapPin, FlaskConical, Stethoscope, Star, Bot, Hospital, Building2, LifeBuoy, MessageCircleQuestion,
+  Users, Tag, UserCog, MapPin, FlaskConical, Stethoscope, Star, Bot, Hospital, Video, Building2, LifeBuoy, MessageCircleQuestion,
 } from "lucide-react";
 
 /** Evento para abrir a busca global já com um texto (ex.: campo central da Início). */
@@ -40,7 +41,7 @@ export function openGlobalSearch(query = "", scope: SearchScope = "all", opts: {
   window.dispatchEvent(new CustomEvent<{ query: string; scope: SearchScope; clienteDisse?: boolean }>(OPEN_SEARCH_EVENT, { detail: { query, scope, clienteDisse: opts.clienteDisse } }));
 }
 
-const AMOR_KEYS: string[] = ["pricing", "exames", "procedimentos", "clinicas"];
+const AMOR_KEYS: string[] = ["pricing", "exames", "procedimentos", "telemedicina", "clinicas"];
 
 export function GlobalSearch() {
   const [open, setOpen] = useState(false);
@@ -89,6 +90,7 @@ export function GlobalSearch() {
   const lMetas = useServerFn(listMetas);
   const lUnidades = useServerFn(listUnidades);
   const lExames = useServerFn(listExames);
+  const lTele = useServerFn(listTelemedicina);
   const lProced = useServerFn(listProcedimentos);
   const lChangelog = useServerFn(listChangelog);
   const lContatos = useServerFn(listContatos);
@@ -105,6 +107,7 @@ export function GlobalSearch() {
   const metas = useQuery({ queryKey: ["sg-metas"], queryFn: () => lMetas({}), enabled: open, retry: false });
   const unidades = useQuery({ queryKey: ["sg-unidades"], queryFn: () => lUnidades({}), enabled: open });
   const exames = useQuery({ queryKey: ["sg-exames"], queryFn: () => lExames({}), enabled: open });
+  const telemedicina = useQuery({ queryKey: ["sg-telemedicina"], queryFn: () => lTele({}), enabled: open, retry: false });
   const procedimentos = useQuery({ queryKey: ["sg-procedimentos"], queryFn: () => lProced({}), enabled: open });
   const changelog = useQuery({ queryKey: ["sg-changelog"], queryFn: () => lChangelog({}), enabled: open });
   const contatos = useQuery({ queryKey: ["sg-contatos"], queryFn: () => lContatos({}), enabled: open });
@@ -119,6 +122,7 @@ export function GlobalSearch() {
   type MetaSearchRow = { nome: string; mes_referencia: string };
   type UnidadeSearchRow = { id: string; nome: string; cidade: string | null; estado: string | null };
   type ExameSearchRow = { id: string; nome: string; tipo: string; categoria: string | null };
+  type TeleSearchRow = { id: string; nome: string; tipo: string; ativo?: boolean };
   type ProcedimentoSearchRow = { id: string; nome: string; categoria: string | null };
   type ChangelogSearchRow = { id: string; title: string; summary: string; published: boolean };
   type ClinicaSearchRow = { id: string; tipo: string; nome_regiao: string; regiao?: string | null; endereco: string | null };
@@ -151,11 +155,19 @@ export function GlobalSearch() {
     metas: ((metas.data ?? []) as MetaSearchRow[]).map((r) => ({ id: r.nome, title: r.nome, preview: `Meta de ${r.mes_referencia}`, icon: UserCog, route: "/funcionarios" })),
     unidades: ((unidades.data ?? []) as UnidadeSearchRow[]).map((r) => ({ id: r.id, title: r.nome, preview: [r.cidade, r.estado].filter(Boolean).join("/") || "Unidade", icon: MapPin, route: "/admin" })),
     exames: ((exames.data ?? []) as ExameSearchRow[]).map((r) => ({ id: r.id, title: r.nome, preview: `${r.tipo === "imagem" ? "Imagem" : "Laboratorial"}${r.categoria ? ` · ${r.categoria}` : ""}`, icon: FlaskConical, route: "/amor-saude/exames", search: { item: r.id } })),
+    telemedicina: ((telemedicina.data ?? []) as TeleSearchRow[]).filter((r) => r.ativo !== false).map((r) => ({
+      id: r.id,
+      title: r.tipo === "pa_digital" ? `PA digital · ${r.nome}` : `Teleconsulta · ${r.nome}`,
+      preview: r.tipo === "pa_digital" ? "Pronto atendimento por vídeo" : "Consulta por vídeo, agendada",
+      icon: Video,
+      route: "/amor-saude/telemedicina",
+      search: { item: r.id },
+    })),
     procedimentos: ((procedimentos.data ?? []) as ProcedimentoSearchRow[]).map((r) => ({ id: r.id, title: r.nome, preview: r.categoria ?? "Procedimento odontológico", icon: Stethoscope, route: "/amor-saude/odontologia", search: { item: r.id } })),
     changelog: ((changelog.data ?? []) as ChangelogSearchRow[]).filter((r) => r.published).map((r) => ({ id: r.id, title: r.title, preview: r.summary.slice(0, 80), icon: Star, route: "/" })),
   } satisfies Record<string, Item[]>), [
     messages.data, knowledge.data, pricing.data, prob.data, tut.data, profiles.data,
-    cats.data, metas.data, unidades.data, exames.data, procedimentos.data, changelog.data, contatos.data,
+    cats.data, metas.data, unidades.data, exames.data, telemedicina.data, procedimentos.data, changelog.data, contatos.data,
   ]);
 
   const go = (path: string, search?: Record<string, string>) => {
@@ -189,6 +201,7 @@ export function GlobalSearch() {
     { key: "pricing", heading: "Amor Saúde · Consultas", limit: 6 },
     { key: "exames", heading: "Amor Saúde · Exames", limit: 6 },
     { key: "procedimentos", heading: "Amor Saúde · Odontologia", limit: 6 },
+    { key: "telemedicina", heading: "Amor Saúde · Teleconsulta e PA digital", limit: 6 },
     { key: "clinicas", heading: "Amor Saúde · Clínicas", limit: 6 },
     { key: "profiles", heading: "Perfis de Cliente", limit: 6 },
     { key: "unidades", heading: "Unidades", limit: 6 },
