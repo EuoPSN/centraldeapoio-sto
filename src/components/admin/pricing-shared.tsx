@@ -11,13 +11,13 @@ import { toast } from "sonner";
 // ============================================================
 // Exames (Laboratoriais e de Imagem)
 // ============================================================
-export type ExameDraft = { nome: string; tipo: "laboratorial" | "imagem"; categoria: string; material: string; jejum: boolean; preparo: string; descricao: string; observacoes: string; selected: boolean };
+export type ExameDraft = { nome: string; tipo: "laboratorial" | "imagem"; categoria: string; material: string; jejum: boolean; preparo: string; descricao: string; observacoes: string; selected: boolean; media_referencia?: string; preparo_itens?: string; clinicas?: string[] };
 
 
 // ============================================================
 // Procedimentos Odontológicos
 // ============================================================
-export type ProcedimentoDraft = { nome: string; categoria: string; descricao: string; cuidados_pos: string; observacoes: string; selected: boolean };
+export type ProcedimentoDraft = { nome: string; categoria: string; descricao: string; cuidados_pos: string; observacoes: string; selected: boolean; clinicas?: string[] };
 
 
 // Valor geral da "Avaliação odontológica (Cartão de TODOS)", mostrado em Amor Saúde → Odontologia.
