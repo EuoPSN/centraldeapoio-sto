@@ -7,7 +7,6 @@ import { BarraLote, BuscaLista, CabecalhoSelecao, ConfirmarLote, useExcluirLote,
 import { Checkbox } from "@/components/ui/checkbox";
 import { matches } from "@/components/amor-saude/model";
 import { ClinicasPicker } from "@/components/admin/ClinicasPicker";
-import { simulatorChat } from "@/lib/simulator.chat.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +16,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Pencil, Plus, Trash2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { ADMIN_ASSISTANT_MODEL } from "@/lib/ai-models";
+import { IaImportDialog, type ItemInterpretado } from "@/components/admin/IaImportDialog";
+import { REGRAS_IA, listaDeTextos } from "@/lib/ia-importacao";
 import { ProcedimentoDraft, AvaliacaoOdontoField } from "@/components/admin/pricing-shared";
 
 
@@ -26,7 +26,6 @@ export function OdontologiaSubTab() {
   const upsert = useServerFn(upsertProcedimento);
   const del = useServerFn(deleteProcedimento);
   const setClinicasFn = useServerFn(setItemClinicas);
-  const genAI = useServerFn(simulatorChat);
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["procedimentos"], queryFn: () => list({}) });
 
@@ -55,57 +54,32 @@ export function OdontologiaSubTab() {
   };
 
   const [aiOpen, setAiOpen] = useState(false);
-  const [aiInput, setAiInput] = useState("");
-  const [aiGenerating, setAiGenerating] = useState(false);
-  const [aiImporting, setAiImporting] = useState(false);
-  const [aiPreview, setAiPreview] = useState<ProcedimentoDraft[]>([]);
+  type ProcIA = Omit<ProcedimentoDraft, "selected">;
 
-  const generateFromAI = async () => {
-    if (!aiInput.trim()) return;
-    setAiGenerating(true);
-    try {
-      const prompt = `Você organiza uma lista de procedimentos odontológicos oferecidos por um cartão de descontos em saúde (Cartão de Todos), a partir de texto livre enviado por um administrador.
+  const promptIA = `Você organiza uma lista de procedimentos odontológicos oferecidos por um cartão de descontos em saúde (Cartão de Todos, rede Amor Saúde), a partir de texto livre enviado por um administrador.
 Extraia cada procedimento mencionado e devolva um array JSON, um objeto por item, no formato exato:
-[{"nome": "...", "categoria": "...", "descricao": "...", "cuidados_pos": "...", "observacoes": "..."}]
+[{"nome": "...", "categoria": "...", "descricao": "...", "cuidados_pos": "...", "observacoes": "...", "clinicas": ["..."]}]
 
 Regras:
+- ${REGRAS_IA.split("\n").join("\n- ")}
+- Não devolva preço: não há campo de preço nesta lista.
 - "nome": nome do procedimento (ex: Limpeza, Extração, Clareamento).
 - "categoria": agrupamento curto (ex: Preventivo, Cirúrgico, Estético).
 - "descricao": como o procedimento funciona.
 - "cuidados_pos": cuidados após o procedimento, em texto livre. Use "" se não houver.
 - "observacoes": informação extra relevante. Use "" se não houver.
-- Responda APENAS com o array JSON, sem markdown, sem texto fora do JSON.`;
-      const { content } = await genAI({ data: { messages: [{ role: "system", content: prompt }, { role: "user", content: aiInput }], model: ADMIN_ASSISTANT_MODEL } });
-      const clean = content.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(clean);
-      const items: ProcedimentoDraft[] = (Array.isArray(parsed) ? parsed : [])
-        .map((it: any) => ({ nome: it.nome || "", categoria: it.categoria || "", descricao: it.descricao || "", cuidados_pos: it.cuidados_pos || "", observacoes: it.observacoes || "", selected: true }))
-        .filter((it: any) => !!it.nome) as ProcedimentoDraft[];
-      if (items.length === 0) { toast.error("A IA não conseguiu identificar nenhum procedimento no texto enviado."); return; }
-      setAiPreview(items);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao gerar com IA.");
-    } finally {
-      setAiGenerating(false);
-    }
+- "clinicas": nomes de clínica/região citados para o procedimento; use ["todas"] se o texto disser que vale em todas; lista vazia se não houver menção.`;
+
+  const interpretarIA = (c: Record<string, unknown>): ItemInterpretado<ProcIA> | null => {
+    const nome = String(c.nome ?? "").trim();
+    if (!nome) return null;
+    const txt = (v: unknown) => String(v ?? "").replace(/^null$/i, "").trim();
+    return { nome, clinicas: listaDeTextos(c.clinicas), dados: { nome, categoria: txt(c.categoria), descricao: txt(c.descricao), cuidados_pos: txt(c.cuidados_pos), observacoes: txt(c.observacoes) } };
   };
 
-  const importSelected = async () => {
-    const toImport = aiPreview.filter((i) => i.selected);
-    if (toImport.length === 0) return;
-    setAiImporting(true);
-    try {
-      for (const item of toImport) {
-        await upsert({ data: { nome: item.nome, categoria: item.categoria || null, descricao: item.descricao || null, cuidados_pos: item.cuidados_pos || null, observacoes: item.observacoes || null, position: 0 } });
-      }
-      toast.success(`${toImport.length} procedimento(s) importado(s)!`);
-      qc.invalidateQueries({ queryKey: ["procedimentos"] });
-      setAiOpen(false); setAiInput(""); setAiPreview([]);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao importar.");
-    } finally {
-      setAiImporting(false);
-    }
+  const importarIA = async (d: ProcIA, extra: { clinicaIds: string[] }) => {
+    const saved = await upsert({ data: { nome: d.nome.trim(), categoria: d.categoria.trim() || null, descricao: d.descricao.trim() || null, cuidados_pos: d.cuidados_pos.trim() || null, observacoes: d.observacoes.trim() || null, position: 0 } });
+    if (extra.clinicaIds.length > 0) await setClinicasFn({ data: { tipo: "odontologia", item_id: String(saved.id), clinica_ids: extra.clinicaIds } });
   };
 
   const [busca, setBusca] = useState("");
@@ -171,43 +145,27 @@ Regras:
         </DialogContent>
       </Dialog>
 
-      <Dialog open={aiOpen} onOpenChange={(v) => { setAiOpen(v); if (!v) { setAiPreview([]); setAiInput(""); } }}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Preencher Procedimentos Odontológicos com IA</DialogTitle></DialogHeader>
-          {aiPreview.length === 0 ? (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">Cole a lista de procedimentos.</p>
-              <Textarea rows={12} value={aiInput} onChange={(e) => setAiInput(e.target.value)} placeholder={"Ex:\nLimpeza - Preventivo - remove tártaro e placa - evitar alimentos duros por 24h"} />
+      <IaImportDialog<ProcIA>
+        open={aiOpen} onOpenChange={setAiOpen} titulo="Preencher Procedimentos Odontológicos com IA" rotuloItem="procedimento"
+        instrucao="Cole a lista de procedimentos (tabela ou texto do site). A IA preenche todos os campos, inclusive as clínicas."
+        placeholder={"Ex:\nLimpeza - Preventivo - remove tártaro e placa - evitar alimentos duros por 24h"}
+        prompt={promptIA} interpretar={interpretarIA} existentes={((q.data ?? []) as any[]).map((r) => r.nome)} comClinicas
+        nomeDe={(d) => d.nome}
+        resumo={(d) => d.categoria || "sem categoria"}
+        campos={(d, set) => (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Nome</Label><Input value={d.nome} onChange={(e) => set({ nome: e.target.value })} /></div>
+              <div><Label>Categoria</Label><Input value={d.categoria} onChange={(e) => set({ categoria: e.target.value })} /></div>
             </div>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">Confira antes de importar.</p>
-              <Table>
-                <TableHeader><TableRow><TableHead className="w-8"></TableHead><TableHead>Nome</TableHead><TableHead>Categoria</TableHead></TableRow></TableHeader>
-                <TableBody>
-                  {aiPreview.map((item, idx) => (
-                    <TableRow key={idx}>
-                      <TableCell><input type="checkbox" checked={item.selected} onChange={(e) => setAiPreview((prev) => prev.map((p, i) => i === idx ? { ...p, selected: e.target.checked } : p))} /></TableCell>
-                      <TableCell className="font-medium">{item.nome}</TableCell>
-                      <TableCell>{item.categoria || "—"}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-          <DialogFooter>
-            {aiPreview.length === 0 ? (
-              <Button onClick={generateFromAI} disabled={aiGenerating || !aiInput.trim()} className="gap-2"><Sparkles className="h-4 w-4" /> {aiGenerating ? "Gerando..." : "Gerar com IA"}</Button>
-            ) : (
-              <>
-                <Button variant="outline" onClick={() => setAiPreview([])}>Voltar</Button>
-                <Button onClick={importSelected} disabled={aiImporting || aiPreview.every((p) => !p.selected)}>{aiImporting ? "Importando..." : `Importar ${aiPreview.filter((p) => p.selected).length} item(ns)`}</Button>
-              </>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <div><Label>Descrição</Label><Textarea rows={3} value={d.descricao} onChange={(e) => set({ descricao: e.target.value })} /></div>
+            <div><Label>Cuidados pós-procedimento</Label><Textarea rows={2} value={d.cuidados_pos} onChange={(e) => set({ cuidados_pos: e.target.value })} /></div>
+            <div><Label>Observações</Label><Input value={d.observacoes} onChange={(e) => set({ observacoes: e.target.value })} /></div>
+          </>
+        )}
+        importar={importarIA}
+        onConcluido={() => { qc.invalidateQueries({ queryKey: ["procedimentos"] }); qc.invalidateQueries({ queryKey: ["amor-saude"] }); }}
+      />
     </Card>
   );
 }
