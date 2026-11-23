@@ -15,7 +15,6 @@ import { listKnowledge } from "@/lib/knowledge.functions";
 import { listMessages } from "@/lib/messages.functions";
 import { listClientProfilesForTraining } from "@/lib/clientprofiles.functions";
 import { listAllCategories } from "@/lib/taxonomy.functions";
-import { listMetas } from "@/lib/metas.functions";
 import { listUnidades } from "@/lib/unidades.functions";
 import { listExames } from "@/lib/exames.functions";
 import { listTelemedicina } from "@/lib/telemedicina.functions";
@@ -26,7 +25,7 @@ import { listChangelog } from "@/lib/changelog.functions";
 import { listContatos } from "@/lib/contatos.functions";
 import {
   BookOpen, DollarSign, GraduationCap, MessageSquareQuote, Wrench,
-  Users, Tag, UserCog, MapPin, FlaskConical, Stethoscope, Star, Bot, Hospital, Video, AudioLines, PhoneCall, Building2, LifeBuoy, MessageCircleQuestion,
+  Users, Tag, MapPin, FlaskConical, Stethoscope, Star, Bot, Hospital, Video, AudioLines, PhoneCall, Building2, LifeBuoy, MessageCircleQuestion,
 } from "lucide-react";
 
 /** Evento para abrir a busca global já com um texto (ex.: campo central da Início). */
@@ -90,7 +89,6 @@ export function GlobalSearch() {
   const lpPricing = useServerFn(listPricing);
   const lProfiles = useServerFn(listClientProfilesForTraining);
   const lCats = useServerFn(listAllCategories);
-  const lMetas = useServerFn(listMetas);
   const lUnidades = useServerFn(listUnidades);
   const lExames = useServerFn(listExames);
   const lTele = useServerFn(listTelemedicina);
@@ -108,9 +106,6 @@ export function GlobalSearch() {
   const pricing = useQuery({ queryKey: ["sg-pricing"], queryFn: () => lpPricing({}), enabled: open });
   const profiles = useQuery({ queryKey: ["sg-profiles"], queryFn: () => lProfiles({}), enabled: open });
   const cats = useQuery({ queryKey: ["sg-cats"], queryFn: () => lCats({}), enabled: open });
-  // Funcionários/Metas é restrito a admin — pra quem não é admin essa consulta simplesmente
-  // falha silenciosamente (React Query não propaga o erro pra UI) e o grupo não aparece.
-  const metas = useQuery({ queryKey: ["sg-metas"], queryFn: () => lMetas({}), enabled: open, retry: false });
   const unidades = useQuery({ queryKey: ["sg-unidades"], queryFn: () => lUnidades({}), enabled: open });
   const exames = useQuery({ queryKey: ["sg-exames"], queryFn: () => lExames({}), enabled: open });
   const telemedicina = useQuery({ queryKey: ["sg-telemedicina"], queryFn: () => lTele({}), enabled: open, retry: false });
@@ -129,7 +124,6 @@ export function GlobalSearch() {
   type PricingSearchRow = { id: string; specialty: string; category: string; cartao_price: number | null };
   type ProfileSearchRow = { id: string; name: string; difficulty: string; category?: { name: string } | null };
   type CategorySearchRow = { id: string; name: string; scope: string };
-  type MetaSearchRow = { nome: string; mes_referencia: string };
   type UnidadeSearchRow = { id: string; nome: string; cidade: string | null; estado: string | null };
   type ExameSearchRow = { id: string; nome: string; tipo: string; categoria: string | null };
   type DuvidaSearchRow = { id: string; tema: string; pergunta: string; resposta: string; status: string };
@@ -164,7 +158,6 @@ export function GlobalSearch() {
     tutorials: ((tut.data ?? []) as ContentSearchRow[]).map((r) => ({ id: r.id, title: r.title, preview: r.content.slice(0, 80), icon: GraduationCap, route: "/tutoriais" })),
     profiles: ((profiles.data ?? []) as ProfileSearchRow[]).map((r) => ({ id: r.id, title: r.name, preview: r.category?.name ? `${r.category.name} · dificuldade ${r.difficulty}` : `Dificuldade ${r.difficulty}`, icon: Users, route: "/simulador-ia" })),
     categories: ((cats.data ?? []) as CategorySearchRow[]).map((r) => ({ id: r.id, title: r.name, preview: `Categoria · ${r.scope}`, icon: Tag, route: "/admin" })),
-    metas: ((metas.data ?? []) as MetaSearchRow[]).map((r) => ({ id: r.nome, title: r.nome, preview: `Meta de ${r.mes_referencia}`, icon: UserCog, route: "/funcionarios" })),
     unidades: ((unidades.data ?? []) as UnidadeSearchRow[]).map((r) => ({ id: r.id, title: r.nome, preview: [r.cidade, r.estado].filter(Boolean).join("/") || "Unidade", icon: MapPin, route: "/admin" })),
     exames: ((exames.data ?? []) as ExameSearchRow[]).map((r) => ({ id: r.id, title: r.nome, preview: `${r.tipo === "imagem" ? "Imagem" : "Laboratorial"}${r.categoria ? ` · ${r.categoria}` : ""}`, icon: FlaskConical, route: "/amor-saude/exames", search: { item: r.id } })),
     telemedicina: ((telemedicina.data ?? []) as TeleSearchRow[]).filter((r) => r.ativo !== false).map((r) => ({
@@ -191,7 +184,7 @@ export function GlobalSearch() {
     changelog: ((changelog.data ?? []) as ChangelogSearchRow[]).filter((r) => r.published).map((r) => ({ id: r.id, title: r.title, preview: r.summary.slice(0, 80), icon: Star, route: "/" })),
   } satisfies Record<string, Item[]>), [
     messages.data, knowledge.data, pricing.data, prob.data, tut.data, profiles.data,
-    cats.data, metas.data, unidades.data, exames.data, telemedicina.data, duvidas.data, roteirosAudio.data, roteirosLigacao.data, procedimentos.data, changelog.data, contatos.data,
+    cats.data, unidades.data, exames.data, telemedicina.data, duvidas.data, roteirosAudio.data, roteirosLigacao.data, procedimentos.data, changelog.data, contatos.data,
   ]);
 
   const go = (path: string, search?: Record<string, string>) => {
@@ -235,7 +228,6 @@ export function GlobalSearch() {
     { key: "unidadesCdt", heading: "Contatos · Unidades CDT", limit: 6 },
     { key: "suporte", heading: "Contatos · Suporte e setores", limit: 6 },
     { key: "categories", heading: "Categorias", limit: 6 },
-    { key: "metas", heading: "Funcionários", limit: 6 },
     { key: "changelog", heading: "Novidades", limit: 6 },
     { key: "problems", heading: "Problemas Técnicos", limit: 6 },
     { key: "tutorials", heading: "Tutoriais", limit: 6 },

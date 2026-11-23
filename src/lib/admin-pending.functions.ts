@@ -21,6 +21,8 @@ export interface AdminPendingItem {
   context: string;
   count: number;
   href: string;
+  // Selo "novo aviso" (só na primeira versão dos avisos da Fase E; pode sair numa fase futura).
+  novo?: boolean;
 }
 
 export interface AdminPendingCounts {
@@ -299,6 +301,68 @@ export const getAdminPendingCounts = createServerFn({ method: "GET" })
         context: count > 0 ? "Rascunhos esperando resposta ou publicação" : "Tudo em dia",
         count,
         href: "/admin/duvidas",
+      });
+    }
+
+    // 8) Fase E: Roteiros de áudio em rascunho (se a tabela ainda não existir, não derruba as outras).
+    {
+      let count = 0;
+      let semAudio = 0;
+      try {
+        const { data, error } = await db.from("roteiros_audio").select("audio_url").eq("status", "rascunho");
+        if (error) throw new Error(error.message);
+        count = data?.length ?? 0;
+        semAudio = (data ?? []).filter((r: any) => !r.audio_url).length;
+      } catch { /* tabela ainda não criada */ }
+      bySection.roteirosaudio = count;
+      items.push({
+        key: "roteirosaudio",
+        title: "Roteiros de áudio em rascunho",
+        context: count === 0 ? "Tudo em dia" : semAudio > 0 ? "Sem áudio de exemplo" : "Revise e publique",
+        count,
+        href: "/admin/roteirosaudio",
+        novo: true,
+      });
+    }
+
+    // 9) Fase E: Scripts de ligação em rascunho (só aparece se houver).
+    {
+      let count = 0;
+      try {
+        const { data, error } = await db.from("roteiros_ligacao").select("id").eq("status", "rascunho");
+        if (error) throw new Error(error.message);
+        count = data?.length ?? 0;
+      } catch { /* tabela ainda não criada */ }
+      bySection.scriptsligacao = count;
+      items.push({
+        key: "scriptsligacao",
+        title: "Scripts de ligação em rascunho",
+        context: count > 0 ? "Revise e publique" : "Tudo em dia",
+        count,
+        href: "/admin/scriptsligacao",
+        novo: true,
+      });
+    }
+
+    // 10) Fase E: Teleconsulta sem nenhuma especialidade cadastrada (contagem 1 quando está vazia).
+    {
+      let count = 0;
+      try {
+        const { count: n, error } = await db
+          .from("telemedicina_itens")
+          .select("id", { count: "exact", head: true })
+          .eq("tipo", "teleconsulta");
+        if (error) throw new Error(error.message);
+        count = n === 0 ? 1 : 0;
+      } catch { /* tabela ainda não criada */ }
+      bySection.pricing = (bySection.pricing ?? 0) + count;
+      items.push({
+        key: "teleconsulta_vazia",
+        title: "Teleconsulta sem especialidades",
+        context: count > 0 ? "Cadastre as especialidades em Amor Saúde > Teleconsulta" : "Tudo em dia",
+        count,
+        href: "/admin/telemedicina",
+        novo: true,
       });
     }
 

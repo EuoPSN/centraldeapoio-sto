@@ -23,13 +23,8 @@ import { Route as AuthenticatedConhecimentoRouteImport } from './routes/_authent
 import { Route as AuthenticatedContatosRouteImport } from './routes/_authenticated/contatos'
 import { Route as AuthenticatedCopilotoRouteImport } from './routes/_authenticated/copiloto'
 import { Route as AuthenticatedCriarScriptRouteImport } from './routes/_authenticated/criar-script'
-import { Route as AuthenticatedCrmLeadsRouteImport } from './routes/_authenticated/crm-leads'
-import { Route as AuthenticatedCrmProspeccaoRouteImport } from './routes/_authenticated/crm-prospeccao'
-import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedFuncionariosRouteImport } from './routes/_authenticated/funcionarios'
 import { Route as AuthenticatedMeuMapaRouteImport } from './routes/_authenticated/meu-mapa'
 import { Route as AuthenticatedMeusRelatoriosRouteImport } from './routes/_authenticated/meus-relatorios'
-import { Route as AuthenticatedMotorDecisaoRouteImport } from './routes/_authenticated/motor-decisao'
 import { Route as AuthenticatedNovidadesRouteImport } from './routes/_authenticated/novidades'
 import { Route as AuthenticatedPrecosRouteImport } from './routes/_authenticated/precos'
 import { Route as AuthenticatedProblemasRouteImport } from './routes/_authenticated/problemas'
@@ -140,28 +135,6 @@ const AuthenticatedCriarScriptRoute =
     path: '/criar-script',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedCrmLeadsRoute = AuthenticatedCrmLeadsRouteImport.update({
-  id: '/crm-leads',
-  path: '/crm-leads',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedCrmProspeccaoRoute =
-  AuthenticatedCrmProspeccaoRouteImport.update({
-    id: '/crm-prospeccao',
-    path: '/crm-prospeccao',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedFuncionariosRoute =
-  AuthenticatedFuncionariosRouteImport.update({
-    id: '/funcionarios',
-    path: '/funcionarios',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedMeuMapaRoute = AuthenticatedMeuMapaRouteImport.update({
   id: '/meu-mapa',
   path: '/meu-mapa',
@@ -171,12 +144,6 @@ const AuthenticatedMeusRelatoriosRoute =
   AuthenticatedMeusRelatoriosRouteImport.update({
     id: '/meus-relatorios',
     path: '/meus-relatorios',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedMotorDecisaoRoute =
-  AuthenticatedMotorDecisaoRouteImport.update({
-    id: '/motor-decisao',
-    path: '/motor-decisao',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedNovidadesRoute = AuthenticatedNovidadesRouteImport.update({
@@ -400,13 +367,8 @@ export interface FileRoutesByFullPath {
   '/contatos': typeof AuthenticatedContatosRoute
   '/copiloto': typeof AuthenticatedCopilotoRoute
   '/criar-script': typeof AuthenticatedCriarScriptRoute
-  '/crm-leads': typeof AuthenticatedCrmLeadsRoute
-  '/crm-prospeccao': typeof AuthenticatedCrmProspeccaoRoute
-  '/dashboard': typeof AuthenticatedDashboardRoute
-  '/funcionarios': typeof AuthenticatedFuncionariosRoute
   '/meu-mapa': typeof AuthenticatedMeuMapaRoute
   '/meus-relatorios': typeof AuthenticatedMeusRelatoriosRoute
-  '/motor-decisao': typeof AuthenticatedMotorDecisaoRoute
   '/novidades': typeof AuthenticatedNovidadesRoute
   '/precos': typeof AuthenticatedPrecosRoute
   '/problemas': typeof AuthenticatedProblemasRoute
@@ -457,13 +419,8 @@ export interface FileRoutesByTo {
   '/contatos': typeof AuthenticatedContatosRoute
   '/copiloto': typeof AuthenticatedCopilotoRoute
   '/criar-script': typeof AuthenticatedCriarScriptRoute
-  '/crm-leads': typeof AuthenticatedCrmLeadsRoute
-  '/crm-prospeccao': typeof AuthenticatedCrmProspeccaoRoute
-  '/dashboard': typeof AuthenticatedDashboardRoute
-  '/funcionarios': typeof AuthenticatedFuncionariosRoute
   '/meu-mapa': typeof AuthenticatedMeuMapaRoute
   '/meus-relatorios': typeof AuthenticatedMeusRelatoriosRoute
-  '/motor-decisao': typeof AuthenticatedMotorDecisaoRoute
   '/novidades': typeof AuthenticatedNovidadesRoute
   '/precos': typeof AuthenticatedPrecosRoute
   '/problemas': typeof AuthenticatedProblemasRoute
@@ -518,13 +475,8 @@ export interface FileRoutesById {
   '/_authenticated/contatos': typeof AuthenticatedContatosRoute
   '/_authenticated/copiloto': typeof AuthenticatedCopilotoRoute
   '/_authenticated/criar-script': typeof AuthenticatedCriarScriptRoute
-  '/_authenticated/crm-leads': typeof AuthenticatedCrmLeadsRoute
-  '/_authenticated/crm-prospeccao': typeof AuthenticatedCrmProspeccaoRoute
-  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/funcionarios': typeof AuthenticatedFuncionariosRoute
   '/_authenticated/meu-mapa': typeof AuthenticatedMeuMapaRoute
   '/_authenticated/meus-relatorios': typeof AuthenticatedMeusRelatoriosRoute
-  '/_authenticated/motor-decisao': typeof AuthenticatedMotorDecisaoRoute
   '/_authenticated/novidades': typeof AuthenticatedNovidadesRoute
   '/_authenticated/precos': typeof AuthenticatedPrecosRoute
   '/_authenticated/problemas': typeof AuthenticatedProblemasRoute
@@ -580,13 +532,8 @@ export interface FileRouteTypes {
     | '/contatos'
     | '/copiloto'
     | '/criar-script'
-    | '/crm-leads'
-    | '/crm-prospeccao'
-    | '/dashboard'
-    | '/funcionarios'
     | '/meu-mapa'
     | '/meus-relatorios'
-    | '/motor-decisao'
     | '/novidades'
     | '/precos'
     | '/problemas'
@@ -637,13 +584,8 @@ export interface FileRouteTypes {
     | '/contatos'
     | '/copiloto'
     | '/criar-script'
-    | '/crm-leads'
-    | '/crm-prospeccao'
-    | '/dashboard'
-    | '/funcionarios'
     | '/meu-mapa'
     | '/meus-relatorios'
-    | '/motor-decisao'
     | '/novidades'
     | '/precos'
     | '/problemas'
@@ -697,13 +639,8 @@ export interface FileRouteTypes {
     | '/_authenticated/contatos'
     | '/_authenticated/copiloto'
     | '/_authenticated/criar-script'
-    | '/_authenticated/crm-leads'
-    | '/_authenticated/crm-prospeccao'
-    | '/_authenticated/dashboard'
-    | '/_authenticated/funcionarios'
     | '/_authenticated/meu-mapa'
     | '/_authenticated/meus-relatorios'
-    | '/_authenticated/motor-decisao'
     | '/_authenticated/novidades'
     | '/_authenticated/precos'
     | '/_authenticated/problemas'
@@ -856,34 +793,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCriarScriptRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/crm-leads': {
-      id: '/_authenticated/crm-leads'
-      path: '/crm-leads'
-      fullPath: '/crm-leads'
-      preLoaderRoute: typeof AuthenticatedCrmLeadsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/crm-prospeccao': {
-      id: '/_authenticated/crm-prospeccao'
-      path: '/crm-prospeccao'
-      fullPath: '/crm-prospeccao'
-      preLoaderRoute: typeof AuthenticatedCrmProspeccaoRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/funcionarios': {
-      id: '/_authenticated/funcionarios'
-      path: '/funcionarios'
-      fullPath: '/funcionarios'
-      preLoaderRoute: typeof AuthenticatedFuncionariosRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/meu-mapa': {
       id: '/_authenticated/meu-mapa'
       path: '/meu-mapa'
@@ -896,13 +805,6 @@ declare module '@tanstack/react-router' {
       path: '/meus-relatorios'
       fullPath: '/meus-relatorios'
       preLoaderRoute: typeof AuthenticatedMeusRelatoriosRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/motor-decisao': {
-      id: '/_authenticated/motor-decisao'
-      path: '/motor-decisao'
-      fullPath: '/motor-decisao'
-      preLoaderRoute: typeof AuthenticatedMotorDecisaoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/novidades': {
@@ -1205,13 +1107,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedContatosRoute: typeof AuthenticatedContatosRoute
   AuthenticatedCopilotoRoute: typeof AuthenticatedCopilotoRoute
   AuthenticatedCriarScriptRoute: typeof AuthenticatedCriarScriptRoute
-  AuthenticatedCrmLeadsRoute: typeof AuthenticatedCrmLeadsRoute
-  AuthenticatedCrmProspeccaoRoute: typeof AuthenticatedCrmProspeccaoRoute
-  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedFuncionariosRoute: typeof AuthenticatedFuncionariosRoute
   AuthenticatedMeuMapaRoute: typeof AuthenticatedMeuMapaRoute
   AuthenticatedMeusRelatoriosRoute: typeof AuthenticatedMeusRelatoriosRoute
-  AuthenticatedMotorDecisaoRoute: typeof AuthenticatedMotorDecisaoRoute
   AuthenticatedNovidadesRoute: typeof AuthenticatedNovidadesRoute
   AuthenticatedPrecosRoute: typeof AuthenticatedPrecosRoute
   AuthenticatedProblemasRoute: typeof AuthenticatedProblemasRoute
@@ -1250,13 +1147,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedContatosRoute: AuthenticatedContatosRoute,
   AuthenticatedCopilotoRoute: AuthenticatedCopilotoRoute,
   AuthenticatedCriarScriptRoute: AuthenticatedCriarScriptRoute,
-  AuthenticatedCrmLeadsRoute: AuthenticatedCrmLeadsRoute,
-  AuthenticatedCrmProspeccaoRoute: AuthenticatedCrmProspeccaoRoute,
-  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedFuncionariosRoute: AuthenticatedFuncionariosRoute,
   AuthenticatedMeuMapaRoute: AuthenticatedMeuMapaRoute,
   AuthenticatedMeusRelatoriosRoute: AuthenticatedMeusRelatoriosRoute,
-  AuthenticatedMotorDecisaoRoute: AuthenticatedMotorDecisaoRoute,
   AuthenticatedNovidadesRoute: AuthenticatedNovidadesRoute,
   AuthenticatedPrecosRoute: AuthenticatedPrecosRoute,
   AuthenticatedProblemasRoute: AuthenticatedProblemasRoute,
