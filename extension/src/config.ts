@@ -9,7 +9,7 @@ export const CONFIG = {
   /** Chave pública (anon/publishable). Pode ficar na extensão; não é segredo. */
   SUPABASE_ANON_KEY: "sb_publishable_d1pRHM_YMp9KEtwH6gAPfw_x-gB7Kpw",
   /** Endereço do app da Omnia: funções de IA e ticket (/api/extensao/*) e links do painel. */
-  OMNIA_URL: "https://CONFIGURAR-ENDERECO-DA-OMNIA.lovable.app",
+  OMNIA_URL: "https://omniaapoio.lovable.app",
   /** Versão do texto "O que a extensão faz" que o atendente confirma. */
   VERSAO_ACEITE: "1",
 };

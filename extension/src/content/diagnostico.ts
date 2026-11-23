@@ -1,6 +1,7 @@
 // Relatório de diagnóstico da leitura. Descreve SÓ ESTRUTURA: nunca texto de nós, nomes de
 // contato, números nem mensagens. Só consulta o DOM (nada é clicado, rolado ou escrito).
 import { SELETORES } from "./selectors";
+import { lerDadosDoContato } from "./contato";
 import { acharCabecalho, acharPainel, avaliarConversa, elementosDeMensagem, textoDe, tituloDoCabecalho } from "./ler";
 import type { MetodoDirecao } from "./ler";
 
@@ -61,7 +62,14 @@ export interface Relatorio {
     decisao: "le" | "nao_le";
     motivo_codigo: string;
     motivo: string;
+    /** Só contagens (sem nomes). */
+    remetentes?: { distintos_recebidas: number; distintos_enviadas: number };
+    /** Forma mascarada de chat-subtitle (dígito→9, letra→a, nomes→[nome]) e quantos nomes tem. */
+    subtitulo?: { forma_mascarada: string; nomes: "0" | "1" | "2+" };
+    observacoes?: string[];
   };
+  /** Aba "Dados do contato": detecção e forma mascarada do texto do número (nunca o número nem o nome). */
+  dados_do_contato?: { aba_detectada: boolean; seletor_que_decidiu: string; forma_mascarada_do_texto: string; numero_encontrado: boolean };
   /** Preenchido pelo painel: motivo do último resultado de leitura nesta sessão do painel. */
   ultimo_resultado_no_painel?: { codigo: string; motivo: string } | null;
 }
@@ -187,6 +195,11 @@ function areaDeMensagens(painel: Element, primeira: Element | null): Element {
 // Relatório
 // ---------------------------------------------------------------------------
 
+function dadosDoContatoRelatorio(doc: Document) {
+  const d = lerDadosDoContato(doc);
+  return { aba_detectada: d.aba_detectada, seletor_que_decidiu: d.seletor_que_decidiu, forma_mascarada_do_texto: d.forma_mascarada, numero_encontrado: !!d.numero };
+}
+
 export function montarDiagnostico(doc: Document, extra: { versao: string; dominio: string }): Relatorio {
   const painel = acharPainel(doc);
   const cab = painel ? acharCabecalho(painel) : null;
@@ -224,7 +237,6 @@ export function montarDiagnostico(doc: Document, extra: { versao: string; domini
     sem_mensagem_do_cliente: "só há mensagens enviadas: não dá para confirmar o contato: não lê",
     remetente_ilegivel: "remetente das mensagens recebidas não pôde ser lido: não lê",
     grupo_varios_remetentes: "mais de um remetente nas mensagens recebidas: parece grupo: não lê",
-    grupo_remetente_diferente_do_titulo: "remetente das recebidas diferente do título do cabeçalho: não lê",
     individual_confirmado: "conversa individual confirmada: lê",
   };
   return {
@@ -234,11 +246,13 @@ export function montarDiagnostico(doc: Document, extra: { versao: string; domini
       arvore: resumir(areaDeMensagens(painel, msgs[0]?.el ?? null), 0, proibidas),
     },
     formas_dos_identificadores: formasDosIdentificadores(painel, msgs.find((m) => m.remetente)?.el ?? msgs[0]?.el ?? null),
+    dados_do_contato: dadosDoContatoRelatorio(doc),
     direcao: { metodos: a.metodosDeDirecao, autores_ignorados_em_citacao: a.autoresEmCitacao },
     deteccao: {
       sinais_de_grupo: a.sinais, verificacoes_positivas: a.positivas,
       decisao: a.veredito.tipo === "individual" ? "le" : "nao_le",
       motivo_codigo: a.codigo, motivo: motivos[a.codigo] ?? a.codigo,
+      remetentes: a.remetentes, subtitulo: a.subtitulo, observacoes: a.observacoes,
     },
   };
 }

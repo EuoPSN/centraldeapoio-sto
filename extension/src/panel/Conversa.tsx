@@ -1,14 +1,16 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { chamar } from "../lib/api";
-import { identificarConversa, lerConversaAberta } from "../lib/conteudo";
+import { identificarConversa, lerConversaAberta, lerDadosDoContato } from "../lib/conteudo";
 import { carregarHashesIgnorados, voltarALer } from "../lib/ignorados";
 import { registrarEvento } from "../lib/eventos";
 import { registrarResultado } from "../lib/diagnostico-estado";
-import { numeroMascarado } from "../lib/numeros";
+import { numeroMascarado, validarTelefoneDigitado } from "../lib/numeros";
+import type { DadosDoContato } from "../lib/mensagens";
 import { sanitizarMensagens, ultimaFalaDoCliente } from "../lib/sanitizar";
 import { CONFIG } from "../config";
 import { dataCurta, rotuloCampo, rotuloValor, type QuandoId } from "../lib/rotulos";
 import { FormTicket, type CamposForm } from "./FormTicket";
+import { CampoTelefone, numeroEfetivo } from "./Telefone";
 
 // Tipos das respostas de /api/extensao/* (espelho de src/lib/extensao.ts na Omnia).
 export interface TicketDTO {
@@ -27,7 +29,7 @@ type Fase =
   | { t: "inicial" }
   | { t: "lendo"; passo: string }
   | { t: "erro"; motivo: string; naoLe: boolean; codigo?: string; ignorado?: { nome: string; numero: string } }
-  | { t: "proposta"; nome: string; numero: string; campos: CamposForm; original: CamposForm; consulta: Consulta; objecoes: string[] }
+  | { t: "proposta"; nome: string; numero: string; telefone: string; corrigindo: boolean; campos: CamposForm; original: CamposForm; consulta: Consulta; objecoes: string[] }
   | { t: "salvo"; r: Salvo };
 
 const paraForm = (p: Proposta): CamposForm => ({
@@ -44,7 +46,7 @@ function tituloDoErro(f: { codigo?: string; naoLe: boolean; ignorado?: unknown }
 
 /** O link "Ver diagnóstico" aparece quando a causa pode ser layout/seletor (não grupo, ignorado nem pausa). */
 function comLinkDiagnostico(codigo?: string): boolean {
-  return !!codigo && !["grupo", "grupo_varios_remetentes", "grupo_remetente_diferente_do_titulo", "sem_mensagem_do_cliente", "ignorado", "pausada", "erro_servidor"].includes(codigo);
+  return !!codigo && !["grupo", "grupo_varios_remetentes", "sem_mensagem_do_cliente", "ignorado", "pausada", "erro_servidor"].includes(codigo);
 }
 
 /** Diferença (de → para) entre o ticket que já existe e o que está no formulário. */
@@ -78,6 +80,7 @@ export function ConversaAba({
   const [fase, setFase] = useState<Fase>({ t: "inicial" });
   const [salvando, setSalvando] = useState(false);
   const [erroSalvar, setErroSalvar] = useState<string | null>(null);
+  const [contato, setContato] = useState<DadosDoContato | null>(null);
   const [prevReiniciar, setPrevReiniciar] = useState(reiniciar);
   if (prevReiniciar !== reiniciar) { setPrevReiniciar(reiniciar); setFase({ t: "inicial" }); }
 
@@ -115,7 +118,8 @@ export function ConversaAba({
     const consulta: Consulta = cons && cons.ok ? cons.dados : { existente: null, historico: [], outroAtendente: false };
     const campos = paraForm(prop.dados.proposta);
     onContexto({ nome, numero, ultimaFala, ponto: campos.ponto_parada });
-    setFase({ t: "proposta", nome, numero, campos, original: campos, consulta, objecoes: prop.dados.proposta.objecoes_detectadas });
+    ultimoConsultado.current = numero;
+    setFase({ t: "proposta", nome, numero, telefone: "", corrigindo: false, campos, original: campos, consulta, objecoes: prop.dados.proposta.objecoes_detectadas });
   }
 
   async function voltarALerContato(c: { nome: string; numero: string }) {
@@ -127,7 +131,7 @@ export function ConversaAba({
     setSalvando(true);
     setErroSalvar(null);
     const r = await chamar<Salvo>("ticket", {
-      op: "salvar", numero: f.numero, nome: f.nome,
+      op: "salvar", numero: numeroEfetivo(f.numero, f.telefone), nome: f.nome,
       campos: { ...f.campos, dependentes: f.campos.dependentes === "" ? null : Number(f.campos.dependentes) },
     });
     setSalvando(false);
@@ -135,6 +139,42 @@ export function ConversaAba({
     setFase({ t: "salvo", r: r.dados });
     onSalvo();
   }
+
+  // "Dados do contato": só LÊ o que o atendente já abriu no WhatsApp (nunca abre nem clica).
+  const emProposta = fase.t === "proposta";
+  const precisaContato = emProposta && !fase.numero;
+  useEffect(() => {
+    if (!precisaContato) { setContato(null); return; }
+    let vivo = true;
+    const consultar = () => lerDadosDoContato().then((d) => { if (vivo) setContato(d); });
+    void consultar();
+    const timer = setInterval(consultar, 3000);
+    return () => { vivo = false; clearInterval(timer); };
+  }, [precisaContato]);
+
+  // Telefone digitado válido: refaz a consulta de ticket existente (o número só entra neste pedido).
+  const telefoneDigitado = fase.t === "proposta" ? fase.telefone : "";
+  const numeroLido = fase.t === "proposta" ? fase.numero : "";
+  const consultaSeq = useRef(0);
+  const ultimoConsultado = useRef("");
+  useEffect(() => {
+    if (fase.t !== "proposta") { ultimoConsultado.current = ""; return; }
+    const v = validarTelefoneDigitado(telefoneDigitado);
+    if (!v.ok) return; // inválido: só mostra o erro; mantém a consulta anterior
+    const alvo = v.digitos || numeroLido;
+    if (alvo === ultimoConsultado.current) return;
+    const seq = ++consultaSeq.current;
+    const timer = setTimeout(async () => {
+      const vazia: Consulta = { existente: null, historico: [], outroAtendente: false };
+      const cons = alvo ? await chamar<Consulta>("ticket", { op: "consultar", numero: alvo }) : null;
+      if (seq !== consultaSeq.current) return;
+      ultimoConsultado.current = alvo;
+      const consulta = cons && cons.ok ? cons.dados : vazia;
+      setFase((atual) => (atual.t === "proposta" ? { ...atual, consulta } : atual));
+    }, 500);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [telefoneDigitado, numeroLido, fase.t]);
 
   if (fase.t === "inicial" || fase.t === "erro" || fase.t === "lendo") {
     return (
@@ -184,7 +224,8 @@ export function ConversaAba({
   const f = fase;
   const existente = f.consulta.existente;
   const muda = existente ? diferencas(existente, f.campos) : [];
-  const mascarado = numeroMascarado(f.numero);
+  const efetivo = numeroEfetivo(f.numero, f.telefone);
+  const mascarado = numeroMascarado(efetivo);
   const nomeMostrado = f.nome || (mascarado ? "Contato sem nome" : "Contato");
   return (
     <div>
@@ -196,6 +237,13 @@ export function ConversaAba({
         </div>
         <span className="pilula fixa">Conversa individual</span>
       </div>
+
+      <CampoTelefone
+        lido={f.numero} valor={f.telefone} corrigindo={f.corrigindo} contato={contato}
+        onChange={(telefone) => setFase({ ...f, telefone })}
+        onCorrigir={() => setFase({ ...f, corrigindo: true })}
+        onUsarContato={(n) => setFase({ ...f, telefone: n, corrigindo: true })}
+      />
 
       {f.consulta.outroAtendente && !existente && (
         <div className="card"><strong>Este contato já está com outro atendente.</strong><p className="suave" style={{ margin: "4px 0 0" }}>Você pode criar o seu ticket normalmente.</p></div>
@@ -241,7 +289,7 @@ export function ConversaAba({
         {existente ? "Ao atualizar, o histórico do ticket guarda o que mudou." : "Ao salvar, o ticket entra no Retomar hoje com a cadência certa."} Você pode editar qualquer campo antes. “Corrigir” descarta esta proposta para você ler de novo.
       </p>
       <div className="linha" style={{ justifyContent: "flex-start", flexWrap: "wrap" }}>
-        <button className="pilula" style={{ flex: "0 0 auto" }} onClick={() => onIgnorar({ nome: f.nome, numero: f.numero })}>Ignorar este contato</button>
+        <button className="pilula" style={{ flex: "0 0 auto" }} onClick={() => onIgnorar({ nome: f.nome, numero: efetivo })}>Ignorar este contato</button>
         <button className="pilula" style={{ flex: "0 0 auto" }} onClick={onAbrirClienteDisse}>Abrir em O cliente disse…</button>
       </div>
       {existente && f.consulta.historico.length > 0 && <Historico linhas={f.consulta.historico} />}

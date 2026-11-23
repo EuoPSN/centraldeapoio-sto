@@ -55,12 +55,6 @@ describe("1c · direção sem depender do formato do data-id", () => {
     expect(identificar(document)).toMatchObject({ ok: false, naoLe: true });
   });
 
-  it("remetente das recebidas diferente do título (um só nome): não lê", () => {
-    const a = av(pagina({ nome: "Marlene R.", mensagens: msgNovo({ quem: "Outra Pessoa", texto: "oi", ticks: false }, 1) + msgNovo({ quem: "Atendente", texto: "olá", ticks: true }, 2) }));
-    // dois nomes ≠ título → o método do remetente não vale e as recebidas têm remetente diferente
-    expect(a.veredito.tipo).toBe("grupo");
-  });
-
   it("citação com author NÃO vira sinal de grupo; author no corpo da mensagem SIM", () => {
     expect(av(NOVO_INDIVIDUAL).sinais.sinal_remetente_nas_mensagens).toBe("não");
     const comAutor = NOVO_INDIVIDUAL.replace('<div data-pre-plain-text="[14:31, 21/11/2026] Marlene R.: "', '<span data-testid="author">Ana</span><div data-pre-plain-text="[14:31, 21/11/2026] Marlene R.: "');
@@ -148,5 +142,65 @@ describe("1c · diagnóstico: forma mascarada dos identificadores", () => {
     expect(Object.values(rel.formas_dos_identificadores!.data_id).reduce((a, b) => a + b, 0)).toBe(5);
     document.body.innerHTML = NOVO_INDIVIDUAL;
     expect(montarDiagnostico(document, { versao: "0.1.0", dominio: "web.whatsapp.com" }).direcao!.autores_ignorados_em_citacao).toBe(1);
+  });
+});
+
+describe("1d · A · falso positivo de grupo", () => {
+  const enviadas = (n: number) => Array.from({ length: n }, (_, i) => msgNovo({ quem: "Atendente Paulo", texto: `resposta ${i}`, ticks: true }, 10 + i)).join("");
+
+  it("conversa individual real: 1 recebida com nome diferente do título + 5 enviadas → LÊ", async () => {
+    const a = av(pagina({ nome: "Maria Cliente", mensagens: msgNovo({ quem: "Marlene R.", texto: "oi", ticks: false }, 1) + enviadas(5) }));
+    expect(a.veredito.tipo).toBe("individual");
+    expect(a.codigo).toBe("individual_confirmado");
+    expect(a.observacoes).toEqual(["titulo_diferente_do_remetente"]);
+    expect(a.remetentes).toEqual({ distintos_recebidas: 1, distintos_enviadas: 1 });
+    expect(a.metodosDeDirecao.icones_de_status).toBe(6);
+    expect(a.sinais.sinal_remetente_nas_mensagens).toBe("não");
+    expect((await lerConversa(document)).ok).toBe(true);
+  });
+
+  it("grupo com 2 remetentes recebidos → NÃO LÊ", () => {
+    const a = av(pagina({ nome: "Maria Cliente", mensagens: msgNovo({ quem: "Ana", texto: "oi", ticks: false }, 1) + msgNovo({ quem: "Bruno", texto: "oi", ticks: false }, 2) + enviadas(2) }));
+    expect(a.veredito.tipo).toBe("grupo");
+    expect(a.codigo).toBe("grupo_varios_remetentes");
+    expect(a.remetentes.distintos_recebidas).toBe(2);
+  });
+
+  it("grupo com rótulo de autor visível → NÃO LÊ", () => {
+    const html = pagina({ nome: "Maria Cliente", mensagens: msgNovo({ quem: "Ana", texto: "oi", ticks: false }, 1) + enviadas(1) })
+      .replace('<div data-pre-plain-text="[14:31, 21/11/2026] Ana: "', '<span data-testid="author">Ana</span><div data-pre-plain-text="[14:31, 21/11/2026] Ana: "');
+    expect(av(html).veredito.tipo).toBe("grupo");
+  });
+
+  it("individual com autor só dentro de mensagem citada → LÊ", () => {
+    const a = av(pagina({ nome: "Maria Cliente", mensagens: msgNovo({ quem: "Marlene R.", texto: "ok", ticks: false, citada: { autor: "Você", texto: "pode?" } }, 1) + enviadas(2) }));
+    expect(a.veredito.tipo).toBe("individual");
+    expect(a.autoresEmCitacao).toBe(1);
+  });
+
+  it("só mensagens enviadas → NÃO LÊ com a mensagem do motivo", () => {
+    abrir(pagina({ nome: "Maria Cliente", mensagens: enviadas(3) }));
+    expect(identificar(document)).toEqual({ ok: false, motivo: "Ainda não há mensagem do cliente nesta conversa.", naoLe: true, codigo: "sem_mensagem_do_cliente" });
+  });
+
+  it("remetente das recebidas ilegível → NÃO LÊ (na dúvida)", () => {
+    abrir(NOVO_REMETENTE_ILEGIVEL);
+    expect(identificar(document).ok).toBe(false);
+  });
+
+  it("diagnóstico: subtítulo mascarado e contagem de nomes; só contagens de remetentes", () => {
+    const rel = (sub: string) => {
+      document.body.innerHTML = pagina({ nome: "Maria Cliente", mensagens: msgNovo({ quem: "Marlene R.", texto: "oi", ticks: false }, 1) + enviadas(1) })
+        .replace("</header>", `<span data-testid="chat-subtitle" dir="auto">${sub}</span></header>`);
+      return montarDiagnostico(document, { versao: "0.1.0", dominio: "web.whatsapp.com" });
+    };
+    const g = rel("Ana, Bruno, você");
+    expect(g.deteccao.subtitulo).toEqual({ forma_mascarada: "[nome], [nome], [nome]", nomes: "2+" });
+    expect(g.deteccao.decisao).toBe("nao_le");
+    expect(rel("visto por último hoje às 14:30").deteccao.subtitulo).toEqual({ forma_mascarada: "aaaaa aaa aaaaaa aaaa aa 99?99", nomes: "0" });
+    const txt = JSON.stringify(rel("Ana, Bruno, você"));
+    for (const p of ["Ana", "Bruno", "Marlene", "Maria Cliente", "Atendente Paulo"]) expect(txt, p).not.toContain(p);
+    expect(rel("Ana").deteccao.subtitulo!.nomes).toBe("1");
+    expect(rel("online").deteccao.remetentes).toEqual({ distintos_recebidas: 1, distintos_enviadas: 1 });
   });
 });

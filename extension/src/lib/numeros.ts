@@ -25,3 +25,17 @@ export function numeroMascarado(v: string): string {
   const ddd = nac.length >= 10 ? nac.slice(0, 2) : "";
   return [nac !== d ? "+55" : "", ddd, "····", `··${d.slice(-2)}`].filter(Boolean).join(" ");
 }
+
+export type ResultadoTelefone = { ok: true; digitos: string } | { ok: false; erro: string };
+export const ERRO_TELEFONE = "Confira o número: use DDD e o número completo (10 a 13 dígitos).";
+
+/** Valida o telefone digitado à mão: só dígitos, espaço, hífen, parênteses e "+"; normaliza para
+ * dígitos; vale com 10 a 13 dígitos (com ou sem 55, com ou sem o 9 inicial). Vazio = ok sem número. */
+export function validarTelefoneDigitado(texto: string): ResultadoTelefone | { ok: true; digitos: "" } {
+  const t = (texto ?? "").trim();
+  if (!t) return { ok: true, digitos: "" };
+  if (!/^[\d\s()+-]+$/.test(t)) return { ok: false, erro: "Use só números, espaço, hífen, parênteses e +." };
+  const digitos = soDigitos(t);
+  if (!numeroValido(digitos)) return { ok: false, erro: ERRO_TELEFONE };
+  return { ok: true, digitos };
+}
