@@ -41,6 +41,26 @@ function acharTelefone(aba: Element): { numero: string; texto: string } | null {
   return null;
 }
 
+const RE_CABECALHO_ABA = /^(dados do contato|informa[cç][õo]es do contato|contact info)$/i;
+
+/** Fallback sem depender de data-testid/aria: acha o cabeçalho "Dados do contato" e sobe até a região
+ * que também mostra o título da conversa (nome ou número) fora do painel da conversa. */
+function abaPorCabecalho(doc: Document, painel: Element, titulo: string): Element | null {
+  const folhas = Array.from(doc.querySelectorAll("*")).filter((e) => e.children.length === 0 && !painel.contains(e));
+  const cab = folhas.filter((e) => RE_CABECALHO_ABA.test(textoDe(e).replace(/[‎‏‪-‮]/g, "").trim()));
+  for (const c of cab) {
+    let r: Element | null = c.parentElement;
+    for (let i = 0; r && i < 14; i++, r = r.parentElement) {
+      if (r.closest("#pane-side") || r.contains(painel)) break;
+      const temTitulo = Array.from(r.querySelectorAll("*")).some(
+        (e) => e.children.length === 0 && normalizarNome(e.getAttribute("title") || textoDe(e)) === titulo,
+      );
+      if (temTitulo) return r;
+    }
+  }
+  return null;
+}
+
 export function lerDadosDoContato(doc: Document): DadosDoContato {
   try {
     const painel = acharPainel(doc);
@@ -60,6 +80,11 @@ export function lerDadosDoContato(doc: Document): DadosDoContato {
         const achado = acharTelefone(r);
         return { aba_detectada: true, seletor_que_decidiu: sel, forma_mascarada: achado ? mascararDigitos(achado.texto) : "", numero: achado?.numero ?? "" };
       }
+    }
+    const alt = abaPorCabecalho(doc, painel, titulo);
+    if (alt) {
+      const achado = acharTelefone(alt);
+      return { aba_detectada: true, seletor_que_decidiu: "cabecalho:Dados do contato", forma_mascarada: achado ? mascararDigitos(achado.texto) : "", numero: achado?.numero ?? "" };
     }
   } catch {
     /* falha de forma segura */
