@@ -1,5 +1,6 @@
 import { useServerFn } from "@tanstack/react-start";
 import { Pill } from "@/components/Pill";
+import { FluxoVideoCard } from "@/components/admin/FluxoVideoCard";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { listMessages, upsertMessage, deleteMessage } from "@/lib/messages.functions";
@@ -26,7 +27,7 @@ import { Pencil, Plus, Trash2, ArrowUp, ArrowDown, Sparkles, Wand2, X, Upload, L
 import { toast } from "sonner";
 import { ADMIN_ASSISTANT_MODEL, ADMIN_ORGANIZER_MODEL } from "@/lib/ai-models";
 
-interface Cat { id: string; name: string; parent_id: string | null; }
+interface Cat { id: string; name: string; parent_id: string | null; video_url?: string | null; video_duracao?: string | null; }
 interface Stage { id: string; name: string; position: number; category_id: string | null; path_id: string | null; }
 interface FlowPath { id: string; name: string; category_id: string | null; branches_from_stage_id: string; merges_into_stage_id: string | null; position: number; }
 type ScriptDraft = { title: string; content: string; shortcut: string; internal_note: string; selected: boolean };
@@ -771,6 +772,11 @@ As etapas devem vir na ordem certa de uso. Sem markdown, sem texto fora do JSON.
               ))}
             </div>
           )}
+
+          {flowCat !== "geral" && (() => {
+            const c = cats.find((x) => x.id === flowCat);
+            return c ? <FluxoVideoCard categoryId={c.id} nome={c.name} videoUrl={c.video_url ?? null} videoDuracao={c.video_duracao ?? null} /> : null;
+          })()}
 
           <div className="flex gap-2 max-w-xl flex-wrap items-center">
             <Input placeholder="Nome da nova etapa" value={newStageName} onChange={(e) => setNewStageName(e.target.value)}

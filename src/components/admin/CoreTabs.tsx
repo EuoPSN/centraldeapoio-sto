@@ -1,3 +1,4 @@
+import { VideoFields, erroDosCamposDeVideo } from "@/components/admin/VideoFields";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Fragment, useEffect, useState } from "react";
@@ -191,10 +192,14 @@ function ContentTab({ section }: { section: "problemas" | "tutoriais" }) {
   const feedbackQ = useQuery({ queryKey: ["ajuda-feedback-summary"], queryFn: () => feedbackSummaryFn({}) });
   const [feedbackOpenId, setFeedbackOpenId] = useState<string | null>(null);
 
-  const [edit, setEdit] = useState<null | { id?: string; category: string; title: string; content: string; link_externo?: string; link_label?: string }>(null);
+  const [edit, setEdit] = useState<null | { id?: string; category: string; title: string; content: string; link_externo?: string; link_label?: string; video_url: string; video_duracao: string }>(null);
 
   const upsertMut = useMutation({
-    mutationFn: () => upsert({ data: { ...edit!, section, tags: [], position: 0, link_externo: edit!.link_externo ?? null, link_label: edit!.link_label ?? null } }),
+    mutationFn: () => {
+      const erroVideo = erroDosCamposDeVideo(edit!.video_url, edit!.video_duracao);
+      if (erroVideo) throw new Error(erroVideo);
+      return upsert({ data: { ...edit!, section, tags: [], position: 0, link_externo: edit!.link_externo ?? null, link_label: edit!.link_label ?? null, video_url: edit!.video_url.trim() || null, video_duracao: edit!.video_duracao.trim() || null } });
+    },
     onSuccess: () => { toast.success("Salvo."); setEdit(null); qc.invalidateQueries({ queryKey: ["content", section] }); },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
   });
@@ -206,7 +211,7 @@ function ContentTab({ section }: { section: "problemas" | "tutoriais" }) {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Button size="sm" className="gap-2" onClick={() => setEdit({ category: "", title: "", content: "", link_externo: "", link_label: "" })}>
+        <Button size="sm" className="gap-2" onClick={() => setEdit({ category: "", title: "", content: "", link_externo: "", link_label: "", video_url: "", video_duracao: "" })}>
           <Plus className="h-4 w-4" /> Novo item
         </Button>
       </div>
@@ -215,7 +220,7 @@ function ContentTab({ section }: { section: "problemas" | "tutoriais" }) {
         <Table>
           <TableHeader><TableRow><TableHead>Categoria</TableHead><TableHead>Título</TableHead><TableHead>Isso ajudou?</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
           <TableBody>
-            {(q.data ?? []).map((c: { id: string; category: string | null; title: string; content: string; link_externo: string | null; link_label: string | null }) => {
+            {(q.data ?? []).map((c: { id: string; category: string | null; title: string; content: string; link_externo: string | null; link_label: string | null; video_url: string | null; video_duracao: string | null }) => {
               const fb = (feedbackQ.data as Record<string, { sim: number; nao: number; recentesNao: { data: string; pessoa: string }[] }> | undefined)?.[c.id];
               const open = feedbackOpenId === c.id;
               return (
@@ -237,7 +242,7 @@ function ContentTab({ section }: { section: "problemas" | "tutoriais" }) {
                       )}
                     </TableCell>
                     <TableCell className="text-right space-x-1">
-                      <Button size="icon" variant="ghost" onClick={() => setEdit({ id: c.id, category: c.category ?? "", title: c.title, content: c.content, link_externo: c.link_externo ?? "", link_label: c.link_label ?? "" })}><Pencil className="h-4 w-4" /></Button>
+                      <Button size="icon" variant="ghost" onClick={() => setEdit({ id: c.id, category: c.category ?? "", title: c.title, content: c.content, link_externo: c.link_externo ?? "", link_label: c.link_label ?? "", video_url: c.video_url ?? "", video_duracao: c.video_duracao ?? "" })}><Pencil className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" onClick={() => confirm("Excluir?") && delMut.mutate(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                     </TableCell>
                   </TableRow>
@@ -270,8 +275,13 @@ function ContentTab({ section }: { section: "problemas" | "tutoriais" }) {
               <div><Label>Categoria</Label><Input value={edit.category} onChange={(e) => setEdit({ ...edit, category: e.target.value })} /></div>
               <div><Label>Título</Label><Input value={edit.title} onChange={(e) => setEdit({ ...edit, title: e.target.value })} /></div>
               <div><Label>Conteúdo (Markdown)</Label><Textarea rows={10} value={edit.content} onChange={(e) => setEdit({ ...edit, content: e.target.value })} /></div>
+              <VideoFields
+                url={edit.video_url} duracao={edit.video_duracao}
+                onUrl={(v) => setEdit({ ...edit, video_url: v })} onDuracao={(v) => setEdit({ ...edit, video_duracao: v })}
+                legenda="Passo a passo em vídeo"
+              />
               <div>
-                 <Label>Link externo (vídeo, PDF, página...)</Label>
+                 <Label>Link externo (PDF, página...)</Label>
                  <Input placeholder="https://..." value={edit.link_externo ?? ""} onChange={(e) => setEdit({ ...edit, link_externo: e.target.value })} />
                </div>
                <div>

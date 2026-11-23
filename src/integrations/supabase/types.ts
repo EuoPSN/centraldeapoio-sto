@@ -527,6 +527,8 @@ export type Database = {
       }
       categories: {
         Row: {
+          video_duracao: string | null
+          video_url: string | null
           color: string | null
           created_at: string
           icon: string | null
@@ -539,6 +541,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          video_duracao?: string | null
+          video_url?: string | null
           color?: string | null
           created_at?: string
           icon?: string | null
@@ -551,6 +555,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          video_duracao?: string | null
+          video_url?: string | null
           color?: string | null
           created_at?: string
           icon?: string | null
@@ -1277,6 +1283,8 @@ export type Database = {
       }
       content_items: {
         Row: {
+          video_duracao: string | null
+          video_url: string | null
           category: string | null
           content: string
           created_at: string
@@ -1291,6 +1299,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          video_duracao?: string | null
+          video_url?: string | null
           category?: string | null
           content?: string
           created_at?: string
@@ -1305,6 +1315,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          video_duracao?: string | null
+          video_url?: string | null
           category?: string | null
           content?: string
           created_at?: string
@@ -2188,6 +2200,8 @@ export type Database = {
       }
       flows: {
         Row: {
+          video_duracao: string | null
+          video_url: string | null
           category_id: string | null
           created_at: string
           created_by: string | null
@@ -2199,6 +2213,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          video_duracao?: string | null
+          video_url?: string | null
           category_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -2210,6 +2226,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          video_duracao?: string | null
+          video_url?: string | null
           category_id?: string | null
           created_at?: string
           created_by?: string | null

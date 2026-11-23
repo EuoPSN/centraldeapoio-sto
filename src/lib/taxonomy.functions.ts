@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { isAdminUser } from "@/lib/authz";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { VideoDuracaoField, VideoUrlField } from "@/lib/video-schema";
 
 const ScopeEnum = z.enum(["message", "flow", "suggestion", "content", "client_profile", "problema", "image_library", "pdf_library", "knowledge_product"]);
 
@@ -40,6 +41,8 @@ const CatInput = z.object({
   slug: z.string().min(1).max(120),
   icon: z.string().nullable().optional(),
   color: z.string().nullable().optional(),
+  video_url: VideoUrlField,
+  video_duracao: VideoDuracaoField,
   position: z.number().int().default(0),
 });
 
@@ -67,6 +70,22 @@ export const deleteCategory = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { error } = await context.supabase.from("categories").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Só o vídeo "Para quem é" de um fluxo (categoria), sem mexer nos outros campos. */
+export const setCategoryVideo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ id: z.string().uuid(), video_url: VideoUrlField, video_duracao: VideoDuracaoField }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { error } = await context.supabase
+      .from("categories")
+      .update({ video_url: data.video_url ?? null, video_duracao: data.video_duracao ?? null })
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

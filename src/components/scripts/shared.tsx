@@ -32,7 +32,7 @@ export interface MessageRow {
 
 export interface StageRow { id: string; name: string; position: number; category_id: string | null; path_id: string | null }
 export interface PathRow { id: string; name: string; category_id: string | null; branches_from_stage_id: string; merges_into_stage_id: string | null; position: number }
-export interface CategoryRow { id: string; name: string; slug: string; parent_id: string | null; position: number }
+export interface CategoryRow { id: string; name: string; slug: string; parent_id: string | null; position: number; video_url?: string | null; video_duracao?: string | null }
 
 export function useMessages() {
   const fn = useServerFn(listMessages);
@@ -105,6 +105,8 @@ export interface FlowDef {
   groupId: string;      // aba do catálogo
   groupName: string;
   trunk: StageRow[];    // etapas do tronco, em ordem
+  videoUrl: string | null;
+  videoDuracao: string | null;
 }
 
 export function buildFlows(categories: CategoryRow[], stages: StageRow[]): { groups: { id: string; name: string }[]; flows: FlowDef[] } {
@@ -122,12 +124,12 @@ export function buildFlows(categories: CategoryRow[], stages: StageRow[]): { gro
     if (members.length === 0) continue;
     groups.push({ id: p.id, name: p.name });
     const short = shortNames(kids, p.name);
-    for (const c of members) raw.push({ categoryId: c.id, name: short.get(c.id) ?? c.name, groupId: p.id, groupName: p.name, trunk: trunkOf(c.id) });
+    for (const c of members) raw.push({ categoryId: c.id, name: short.get(c.id) ?? c.name, groupId: p.id, groupName: p.name, trunk: trunkOf(c.id), videoUrl: c.video_url ?? null, videoDuracao: c.video_duracao ?? null });
   }
   const geral = trunkOf(null);
   if (geral.length > 0) {
     groups.push({ id: "geral", name: "Geral" });
-    raw.push({ categoryId: null, name: "Geral", groupId: "geral", groupName: "Geral", trunk: geral });
+    raw.push({ categoryId: null, name: "Geral", groupId: "geral", groupName: "Geral", trunk: geral, videoUrl: null, videoDuracao: null });
   }
 
   // Chave legível (slug) quando não houver repetição; senão, o id.
