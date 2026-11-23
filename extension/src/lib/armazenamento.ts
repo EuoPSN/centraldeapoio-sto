@@ -22,3 +22,9 @@ export async function gravarLocal(chave: string, valor: unknown): Promise<void> 
 export async function estaPausada(): Promise<boolean> {
   return (await lerLocal<boolean>(CHAVES.pausada, false)) === true;
 }
+
+/** Estado do cálculo de tempo de resposta e a lista local de quem espera (nomes/prévias nunca saem do navegador). */
+export const CHAVES_TEMPO = {
+  estado: (usuarioId: string) => `omnia_tempo_estado:${usuarioId}`,
+  espera: (usuarioId: string) => `omnia_tempo_espera:${usuarioId}`,
+} as const;
